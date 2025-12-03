@@ -6,14 +6,24 @@
 
 A collection of Claude Code skills for Salesforce development, specializing in Apex code generation, Flow automation, and DevOps workflows.
 
-## Skills
+## ✨ Available Skills
 
-| Skill | Description |
-|-------|-------------|
-| **[sf-apex](skills/sf-apex/)** | Apex code generation and review with 2025 best practices |
-| **[sf-flow-builder](skills/sf-flow-builder/)** | Flow creation with validation and best practices |
-| **[sf-deployment](skills/sf-deployment/)** | Salesforce DevOps automation for deployments and CI/CD |
-| **[skill-builder](skills/skill-builder/)** | Wizard for creating Claude Code skills |
+| Skill | Description | Status |
+|-------|-------------|--------|
+| **[sf-apex](skills/sf-apex/)** | Apex code generation & review | ✅ Live |
+| **[sf-flow-builder](skills/sf-flow-builder/)** | Flow creation & validation | ✅ Live |
+| **[sf-deployment](skills/sf-deployment/)** | DevOps & CI/CD automation | ✅ Live |
+| **[skill-builder](skills/skill-builder/)** | Claude Code skill wizard | ✅ Live |
+
+## 🚀 Quick Install
+
+```bash
+git clone https://github.com/Jaganpro/claude-code-sfskills.git
+cd claude-code-sfskills
+./scripts/install.sh
+```
+
+**Restart Claude Code** after installation to load the skills.
 
 ## Roadmap
 
@@ -64,17 +74,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Total: 22 skills** (4 built, 18 planned)
-
-## Quick Install
-
-```bash
-git clone https://github.com/Jaganpro/claude-code-sfskills.git
-cd claude-code-sfskills
-./scripts/install.sh
-```
-
-**Restart Claude Code** after installation to load the skills.
+**Total: 22 skills** (4 live, 18 planned)
 
 ## Usage Examples
 
