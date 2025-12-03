@@ -29,7 +29,7 @@ dependencies:
 metadata:
   format_version: "2.0.0"
   created: "2024-11-28"
-  updated: "2025-11-30"
+  updated: "2025-12-02"
   api_version: "62.0"
   license_file: "LICENSE"
   features:
@@ -55,232 +55,137 @@ Expert Salesforce Flow Builder with deep knowledge of best practices, bulkificat
 
 ## Workflow Design (5-Phase Pattern)
 
-### Phase 1: Requirements Gathering & Analysis
+### Phase 1: Requirements Gathering
 
-1. **Use AskUserQuestion to gather:**
-   - Flow type (Screen, Record-Triggered After/Before Save/Delete, Platform Event, Autolaunched, Scheduled)
-   - Primary purpose (one sentence)
-   - Trigger object/conditions (if record-triggered)
-   - Target org alias
+Use **AskUserQuestion** to gather:
+- Flow type (Screen, Record-Triggered After/Before Save/Delete, Platform Event, Autolaunched, Scheduled)
+- Primary purpose (one sentence)
+- Trigger object/conditions (if record-triggered)
+- Target org alias
 
-2. **Check existing flows:** `Glob: pattern="**/*.flow-meta.xml"`
-
-3. **Offer Reusable Subflows:**
-   - Ask: "Use standard subflows?" Options: Sub_LogError (logging), Sub_SendEmailAlert (notifications), Sub_ValidateRecord (validation), Sub_UpdateRelatedRecords (bulk ops), Sub_QueryRecordsWithRetry (fault handling), None/Custom
-   - See: [docs/subflow-library.md](docs/subflow-library.md)
-
-4. **Assess Security & Governance:**
-   - If sensitive data/complex automation: Ask "Architecture review completed?" (Yes/No-non-critical/Need-guidance)
-   - If needed: Reference [docs/governance-checklist.md](docs/governance-checklist.md)
-
-5. **Create TodoWrite tasks:** Gather requirements ✓, Select template, Generate XML, Validate, Deploy (two-step), Test
+**Then**:
+1. Check existing flows: `Glob: pattern="**/*.flow-meta.xml"`
+2. Offer reusable subflows: Sub_LogError, Sub_SendEmailAlert, Sub_ValidateRecord, Sub_UpdateRelatedRecords, Sub_QueryRecordsWithRetry → See [docs/subflow-library.md](docs/subflow-library.md)
+3. If complex automation: Reference [docs/governance-checklist.md](docs/governance-checklist.md)
+4. Create TodoWrite tasks: Gather requirements ✓, Select template, Generate XML, Validate, Deploy, Test
 
 ### Phase 2: Flow Design & Template Selection
 
-1. **Select template:**
-   - Screen → `templates/screen-flow-template.xml`
-   - Record-Triggered (After/Before Save/Delete) → `templates/record-triggered-*.xml`
-   - Platform Event → `templates/platform-event-flow-template.xml`
-   - Autolaunched → `templates/autolaunched-flow-template.xml`
-   - Scheduled → `templates/scheduled-flow-template.xml`
+**Select template**:
+| Flow Type | Template |
+|-----------|----------|
+| Screen | `templates/screen-flow-template.xml` |
+| Record-Triggered | `templates/record-triggered-*.xml` |
+| Platform Event | `templates/platform-event-flow-template.xml` |
+| Autolaunched | `templates/autolaunched-flow-template.xml` |
+| Scheduled | `templates/scheduled-flow-template.xml` |
 
-2. **Load template:** `Read: ~/.claude/skills/sf-flow-builder/templates/[template].xml`
+Load via: `Read: ~/.claude/skills/sf-flow-builder/templates/[template].xml`
 
-3. **Generate naming:**
-   - API Name: PascalCase_With_Underscores (e.g., `Account_Creation_Screen_Flow`)
-   - Label: Human-readable (e.g., "Account Creation Screen Flow")
+**Naming**: API Name = PascalCase_With_Underscores (e.g., `Account_Creation_Screen_Flow`)
 
-4. **Design structure:** Variables (var/col prefixes), Elements, Flow paths, Error handling (fault paths)
+**Screen Flow Button Config** (CRITICAL):
+| Screen | allowBack | allowFinish | Result |
+|--------|-----------|-------------|--------|
+| First | false | true | "Next" only |
+| Middle | true | true | "Previous" + "Next" |
+| Last | true | true | "Finish" |
 
-**Screen Flow Button Configuration (CRITICAL for UX):**
-- **First screen**: `allowBack="false"` + `allowFinish="true"` → Shows "Next" button only
-- **Middle screens**: `allowBack="true"` + `allowFinish="true"` → Shows "Previous" + "Next" buttons
-- **Last screen**: `allowBack="true"` (optional) + `allowFinish="true"` → Shows "Finish" button (+ optionally "Previous")
-- **Rule**: Middle screens MUST have `allowFinish="true"` or navigation button disappears (UX breaks)
-- **Connector behavior**: If screen has `<connector>`, the button label is "Next"; if no connector (last screen), label is "Finish"
+Rule: `allowFinish="true"` required on all screens. Connector present → "Next", absent → "Finish".
 
-5. **Suggest Orchestration Pattern (if complex):**
-   - Detect: Multiple objects/steps, cross-object updates, conditional logic
-   - Suggest: Parent-Child (independent), Sequential (dependent), Conditional (scenarios)
-   - Ask: "Create parent flow + subflows?"
-   - **CRITICAL LIMITATION (Metadata API Constraint)**:
-     - Record-triggered flows (`processType="AutoLaunchedFlow"`) **CANNOT call subflows** via `<actionCalls>` with `<actionType>flow</actionType>` when deployed via XML
-     - This is a **Metadata API limitation** specific to the AutoLaunchedFlow process type
-     - Valid action types for record-triggered flows include: "apex", "chatterPost", "emailAlert", "emailSimple", and several others - but NOT "flow"
-     - **Screen Flows** (`processType="Flow"`) CAN call subflows successfully
-     - **UI vs XML Deployment**: The Flow Builder UI may use different internal mechanisms or compile subflow calls differently than direct XML deployment
-   - **RECOMMENDED APPROACH for Record-Triggered Flows**:
-     - Use **inline orchestration** with organized sections (comments/element naming) instead of separate subflows
-     - Pattern: Section 1 (Contact creation) → Section 2 (Opportunity creation) → Section 3 (Notification)
-     - Benefits: Single flow deployment, no dependency order issues, full control over execution
-   - See: [docs/orchestration-guide.md](docs/orchestration-guide.md)
+**Orchestration**: For complex flows (multiple objects/steps), suggest Parent-Child or Sequential pattern.
+- **CRITICAL**: Record-triggered flows CANNOT call subflows via XML deployment. Use inline orchestration instead. See [docs/xml-gotchas.md](docs/xml-gotchas.md#subflow-calling-limitation) and [docs/orchestration-guide.md](docs/orchestration-guide.md)
 
 ### Phase 3: Flow Generation & Validation
 
-1. **Create flow file:**
+**Create flow file**:
 ```bash
-Bash: mkdir -p force-app/main/default/flows
+mkdir -p force-app/main/default/flows
 Write: force-app/main/default/flows/[FlowName].flow-meta.xml
 ```
 
-2. **Populate template:**
-   - Replace {{FLOW_LABEL}}, {{FLOW_DESCRIPTION}}, {{OBJECT_NAME}}
-   - API version: 62.0
-   - **CRITICAL:** Alphabetical XML element ordering at root level
-   - **CRITICAL:** NO deprecated `<bulkSupport>` (removed API 60.0+)
-   - **CRITICAL:** Auto-Layout (all locationX/Y = 0) - cleaner git diffs, easier reviews
-   - Add fault paths to all DML operations
+**Populate template**: Replace placeholders, API version: 62.0
 
-3. **Run Enhanced Validation Suite:**
+**CRITICAL Requirements**:
+- Alphabetical XML element ordering at root level
+- NO `<bulkSupport>` (removed API 60.0+)
+- Auto-Layout: all locationX/Y = 0
+- Fault paths on all DML operations
+
+**Run Enhanced Validation**:
 ```bash
-# Comprehensive 6-category validator (includes naming, security, performance, architecture, error handling, design)
 python3 ~/.claude/skills/sf-flow-builder/validators/enhanced_validator.py \
   force-app/main/default/flows/[FlowName].flow-meta.xml
 ```
 
-4. **Inline Validation (STRICT MODE - ALL must pass):**
+**Validation (STRICT MODE)**:
+- **BLOCK**: XML invalid, missing required fields (apiVersion/label/processType/status), API <62.0, broken refs, DML in loops
+- **WARN**: Element ordering, deprecated elements, non-zero coords, missing fault paths, unused vars, naming violations
 
-**CRITICAL ERRORS (Block immediately):**
-- ❌ XML malformed
-- ❌ Missing: apiVersion, label, processType, status
-- ❌ API version < 62.0
-- ❌ Broken element references
-- ❌ **DML operations inside loops** (causes bulk failures)
-
-**WARNINGS (Block in strict mode):**
-- ⚠️ Incorrect XML element ordering (must be alphabetical)
-- ⚠️ Deprecated elements
-- ⚠️ Non-zero location coordinates
-- ⚠️ DML missing fault paths
-- ⚠️ Unused variables/orphaned elements
-- ⚠️ Loops with field mapping (use Transform for 30-50% gain)
-- ⚠️ Naming conventions violated
-- ⚠️ **Screen flows: Middle screens with allowFinish="false" (UX broken - no Next button)**
-
-**BEST PRACTICES:**
-- ✓ Has description, proper naming, Transform usage, Auto-Layout
-
-5. **Run Simulation (REQUIRED for record-triggered/scheduled):**
+**Run Simulation** (REQUIRED for record-triggered/scheduled):
 ```bash
 python3 ~/.claude/skills/sf-flow-builder/validators/flow_simulator.py \
   force-app/main/default/flows/[FlowName].flow-meta.xml --test-records 200
 ```
-- Tests bulk execution (200+ records), governor limits (SOQL:100, DML:150, rows:10k, CPU:10s)
-- **If simulation fails: STOP and fix before proceeding**
+If simulation fails: **STOP and fix before proceeding**.
 
-6. **Validation Report Format (6-Category Scoring 0-110):**
+**Validation Report Format** (6-Category Scoring 0-110):
 ```
 Score: 92/110 ⭐⭐⭐⭐ Very Good
 ├─ Design & Naming: 18/20 (90%)
 ├─ Logic & Structure: 20/20 (100%)
-├─ Architecture & Orchestration: 12/15 (80%)
+├─ Architecture: 12/15 (80%)
 ├─ Performance & Bulk Safety: 20/20 (100%)
-├─ Error Handling & Observability: 15/20 (75%)
-└─ Security & Governance: 15/15 (100%)
-
-Recommendations:
-1. Add Sub_LogError for structured logging
-2. Consider parent+subflows for complex logic
-3. Expand flow description
+├─ Error Handling: 15/20 (75%)
+└─ Security: 15/15 (100%)
 ```
 
-7. **Strict Mode Enforcement:** If ANY errors/warnings: Block with options: (1) Apply auto-fixes, (2) Show manual fixes, (3) Generate corrected version. **DO NOT PROCEED** to Phase 4 until 100% clean.
+**Strict Mode**: If ANY errors/warnings → Block with options: (1) Apply auto-fixes, (2) Show manual fixes, (3) Generate corrected version. **DO NOT PROCEED** until 100% clean.
 
 ### Phase 4: Deployment & Integration
 
-1. **Step 1: Validation Deployment (Check-Only)**
+**Step 1: Validation (Check-Only)**
 ```
 Skill(skill="sf-deployment")
-Request: "Deploy flow at force-app/main/default/flows/[FlowName].flow-meta.xml
-to [target-org] with dry-run validation (--dry-run flag). Do NOT deploy yet."
+Request: "Deploy flow at force-app/main/default/flows/[FlowName].flow-meta.xml to [target-org] with --dry-run. Do NOT deploy yet."
 ```
 
-2. **Review validation:** Check for field access, permissions, conflicts. Common failures: Field missing, insufficient permissions, duplicate API name, required field missing.
+Review: Check for field access, permissions, conflicts.
 
-3. **Step 2: Actual Deployment (only if validation succeeds)**
+**Step 2: Actual Deployment** (only if validation succeeds)
 ```
 Skill(skill="sf-deployment")
 Request: "Proceed with actual deployment of flow to [target-org]."
 ```
 
-4. **Step 3: Automatic Activation for Testing**
-
-**ALWAYS activate flows after successful deployment** to enable immediate testing.
-
-```
-Steps:
-1. Edit flow status from Draft to Active
-2. Re-deploy to target org
-3. Verify activation successful
-```
-
-**Implementation:**
+**Step 3: Activation**
 ```bash
-# Edit flow status
-Edit: force-app/main/default/flows/[FlowName].flow-meta.xml
-Change: <status>Draft</status> → <status>Active</status>
-
-# Re-deploy with active status
-Skill(skill="sf-deployment")
-Request: "Deploy activated flow to [target-org]"
+Edit: <status>Draft</status> → <status>Active</status>
+Skill(skill="sf-deployment") "Deploy activated flow to [target-org]"
 ```
 
-**Why activate immediately:**
-- ✅ Enables unit testing and manual testing
-- ✅ Allows verification of flow logic with real data
-- ✅ Catches runtime errors early (before production)
-- ✅ Validates trigger criteria and entry conditions
-- ⚠️ **Note**: For production orgs, test thoroughly in sandbox first before activating
-
-5. **Generate Flow Documentation:**
+**Generate Documentation**:
 ```bash
 python3 ~/.claude/skills/sf-flow-builder/generators/doc_generator.py \
   force-app/main/default/flows/[FlowName].flow-meta.xml \
   docs/flows/[FlowName]_documentation.md
 ```
-Includes: Overview, entry/exit criteria, logic, orchestration pattern, performance, error handling, security, testing, dependencies, troubleshooting.
-See: [templates/flow-documentation-template.md](templates/flow-documentation-template.md)
 
-6. **Governance Checklist (if required):**
-For sensitive/complex flows: Reference [docs/governance-checklist.md](docs/governance-checklist.md)
-Required checkpoints: Business justification, architecture review, security assessment, testing plan, rollback strategy, authorization.
-Minimum score: **140/200 points** for production.
+For complex flows: [docs/governance-checklist.md](docs/governance-checklist.md) (min score: 140/200 for production)
 
 ### Phase 5: Testing & Documentation
 
-1. **Type-Specific Testing:**
+**Type-specific testing**: See [docs/testing-guide.md](docs/testing-guide.md)
 
-**Screen Flows:** Setup → Flows → Run, test all paths/profiles
-URL: `https://[org].lightning.force.com/lightning/setup/Flows/page?address=%2F[FlowId]`
+Quick reference:
+- **Screen**: Setup → Flows → Run, test all paths/profiles
+- **Record-Triggered**: Create record, verify Debug Logs, **bulk test 200+ records**
+- **Autolaunched**: Apex test class, edge cases, bulkification
+- **Scheduled**: Verify schedule, manual Run first, monitor logs
 
-**Record-Triggered:** Create test record, verify Debug Logs, **CRITICAL:** bulk test (200+ records via Data Loader)
-Query: `sf data query --query "SELECT Id, Status FROM FlowInterview WHERE FlowDefinitionName='[FlowName]' ORDER BY CreatedDate DESC LIMIT 10" --target-org [org]`
+**Security**: Test with multiple profiles. System mode requires security review.
 
-**Autolaunched:** Apex test class, edge cases (nulls, max values), bulkification (200+ records)
-Sample: `Flow.Interview.[FlowName] flowInstance = new Flow.Interview.[FlowName](); flowInstance.start();`
-
-**Scheduled:** Verify schedule config, manual Run test first, monitor Debug Logs, check Scheduled Jobs
-
-**Examples:** See `examples/` directory for detailed testing patterns
-
-2. **Security & Profile Testing (User mode):**
-Test with multiple profiles (Standard User, Custom, Permission Sets) to verify FLS/CRUD respected.
-```bash
-sf org login user --username standard.user@company.com --target-org [org]
-```
-**System mode:** ⚠️ Security review required - bypasses FLS/CRUD. Must document justification.
-
-3. **Documentation:** Review auto-generated `docs/flows/[FlowName]_documentation.md`, fill business context, test results, troubleshooting notes.
-
-4. **Completion Summary:**
-
-**Query Flow ID** (optional - for direct link):
-```bash
-sf data query --query "SELECT Id, DeveloperName, VersionNumber, ActiveVersionId FROM FlowDefinition WHERE DeveloperName='[FlowName]' LIMIT 1" --target-org [org] --json
-```
-**Note**: FlowDefinition may not be queryable in all orgs (setup object). If query fails, navigate via Setup → Flows.
-
-**Generate Summary:**
+**Completion Summary**:
 ```
 ✓ Flow Creation Complete: [FlowName]
   Type: [type] | API: 62.0 | Status: [Draft/Active]
@@ -288,135 +193,68 @@ sf data query --query "SELECT Id, DeveloperName, VersionNumber, ActiveVersionId 
   Validation: PASSED (Score: XX/110)
   Deployment: Org=[target-org], Job=[job-id]
 
-  🔗 Navigate to Flow:
-     Setup → Process Automation → Flows → Search "[FlowName]"
-     Or: https://[instance-url]/lightning/setup/Flows/home
+  Navigate: Setup → Process Automation → Flows → "[FlowName]"
 
-Next Steps:
-1. Complete testing (unit, bulk, security, integration)
-2. Review docs/flows/[FlowName]_documentation.md
-3. Activate after testing (if Draft)
-4. Monitor Debug Logs
-5. Complete governance checklist (if required)
-
-Resources: examples/, docs/subflow-library.md, docs/orchestration-guide.md,
-docs/governance-checklist.md, https://help.salesforce.com/s/articleView?id=sf.flow.htm
+Next Steps: Test (unit, bulk, security), Review docs, Activate if Draft, Monitor logs
+Resources: examples/, docs/subflow-library.md, docs/orchestration-guide.md, docs/governance-checklist.md
 ```
 
-## Salesforce Flow Best Practices (Built-In Enforcement)
+## Best Practices (Built-In Enforcement)
 
 ### Critical Requirements
-- **API 62.0:** Latest features (enhanced error connectors, better bulkification)
-- **No DML in Loops:** CRITICAL ERROR - causes bulk failures. Pattern: Collect in loop → DML after loop
-- **Bulkify Record-Triggered:** MUST handle collections
-- **Fault Paths:** All DML must have fault connectors
-- **Auto-Layout:** All locationX/Y = 0 (cleaner git, easier reviews, standard in API 64.0+)
-  - **IMPORTANT**: Salesforce UI may show "Free-Form" dropdown, but if all locationX/Y = 0, it IS Auto-Layout in the XML
+- **API 62.0**: Latest features
+- **No DML in Loops**: Collect in loop → DML after loop (causes bulk failures otherwise)
+- **Bulkify**: MUST handle collections for record-triggered flows
+- **Fault Paths**: All DML must have fault connectors
+- **Auto-Layout**: All locationX/Y = 0 (cleaner git diffs)
+  - UI may show "Free-Form" dropdown, but locationX/Y = 0 IS Auto-Layout in XML
 
 ### XML Element Ordering (CRITICAL)
-Salesforce Metadata API requires strict alphabetical ordering. Required order:
-1. `<apiVersion>` 2. `<assignments>` 3. `<decisions>` 4. `<description>` 5. `<label>` 6. `<loops>` 7. `<processType>` 8. `<recordCreates>` 9. `<recordUpdates>` 10. `<start>` 11. `<status>` 12. `<variables>`
-**Note:** API 60.0+ does NOT use `<bulkSupport>` - bulk processing is automatic.
+Required alphabetical order: `apiVersion` → `assignments` → `decisions` → `description` → `label` → `loops` → `processType` → `recordCreates` → `recordUpdates` → `start` → `status` → `variables`
 
 ### Performance
-- **Minimize DML:** Batch operations, use Get Records → Assignment → Update Records pattern
-- **Get Records with Filters:** Instead of loops + decisions
-- **Collection Processing:** Process records in bulk, not individually
-- **NOTE:** Transform element is powerful but has complex XML structure - NOT recommended for hand-written flows
+- **Batch DML**: Get Records → Assignment → Update Records pattern
+- **Filters over loops**: Use Get Records with filters instead of loops + decisions
+- **Transform element**: Powerful but complex XML - NOT recommended for hand-written flows
 
-### Design
-- **Meaningful Names:** Variables (camelCase), Elements (PascalCase_With_Underscores)
-- **Descriptions:** Add for complex logic
-- **Subflows:** Reusable logic
-
-### Security
-- **System vs User Mode:** Understand implications
-- **Field-Level Security:** Validate permissions for sensitive fields
-- **No Hardcoded Data:** Use variables/custom settings
-
-## Tool Usage
-
-**Key Patterns:**
-- **Bash:** SF CLI (`sf org list`, `sf project deploy`), validation scripts
-- **Read/Write/Edit:** Flow XML manipulation, templates
-- **Glob:** Find flows (`**/*.flow-meta.xml`), locate metadata
-- **Grep:** Search flows for objects/fields/elements
-- **AskUserQuestion:** Gather requirements, confirm activation
-- **TodoWrite:** Track 5-phase workflow progress
-- **Skill:** Invoke `sf-deployment` for two-step deployment
-- **WebFetch:** Fetch SF docs, API reference
+### Design & Security
+- **Names**: Variables (camelCase), Elements (PascalCase_With_Underscores)
+- **System vs User Mode**: Understand implications, validate FLS for sensitive fields
+- **No hardcoded data**: Use variables/custom settings
 
 ## Common Error Patterns
 
-**DML in Loop (CRITICAL):** Collect records in collection variable inside loop → Single DML after loop exits
-**Missing Fault Path:** Add fault connector from DML → error handling element → log/display error
-**Field Not Found:** Verify field exists in target org, deploy field first if missing
-**Insufficient Permissions:** Check profile permissions, consider System mode, verify FLS
+**DML in Loop**: Collect records in collection variable → Single DML after loop
+**Missing Fault Path**: Add fault connector from DML → error handling → log/display
+**Field Not Found**: Verify field exists, deploy field first if missing
+**Insufficient Permissions**: Check profile permissions, consider System mode
 
-**$Record__Prior Usage (CRITICAL):**
-- ❌ **NEVER use `$Record__Prior` in Create-only triggers** (`<recordTriggerType>Create</recordTriggerType>`)
-- **Error message**: "Customer Account Created - $Record__Prior can only be used in autolaunched flows with a recordTriggerType of Update or CreateAndUpdate"
-- **Why**: New records have no prior state - `$Record__Prior` is null/unavailable for Create triggers
-- ✅ **Valid trigger types for `$Record__Prior`**:
-  - `<recordTriggerType>Update</recordTriggerType>` - Only updates
-  - `<recordTriggerType>CreateAndUpdate</recordTriggerType>` - Both creates and updates
-- **Use case**: Compare old vs new values (e.g., "Status changed from Draft to Active")
-- **For Create-only triggers**: Just check `$Record` fields - no need for prior comparison since records are new
+**$Record__Prior** (CRITICAL):
+- NEVER use in Create-only triggers (`<recordTriggerType>Create</recordTriggerType>`)
+- Valid only for: `Update` or `CreateAndUpdate` triggers
+- Error: "$Record__Prior can only be used...with recordTriggerType of Update or CreateAndUpdate"
 
-### XML Metadata Gotchas (CRITICAL)
+**XML Gotchas**: See [docs/xml-gotchas.md](docs/xml-gotchas.md) for recordLookups conflicts, element ordering, Transform issues, and subflow limitations.
 
-**recordLookups Conflicts:**
-- ❌ **NEVER use both** `<storeOutputAutomatically>true</storeOutputAutomatically>` AND `<outputReference>varName</outputReference>` together
-- ✅ **Use ONLY ONE:**
-  - Option 1: `<storeOutputAutomatically>true</storeOutputAutomatically>` (auto-creates variable)
-  - Option 2: `<outputReference>varName</outputReference>` with explicit variable declaration
+## Edge Cases
 
-**Element Ordering in recordLookups:**
-Correct order within `<recordLookups>`:
-1. `<name>` 2. `<label>` 3. `<locationX>` 4. `<locationY>` 5. `<assignNullValuesIfNoRecordsFound>` 6. `<connector>` 7. `<filterLogic>` 8. `<filters>` 9. `<getFirstRecordOnly>` 10. `<object>` 11. `<outputReference>` OR `<storeOutputAutomatically>` 12. `<queriedFields>`
+- **Large Data (>200 records)**: Warn governor limits, suggest scheduled flow
+- **Complex Branching (>5 paths)**: Suggest subflows, document criteria
+- **Cross-Object Updates**: Check circular dependencies, test for recursion
+- **Production**: Keep Draft initially, require explicit activation, provide rollback
 
-**Transform Element (AVOID for hand-written flows):**
-- Complex nested XML structure with strict ordering requirements
-- `inputReference` placement varies by context
-- Multiple conflicting rules in Metadata API
-- **Recommendation**: Create Transform elements in Flow Builder UI, then deploy - do NOT hand-write
-
-**Subflow Calling Limitation (Metadata API Constraint):**
-- ❌ **Record-triggered flows (`processType="AutoLaunchedFlow"`) CANNOT call subflows** via XML deployment
-- **Root Cause**: The Salesforce Metadata API does not support the "flow" action type for AutoLaunchedFlow process types
-- **Valid action types for AutoLaunchedFlow**: "apex", "chatterPost", "emailAlert", "emailSimple", and several platform-specific actions - but NOT "flow"
-- **Error message**: "You can't use the Flows action type in flows with the Autolaunched Flow process type"
-- ✅ **Screen Flows (`processType="Flow"`) CAN call subflows** successfully via XML deployment
-- **UI Behavior**: Flow Builder UI may use different internal mechanisms or compile subflow calls into inline logic - UI capabilities may differ from direct XML deployment
-- **RECOMMENDED SOLUTION**: Use **inline orchestration** for record-triggered flows deployed via XML:
-  - Organize logic into clear sections with descriptive element naming
-  - Pattern: Decision_CheckCriteria → Assignment_SetContactFields → Create_Contact → Assignment_SetOpportunityFields → Create_Opportunity
-  - Add XML comments to delineate sections (e.g., `<!-- Section 1: Contact Creation -->`)
-  - Benefits: Single atomic flow, no deployment dependencies, full execution control
-- **Testing Note**: This limitation was validated through deployment testing and is a known Metadata API constraint
-- **Reference**: [Salesforce Help Article 000396957](https://help.salesforce.com/s/articleView?id=000396957&type=1) (demonstrates UI approach which may differ from XML deployment)
-
-## Edge Cases & Troubleshooting
-
-**Large Data (>200 records):** Warn about governor limits, suggest scheduled flow for batching, use Get Records with filters
-**Complex Branching (>5 paths):** Suggest subflows for modularity, document criteria, consider formula fields
-**Cross-Object Updates:** Check for circular dependencies, existing flows on related objects, test for recursion
-**Production Deployments:** Keep Draft initially, require explicit activation, provide rollback instructions
-
-**Common Issues:**
-- Flow not visible after deployment → Check `sf project deploy report`, verify permissions, refresh Setup → Flows
-- Validation passes but testing fails → Check Debug Logs, verify test data, test bulk (200+ records)
-- Performance issues → Check for DML in loops, use Get Records with filters, minimize SOQL queries
-- Sandbox works, production fails → Check FLS differences, verify dependent metadata deployed, review validation rules, test with production data volumes
+**Common Issues**:
+- Flow not visible → Check `sf project deploy report`, verify permissions, refresh Setup
+- Validation passes but testing fails → Check Debug Logs, test bulk (200+ records)
+- Sandbox works, production fails → Check FLS differences, verify dependencies
 
 ## Notes
 
-- **Strict Mode:** All warnings block deployment
-- **API 62.0 Required:** Latest Salesforce features
-- **Two-Step Deployment:** Validate before deploying
-- **Testing Required:** Never deploy to production untested
-- **Dependencies:** Requires sf-deployment ≥2.0.0
-- **Python Validators:** Optional but recommended
+- **Strict Mode**: All warnings block deployment
+- **API 62.0 Required**
+- **Two-Step Deployment**: Validate before deploying
+- **Dependencies**: Requires sf-deployment ≥2.0.0
+- **Python Validators**: Optional but recommended
 
 ---
 

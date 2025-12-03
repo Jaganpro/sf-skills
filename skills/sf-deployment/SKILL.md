@@ -25,7 +25,7 @@ allowed-tools:
 examples: []
 metadata:
   created: '2024-11-28'
-  updated: '2025-11-29'
+  updated: '2025-12-02'
   format_version: 2.0.0
   license_file: LICENSE
 dependencies: []
@@ -39,428 +39,180 @@ test_config:
 
 # sf-deployment: Comprehensive Salesforce DevOps Automation
 
-You are an expert Salesforce DevOps engineer specializing in deployment automation, CI/CD pipelines, and metadata management. Your role is to help users with Salesforce deployments, testing, validation, and DevOps workflows using the Salesforce CLI (sf/sfdx).
+Expert Salesforce DevOps engineer specializing in deployment automation, CI/CD pipelines, and metadata management using Salesforce CLI (sf v2).
 
 ## Core Responsibilities
 
-1. **Deployment Management**: Execute, validate, and monitor Salesforce deployments (metadata, Apex, LWC, etc.)
-2. **DevOps Automation**: Set up CI/CD pipelines, automated testing, and deployment workflows
-3. **Org Management**: Handle org authentication, scratch org creation, and environment management
-4. **Quality Assurance**: Run tests, analyze code coverage, validate deployments before production
-5. **Troubleshooting**: Debug deployment failures, analyze error logs, and provide solutions
+1. **Deployment Management**: Execute, validate, and monitor deployments (metadata, Apex, LWC)
+2. **DevOps Automation**: CI/CD pipelines, automated testing, deployment workflows
+3. **Org Management**: Authentication, scratch orgs, environment management
+4. **Quality Assurance**: Tests, code coverage, pre-production validation
+5. **Troubleshooting**: Debug failures, analyze logs, provide solutions
 
-## CLI Version Note (CRITICAL)
+## CLI Version (CRITICAL)
 
-**This skill uses the modern `sf` CLI (v2.x), NOT legacy `sfdx` CLI (v1.x)**
+**This skill uses `sf` CLI (v2.x), NOT legacy `sfdx` (v1.x)**
 
-### Key Differences:
 | Legacy sfdx (v1) | Modern sf (v2) |
 |-----------------|----------------|
-| `--checkonly` or `--check-only` | `--dry-run` |
+| `--checkonly` / `--check-only` | `--dry-run` |
 | `sfdx force:source:deploy` | `sf project deploy start` |
-| Inconsistent flag naming | Consistent, modern flags |
 
-**IMPORTANT**: All commands in this skill use `sf` CLI syntax with `--dry-run` for validation.
+## Prerequisites
 
-## Prerequisites Check
+Before deployment, verify:
+```bash
+sf --version              # Requires v2.x
+sf org list               # Check authenticated orgs
+test -f sfdx-project.json # Valid SFDX project
+```
 
-Before executing Salesforce operations, verify:
-
-1. **Salesforce CLI Installation**: Check if `sf` CLI is installed (v2.x)
-   ```bash
-   sf --version
-   ```
-
-   **Required**: Salesforce CLI v2.x (uses `sf` command, not `sfdx`)
-
-2. **Org Authentication**: Verify authenticated orgs
-   ```bash
-   sf org list
-   ```
-
-3. **Project Structure**: Ensure valid SFDX project (check for `sfdx-project.json`)
-   ```bash
-   test -f sfdx-project.json && echo "Valid SFDX project" || echo "Not an SFDX project"
-   ```
-
-If prerequisites are missing, guide the user on installation and setup.
-
-## Deployment Workflow
-
-When a user requests a deployment, follow these phases:
+## Deployment Workflow (5-Phase)
 
 ### Phase 1: Pre-Deployment Analysis
 
-1. **Understand the Request**
-   - Use AskUserQuestion to clarify:
-     * Target org (sandbox, production, scratch org)
-     * Deployment scope (full metadata, specific components, package)
-     * Validation requirements (run tests, dry-run deployment)
-     * Rollback strategy if needed
+**Gather via AskUserQuestion**: Target org, deployment scope, validation requirements, rollback strategy.
 
-2. **Analyze Project Structure**
-   - Use Read to examine `sfdx-project.json` for package directories
-   - Use Glob to find metadata files: `**/force-app/**/*.{cls,trigger,xml,js,html,css}`
-   - Use Grep to identify dependencies and references
+**Analyze**:
+- Read `sfdx-project.json` for package directories
+- Glob for metadata: `**/force-app/**/*.{cls,trigger,xml,js,html,css}`
+- Grep for dependencies
 
-3. **Create Task List**
-   - Use TodoWrite to break down deployment steps:
-     * Validate org authentication
-     * Run pre-deployment tests
-     * Execute deployment (validate or deploy)
-     * Monitor deployment status
-     * Run post-deployment tests
-     * Verify deployment success
+**TodoWrite tasks**: Validate auth, Pre-tests, Deploy, Monitor, Post-tests, Verify
 
 ### Phase 2: Pre-Deployment Validation
 
-1. **Check Org Connection**
-   ```bash
-   sf org display --target-org <alias>
-   ```
-
-2. **Validate Metadata**
-   - Check for syntax errors in Apex classes
-   - Verify Lightning components structure
-   - Validate metadata XML files
-
-3. **Run Local Tests** (if applicable)
-   ```bash
-   sf apex test run --test-level RunLocalTests --target-org <alias> --wait 10
-   ```
-
-4. **Dry-Run Deployment** (recommended for production)
-   ```bash
-   sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias> --wait 30
-   ```
-
-   **Note**: Modern `sf` CLI uses `--dry-run` (not `--check-only` from legacy `sfdx`)
+```bash
+sf org display --target-org <alias>                    # Check connection
+sf apex test run --test-level RunLocalTests --target-org <alias> --wait 10  # Local tests
+sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias> --wait 30  # Validate
+```
 
 ### Phase 3: Deployment Execution
 
-1. **Execute Deployment**
-   - Choose appropriate command based on scope:
+**Commands by scope**:
+```bash
+# Full metadata
+sf project deploy start --target-org <alias> --wait 30
 
-   **Full Metadata Deployment:**
-   ```bash
-   sf project deploy start --target-org <alias> --wait 30
-   ```
+# Specific components
+sf project deploy start --source-dir force-app/main/default/classes --target-org <alias>
 
-   **Specific Components:**
-   ```bash
-   sf project deploy start --source-dir force-app/main/default/classes --target-org <alias>
-   ```
+# Manifest-based
+sf project deploy start --manifest manifest/package.xml --target-org <alias> --test-level RunLocalTests --wait 30
 
-   **Manifest-Based (package.xml):**
-   ```bash
-   sf project deploy start --manifest manifest/package.xml --target-org <alias> --test-level RunLocalTests --wait 30
-   ```
+# Quick deploy (after validation)
+sf project deploy quick --job-id <validation-job-id> --target-org <alias>
+```
 
-   **Quick Deploy** (after successful validation):
-   ```bash
-   sf project deploy quick --job-id <validation-job-id> --target-org <alias>
-   ```
-
-2. **Monitor Progress**
-   - Display deployment status
-   - Parse output for errors or warnings
-   - Track test execution and code coverage
-
-3. **Handle Deployment Failures**
-   - Parse error messages from deployment output
-   - Identify component-level failures
-   - Suggest fixes for common errors (e.g., missing dependencies, test failures)
+Handle failures: Parse errors, identify failed components, suggest fixes.
 
 ### Phase 4: Post-Deployment Verification
 
-1. **Check Deployment Status**
-   ```bash
-   sf project deploy report --job-id <job-id> --target-org <alias>
-   ```
-
-2. **Verify Components**
-   - List deployed components
-   - Check for any warnings or partial successes
-
-3. **Run Smoke Tests**
-   - Execute critical test classes
-   - Verify key functionality in the target org
-
-4. **Generate Deployment Report**
-   - Summarize deployed components
-   - Report test results and code coverage
-   - Document any issues or warnings
-
-### Phase 5: Documentation & Next Steps
-
-1. **Provide Summary**
-   - List successful deployments
-   - Highlight any failures or warnings
-   - Show code coverage metrics
-
-2. **Suggest Next Steps**
-   - Recommend monitoring in production
-   - Suggest follow-up validations
-   - Provide rollback instructions if needed
-
-## Common Deployment Scenarios
-
-### Scenario 1: Production Deployment
-
-```
-User: "Deploy to production with all tests"
-
-Steps:
-1. Verify production org authentication
-2. Create backup/rollback plan
-3. Run dry-run deployment first (validation only)
-4. Review validation results
-5. If successful, execute quick deploy or full deployment
-6. Monitor test execution (RunLocalTests or RunAllTests)
-7. Verify deployment success and code coverage
-8. Document deployment in changelog
+```bash
+sf project deploy report --job-id <job-id> --target-org <alias>
 ```
 
-### Scenario 2: Hotfix Deployment
+Verify components, run smoke tests, check coverage.
 
-```
-User: "Deploy urgent fix to production"
+### Phase 5: Documentation
 
-Steps:
-1. Identify the specific components for hotfix
-2. Run targeted validation
-3. Execute fast deployment for specific components
-4. Run only affected test classes
-5. Verify fix in production
-6. Update documentation
-```
+Provide summary with: deployed components, test results, coverage metrics, next steps.
 
-### Scenario 3: CI/CD Pipeline Setup
+See [examples/deployment-report-template.md](examples/deployment-report-template.md) for output format.
 
-```
-User: "Set up automated deployment pipeline"
+## Deployment Pattern
 
-Steps:
-1. Analyze current project structure
-2. Create deployment scripts in scripts/ directory
-3. Configure manifest files for different environments
-4. Set up authentication for CI/CD (JWT, auth URL)
-5. Create GitHub Actions / GitLab CI / Jenkins pipeline
-6. Add automated testing and validation steps
-7. Configure deployment gates and approvals
-8. Document pipeline usage in README
-```
+Standard workflow for all scenarios:
 
-### Scenario 4: Scratch Org Development
+1. **Verify** org auth: `sf org display`
+2. **Identify** scope: [full | components | hotfix | scratch]
+3. **Validate**: `sf project deploy start --dry-run`
+4. **Execute**: `sf project deploy start [options]`
+5. **Verify**: `sf project deploy report`
 
-```
-User: "Create scratch org and deploy code"
+**Variants**:
+- **Production**: Full scope + backup + RunAllTests + documentation
+- **Hotfix**: Targeted components + RunLocalTests + fast deploy
+- **CI/CD**: Scripted + automated gates + notifications
+- **Scratch**: `sf project deploy start` (push source)
 
-Steps:
-1. Create scratch org from definition file
-2. Push source to scratch org
-3. Assign permission sets if needed
-4. Import test data
-5. Open scratch org for testing
-```
+## CLI Reference
 
-## Salesforce CLI Commands Reference
+**Deploy**: `sf project deploy start [--dry-run] [--source-dir <path>] [--manifest <xml>] [--test-level <level>]`
+**Quick**: `sf project deploy quick --job-id <id>` | **Status**: `sf project deploy report`
+**Test**: `sf apex test run --test-level RunLocalTests` | **Coverage**: `sf apex get test --code-coverage`
+**Org**: `sf org list` | `sf org display` | `sf org create scratch` | `sf org open`
+**Metadata**: `sf project retrieve start` | `sf org list metadata --metadata-type <type>`
 
-### Deployment Commands
+## Error Handling
 
-- **Deploy metadata**: `sf project deploy start`
-- **Validate deployment**: `sf project deploy start --dry-run`
-- **Deploy specific source**: `sf project deploy start --source-dir <path>`
-- **Deploy with manifest**: `sf project deploy start --manifest <package.xml>`
-- **Quick deploy**: `sf project deploy quick --job-id <id>`
-- **Check deployment status**: `sf project deploy report`
-- **Cancel deployment**: `sf project deploy cancel`
+| Error | Cause | Solution |
+|-------|-------|----------|
+| FIELD_CUSTOM_VALIDATION_EXCEPTION | Validation rule blocking | Deactivate rules or use valid test data |
+| INVALID_CROSS_REFERENCE_KEY | Missing dependency | Include dependencies in deploy |
+| CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY | Trigger/validation error | Review trigger logic, check recursion |
+| TEST_FAILURE | Test class failure | Fix test or code under test |
+| INSUFFICIENT_ACCESS | Permission issue | Verify user permissions, FLS |
 
-### Testing Commands
+### Flow-Specific Errors
 
-- **Run tests**: `sf apex test run --test-level RunLocalTests`
-- **Run specific tests**: `sf apex test run --tests TestClass1,TestClass2`
-- **Get test results**: `sf apex test report --test-run-id <id>`
-- **Get code coverage**: `sf apex get test --code-coverage`
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Element X is duplicated" | Elements not alphabetically ordered | Reorder Flow XML elements |
+| "Element bulkSupport invalid" | Deprecated element (API 60.0+) | Remove `<bulkSupport>` |
+| "Error parsing file" | Malformed XML | Validate XML syntax |
 
-### Org Management Commands
+### Failure Response
 
-- **List orgs**: `sf org list`
-- **Display org info**: `sf org display --target-org <alias>`
-- **Create scratch org**: `sf org create scratch --definition-file config/project-scratch-def.json`
-- **Delete scratch org**: `sf org delete scratch --target-org <alias>`
-- **Open org**: `sf org open --target-org <alias>`
-
-### Metadata Commands
-
-- **Retrieve metadata**: `sf project retrieve start --manifest <package.xml>`
-- **List metadata**: `sf org list metadata --metadata-type <type>`
-- **Describe metadata**: `sf org describe metadata-type --type <type>`
-
-## Error Handling & Troubleshooting
-
-### Common Deployment Errors
-
-1. **FIELD_CUSTOM_VALIDATION_EXCEPTION**
-   - Cause: Validation rule blocking deployment
-   - Solution: Temporarily deactivate validation rules or provide valid test data
-
-2. **INVALID_CROSS_REFERENCE_KEY**
-   - Cause: Missing dependent metadata
-   - Solution: Include dependencies in deployment or deploy in correct order
-
-3. **CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY**
-   - Cause: Trigger or validation errors
-   - Solution: Review trigger logic, check for recursive triggers
-
-4. **TEST_FAILURE**
-   - Cause: Test class failures
-   - Solution: Analyze test failure details, fix test logic or code being tested
-
-5. **INSUFFICIENT_ACCESS**
-   - Cause: Permission issues in target org
-   - Solution: Verify user permissions and object/field accessibility
-
-6. **FLOW_METADATA_ERRORS** (Specific to Flows)
-   - **"Element X is duplicated at this location"**
-     - Cause: XML elements not in correct alphabetical order
-     - Solution: Reorder Flow XML elements alphabetically (apiVersion, assignments, decisions, description, label, processType, recordUpdates, start, status, variables)
-   - **"Element bulkSupport invalid at this location"**
-     - Cause: Using deprecated bulkSupport element (removed in API 60.0+)
-     - Solution: Remove <bulkSupport> element - modern flows are automatically bulkified
-   - **"Error parsing file"**
-     - Cause: Malformed XML or invalid element structure
-     - Solution: Validate XML syntax and ensure all elements follow Salesforce metadata schema
-
-### Deployment Failure Response
-
-When deployment fails:
-
-1. **Parse Error Output**
-   - Use Grep to extract specific error messages
-   - Identify failed components from deployment report
-
-2. **Provide Context**
-   - Explain error in plain language
-   - Link to relevant Salesforce documentation
-
-3. **Suggest Solutions**
-   - Offer specific fixes based on error type
-   - Provide code examples if needed
-
-4. **Rollback Options**
-   - Explain how to roll back if needed
-   - Suggest using change sets or backup metadata
+1. Parse error output, identify failed components
+2. Explain error in plain language
+3. Suggest specific fixes with code examples
+4. Provide rollback options if needed
 
 ## Best Practices
 
-- **Always Validate First**: Use `--dry-run` for production deployments
-- **Run Appropriate Tests**: Use RunLocalTests for deployments, RunAllTests for packages
-- **Monitor Code Coverage**: Ensure >75% for production (>90% recommended)
-- **Use Manifest Files**: Create package.xml for controlled deployments
-- **Version Control**: Commit before deploying, tag releases
-- **Incremental Deployments**: Deploy small, frequent changes rather than large batches
-- **Test in Sandbox**: Always test in sandbox before production
-- **Document Changes**: Maintain deployment logs and changelogs
-- **Backup Metadata**: Retrieve metadata before major deployments
-- **Use Quick Deploy**: Save time by quick-deploying validated changesets
-
-## Tool Usage
-
-This skill uses:
-
-- **Bash**: Execute Salesforce CLI commands, run shell scripts
-- **Read**: Examine sfdx-project.json, package.xml, metadata files, logs
-- **Write**: Create deployment scripts, manifest files, configuration
-- **Edit**: Modify metadata, fix errors, update configurations
-- **Grep**: Search for components, dependencies, error patterns
-- **Glob**: Find metadata files, identify project structure
-- **AskUserQuestion**: Clarify deployment requirements, confirm actions
-- **TodoWrite**: Track multi-step deployment workflows
-
-## Output Format
-
-Structure deployment output clearly:
-
-```
-## Salesforce Deployment Report
-
-### Pre-Deployment Checks
-✓ Org authenticated: <org-alias> (<org-id>)
-✓ Project validated: sfdx-project.json found
-✓ Components identified: X classes, Y triggers, Z components
-
-### Deployment Execution
-→ Deployment initiated: <timestamp>
-→ Job ID: <deployment-job-id>
-→ Test Level: RunLocalTests
-
-### Results
-✓ Status: Succeeded
-✓ Components Deployed: X/X
-✓ Tests Passed: Y/Y (Z% coverage)
-
-### Deployed Components
-- ApexClass: AccountController, ContactTriggerHandler
-- LightningComponentBundle: accountCard, contactList
-- CustomObject: CustomObject__c
-
-### Next Steps
-1. Verify functionality in target org
-2. Monitor for any post-deployment issues
-3. Update documentation and changelog
-```
+- **Always validate first**: Use `--dry-run` for production
+- **Appropriate test levels**: RunLocalTests (deploy), RunAllTests (packages)
+- **Code coverage**: >75% for production, >90% recommended
+- **Use manifests**: `package.xml` for controlled deployments
+- **Version control**: Commit before deploying, tag releases
+- **Incremental deploys**: Small, frequent changes over large batches
+- **Sandbox first**: Always test before production
+- **Backup metadata**: Retrieve before major deployments
+- **Quick deploy**: Use for validated changesets
 
 ## CI/CD Integration
 
-For automated pipelines, provide:
+Standard pipeline workflow:
+1. Authenticate (JWT/auth URL)
+2. Validate metadata
+3. Static analysis (PMD, ESLint)
+4. Dry-run deployment
+5. Run tests + coverage check
+6. Deploy if validation passes
+7. Notify
 
-1. **Authentication Scripts** (scripts/auth-org.sh)
-2. **Deployment Scripts** (scripts/deploy.sh)
-3. **Test Scripts** (scripts/run-tests.sh)
-4. **Validation Scripts** (scripts/validate-deployment.sh)
-5. **Rollback Scripts** (scripts/rollback.sh)
-
-Example pipeline workflow:
-```yaml
-# .github/workflows/deploy.yml
-- Authenticate to Salesforce org
-- Validate metadata
-- Run static code analysis (PMD, ESLint)
-- Execute dry-run deployment (validation)
-- Run all tests
-- Check code coverage
-- Deploy if validation passes
-- Send notification
-```
+See [examples/deployment-workflows.md](examples/deployment-workflows.md) for scripts.
 
 ## Edge Cases
 
-- **Metadata API Limits**: Handle large deployments by splitting into smaller batches
-- **Test Execution Timeout**: Increase wait time or run tests separately
-- **Org Limits**: Check deployment size limits (10,000 files or 39 MB)
-- **Namespace Conflicts**: Handle managed package and namespace issues
-- **API Version Compatibility**: Ensure API versions match between source and target
+- **Large deployments**: Split into batches (limit: 10,000 files / 39 MB)
+- **Test timeout**: Increase wait time or run tests separately
+- **Namespace conflicts**: Handle managed package issues
+- **API version**: Ensure source/target compatibility
 
 ## Notes
 
-- **Salesforce CLI**: This skill uses ONLY `sf` (v2) commands with modern flag syntax
-- **Flag Migration**: `--check-only` (sfdx v1) → `--dry-run` (sf v2)
-- **Authentication**: Supports OAuth, JWT, Auth URL, and web login flows
-- **Metadata API**: Uses Metadata API for deployments (not Tooling API)
-- **Async Operations**: Most deployments are asynchronous; use `--wait` to monitor
-- **Governor Limits**: Be aware of Salesforce governor limits during deployment
-- **Change Sets**: Can integrate with change set workflows if needed
-
----
-
-*This skill provides comprehensive Salesforce DevOps automation. Customize workflows based on your organization's deployment processes and requirements.*
-
+- **CLI**: Uses only `sf` (v2) with modern flag syntax
+- **Auth**: Supports OAuth, JWT, Auth URL, web login
+- **API**: Uses Metadata API (not Tooling API)
+- **Async**: Use `--wait` to monitor; most deploys are async
+- **Limits**: Be aware of Salesforce governor limits
 
 ---
 
 ## License
 
-This skill is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
+MIT License. See [LICENSE](LICENSE) file.
 Copyright (c) 2024-2025 Jag Valaiyapathy
