@@ -2,21 +2,18 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude-Code-blue.svg)](https://claude.ai/code)
-[![Salesforce](https://img.shields.io/badge/Salesforce-Flow%20%26%20DevOps-00A1E0.svg)](https://www.salesforce.com/)
+[![Salesforce](https://img.shields.io/badge/Salesforce-Apex%20%7C%20Flow%20%7C%20DevOps-00A1E0.svg)](https://www.salesforce.com/)
 
-> **⚠️ ALPHA VERSION** - This project is in active development and may break at any time. This is an experimental research area exploring AI-assisted Salesforce development workflows.
+A collection of Claude Code skills for Salesforce development, specializing in Apex code generation, Flow automation, and DevOps workflows.
 
----
-
-## Overview
-
-A collection of Claude Code skills for Salesforce development, specializing in Flow automation and DevOps workflows.
+## Skills
 
 | Skill | Description |
 |-------|-------------|
-| **sf-deployment** | Salesforce DevOps automation for deployments and CI/CD |
-| **sf-flow-builder** | Flow creation with validation and best practices |
-| **skill-builder** | Wizard for creating Claude Code skills |
+| **[sf-apex](skills/sf-apex/)** | Apex code generation and review with 2025 best practices |
+| **[sf-flow-builder](skills/sf-flow-builder/)** | Flow creation with validation and best practices |
+| **[sf-deployment](skills/sf-deployment/)** | Salesforce DevOps automation for deployments and CI/CD |
+| **[skill-builder](skills/skill-builder/)** | Wizard for creating Claude Code skills |
 
 ## Quick Install
 
@@ -28,16 +25,30 @@ cd claude-code-sfskills
 
 **Restart Claude Code** after installation to load the skills.
 
-## Usage
+## Usage Examples
 
+### Apex Development
 ```
-# Create a Flow
+"Generate an Apex trigger for Account using Trigger Actions Framework"
+"Review my AccountService class for best practices"
+"Create a batch job to process millions of records"
+"Generate a test class with 90%+ coverage"
+```
+
+### Flow Development
+```
 "Create a screen flow for account creation with validation"
+"Build a record-triggered flow for opportunity stage changes"
+```
 
-# Deploy Metadata
+### Deployment
+```
 "Deploy my Apex classes to sandbox with tests"
+"Validate my metadata changes before deploying to production"
+```
 
-# Create a Skill
+### Skill Creation
+```
 "Create a new Claude Code skill for code analysis"
 ```
 
@@ -55,13 +66,34 @@ All scripts are located in the `scripts/` folder:
 
 - **Claude Code** (latest version)
 - **Salesforce CLI** v2.x (`sf` command)
-- **Python 3.8+** (optional, for skill-builder validation)
+- **Python 3.8+** (optional, for validators)
 
-## Documentation
+## What's Included
 
-- [sf-deployment](skills/sf-deployment/README.md)
-- [sf-flow-builder](skills/sf-flow-builder/README.md)
-- [skill-builder](skills/skill-builder/README.md)
+### sf-apex
+- 15 best practice categories (bulkification, security, testing, SOLID, etc.)
+- 8-category validation scoring system (0-150 points)
+- Trigger Actions Framework integration
+- 9 production-ready templates
+- Code review checklist
+
+### sf-flow-builder
+- Flow XML generation with API 62.0
+- Strict validation and scoring
+- Multiple flow type support (Screen, Record-Triggered, Scheduled, etc.)
+- Integration with sf-deployment
+
+### sf-deployment
+- Modern `sf` CLI v2 commands
+- Dry-run validation before deployment
+- Test execution and coverage reporting
+- CI/CD pipeline support
+
+### skill-builder
+- Interactive wizard for skill creation
+- YAML frontmatter validation
+- Bulk skill validation
+- Dependency management
 
 ## Contributing
 
@@ -77,7 +109,3 @@ All scripts are located in the `scripts/` folder:
 ## License
 
 MIT License - Copyright (c) 2024-2025 Jag Valaiyapathy
-
----
-
-**⚠️ Active Research Project** - Expect breaking changes. Contributions and feedback welcome!
