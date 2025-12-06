@@ -1,0 +1,23 @@
+{
+  "name": "sf-skills",
+  "version": "1.0.0",
+  "description": "Salesforce development skills for Claude Code - Apex code generation, Flow building, DevOps automation, and skill creation tools",
+  "author": {
+    "name": "Jag Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Jaganpro/sf-skills",
+  "homepage": "https://github.com/Jaganpro/sf-skills#readme",
+  "keywords": [
+    "salesforce",
+    "apex",
+    "flow",
+    "devops",
+    "deployment",
+    "automation",
+    "sfdx",
+    "sf-cli"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

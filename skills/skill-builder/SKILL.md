@@ -1,31 +1,6 @@
 ---
 name: skill-builder
-description: Interactive wizard for creating, scaffolding, validating, and managing Claude Code skills
-version: 2.0.0
-author: Jag Valaiyapathy
-license: MIT
-keywords:
-  - meta
-  - development
-  - scaffolding
-  - tooling
-  - wizard
-  - validation
-  - editor
-  - dependencies
-tags: [meta, development, scaffolding, tooling, wizard, validation, editor, dependencies]
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Glob
-  - Grep
-  - AskUserQuestion
-dependencies: []
-metadata:
-  format_version: "2.0.0"
-  created: "2024-01-01"
-  updated: "2025-12-02"
+description: Interactive wizard for creating, scaffolding, validating, and managing Claude Code skills. Includes YAML validation, dependency management, bulk validation, and terminal-based interactive editor.
 ---
 
 # Skill-Builder: Claude Code Skill Creation Wizard
@@ -70,14 +45,14 @@ Use **AskUserQuestion** to collect (in sequence):
    mkdir -p {base_path}
    # Create optional dirs based on selection: examples/, templates/, scripts/, docs/
    ```
-4. **Load template**: `Read: ~/.claude/skills/skill-builder/templates/minimal-starter.md`
+4. **Load template**: `Read: skills/skill-builder/templates/minimal-starter.md` (relative to plugin root)
 5. **Replace placeholders**: {{SKILL_NAME}}, {{SKILL_DESCRIPTION}}, {{VERSION}}, {{AUTHOR}}, {{TAGS}}, {{ALLOWED_TOOLS}}
 6. **Write files**: SKILL.md + optional README.md, examples/example-usage.md
 
 ### Phase 3: Deep Validation
 
 ```bash
-~/.claude/skills/skill-builder/scripts/validate-yaml.sh {base_path}/SKILL.md
+python3 skills/skill-builder/scripts/validate_yaml.py {base_path}/SKILL.md
 ```
 
 **Validation checks**:
@@ -132,8 +107,7 @@ When validation fails, provide actionable guidance. See [docs/validation-errors.
 When user asks to validate all skills:
 
 ```bash
-cd ~/.claude/skills/skill-builder/scripts
-python3 bulk_validate.py [--errors-only] [--format json]
+python3 skills/skill-builder/scripts/bulk_validate.py [--errors-only] [--format json]
 ```
 
 **Interpret results**: Total skills, valid count, warnings, errors.
@@ -146,7 +120,7 @@ See [docs/workflow-examples.md](docs/workflow-examples.md) for output examples.
 For editing existing skills:
 
 ```bash
-~/.claude/skills/skill-builder/.venv/bin/python3 interactive_editor.py /path/to/skill/
+python3 skills/skill-builder/scripts/interactive_editor.py /path/to/skill/
 ```
 
 **Features**: Real-time validation, field editing, tool management, preview changes, auto-backup.
@@ -169,18 +143,17 @@ dependencies:
 
 **Commands**:
 ```bash
-cd ~/.claude/skills/skill-builder/scripts
-python3 dependency_manager.py check my-skill      # Check deps
-python3 dependency_manager.py tree my-skill       # Visualize tree
-python3 dependency_manager.py circular my-skill   # Detect cycles
-python3 dependency_manager.py validate --all      # Validate all
+python3 skills/skill-builder/scripts/dependency_manager.py check my-skill      # Check deps
+python3 skills/skill-builder/scripts/dependency_manager.py tree my-skill       # Visualize tree
+python3 skills/skill-builder/scripts/dependency_manager.py circular my-skill   # Detect cycles
+python3 skills/skill-builder/scripts/dependency_manager.py validate --all      # Validate all
 ```
 
 See [docs/workflow-examples.md](docs/workflow-examples.md) for output examples.
 
 ## Helper Functions
 
-**Show example skill**: `Glob: ~/.claude/skills/*/SKILL.md` → Read simple examples → Explain patterns
+**Show example skill**: `Glob: skills/*/SKILL.md` → Read simple examples → Explain patterns
 
 **Template customization by purpose**:
 | Skill Type | Tools | Pattern |

@@ -1,42 +1,6 @@
 ---
 name: sf-apex
-description: Generates and reviews Salesforce Apex code with 2025 best practices
-version: 1.0.0
-author: Jag Valaiyapathy
-license: MIT
-tags:
-  - salesforce
-  - apex
-  - trigger
-  - test
-  - best-practices
-  - code-review
-  - clean-code
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - TodoWrite
-  - Skill
-  - WebFetch
-dependencies:
-  - name: sf-deployment
-    version: ">=2.0.0"
-    required: true
-metadata:
-  format_version: "2.0.0"
-  created: "2025-12-02"
-  updated: "2025-12-02"
-  api_version: "62.0"
-  features:
-    - code-generation
-    - code-review
-    - validation-scoring
-    - trigger-actions-framework
+description: Generates and reviews Salesforce Apex code with 2025 best practices. 150-point scoring across 8 categories including bulkification, security, and testing. Enforces Trigger Actions Framework (TAF) pattern.
 ---
 
 # sf-apex: Salesforce Apex Code Generation and Review
@@ -80,7 +44,7 @@ Use **AskUserQuestion** to gather:
 | Test Data Factory | `templates/test-data-factory.cls` |
 | Standard Class | `templates/apex-class.cls` |
 
-Load via: `Read: ~/.claude/skills/sf-apex/templates/[template]`
+Load via: `Read: skills/sf-apex/templates/[template]` (relative to plugin root)
 
 ### Phase 3: Code Generation/Review
 

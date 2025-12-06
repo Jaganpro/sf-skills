@@ -1,49 +1,6 @@
 ---
 name: sf-flow-builder
-description: Creates and validates Salesforce flows using best practices and metadata standards
-version: 2.0.0
-author: Jag Valaiyapathy
-license: MIT
-tags:
-  - salesforce
-  - flow
-  - automation
-  - builder
-  - metadata
-  - sfdx
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - TodoWrite
-  - Skill
-  - WebFetch
-dependencies:
-  - name: sf-deployment
-    version: ">=2.0.0"
-    required: true
-metadata:
-  format_version: "2.0.0"
-  created: "2024-11-28"
-  updated: "2025-12-05"
-  api_version: "62.0"
-  license_file: "LICENSE"
-  features:
-    - transform-element
-    - bulk-validation
-    - strict-mode
-    - simulation-mode
-    - platform-events
-    - before-save-triggers
-    - before-delete-triggers
-    - v2-naming-prefixes
-    - store-output-validation
-    - same-object-query-detection
-    - three-tier-error-handling
+description: Creates and validates Salesforce flows using best practices and metadata standards. Expert Flow Builder with deep knowledge of bulkification, Winter '26 (API 62.0), and 110-point scoring validation. Supports 7 flow types with strict mode enforcement.
 ---
 
 # sf-flow-builder: Salesforce Flow Creation and Validation
@@ -84,7 +41,7 @@ Use **AskUserQuestion** to gather:
 | Autolaunched | `templates/autolaunched-flow-template.xml` |
 | Scheduled | `templates/scheduled-flow-template.xml` |
 
-Load via: `Read: ~/.claude/skills/sf-flow-builder/templates/[template].xml`
+Load via: `Read: skills/sf-flow-builder/templates/[template].xml` (relative to plugin root)
 
 **Naming**: API Name = PascalCase_With_Underscores (e.g., `Account_Creation_Screen_Flow`)
 
@@ -116,10 +73,10 @@ Write: force-app/main/default/flows/[FlowName].flow-meta.xml
 - Auto-Layout: all locationX/Y = 0
 - Fault paths on all DML operations
 
-**Run Enhanced Validation**:
+**Run Enhanced Validation** (automatic via plugin hooks):
+The plugin automatically validates Flow XML files when written. Manual validation:
 ```bash
-python3 ~/.claude/skills/sf-flow-builder/validators/enhanced_validator.py \
-  force-app/main/default/flows/[FlowName].flow-meta.xml
+python3 hooks/scripts/validate_flow.py force-app/main/default/flows/[FlowName].flow-meta.xml
 ```
 
 **Validation (STRICT MODE)**:
@@ -136,8 +93,7 @@ python3 ~/.claude/skills/sf-flow-builder/validators/enhanced_validator.py \
 
 **Run Simulation** (REQUIRED for record-triggered/scheduled):
 ```bash
-python3 ~/.claude/skills/sf-flow-builder/validators/flow_simulator.py \
-  force-app/main/default/flows/[FlowName].flow-meta.xml --test-records 200
+python3 hooks/scripts/simulate_flow.py force-app/main/default/flows/[FlowName].flow-meta.xml --test-records 200
 ```
 If simulation fails: **STOP and fix before proceeding**.
 
@@ -178,7 +134,7 @@ Skill(skill="sf-deployment") "Deploy activated flow to [target-org]"
 
 **Generate Documentation**:
 ```bash
-python3 ~/.claude/skills/sf-flow-builder/generators/doc_generator.py \
+python3 skills/sf-flow-builder/generators/doc_generator.py \
   force-app/main/default/flows/[FlowName].flow-meta.xml \
   docs/flows/[FlowName]_documentation.md
 ```

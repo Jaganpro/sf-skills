@@ -17,13 +17,43 @@ A collection of Claude Code skills for Salesforce development, specializing in A
 
 ## 🚀 Quick Install
 
+### Option 1: Plugin Install (Recommended)
+
 ```bash
-git clone https://github.com/Jaganpro/claude-code-sfskills.git
-cd claude-code-sfskills
+/plugin install github:Jaganpro/sf-skills
+```
+
+That's it! Skills are loaded automatically.
+
+### Option 2: Manual Install
+
+```bash
+git clone https://github.com/Jaganpro/sf-skills.git
+cd sf-skills
+/plugin install .
+```
+
+### Option 3: Legacy Install (Deprecated)
+
+```bash
+git clone https://github.com/Jaganpro/sf-skills.git
+cd sf-skills
 ./scripts/install.sh
 ```
 
-**Restart Claude Code** after installation to load the skills.
+**Restart Claude Code** after manual installation to load the skills.
+
+## 🔌 Plugin Features
+
+This plugin includes **automatic validation hooks** that run when you write Salesforce files:
+
+| File Type | Validation |
+|-----------|------------|
+| `*.flow-meta.xml` | Flow best practices, 110-point scoring |
+| `*.cls`, `*.trigger` | Apex anti-patterns, 150-point scoring |
+| `SKILL.md` | YAML frontmatter validation |
+
+Hooks provide advisory feedback after writes - they inform but don't block.
 
 ## Roadmap
 
@@ -103,9 +133,18 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 "Create a new Claude Code skill for code analysis"
 ```
 
-## Scripts
+## Plugin Commands
 
-All scripts are located in the `scripts/` folder:
+| Command | Description |
+|---------|-------------|
+| `/plugin install github:Jaganpro/sf-skills` | Install from GitHub |
+| `/plugin update sf-skills` | Update to latest version |
+| `/plugin uninstall sf-skills` | Remove the plugin |
+| `/plugin list` | List installed plugins |
+
+### Legacy Scripts (Deprecated)
+
+For manual installations, scripts are in the `scripts/` folder:
 
 | Script | Description |
 |--------|-------------|

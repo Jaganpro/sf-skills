@@ -1,40 +1,6 @@
 ---
 name: sf-deployment
-description: Comprehensive Salesforce DevOps automation
-version: 2.1.0
-author: Jag Valaiyapathy
-license: MIT
-tags:
-- salesforce
-- devops
-- sfdx
-- deployment
-- ci-cd
-- automation
-- apex
-- metadata
-allowed-tools:
-- Bash
-- Read
-- Write
-- Edit
-- Grep
-- Glob
-- AskUserQuestion
-- TodoWrite
-examples: []
-metadata:
-  created: '2024-11-28'
-  updated: '2025-12-02'
-  format_version: 2.0.0
-  license_file: LICENSE
-dependencies: []
-homepage: ''
-repository: ''
-keywords: []
-test_config:
-  enabled: false
-  test_files: []
+description: Comprehensive Salesforce DevOps automation using sf CLI v2. Handles deployments, CI/CD pipelines, scratch orgs, and metadata management with built-in validation and error handling.
 ---
 
 # sf-deployment: Comprehensive Salesforce DevOps Automation

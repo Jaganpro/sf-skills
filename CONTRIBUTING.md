@@ -24,11 +24,11 @@ cd claude-code-salesforce-skills
 ### 2. Install for Development
 
 ```bash
-# Install skills locally for testing
-./install.sh --local
+# Install as a plugin for testing
+/plugin install .
 
-# Or install globally
-./install.sh --global
+# Or use legacy script
+./scripts/install.sh --local
 ```
 
 ### 3. Create a Branch
@@ -74,32 +74,16 @@ python3 dependency_manager.py validate --all
 
 ### Skill Frontmatter Standards
 
-All skills must have valid YAML frontmatter:
+Skills use simplified YAML frontmatter (Anthropic plugin format):
 
 ```yaml
 ---
 name: skill-name              # Required: kebab-case
-description: One line summary # Required: Clear description
-version: X.Y.Z               # Required: Semantic versioning
-author: Your Name            # Recommended
-license: MIT                 # Required
-tags:                        # Recommended
-  - category
-  - purpose
-allowed-tools:              # Required
-  - Bash
-  - Read
-  # ... (only tools you use)
-dependencies:               # Optional
-  - name: dependency-skill
-    version: ">=1.0.0"
-    required: true
-metadata:                   # Recommended
-  format_version: "2.0.0"
-  created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+description: Clear description of what this skill does and when Claude should use it. Can be multiple sentences for detailed context.
 ---
 ```
+
+**Note**: Metadata like `author`, `version`, `license` is now defined in `.claude-plugin/plugin.json` at the plugin level, not per-skill.
 
 ## 🧪 Testing
 
