@@ -1,0 +1,20 @@
+{
+  "name": "sf-deployment-marketplace",
+  "description": "Salesforce DevOps automation skill for Claude Code",
+  "owner": {
+    "name": "Jag Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "metadata": {
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sf-deployment",
+      "description": "Salesforce DevOps automation using sf CLI v2 - deployments, CI/CD, scratch orgs, and metadata management",
+      "source": "./",
+      "version": "2.0.0",
+      "keywords": ["salesforce", "deployment", "devops", "ci-cd", "sfdx"]
+    }
+  ]
+}

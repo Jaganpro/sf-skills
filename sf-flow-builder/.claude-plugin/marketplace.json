@@ -1,0 +1,20 @@
+{
+  "name": "sf-flow-builder-marketplace",
+  "description": "Salesforce Flow creation skill for Claude Code",
+  "owner": {
+    "name": "Jag Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "metadata": {
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sf-flow-builder",
+      "description": "Salesforce Flow creation and validation with 110-point scoring",
+      "source": "./",
+      "version": "2.0.0",
+      "keywords": ["salesforce", "flow", "automation"]
+    }
+  ]
+}

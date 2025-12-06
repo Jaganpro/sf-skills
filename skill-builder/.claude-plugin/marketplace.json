@@ -1,0 +1,20 @@
+{
+  "name": "skill-builder-marketplace",
+  "description": "Claude Code skill creation wizard",
+  "owner": {
+    "name": "Jag Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "metadata": {
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-builder",
+      "description": "Interactive wizard for creating Claude Code skills",
+      "source": "./",
+      "version": "2.0.0",
+      "keywords": ["claude-code", "skills", "wizard"]
+    }
+  ]
+}

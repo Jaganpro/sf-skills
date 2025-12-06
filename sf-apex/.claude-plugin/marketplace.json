@@ -1,0 +1,20 @@
+{
+  "name": "sf-apex-marketplace",
+  "description": "Salesforce Apex development skill for Claude Code",
+  "owner": {
+    "name": "Jag Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "metadata": {
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sf-apex",
+      "description": "Apex code generation and review with 150-point scoring and TAF patterns",
+      "source": "./",
+      "version": "1.0.0",
+      "keywords": ["salesforce", "apex", "trigger"]
+    }
+  ]
+}
