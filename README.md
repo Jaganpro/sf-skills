@@ -65,13 +65,20 @@ First, add the marketplace to Claude Code:
 /plugin marketplace add Jaganpro/sf-skills
 ```
 
-### Option 1: Install All Skills (Recommended)
+### 📺 Video Walkthrough
+
+https://github.com/Jaganpro/sf-skills/raw/main/assets/videos/HowToInstall-ClaudeCode-Skills.mp4
+
+<details>
+<summary><strong>📋 Text Instructions (Click to expand)</strong></summary>
+
+#### Option 1: Install All Skills (Recommended)
 
 ```bash
 /plugin install sf-skills@sf-skills
 ```
 
-### Option 2: Install Individual Skills
+#### Option 2: Install Individual Skills
 
 ```bash
 # Apex development
@@ -93,7 +100,7 @@ First, add the marketplace to Claude Code:
 /plugin install skill-builder@sf-skills
 ```
 
-### Alternative: Browse and Install
+#### Alternative: Browse and Install
 
 ```bash
 /plugin marketplace add Jaganpro/sf-skills
@@ -104,6 +111,8 @@ Then:
 2. Select `sf-skills`
 3. Choose `sf-skills` (all) or individual skills
 4. Select `Install now`
+
+</details>
 
 ### Local Development
 
