@@ -1,5 +1,5 @@
 {
-  "name": "sf-ai-agentforce_scripts",
+  "name": "sf-ai-agentforce",
   "version": "1.0.0",
   "description": "Creates Agentforce agents using Agent Script syntax. Generates complete agents with topics, actions, and variables. 100-point scoring across 6 categories. API v64+ required.",
   "author": {

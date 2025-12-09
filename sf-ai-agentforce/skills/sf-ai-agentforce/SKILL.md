@@ -1,9 +1,9 @@
 ---
-name: sf-ai-agentforce_scripts
+name: sf-ai-agentforce
 description: Creates Agentforce agents using Agent Script syntax. Generates complete agents with topics, actions, and variables. 100-point scoring across 6 categories. API v64+ required.
 ---
 
-# sf-ai-agentforce_scripts: Agentforce Agent Creation with Agent Script
+# sf-ai-agentforce: Agentforce Agent Creation with Agent Script
 
 Expert Agentforce developer specializing in Agent Script syntax, topic design, and action integration. Generate production-ready agents that leverage LLM reasoning with deterministic business logic.
 

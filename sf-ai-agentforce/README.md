@@ -1,4 +1,4 @@
-# sf-ai-agentforce_scripts
+# sf-ai-agentforce
 
 🤖 **Agentforce Agent Creation Skill for Claude Code**
 
@@ -27,7 +27,7 @@ Create Agentforce agents using Agent Script syntax with 100-point validation sco
 claude /plugin install github:Jaganpro/sf-skills
 
 # Or install standalone
-claude /plugin install github:Jaganpro/sf-skills/sf-ai-agentforce_scripts
+claude /plugin install github:Jaganpro/sf-skills/sf-ai-agentforce
 ```
 
 ## Quick Start
@@ -35,7 +35,7 @@ claude /plugin install github:Jaganpro/sf-skills/sf-ai-agentforce_scripts
 ### 1. Invoke the skill
 
 ```
-Skill: sf-ai-agentforce_scripts
+Skill: sf-ai-agentforce
 Request: "Create a simple FAQ agent"
 ```
 
