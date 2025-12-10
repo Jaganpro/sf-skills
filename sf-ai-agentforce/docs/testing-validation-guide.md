@@ -39,12 +39,11 @@ force-app/main/default/aiAuthoringBundles/
 
 | Level | Complexity | Features Tested | Status |
 |-------|------------|-----------------|--------|
-| 1 | Basic | system, config, single topic | ✅ Verified |
-| 2 | Variables | mutable, linked, language block | ✅ Verified |
-| 3 | Actions | flow:// targets, inputs/outputs | ✅ Verified |
-| 4 | Multi-topic | topic routing, conditional transitions | ✅ Verified |
-| 5 | External | Flow wrappers for Apex, callbacks | ✅ Verified |
-| 6 | Complex | All features combined | ✅ Verified |
+| 1 | Basic | system, config, single start_agent topic | ✅ Verified |
+| 2 | Multi-topic | Multiple topics, @utils.transition routing | ✅ Verified |
+| 3 | Variables | linked, mutable, language block, variable templates | ✅ Verified |
+| 4 | Flow Actions | flow:// targets, inputs/outputs, @actions.* | ✅ Verified |
+| 5 | Complex | All features + @utils.escalate, multi-action topics | ✅ Verified |
 
 ---
 
@@ -52,35 +51,33 @@ force-app/main/default/aiAuthoringBundles/
 
 ### Minimal Working Agent (Level 1)
 
+The simplest deployable agent - no variables, no actions:
+
 ```agentscript
 system:
-    instructions: "You are a helpful assistant."
+    instructions: "You are a friendly greeting agent. Keep responses short and helpful."
     messages:
-        welcome: "Hello!"
-        error: "Sorry, something went wrong."
+        welcome: "Hello! How can I help you today?"
+        error: "Sorry, I encountered an error."
 
 config:
-    developer_name: "Minimal_Agent"
+    developer_name: "Level1_SimpleAgent"
     default_agent_user: "user@example.com"
-    agent_label: "Minimal Agent"
-    description: "A minimal working agent"
+    agent_label: "Level 1 - Simple Agent"
+    description: "Simplest agent test - single topic with greeting"
 
-variables:
-    EndUserId: linked string
-        source: @MessagingSession.MessagingEndUserId
-        description: "Messaging End User ID"
-    RoutableId: linked string
-        source: @MessagingSession.Id
-        description: "Messaging Session ID"
-    ContactId: linked string
-        source: @MessagingEndUser.ContactId
-        description: "Contact ID"
+start_agent greeting:
+    label: "Greeting"
+    description: "Greets users and offers assistance"
+    reasoning:
+        instructions: ->
+            | Greet the user warmly.
+            | Ask how you can help them today.
+```
 
-language:
-    default_locale: "en_US"
-    additional_locales: ""
-    all_additional_locales: False
+### Agent with Multiple Topics (Level 2)
 
+```agentscript
 start_agent topic_selector:
     label: "Topic Selector"
     description: "Routes to topics"
@@ -88,21 +85,33 @@ start_agent topic_selector:
         instructions: ->
             | Determine what the user needs.
         actions:
-            go_to_help: @utils.transition to @topic.help
+            go_sales: @utils.transition to @topic.sales
+            go_support: @utils.transition to @topic.support
 
-topic help:
-    label: "Help"
-    description: "Provides help"
+topic sales:
+    label: "Sales"
+    description: "Handles sales inquiries"
     reasoning:
         instructions: ->
-            | Answer user questions.
+            | Answer sales-related questions.
+        actions:
+            go_support: @utils.transition to @topic.support
+
+topic support:
+    label: "Support"
+    description: "Handles support inquiries"
+    reasoning:
+        instructions: ->
+            | Answer support-related questions.
+        actions:
+            go_sales: @utils.transition to @topic.sales
 ```
 
-### Agent with Variables (Level 2)
+### Agent with Variables (Level 3)
 
 ```agentscript
 variables:
-    # Linked variables (Salesforce context)
+    # Linked variables (read-only from Salesforce context)
     EndUserId: linked string
         source: @MessagingSession.MessagingEndUserId
         description: "Messaging End User ID"
@@ -113,43 +122,130 @@ variables:
         source: @MessagingEndUser.ContactId
         description: "Contact ID"
 
-    # Mutable variables (agent state)
+    # Mutable variables (can be modified by agent)
     user_name: mutable string
         description: "User's name"
     preference_count: mutable number
         description: "Number of preferences"
     has_preferences: mutable boolean
         description: "Whether user has preferences"
+
+language:
+    default_locale: "en_US"
+    additional_locales: ""
+    all_additional_locales: False
 ```
 
-### Agent with Flow Action (Level 3+)
+**Using Variables in Instructions:**
+```agentscript
+reasoning:
+    instructions: ->
+        | Greet the user by name: {!@variables.user_name}
+        | Check their preference count: {!@variables.preference_count}
+```
+
+### Agent with Flow Action (Level 4)
 
 ```agentscript
 topic account_lookup:
     label: "Account Lookup"
-    description: "Looks up account information"
+    description: "Looks up account information using Flow"
 
     actions:
         get_account:
-            description: "Retrieves account information"
+            description: "Retrieves account information by ID"
             inputs:
                 inp_AccountId: string
-                    description: "Salesforce Account ID"
+                    description: "The Salesforce Account ID to look up"
             outputs:
                 out_AccountName: string
-                    description: "Account name"
+                    description: "The account name"
+                out_Industry: string
+                    description: "The account industry"
                 out_IsFound: boolean
-                    description: "Whether account was found"
+                    description: "Whether the account was found"
             target: "flow://Get_Account_Info"
 
     reasoning:
         instructions: ->
-            | Ask for the Account ID.
-            | Look up the account information.
+            | Ask the user for an Account ID if not provided.
+            | Call the get_account action to look up the account.
+            | Report the results to the user.
+            | If not found, let them know and offer to try again.
+        actions:
+            lookup_account: @actions.get_account
+                with inp_AccountId=...
+                set @variables.account_name = @outputs.out_AccountName
+                set @variables.account_industry = @outputs.out_Industry
+                set @variables.account_found = @outputs.out_IsFound
+```
+
+### Complex Agent with Escalation (Level 5)
+
+```agentscript
+start_agent router:
+    label: "Router"
+    description: "Entry point that determines user intent and routes appropriately"
+    reasoning:
+        instructions: ->
+            | Greet the user and determine their needs.
+            | If they want to look up an account, go to account lookup.
+            | If they have general questions, go to FAQ.
+            | If they need a human, escalate.
+        actions:
+            go_account_lookup: @utils.transition to @topic.account_lookup
+            go_faq: @utils.transition to @topic.faq
+            escalate_human: @utils.escalate with reason="Customer requested human agent"
+
+topic account_lookup:
+    label: "Account Lookup"
+    description: "Helps users find and view account information"
+
+    actions:
+        get_account:
+            description: "Retrieves account information by ID"
+            inputs:
+                inp_AccountId: string
+                    description: "The Salesforce Account ID to look up"
+            outputs:
+                out_AccountName: string
+                    description: "The account name"
+                out_Industry: string
+                    description: "The account industry"
+                out_IsFound: boolean
+                    description: "Whether the account was found"
+            target: "flow://Get_Account_Info"
+
+    reasoning:
+        instructions: ->
+            | Ask for an Account ID if the user hasn't provided one.
+            | Look up the account using the get_account action.
+            | Share the results with the user.
+            | Store the account name: {!@variables.account_name}
+            | If they need help with something else, route them.
         actions:
             lookup: @actions.get_account
                 with inp_AccountId=...
                 set @variables.account_name = @outputs.out_AccountName
+                set @variables.account_industry = @outputs.out_Industry
+                set @variables.account_found = @outputs.out_IsFound
+            go_faq: @utils.transition to @topic.faq
+            go_router: @utils.transition to @topic.router
+            escalate: @utils.escalate with reason="Customer needs account specialist"
+
+topic faq:
+    label: "FAQ"
+    description: "Answers frequently asked questions"
+    reasoning:
+        instructions: ->
+            | Answer common questions about accounts and services.
+            | Use the customer's name if available: {!@variables.customer_name}
+            | If they need account lookup, route to that topic.
+            | If you cannot help, escalate to a human.
+        actions:
+            go_account_lookup: @utils.transition to @topic.account_lookup
+            go_router: @utils.transition to @topic.router
+            escalate: @utils.escalate with reason="Question requires human expertise"
 ```
 
 ---
