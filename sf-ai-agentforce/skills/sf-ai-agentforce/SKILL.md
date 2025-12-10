@@ -821,6 +821,269 @@ sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
 | sf-agentforce → sf-apex | Create Apex via Flow wrapper | ✅ Via Flow |
 | sf-agentforce → sf-deploy | Deploy agent metadata | ✅ Full |
 | sf-agentforce → sf-metadata | Query object structure | ✅ Full |
+| sf-agentforce → sf-integration | External API actions | ✅ Via Flow |
+
+---
+
+## Agent Actions (Expanded)
+
+This section covers all four action types supported in Agentforce agents.
+
+### ⚠️ CRITICAL: Action Target Summary
+
+| Action Type | Agent Script Target | Deployment Method | Recommended |
+|-------------|---------------------|-------------------|-------------|
+| Flow (native) | `flow://FlowAPIName` | Agent Script | ✅ Best choice |
+| Apex (via Flow wrapper) | `flow://ApexWrapperFlow` | Agent Script | ✅ Recommended |
+| Apex (via GenAiFunction) | N/A (metadata deploy) | Metadata API | ⚠️ Advanced |
+| External API | `flow://HttpCalloutFlow` | Agent Script + sf-integration | ✅ Via Flow |
+| Prompt Template | N/A (invoked by agent) | Metadata API | ✅ For LLM tasks |
+
+### A. Apex Actions (Direct via GenAiFunction)
+
+**Bypass Agent Script Limitation**: While `apex://` targets don't work in Agent Script, you can deploy Apex actions directly via GenAiFunction metadata.
+
+**Template**: `templates/genai-metadata/genai-function-apex.xml`
+
+**Workflow**:
+1. Create Apex class with `@InvocableMethod` annotation
+2. Generate GenAiFunction metadata pointing to Apex class
+3. Deploy both to org via Metadata API
+4. Optionally create GenAiPlugin to group functions
+5. Agent discovers function automatically
+
+**Example GenAiFunction Apex invocation**:
+```xml
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Create Support Case</masterLabel>
+    <description>Creates a support case from user request</description>
+    <invocationTarget>CaseCreationService</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+    <isConfirmationRequired>true</isConfirmationRequired>
+    <capability>Create support cases for customers</capability>
+    <genAiFunctionParameters>
+        <parameterName>Subject</parameterName>
+        <parameterType>Input</parameterType>
+        <isRequired>true</isRequired>
+        <description>Case subject</description>
+        <dataType>Text</dataType>
+    </genAiFunctionParameters>
+</GenAiFunction>
+```
+
+**⚠️ NOTE**: This approach works but functions deployed via GenAiFunction are NOT managed via Agent Script. The agent will have access to the function, but it won't appear in your `.agent` file.
+
+### B. API Actions (External Service via sf-integration)
+
+**For agents that need to call external APIs**, use sf-integration to set up the connection:
+
+**Step 1: Create Named Credential (call sf-integration)**
+```
+Skill(skill="sf-integration")
+Request: "Create Named Credential for Stripe API with OAuth 2.0 Client Credentials"
+```
+
+**Step 2: Create HTTP Callout Flow wrapper**
+```
+Skill(skill="sf-flow")
+Request: "Create Autolaunched HTTP Callout Flow that calls Stripe_API Named Credential"
+```
+Or use template: `templates/flows/http-callout-flow.flow-meta.xml`
+
+**Step 3: Reference Flow in Agent Script**
+```agentscript
+topic payment_lookup:
+    label: "Payment Lookup"
+    description: "Looks up payment information from Stripe"
+
+    actions:
+        check_payment:
+            description: "Retrieves payment status from Stripe API"
+            inputs:
+                payment_id: string
+                    description: "The Stripe payment ID"
+            outputs:
+                payment_status: string
+                    description: "Current payment status"
+                amount: string
+                    description: "Payment amount"
+            target: "flow://Get_Stripe_Payment"
+
+    reasoning:
+        instructions: ->
+            | Ask for the payment ID.
+            | Look up the payment status.
+            | Report the status and amount to the user.
+        actions:
+            lookup: @actions.check_payment
+                with payment_id=...
+                set @variables.payment_status = @outputs.payment_status
+```
+
+### C. Flow Actions (Already Working)
+
+Flow actions work directly with `flow://FlowAPIName` syntax. This is the **recommended approach** for most agent actions.
+
+**Templates**:
+- `templates/flows/http-callout-flow.flow-meta.xml` - For external API callouts
+- Use sf-flow skill for custom Flow creation
+
+**Key Requirements**:
+- Flow must be **Autolaunched Flow** (not Screen Flow)
+- Variables must be marked "Available for input" / "Available for output"
+- Variable names must match Agent Script input/output names exactly
+- Flow must be deployed BEFORE agent publish
+
+### D. Prompt Template Actions
+
+**Use Case**: LLM-powered actions for content generation, summarization, or analysis
+
+**Templates**:
+- `templates/prompt-templates/basic-prompt-template.promptTemplate-meta.xml`
+- `templates/prompt-templates/record-grounded-prompt.promptTemplate-meta.xml`
+
+**Deployment**:
+1. Create PromptTemplate metadata
+2. Deploy via Metadata API
+3. Reference in GenAiFunction or Flow
+
+**Example PromptTemplate for record summarization**:
+```xml
+<PromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Summarize_Account</fullName>
+    <masterLabel>Summarize Account</masterLabel>
+    <type>recordSummary</type>
+    <objectType>Account</objectType>
+    <promptContent>
+Summarize this account for a sales rep:
+- Name: {!recordName}
+- Industry: {!industry}
+- Annual Revenue: {!annualRevenue}
+
+Provide 3-4 bullet points highlighting key information.
+    </promptContent>
+    <promptTemplateVariables>
+        <developerName>recordName</developerName>
+        <promptTemplateVariableType>recordField</promptTemplateVariableType>
+        <objectType>Account</objectType>
+        <fieldName>Name</fieldName>
+    </promptTemplateVariables>
+</PromptTemplate>
+```
+
+### Full Example: Agent with External API Integration
+
+**User Request**: "Create an agent that can look up order status from our ERP API"
+
+**Step 1: Create Named Credential (sf-integration)**
+```bash
+Skill(skill="sf-integration")
+Request: "Create Named Credential for ERP API at https://erp.company.com with OAuth 2.0 Client Credentials"
+```
+
+**Step 2: Create HTTP Callout Flow (sf-flow)**
+```bash
+Skill(skill="sf-flow")
+Request: "Create Autolaunched Flow Get_Order_Status with input order_id (Text) that calls ERP_API Named Credential GET /orders/{order_id}"
+```
+
+**Step 3: Deploy Dependencies (sf-deploy)**
+```bash
+sf project deploy start --metadata NamedCredential:ERP_API,Flow:Get_Order_Status --target-org [alias]
+```
+
+**Step 4: Create Agent with API Action**
+```agentscript
+system:
+    instructions: "You are an order status assistant. Help customers check their order status. Be helpful and professional."
+    messages:
+        welcome: "Hello! I can help you check your order status."
+        error: "Sorry, I couldn't retrieve that information."
+
+config:
+    developer_name: "Order_Status_Agent"
+    default_agent_user: "agent@company.com"
+    agent_label: "Order Status Agent"
+    description: "Helps customers check order status from ERP system"
+
+variables:
+    EndUserId: linked string
+        source: @MessagingSession.MessagingEndUserId
+        description: "Messaging End User ID"
+    RoutableId: linked string
+        source: @MessagingSession.Id
+        description: "Messaging Session ID"
+    ContactId: linked string
+        source: @MessagingEndUser.ContactId
+        description: "Contact ID"
+    order_status: mutable string
+        description: "Current order status"
+    expected_delivery: mutable string
+        description: "Expected delivery date"
+
+language:
+    default_locale: "en_US"
+    additional_locales: ""
+    all_additional_locales: False
+
+start_agent topic_selector:
+    label: "Topic Selector"
+    description: "Routes to order status lookup"
+
+    reasoning:
+        instructions: ->
+            | Greet the user.
+            | Ask for their order ID.
+            | Route to order lookup.
+        actions:
+            check_order: @utils.transition to @topic.order_lookup
+
+topic order_lookup:
+    label: "Order Status"
+    description: "Looks up order status from ERP system"
+
+    actions:
+        get_order:
+            description: "Retrieves order status by order ID"
+            inputs:
+                order_id: string
+                    description: "The order ID to look up"
+            outputs:
+                status: string
+                    description: "Current order status"
+                delivery_date: string
+                    description: "Expected delivery date"
+            target: "flow://Get_Order_Status"
+
+    reasoning:
+        instructions: ->
+            | Ask for the order ID if not provided.
+            | Look up the order status.
+            | Report the status and expected delivery.
+            |
+            | if @variables.order_status is None:
+            |     | I couldn't find that order. Please verify the order ID.
+        actions:
+            lookup: @actions.get_order
+                with order_id=...
+                set @variables.order_status = @outputs.status
+                set @variables.expected_delivery = @outputs.delivery_date
+            back: @utils.transition to @topic.topic_selector
+```
+
+**Step 5: Publish Agent**
+```bash
+sf agent publish authoring-bundle --api-name Order_Status_Agent --target-org [alias]
+```
+
+### Cross-Skill Integration for Actions
+
+| From Skill | To Skill | When | Example |
+|------------|----------|------|---------|
+| sf-ai-agentforce | sf-integration | External API actions | "Create Named Credential for agent API action" |
+| sf-ai-agentforce | sf-flow | Flow wrappers for Apex/API | "Create HTTP Callout Flow for agent" |
+| sf-ai-agentforce | sf-apex | Business logic @InvocableMethod | "Create Apex for case creation" |
+| sf-ai-agentforce | sf-deploy | Deploy all components | "Deploy integration metadata" |
 
 ---
 

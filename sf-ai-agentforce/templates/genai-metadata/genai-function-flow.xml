@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GenAiFunction Template: Flow Invocation
+
+    Use Case: Create agent actions that invoke Autolaunched Flows
+    - Standard pattern for complex actions
+    - Supports HTTP callouts via Flow HTTP actions
+    - Works well with External Services
+
+    IMPORTANT: This metadata is deployed separately from Agent Script.
+    The agent will discover this function automatically.
+
+    Prerequisites:
+    1. Autolaunched Flow must be deployed first
+    2. Flow must have defined input/output variables
+
+    Setup Steps:
+    1. Replace all {{placeholder}} values
+    2. Deploy Autolaunched Flow first
+    3. Deploy this GenAiFunction
+
+    File Location: force-app/main/default/genAiFunctions/{{FunctionName}}.genAiFunction-meta.xml
+-->
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>{{FunctionLabel}}</masterLabel>
+    <description>{{FunctionDescription}}</description>
+
+    <!--
+    Invocation Target: The Flow API name
+    Must be an Autolaunched Flow (not Screen Flow)
+    -->
+    <invocationTarget>{{FlowApiName}}</invocationTarget>
+
+    <!-- Flow invocation type -->
+    <invocationTargetType>flow</invocationTargetType>
+
+    <!-- Confirmation for sensitive operations -->
+    <isConfirmationRequired>{{true|false}}</isConfirmationRequired>
+
+    <!-- Capability description for agent decision-making -->
+    <capability>{{CapabilityDescription}}</capability>
+
+    <!--
+    Input Parameters
+    Must match Flow input variables exactly
+    -->
+    <genAiFunctionParameters>
+        <parameterName>{{FlowInputVariable1}}</parameterName>
+        <parameterType>Input</parameterType>
+        <isRequired>{{true|false}}</isRequired>
+        <description>{{InputDescription}}</description>
+        <dataType>Text</dataType>
+        <developerName>{{flow_input_1}}</developerName>
+    </genAiFunctionParameters>
+
+    <!--
+    Output Parameters
+    Must match Flow output variables exactly
+    -->
+    <genAiFunctionParameters>
+        <parameterName>{{FlowOutputVariable1}}</parameterName>
+        <parameterType>Output</parameterType>
+        <description>{{OutputDescription}}</description>
+        <dataType>Text</dataType>
+        <developerName>{{flow_output_1}}</developerName>
+    </genAiFunctionParameters>
+
+    <!--
+    FLOW REQUIREMENTS:
+
+    1. Flow Type: Autolaunched Flow (NOT Screen Flow)
+    2. Input Variables: Must be marked "Available for input"
+    3. Output Variables: Must be marked "Available for output"
+    4. Variable names must match exactly (case-sensitive)
+
+    For HTTP Callout Flows:
+    - Add HTTP Callout action (Core Action)
+    - Configure Named Credential in action
+    - Map input/output to Flow variables
+    -->
+</GenAiFunction>

@@ -1,0 +1,23 @@
+{
+  "name": "sf-integration",
+  "version": "1.0.0",
+  "description": "Salesforce integration patterns: Named Credentials, External Services, REST/SOAP callouts, Platform Events, and Change Data Capture",
+  "author": {
+    "name": "Jagan Valaiyapathy",
+    "url": "https://github.com/Jaganpro"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Jaganpro/sf-skills",
+  "keywords": [
+    "salesforce",
+    "integration",
+    "named-credentials",
+    "external-services",
+    "callouts",
+    "rest-api",
+    "soap-api",
+    "platform-events",
+    "cdc",
+    "claude-code"
+  ]
+}

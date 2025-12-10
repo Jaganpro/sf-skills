@@ -55,8 +55,9 @@ sf-apex/
 | 📋 | **[sf-metadata](sf-metadata/)** | Metadata generation & org querying | ✅ Live |
 | 💾 | **[sf-data](sf-data/)** | Data operations, SOQL expertise & test data factories | ✅ Live |
 | 🚀 | **[sf-deploy](sf-deploy/)** | DevOps & CI/CD automation using sf CLI v2 | ✅ Live |
-| 🤖 | **[sf-ai-agentforce](sf-ai-agentforce/)** | Agentforce agent creation with Agent Script syntax | ✅ Live |
+| 🤖 | **[sf-ai-agentforce](sf-ai-agentforce/)** | Agentforce agent creation with Agent Script syntax & Agent Actions | ✅ Live |
 | 🔐 | **[sf-connected-apps](sf-connected-apps/)** | Connected Apps & External Client Apps with OAuth config | ✅ Live |
+| 🔗 | **[sf-integration](sf-integration/)** | Named Credentials, External Services, REST/SOAP, Platform Events, CDC | ✅ Live |
 | 📊 | **[sf-diagram](sf-diagram/)** | Mermaid diagrams for OAuth, ERD, integrations & architecture | ✅ Live |
 | 🛠️ | **[skill-builder](skill-builder/)** | Claude Code skill creation wizard | ✅ Live |
 
@@ -84,6 +85,7 @@ flowchart TB
 
     subgraph integration["🔌 Integration"]
         connectedapps["🔐 sf-connected-apps<br/><small>OAuth, ECAs, Security</small>"]
+        sfintegration["🔗 sf-integration<br/><small>Named Creds, REST, Events</small>"]
         diagram["📊 sf-diagram<br/><small>OAuth, ERD, Architecture</small>"]
     end
 
@@ -107,11 +109,15 @@ flowchart TB
 
     %% AI relationships
     agentforce -->|"flow:// targets"| flow
+    agentforce -->|"API actions via"| sfintegration
     agentforce -.->|"Apex via Flow Wrapper"| apex
 
     %% Integration relationships
     connectedapps -->|"Named Credentials"| metadata
     connectedapps -->|"deploys"| deploy
+    sfintegration -->|"OAuth apps"| connectedapps
+    sfintegration -->|"callout patterns"| apex
+    sfintegration -->|"deploys"| deploy
     diagram -->|"queries schema"| metadata
     diagram -.->|"documents"| connectedapps
 
@@ -133,6 +139,7 @@ flowchart TB
     %% Styling
     style agentforce fill:#ec4899,stroke:#db2777,color:#fff
     style connectedapps fill:#f97316,stroke:#ea580c,color:#fff
+    style sfintegration fill:#14b8a6,stroke:#0d9488,color:#fff
     style diagram fill:#0ea5e9,stroke:#0284c7,color:#fff
     style apex fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style flow fill:#6366f1,stroke:#4f46e5,color:#fff
@@ -161,8 +168,9 @@ Each skill includes validation hooks that run automatically when you write files
 | 🔄 | sf-flow | `*.flow-meta.xml` | Flow best practices, bulk safety |
 | 📋 | sf-metadata | `*.object-meta.xml`, `*.field-meta.xml`, etc. | Metadata best practices, FLS checks |
 | 💾 | sf-data | `*.apex`, `*.soql` | SOQL patterns, governor limits |
-| 🤖 | sf-ai-agentforce | `*.agent` | Agent Script syntax, topic validation |
+| 🤖 | sf-ai-agentforce | `*.agent`, `*.genAiFunction-meta.xml` | Agent Script syntax, topic validation |
 | 🔐 | sf-connected-apps | `*.connectedApp-meta.xml`, `*.eca-meta.xml` | OAuth security, PKCE validation |
+| 🔗 | sf-integration | `*.namedCredential-meta.xml`, `*.cls` | Named Credential security, callout patterns |
 | 🛠️ | skill-builder | `SKILL.md` | YAML frontmatter validation |
 
 Hooks provide **advisory feedback** after writes - they inform but don't block.
@@ -216,11 +224,23 @@ Hooks provide **advisory feedback** after writes - they inform but don't block.
 "Migrate MyConnectedApp to an External Client App"
 ```
 
-### 🤖 Agentforce Agents
+### 🔗 Integration & Callouts
+```
+"Create a Named Credential for Stripe API with OAuth client credentials"
+"Generate a REST callout service with retry and error handling"
+"Create a Platform Event for order synchronization"
+"Build a CDC subscriber trigger for Account changes"
+"Set up an External Service from an OpenAPI spec"
+```
+
+### 🤖 Agentforce Agents & Actions
 ```
 "Create an Agentforce agent for customer support triage"
 "Build a FAQ agent with topic-based routing"
 "Generate an agent that calls my Apex service via Flow wrapper"
+"Create a GenAiFunction for my @InvocableMethod Apex class"
+"Build an agent action that calls the Stripe API"
+"Generate a PromptTemplate for case summaries"
 ```
 
 ### 📊 Diagrams & Documentation
@@ -258,9 +278,9 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | | Skill | Description | Status |
 |--|-------|-------------|--------|
 | 🔐 | `sf-connected-apps` | Connected Apps, ECAs, OAuth configuration | ✅ Live |
+| 🔗 | `sf-integration` | Named Credentials, External Services, REST/SOAP, Platform Events, CDC | ✅ Live |
 | 📊 | `sf-diagram` | Mermaid diagrams for OAuth, ERD, integrations, architecture | ✅ Live |
 | 🔒 | `sf-security` | Sharing rules, org-wide defaults, encryption | 📋 Planned |
-| 🔗 | `sf-integration` | REST, SOAP, Platform Events | 📋 Planned |
 | 🧪 | `sf-testing` | Test strategy, mocking, coverage | 📋 Planned |
 | 🐛 | `sf-debugging` | Debug logs, Apex replay | 📋 Planned |
 | 📦 | `sf-migration` | Org-to-org, metadata comparison | 📋 Planned |
@@ -292,7 +312,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Total: 24 skills** (9 live ✅, 15 planned 📋)
+**Total: 24 skills** (10 live ✅, 14 planned 📋)
 
 ## Contributing
 

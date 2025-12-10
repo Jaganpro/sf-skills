@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GenAiFunction Template: Direct Apex Invocation
+
+    Use Case: Create agent actions that directly invoke Apex @InvocableMethod
+    - Bypasses the Agent Script apex:// limitation
+    - Provides direct Apex integration for agents
+    - Works with GenAiPlugin (Topic) for organization
+
+    IMPORTANT: This metadata is deployed separately from Agent Script (.agent files).
+    The agent will discover this function automatically after deployment.
+
+    Prerequisites:
+    1. Apex class with @InvocableMethod annotation must be deployed first
+    2. GenAiPlugin (Topic) to organize functions (optional but recommended)
+
+    Setup Steps:
+    1. Replace all {{placeholder}} values
+    2. Deploy Apex class first
+    3. Deploy this GenAiFunction
+    4. Optionally deploy GenAiPlugin to group functions
+
+    File Location: force-app/main/default/genAiFunctions/{{FunctionName}}.genAiFunction-meta.xml
+-->
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- Display name shown to agent/users -->
+    <masterLabel>{{FunctionLabel}}</masterLabel>
+
+    <!-- Description of what this function does -->
+    <description>{{FunctionDescription}}</description>
+
+    <!--
+    Invocation Target: The Apex class containing @InvocableMethod
+    Must match the class name exactly (case-sensitive)
+    -->
+    <invocationTarget>{{ApexClassName}}</invocationTarget>
+
+    <!--
+    Invocation Target Type:
+    - apex: Direct Apex @InvocableMethod call
+    - flow: Flow invocation (use genai-function-flow.xml instead)
+    - prompt: Prompt Template invocation
+    -->
+    <invocationTargetType>apex</invocationTargetType>
+
+    <!--
+    Confirmation Required:
+    - true: Agent asks user for confirmation before executing
+    - false: Agent executes without confirmation
+    Use true for destructive or sensitive operations
+    -->
+    <isConfirmationRequired>{{true|false}}</isConfirmationRequired>
+
+    <!--
+    Capability Description:
+    Natural language description of what this function can do.
+    The agent uses this to decide when to invoke the function.
+    Be specific and descriptive.
+    -->
+    <capability>{{CapabilityDescription}}</capability>
+
+    <!--
+    Input Parameters
+    Define each input the function accepts.
+    These map to @InvocableVariable inputs in the Apex class.
+    -->
+    <genAiFunctionParameters>
+        <parameterName>{{InputParameter1Name}}</parameterName>
+        <parameterType>Input</parameterType>
+        <isRequired>{{true|false}}</isRequired>
+        <description>{{InputParameter1Description}}</description>
+        <dataType>{{Text|Number|Boolean|Date|DateTime}}</dataType>
+        <developerName>{{input_param_1}}</developerName>
+    </genAiFunctionParameters>
+
+    <!-- Add more input parameters as needed -->
+    <!--
+    <genAiFunctionParameters>
+        <parameterName>{{InputParameter2Name}}</parameterName>
+        <parameterType>Input</parameterType>
+        <isRequired>false</isRequired>
+        <description>{{InputParameter2Description}}</description>
+        <dataType>Text</dataType>
+        <developerName>{{input_param_2}}</developerName>
+    </genAiFunctionParameters>
+    -->
+
+    <!--
+    Output Parameters
+    Define each output the function returns.
+    These map to @InvocableVariable outputs in the Apex class.
+    -->
+    <genAiFunctionParameters>
+        <parameterName>{{OutputParameter1Name}}</parameterName>
+        <parameterType>Output</parameterType>
+        <description>{{OutputParameter1Description}}</description>
+        <dataType>{{Text|Number|Boolean|Date|DateTime}}</dataType>
+        <developerName>{{output_param_1}}</developerName>
+    </genAiFunctionParameters>
+
+    <!--
+    APEX CLASS REQUIREMENTS:
+
+    Your Apex class must have:
+    1. @InvocableMethod annotation on a method
+    2. @InvocableVariable annotations on input/output wrapper class fields
+
+    Example:
+
+    public class {{ApexClassName}} {
+
+        @InvocableMethod(label='{{FunctionLabel}}' description='{{FunctionDescription}}')
+        public static List<Response> execute(List<Request> requests) {
+            List<Response> responses = new List<Response>();
+            for (Request req : requests) {
+                Response res = new Response();
+                // Process logic here
+                res.{{output_param_1}} = 'result';
+                responses.add(res);
+            }
+            return responses;
+        }
+
+        public class Request {
+            @InvocableVariable(label='{{InputParameter1Name}}' required={{true|false}})
+            public String {{input_param_1}};
+        }
+
+        public class Response {
+            @InvocableVariable(label='{{OutputParameter1Name}}')
+            public String {{output_param_1}};
+        }
+    }
+    -->
+</GenAiFunction>
