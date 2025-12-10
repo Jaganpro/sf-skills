@@ -80,18 +80,18 @@ First, add the marketplace to Claude Code:
 ```mermaid
 flowchart TB
     subgraph ai["🤖 AI & Agents"]
-        agentforce["🤖 sf-ai-agentforce<br/><small>Agent Script, Topics, Actions</small>"]
+        agentforce["🤖 sf-ai-agentforce<br/><small>Agent Script, Topics<br/>GenAiFunction, PromptTemplate</small>"]
     end
 
-    subgraph integration["🔌 Integration"]
+    subgraph integration["🔌 Integration & Security"]
         connectedapps["🔐 sf-connected-apps<br/><small>OAuth, ECAs, Security</small>"]
-        sfintegration["🔗 sf-integration<br/><small>Named Creds, REST, Events</small>"]
+        sfintegration["🔗 sf-integration<br/><small>Named Creds, REST/SOAP<br/>Platform Events, CDC</small>"]
         diagram["📊 sf-diagram<br/><small>OAuth, ERD, Architecture</small>"]
     end
 
     subgraph development["💻 Development"]
         apex["⚡ sf-apex<br/><small>Triggers, Services, Tests</small>"]
-        flow["🔄 sf-flow<br/><small>Screen, Record, Scheduled</small>"]
+        flow["🔄 sf-flow<br/><small>Screen, Record, Scheduled<br/>HTTP Callout Flows</small>"]
     end
 
     subgraph foundation["📦 Foundation"]
@@ -107,19 +107,19 @@ flowchart TB
         skillbuilder["🛠️ skill-builder<br/><small>Create New Skills</small>"]
     end
 
-    %% AI relationships
-    agentforce -->|"flow:// targets"| flow
-    agentforce -->|"API actions via"| sfintegration
-    agentforce -.->|"Apex via Flow Wrapper"| apex
+    %% AI & Agent relationships
+    agentforce -->|"flow:// actions"| flow
+    agentforce -->|"API actions"| sfintegration
+    agentforce -->|"GenAiFunction"| apex
 
     %% Integration relationships
-    connectedapps -->|"Named Credentials"| metadata
-    connectedapps -->|"deploys"| deploy
     sfintegration -->|"OAuth apps"| connectedapps
-    sfintegration -->|"callout patterns"| apex
-    sfintegration -->|"deploys"| deploy
+    sfintegration -->|"callout classes"| apex
+    sfintegration -->|"HTTP Callout"| flow
+    connectedapps -->|"Permission Sets"| metadata
     diagram -->|"queries schema"| metadata
     diagram -.->|"documents"| connectedapps
+    diagram -.->|"documents"| sfintegration
 
     %% Development relationships
     apex -->|"queries schema"| metadata
@@ -134,20 +134,33 @@ flowchart TB
     apex -->|"deploys"| deploy
     flow -->|"deploys"| deploy
     metadata -->|"deploys"| deploy
+    sfintegration -->|"deploys"| deploy
+    connectedapps -->|"deploys"| deploy
     agentforce -->|"publishes"| deploy
 
-    %% Styling
+    %% Styling - AI (pink)
     style agentforce fill:#ec4899,stroke:#db2777,color:#fff
+
+    %% Styling - Integration (orange/teal)
     style connectedapps fill:#f97316,stroke:#ea580c,color:#fff
     style sfintegration fill:#14b8a6,stroke:#0d9488,color:#fff
     style diagram fill:#0ea5e9,stroke:#0284c7,color:#fff
+
+    %% Styling - Development (purple/indigo)
     style apex fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style flow fill:#6366f1,stroke:#4f46e5,color:#fff
+
+    %% Styling - Foundation (cyan/amber)
     style metadata fill:#06b6d4,stroke:#0891b2,color:#fff
     style data fill:#f59e0b,stroke:#d97706,color:#fff
+
+    %% Styling - DevOps (green)
     style deploy fill:#10b981,stroke:#059669,color:#fff
+
+    %% Styling - Tooling (gray)
     style skillbuilder fill:#64748b,stroke:#475569,color:#fff
 
+    %% Subgraph styling
     style ai fill:transparent,stroke:#ec4899,stroke-dasharray:5
     style integration fill:transparent,stroke:#f97316,stroke-dasharray:5
     style development fill:transparent,stroke:#8b5cf6,stroke-dasharray:5
