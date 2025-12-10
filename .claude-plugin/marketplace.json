@@ -21,7 +21,10 @@
         "./sf-data/skills/sf-data",
         "./sf-deploy/skills/sf-deploy",
         "./skill-builder/skills/skill-builder",
-        "./sf-ai-agentforce/skills/sf-ai-agentforce"
+        "./sf-ai-agentforce/skills/sf-ai-agentforce",
+        "./sf-diagram/skills/sf-diagram",
+        "./sf-integration/skills/sf-integration",
+        "./sf-connected-apps/skills/sf-connected-apps"
       ]
     },
     {
@@ -58,6 +61,21 @@
       "name": "sf-ai-agentforce",
       "description": "Agentforce agent creation using Agent Script syntax with 100-point scoring (API v64+)",
       "source": "./sf-ai-agentforce"
+    },
+    {
+      "name": "sf-diagram",
+      "description": "Mermaid diagrams for OAuth flows, ERDs, integrations, and Agentforce architecture with 80-point scoring",
+      "source": "./sf-diagram"
+    },
+    {
+      "name": "sf-integration",
+      "description": "Named Credentials, External Services, REST/SOAP callouts, Platform Events, and CDC with 120-point scoring",
+      "source": "./sf-integration"
+    },
+    {
+      "name": "sf-connected-apps",
+      "description": "Connected Apps and External Client Apps with OAuth configuration and 120-point scoring",
+      "source": "./sf-connected-apps"
     }
   ]
 }
