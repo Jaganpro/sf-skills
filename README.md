@@ -80,55 +80,55 @@ First, add the marketplace to Claude Code:
 ```mermaid
 flowchart TB
     subgraph ai["🤖 AI & Agents"]
-        agentforce["🤖 sf-ai-agentforce<br/><small>Agent Script, Topics<br/>GenAiFunction, PromptTemplate</small>"]
+        agentforce["🤖 sf-ai-agentforce"]
     end
 
     subgraph integration["🔌 Integration & Security"]
-        connectedapps["🔐 sf-connected-apps<br/><small>OAuth, ECAs, Security</small>"]
-        sfintegration["🔗 sf-integration<br/><small>Named Creds, REST/SOAP<br/>Platform Events, CDC</small>"]
-        diagram["📊 sf-diagram<br/><small>OAuth, ERD, Architecture</small>"]
+        connectedapps["🔐 sf-connected-apps"]
+        sfintegration["🔗 sf-integration"]
+        diagram["📊 sf-diagram"]
     end
 
     subgraph development["💻 Development"]
-        apex["⚡ sf-apex<br/><small>Triggers, Services, Tests</small>"]
-        flow["🔄 sf-flow<br/><small>Screen, Record, Scheduled<br/>HTTP Callout Flows</small>"]
+        apex["⚡ sf-apex"]
+        flow["🔄 sf-flow"]
     end
 
     subgraph foundation["📦 Foundation"]
-        metadata["📋 sf-metadata<br/><small>Objects, Fields, Perms</small>"]
-        data["💾 sf-data<br/><small>SOQL, CRUD, Test Data</small>"]
+        metadata["📋 sf-metadata"]
+        data["💾 sf-data"]
     end
 
     subgraph devops["🚀 DevOps"]
-        deploy["🚀 sf-deploy<br/><small>CI/CD, Validation</small>"]
+        deploy["🚀 sf-deploy"]
     end
 
     subgraph tooling["🔧 Tooling"]
-        skillbuilder["🛠️ skill-builder<br/><small>Create New Skills</small>"]
+        skillbuilder["🛠️ skill-builder"]
     end
 
     %% AI & Agent relationships
-    agentforce -->|"flow:// actions"| flow
+    agentforce -->|"flow actions"| flow
     agentforce -->|"API actions"| sfintegration
     agentforce -->|"GenAiFunction"| apex
 
     %% Integration relationships
     sfintegration -->|"OAuth apps"| connectedapps
-    sfintegration -->|"callout classes"| apex
+    sfintegration -->|"callouts"| apex
     sfintegration -->|"HTTP Callout"| flow
-    connectedapps -->|"Permission Sets"| metadata
-    diagram -->|"queries schema"| metadata
+    connectedapps -->|"permissions"| metadata
+    diagram -->|"schema"| metadata
     diagram -.->|"documents"| connectedapps
     diagram -.->|"documents"| sfintegration
 
     %% Development relationships
-    apex -->|"queries schema"| metadata
-    flow -->|"queries schema"| metadata
+    apex -->|"schema"| metadata
+    flow -->|"schema"| metadata
     apex -.->|"test data"| data
     flow -.->|"test data"| data
 
     %% Foundation relationships
-    data -->|"queries structure"| metadata
+    data -->|"structure"| metadata
 
     %% Deployment relationships
     apex -->|"deploys"| deploy

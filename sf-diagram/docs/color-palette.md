@@ -123,39 +123,41 @@ Renders as:
 
 ## Complete Style Template
 
-Copy this template for consistent diagrams:
+Copy this template for consistent diagrams.
+
+**Important:** Keep node labels short (skill name + icon only). Avoid `<br/>` and `<small>` tags as they cause text cutoff in many Mermaid renderers.
 
 ```mermaid
 flowchart TB
     subgraph ai["🤖 AI & Agents"]
-        agentforce["🤖 sf-ai-agentforce<br/><small>Agent Script, Topics<br/>GenAiFunction, PromptTemplate</small>"]
+        agentforce["🤖 sf-ai-agentforce"]
     end
 
     subgraph integration["🔌 Integration & Security"]
-        connectedapps["🔐 sf-connected-apps<br/><small>OAuth, ECAs, Security</small>"]
-        sfintegration["🔗 sf-integration<br/><small>Named Creds, REST/SOAP<br/>Platform Events, CDC</small>"]
+        connectedapps["🔐 sf-connected-apps"]
+        sfintegration["🔗 sf-integration"]
     end
 
     subgraph development["💻 Development"]
-        apex["⚡ sf-apex<br/><small>Triggers, Services, Tests</small>"]
-        flow["🔄 sf-flow<br/><small>Screen, Record, Scheduled</small>"]
+        apex["⚡ sf-apex"]
+        flow["🔄 sf-flow"]
     end
 
     subgraph foundation["📦 Foundation"]
-        metadata["📋 sf-metadata<br/><small>Objects, Fields, Perms</small>"]
-        data["💾 sf-data<br/><small>SOQL, CRUD, Test Data</small>"]
+        metadata["📋 sf-metadata"]
+        data["💾 sf-data"]
     end
 
     subgraph devops["🚀 DevOps"]
-        deploy["🚀 sf-deploy<br/><small>CI/CD, Validation</small>"]
+        deploy["🚀 sf-deploy"]
     end
 
     %% Relationships
-    agentforce -->|"flow:// actions"| flow
+    agentforce -->|"flow actions"| flow
     agentforce -->|"API actions"| sfintegration
     sfintegration -->|"OAuth apps"| connectedapps
-    apex -->|"queries schema"| metadata
-    flow -->|"queries schema"| metadata
+    apex -->|"schema"| metadata
+    flow -->|"schema"| metadata
     apex -->|"deploys"| deploy
 
     %% Node Styling - AI (pink)
@@ -183,6 +185,16 @@ flowchart TB
     style foundation fill:transparent,stroke:#06b6d4,stroke-dasharray:5
     style devops fill:transparent,stroke:#10b981,stroke-dasharray:5
 ```
+
+### Label Guidelines
+
+| ✅ DO | ❌ DON'T |
+|-------|---------|
+| `["🤖 sf-ai-agentforce"]` | `["🤖 sf-ai-agentforce<br/><small>Agent Script</small>"]` |
+| `["⚡ sf-apex"]` | `["⚡ sf-apex<br/>Triggers, Services"]` |
+| Short edge labels: `"schema"` | Long labels: `"queries schema for validation"` |
+
+**Why?** Multi-line labels with `<br/>` and `<small>` tags render inconsistently across GitHub, VS Code, and other Mermaid viewers, often causing text cutoff.
 
 ---
 
