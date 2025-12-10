@@ -50,11 +50,14 @@ The skill will ask about:
 ### 3. Review and deploy
 
 ```bash
-# Generate agent version
-sf agent generate version --name My_Agent --target-org dev
+# Validate agent script (optional but recommended)
+sf agent validate authoring-bundle --api-name My_Agent --target-org dev
 
-# Preview
-sf agent preview --name My_Agent --target-org dev
+# Publish agent to org
+sf agent publish authoring-bundle --api-name My_Agent --target-org dev
+
+# Preview (beta)
+sf agent preview --api-name My_Agent --target-org dev
 ```
 
 ## Scoring System
@@ -75,35 +78,44 @@ sf agent preview --name My_Agent --target-org dev
 ### Basic Structure
 
 ```agentscript
+system:
+    instructions: "You are a helpful assistant. Be concise and accurate."
+    messages:
+        welcome: "Hello! How can I help?"
+        error: "Sorry, something went wrong."
+
 config:
-    agent_name: "My_Agent"
+    developer_name: "My_Agent"
+    default_agent_user: "agent.user@company.com"
     agent_label: "My Agent"
     description: "What this agent does"
 
-system:
-    messages:
-        welcome: "Hello! How can I help?"
-    instructions:
-        | You are a helpful assistant.
-        | Be concise and accurate.
-
 variables:
-    user_input: mutable string = ""
+    EndUserId: linked string
+        source: @MessagingSession.MessagingEndUserId
+        description: "Messaging End User ID"
+    user_input: mutable string
         description: "User's input"
 
+language:
+    default_locale: "en_US"
+    additional_locales: ""
+    all_additional_locales: False
+
 start_agent topic_selector:
+    label: "Topic Selector"
     description: "Entry point"
     reasoning:
-        instructions:->
+        instructions: ->
             | Route the user appropriately.
         actions:
             go_help: @utils.transition to @topic.help
-                description: "Get help"
 
 topic help:
+    label: "Help"
     description: "Provides help"
     reasoning:
-        instructions:->
+        instructions: ->
             | Help the user.
 ```
 
@@ -120,10 +132,10 @@ topic help:
 
 | Template | Use Case |
 |----------|----------|
-| `simple-qa.agentscript` | Single topic FAQ agent |
-| `multi-topic.agentscript` | Multiple conversation modes |
-| `topic-with-actions.agentscript` | External integrations |
-| `error-handling.agentscript` | Validation patterns |
+| `simple-qa.agent` | Single topic FAQ agent |
+| `multi-topic.agent` | Multiple conversation modes |
+| `topic-with-actions.agent` | External integrations |
+| `error-handling.agent` | Validation patterns |
 
 ## Documentation
 
@@ -133,9 +145,9 @@ topic help:
 
 ## Official Resources
 
-- [Agent Script (Beta) Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-script.html)
+- [Agent Script Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-script.html)
 - [Agent Script Recipes](https://developer.salesforce.com/sample-apps/agent-script-recipes/getting-started/overview)
-- [Agentforce DX](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html)
+- [Agentforce DX Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-nga-author-agent.html)
 
 ## License
 
