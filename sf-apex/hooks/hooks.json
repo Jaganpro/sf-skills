@@ -6,8 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-write-validate.py",
-            "timeout": 60000
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-tool-validate.py",
+            "timeout": 120000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-tool-validate.py",
+            "timeout": 120000
           }
         ]
       }

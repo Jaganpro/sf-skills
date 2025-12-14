@@ -258,9 +258,14 @@ class ApexValidator:
     def _check_naming_conventions(self):
         """Check for naming convention violations."""
         # Class names should be PascalCase
-        class_pattern = r'class\s+(\w+)'
+        # Match actual class declarations (with optional modifiers), not "class" in comments
+        class_pattern = r'^\s*(?:public|private|global|virtual|abstract|with\s+sharing|without\s+sharing|\s)*\s*class\s+(\w+)'
         for i, line in enumerate(self.lines, 1):
-            match = re.search(class_pattern, line)
+            # Skip comment lines
+            stripped = line.strip()
+            if stripped.startswith('//') or stripped.startswith('*') or stripped.startswith('/*'):
+                continue
+            match = re.search(class_pattern, line, re.IGNORECASE)
             if match:
                 class_name = match.group(1)
                 if not class_name[0].isupper():
