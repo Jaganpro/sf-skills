@@ -284,4 +284,100 @@
         <priority>3</priority>
     </rule>
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BEST PRACTICES - User Requested (Strict Async Patterns)             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <rule ref="category/apex/bestpractices.xml/AvoidFutureAnnotation">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/bestpractices.xml/QueueableWithoutFinalizer">
+        <priority>3</priority>
+    </rule>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CODE STYLE - User Requested (Strict Formatting Mode)                -->
+    <!-- Enforces consistent brace usage and declaration patterns            -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <rule ref="category/apex/codestyle.xml/AnnotationsNamingConventions">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/ForLoopsMustUseBraces">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/IfStmtsMustUseBraces">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/IfElseStmtsMustUseBraces">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/WhileLoopsMustUseBraces">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/OneDeclarationPerLine">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/codestyle.xml/FieldDeclarationsShouldBeAtStart">
+        <priority>4</priority>
+    </rule>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- DESIGN - User Requested (Stricter Method Signatures)                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <rule ref="category/apex/design.xml/AvoidDeeplyNestedIfStmts">
+        <priority>3</priority>
+        <properties>
+            <property name="problemDepth" value="4"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/apex/design.xml/AvoidBooleanMethodParameters">
+        <priority>3</priority>
+    </rule>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- ERROR PRONE - User Requested (Comprehensive Bug Detection)          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <rule ref="category/apex/errorprone.xml/AvoidDirectAccessTriggerMap">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/AvoidNonExistentAnnotations">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/AvoidStatefulDatabaseResult">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/OverrideBothEqualsAndHashcode">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/TestMethodsMustBeInTestClasses">
+        <priority>2</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/TypeShadowsBuiltInNamespace">
+        <priority>3</priority>
+    </rule>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PERFORMANCE - Recommended (Query Safety)                            -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <rule ref="category/apex/performance.xml/AvoidNonRestrictiveQueries">
+        <priority>2</priority>
+    </rule>
+
 </ruleset>

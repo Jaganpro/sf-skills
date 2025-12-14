@@ -273,11 +273,17 @@ Hooks integrate [Salesforce Code Analyzer V5](https://developer.salesforce.com/d
 
 | Engine | What It Checks | Dependency |
 |--------|----------------|------------|
-| **PMD** | 80+ Apex rules (CRUD violations, empty catch blocks, complexity) | Java 11+ |
+| **PMD** | 55 Apex rules (85% coverage) — security, bulkification, complexity, testing | Java 11+ |
 | **SFGE** | Data flow analysis, path-based security | Java 11+ |
 | **Regex** | Trailing whitespace, hardcoded patterns | None |
 | **ESLint** | JavaScript/LWC linting | Node.js |
 | **Flow Scanner** | Flow best practices | Python 3.10+ |
+
+**Custom Validation Coverage:**
+| Validator | Total Checks | Categories |
+|-----------|--------------|------------|
+| **Apex** (150-pt) | PMD 55 rules + Python 8 checks | Security (100%), Bulkification, Testing, Architecture, Clean Code, Error Handling, Performance, Documentation |
+| **Flow** (110-pt) | 32+ checks (21/24 LFS rules) | Design/Naming, Logic/Structure, Error Handling, Architecture, Security, Performance |
 
 **Graceful Degradation:** If dependencies are missing, hooks run custom validation only and show which engines were skipped.
 
