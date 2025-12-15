@@ -96,26 +96,38 @@ If API version < 64, Agent Script features won't be available.
 
 | Rule | Details |
 |------|---------|
-| **Spaces** | 2, 3, or 4 spaces all work |
-| **Tabs** | Tabs work if used consistently |
+| **Tabs (Recommended)** | ✅ Use tabs for easier manual editing and consistent alignment |
+| **Spaces** | 2, 3, or 4 spaces also work if used consistently |
 | **Mixing** | ❌ NEVER mix tabs and spaces (causes parse errors) |
 | **Consistency** | All lines at same nesting level must use same indentation |
 
+**⚠️ RECOMMENDED: Use TAB indentation for all Agent Script files.** Tabs are easier to edit manually and provide consistent visual alignment across editors.
+
 ```agentscript
-# ✅ CORRECT - consistent 3 spaces (recommended for readability)
+# ✅ RECOMMENDED - consistent tabs (best for manual editing)
+config:
+	agent_name: "My_Agent"
+	description: "My agent description"
+
+variables:
+	user_name: mutable string
+		description: "The user's name"
+
+# ✅ ALSO CORRECT - consistent spaces (if you prefer)
 config:
    agent_name: "My_Agent"
-   description: "My agent description"
-
-# ✅ ALSO CORRECT - consistent 2 spaces
-config:
-  agent_name: "My_Agent"
 
 # ❌ WRONG - mixing tabs and spaces
 config:
 	agent_name: "My_Agent"    # tab
    description: "My agent"    # spaces - PARSE ERROR!
 ```
+
+**Why Tabs are Recommended:**
+- Easier to edit manually in any text editor
+- Consistent visual alignment regardless of editor tab width settings
+- Single keypress per indentation level
+- Clear distinction between indentation levels
 
 ---
 
@@ -669,28 +681,51 @@ sf project deploy start --metadata Flow --test-level NoTestRun --target-org [ali
 sf project deploy start --metadata ApexClass --test-level NoTestRun --target-org [alias]
 ```
 
-**Step 2: Validate (Optional but Recommended)**
+**Step 2: ⚠️ VALIDATE AGENT (MANDATORY)**
+
+**⚠️ CRITICAL: Always validate before deployment to catch syntax errors early!**
+
 ```bash
 sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
 ```
 
-**Step 3: Publish Agent**
+This validation:
+- Checks Agent Script syntax and structure
+- Verifies all topic references are valid
+- Confirms variable declarations are correct
+- Takes ~3 seconds (much faster than failed deployments)
+
+**DO NOT proceed to Step 3 if validation fails!** Fix all errors first.
+
+**Step 3: Deploy Agent Bundle**
+
+**Option A: Deploy via Metadata API (Recommended - More Reliable)**
+```bash
+sf project deploy start --source-dir force-app/main/default/aiAuthoringBundles/[AgentName] --target-org [alias]
+```
+
+**Option B: Publish via Agent CLI (Beta - May fail with HTTP 404)**
 ```bash
 sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
 ```
 
-This command:
-- Validates the Agent Script syntax
-- Creates Bot, BotVersion, and GenAi metadata
-- Retrieves generated metadata back to project
-- Deploys the AiAuthoringBundle to the org
+**⚠️ Note**: The `sf agent publish` command is in beta and may fail with HTTP 404 errors. If it fails, use Option A (`sf project deploy start`) which is more reliable. Both methods result in the agent being available in the org.
 
-**Step 4: Open in Agentforce Studio (Optional)**
+The deploy/publish command:
+- Creates Bot, BotVersion, and GenAi metadata
+- Deploys the AiAuthoringBundle to the org
+- Makes agent visible in Agentforce Studio
+
+**Step 4: Verify Deployment**
 ```bash
+# Open agent in Agentforce Studio to verify
 sf org open agent --api-name [AgentName] --target-org [alias]
+
+# Or query to confirm agent exists
+sf data query --query "SELECT Id, DeveloperName FROM BotDefinition WHERE DeveloperName = '[AgentName]'" --target-org [alias]
 ```
 
-**Step 5: Activate Agent (Optional)**
+**Step 5: Activate Agent (When Ready for Production)**
 ```bash
 sf agent activate --api-name [AgentName] --target-org [alias]
 ```
@@ -720,66 +755,66 @@ Next Steps:
 
 ```agentscript
 system:
-   instructions: "You are a helpful assistant for Acme Corporation. Be professional and friendly. Never share confidential information."
-   messages:
-      welcome: "Hello! How can I help you today?"
-      error: "I apologize, but I encountered an issue. Please try again."
+	instructions: "You are a helpful assistant for Acme Corporation. Be professional and friendly. Never share confidential information."
+	messages:
+		welcome: "Hello! How can I help you today?"
+		error: "I apologize, but I encountered an issue. Please try again."
 
 config:
-   agent_name: "My_Agent"
-   default_agent_user: "user@example.com"
-   agent_label: "My Agent"
-   description: "A helpful assistant agent"
+	agent_name: "My_Agent"
+	default_agent_user: "user@example.com"
+	agent_label: "My Agent"
+	description: "A helpful assistant agent"
 
 variables:
-   EndUserId: linked string
-      source: @MessagingSession.MessagingEndUserId
-      description: "Messaging End User ID"
-   RoutableId: linked string
-      source: @MessagingSession.Id
-      description: "Messaging Session ID"
-   ContactId: linked string
-      source: @MessagingEndUser.ContactId
-      description: "Contact ID"
-   user_query: mutable string
-      description: "The user's current question"
+	EndUserId: linked string
+		source: @MessagingSession.MessagingEndUserId
+		description: "Messaging End User ID"
+	RoutableId: linked string
+		source: @MessagingSession.Id
+		description: "Messaging Session ID"
+	ContactId: linked string
+		source: @MessagingEndUser.ContactId
+		description: "Contact ID"
+	user_query: mutable string
+		description: "The user's current question"
 
 language:
-   default_locale: "en_US"
-   additional_locales: ""
-   all_additional_locales: False
+	default_locale: "en_US"
+	additional_locales: ""
+	all_additional_locales: False
 
 start_agent topic_selector:
-   label: "Topic Selector"
-   description: "Routes users to appropriate topics"
+	label: "Topic Selector"
+	description: "Routes users to appropriate topics"
 
-   reasoning:
-      instructions: ->
-         | Determine what the user needs.
-         | Route to the appropriate topic.
-      actions:
-         go_to_help: @utils.transition to @topic.help
-         go_to_farewell: @utils.transition to @topic.farewell
+	reasoning:
+		instructions: ->
+			| Determine what the user needs.
+			| Route to the appropriate topic.
+		actions:
+			go_to_help: @utils.transition to @topic.help
+			go_to_farewell: @utils.transition to @topic.farewell
 
 topic help:
-   label: "Help"
-   description: "Provides help to users"
+	label: "Help"
+	description: "Provides help to users"
 
-   reasoning:
-      instructions: ->
-         | Answer the user's question helpfully.
-         | If you cannot help, offer alternatives.
-      actions:
-         back_to_selector: @utils.transition to @topic.topic_selector
+	reasoning:
+		instructions: ->
+			| Answer the user's question helpfully.
+			| If you cannot help, offer alternatives.
+		actions:
+			back_to_selector: @utils.transition to @topic.topic_selector
 
 topic farewell:
-   label: "Farewell"
-   description: "Ends the conversation gracefully"
+	label: "Farewell"
+	description: "Ends the conversation gracefully"
 
-   reasoning:
-      instructions: ->
-         | Thank the user for reaching out.
-         | Wish them a great day.
+	reasoning:
+		instructions: ->
+			| Thank the user for reaching out.
+			| Wish them a great day.
 ```
 
 ### Block Order (CRITICAL)
@@ -1958,23 +1993,32 @@ sf project deploy start --metadata ApexClass --target-org [alias]
 # 2. Deploy Flows
 sf project deploy start --metadata Flow --target-org [alias]
 
-# 3. Validate Agent Script
-sf afdx agent validate --api-name [AgentName] --target-org [alias]
+# 3. ⚠️ VALIDATE Agent Script (MANDATORY - DO NOT SKIP!)
+sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
+# If validation fails, fix errors before proceeding!
 
-# 4. Publish agent
-sf agent publish --api-name [AgentName] --target-org [alias]
+# 4. Deploy/Publish agent (choose one method)
+# Option A: Metadata API (more reliable)
+sf project deploy start --source-dir force-app/main/default/aiAuthoringBundles/[AgentName] --target-org [alias]
+# Option B: Agent CLI (beta - may fail with HTTP 404)
+sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
 
-# 5. Preview (simulated mode)
+# 5. Verify deployment
+sf org open agent --api-name [AgentName] --target-org [alias]
+
+# 6. Preview (simulated mode)
 sf agent preview --api-name [AgentName] --target-org [alias]
 
-# 6. Activate
+# 7. Activate (when ready for production)
 sf agent activate --api-name [AgentName] --target-org [alias]
 
-# 7. Preview (live mode - optional)
+# 8. Preview (live mode - optional, requires connected app)
 sf agent preview --api-name [AgentName] --use-live-actions --client-app [App] --target-org [alias]
 ```
 
-**IMPORTANT**: Do NOT use `sf project deploy start` for `.agent` files directly. Use `sf agent publish` instead.
+**IMPORTANT**:
+- Always run `sf agent validate authoring-bundle` BEFORE deployment to catch errors early (~3 seconds vs minutes for failed deploys)
+- If `sf agent publish` fails with HTTP 404, use `sf project deploy start --source-dir` instead - both work for AiAuthoringBundles
 
 ---
 
@@ -2054,10 +2098,11 @@ python3 ~/.claude/plugins/marketplaces/sf-skills/sf-agentforce/hooks/scripts/val
 | Linked Variables | Missing context variables | Add EndUserId, RoutableId, ContactId |
 | Language Block | Missing causes deploy failure | Add `language:` block |
 | Bundle XML | Missing causes deploy failure | Create `.bundle-meta.xml` file |
-| **Indentation Consistency** | **Mixing tabs/spaces causes parse errors** | **Pick one method (2/3/4 spaces or tabs) and be consistent** |
+| **Indentation Consistency** | **Mixing tabs/spaces causes parse errors** | **Use TABS consistently (recommended) - easier for manual editing** |
 | `@variables` is plural | `@variable.x` fails | Use `@variables.x` |
 | Boolean capitalization | `true/false` invalid | Use `True/False` |
-| Deploy Command | `sf project deploy` fails | Use `sf agent publish authoring-bundle` |
+| **⚠️ Validation Required** | **Skipping validation causes late-stage failures** | **ALWAYS run `sf agent validate authoring-bundle` BEFORE deploy** |
+| Deploy Command | `sf agent publish` may fail with HTTP 404 | Use `sf project deploy start --source-dir` as reliable alternative |
 | **System Instructions** | Pipe `\|` syntax fails in system: block | Use single quoted string only |
 | **Escalate Description** | Inline description fails | Put `description:` on separate indented line |
 | **Agent User** | Invalid user causes "Internal Error" | Use valid org user with proper permissions |
@@ -2080,6 +2125,7 @@ Before deployment, ensure you have:
 - [ ] Valid `default_agent_user` in config block
 - [ ] All linked variables (EndUserId, RoutableId, ContactId)
 - [ ] Language block present
+- [ ] **⚠️ Validation passed**: `sf agent validate authoring-bundle --api-name [AgentName]` returns 0 errors
 - [ ] All topics have `label:` and `description:`
 - [ ] No reserved words used as input/output names
 - [ ] Flow/Apex dependencies deployed to org first
