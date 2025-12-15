@@ -27,6 +27,7 @@ There are **two deployment methods** with **different capabilities**:
 | Apex Actions (`apex://`) | ✅ Supported | ⚠️ Limited (class must exist) |
 | Escalation (`@utils.escalate with reason`) | ✅ Supported | ❌ NOT Supported (SyntaxError) |
 | `run` keyword (action callbacks) | ✅ Supported | ❌ NOT Supported (SyntaxError) |
+| `filter_from_agent` (conditional actions) | ✅ Supported | ❌ NOT Supported (SyntaxError) |
 | Variables without defaults | ✅ Supported | ✅ Supported |
 | Lifecycle blocks (`before/after_reasoning`) | ✅ Supported | ✅ Supported |
 | Topic transitions (`@utils.transition`) | ✅ Supported | ✅ Supported |

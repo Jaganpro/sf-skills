@@ -381,6 +381,11 @@ outputs:
 
 **Output Attributes:** `filter_from_agent`, `is_used_by_planner`, `is_displayable`, `complex_data_type_name`
 
+**⚠️ CRITICAL: `filter_from_agent` is NOT supported in AiAuthoringBundle!**
+- Causes "Unexpected 'filter_from_agent'" syntax error
+- Use conditional topic routing in instructions as alternative
+- May work in GenAiPlannerBundle
+
 ### Data Type Mappings with Flow (Tested Dec 2025)
 
 | Agent Script Type | Flow Data Type | Status | Notes |
