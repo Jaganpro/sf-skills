@@ -7,20 +7,20 @@
 
 # Action Definition (place inside topic's actions: block)
 {{action_name}}:
-   description: "{{ActionDescription}}"
-   inputs:
-      {{input_1_name}}: {{input_1_type}}
-         description: "{{Input1Description}}"
-      {{input_2_name}}: {{input_2_type}}
-         description: "{{Input2Description}}"
-   outputs:
-      {{output_1_name}}: {{output_1_type}}
-         description: "{{Output1Description}}"
-      success: boolean
-         description: "Whether the operation succeeded"
-      error_message: string
-         description: "Error message if operation failed"
-   target: "apex://{{ApexClassName}}.{{ApexMethodName}}"
+	description: "{{ActionDescription}}"
+	inputs:
+		{{input_1_name}}: {{input_1_type}}
+			description: "{{Input1Description}}"
+		{{input_2_name}}: {{input_2_type}}
+			description: "{{Input2Description}}"
+	outputs:
+		{{output_1_name}}: {{output_1_type}}
+			description: "{{Output1Description}}"
+		success: boolean
+			description: "Whether the operation succeeded"
+		error_message: string
+			description: "Error message if operation failed"
+	target: "apex://{{ApexClassName}}.{{ApexMethodName}}"
 
 # Usage in reasoning block:
 #

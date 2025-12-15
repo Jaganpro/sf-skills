@@ -19,110 +19,110 @@
 # This is a COMPLETE template - customize for your use case
 
 system:
-   instructions: "You are a helpful customer service agent. Be professional, friendly, and helpful. If you cannot resolve an issue or the customer requests a human, transfer them to a live agent."
-   messages:
-      welcome: "Hello! I'm here to help you today. What can I assist you with?"
-      error: "I apologize, but I encountered an issue. Let me connect you with a human agent."
+	instructions: "You are a helpful customer service agent. Be professional, friendly, and helpful. If you cannot resolve an issue or the customer requests a human, transfer them to a live agent."
+	messages:
+		welcome: "Hello! I'm here to help you today. What can I assist you with?"
+		error: "I apologize, but I encountered an issue. Let me connect you with a human agent."
 
 config:
-   agent_name: "{{AGENT_NAME}}"
-   default_agent_user: "{{AGENT_USER_EMAIL}}"
-   agent_label: "{{AGENT_LABEL}}"
-   description: "Customer service agent with human escalation capability"
+	agent_name: "{{AGENT_NAME}}"
+	default_agent_user: "{{AGENT_USER_EMAIL}}"
+	agent_label: "{{AGENT_LABEL}}"
+	description: "Customer service agent with human escalation capability"
 
 variables:
-   # Required linked variables for messaging context
-   EndUserId: linked string
-      source: @MessagingSession.MessagingEndUserId
-      description: "Messaging End User ID"
-   RoutableId: linked string
-      source: @MessagingSession.Id
-      description: "Messaging Session ID"
-   ContactId: linked string
-      source: @MessagingEndUser.ContactId
-      description: "Contact ID"
+	# Required linked variables for messaging context
+	EndUserId: linked string
+		source: @MessagingSession.MessagingEndUserId
+		description: "Messaging End User ID"
+	RoutableId: linked string
+		source: @MessagingSession.Id
+		description: "Messaging Session ID"
+	ContactId: linked string
+		source: @MessagingEndUser.ContactId
+		description: "Contact ID"
 
-   # Escalation tracking variables
-   escalation_requested: mutable boolean = False
-      description: "Whether customer requested human agent"
-   escalation_reason: mutable string
-      description: "Reason for escalation"
-   attempts_before_escalation: mutable integer = 0
-      description: "Number of attempts before escalating"
+	# Escalation tracking variables
+	escalation_requested: mutable boolean = False
+		description: "Whether customer requested human agent"
+	escalation_reason: mutable string
+		description: "Reason for escalation"
+	attempts_before_escalation: mutable integer = 0
+		description: "Number of attempts before escalating"
 
 language:
-   default_locale: "en_US"
-   additional_locales: ""
-   all_additional_locales: False
+	default_locale: "en_US"
+	additional_locales: ""
+	all_additional_locales: False
 
 # ★ CONNECTION BLOCK - Required for @utils.escalate to work
 # This defines where escalated conversations are routed
 connection messaging:
-   # Route type options: "queue", "skill", or "agent"
-   outbound_route_type: "queue"
-   # API name of your Omni-Channel queue
-   outbound_route_name: "{{OMNI_CHANNEL_QUEUE_NAME}}"
+	# Route type options: "queue", "skill", or "agent"
+	outbound_route_type: "queue"
+	# API name of your Omni-Channel queue
+	outbound_route_name: "{{OMNI_CHANNEL_QUEUE_NAME}}"
 
 # Entry point
 start_agent topic_selector:
-   label: "Topic Selector"
-   description: "Routes users to appropriate topics based on intent"
+	label: "Topic Selector"
+	description: "Routes users to appropriate topics based on intent"
 
-   reasoning:
-      instructions: ->
-         | Greet the customer and determine their needs.
-         | If they ask for a human or live agent, route to escalation.
-         | Otherwise, try to help them directly.
-      actions:
-         go_help: @utils.transition to @topic.help
-         go_escalation: @utils.transition to @topic.escalation
-            available when @variables.escalation_requested == True
+	reasoning:
+		instructions: ->
+			| Greet the customer and determine their needs.
+			| If they ask for a human or live agent, route to escalation.
+			| Otherwise, try to help them directly.
+		actions:
+			go_help: @utils.transition to @topic.help
+			go_escalation: @utils.transition to @topic.escalation
+				available when @variables.escalation_requested == True
 
 topic help:
-   label: "Help"
-   description: "Provides assistance to customers"
+	label: "Help"
+	description: "Provides assistance to customers"
 
-   reasoning:
-      instructions: ->
-         | Help the customer with their question.
-         | If you cannot resolve their issue after 2-3 attempts, offer to connect them with a human.
-         | If they explicitly ask for a human agent at any time, transfer immediately.
-         |
-         | Phrases that indicate escalation request:
-         | - "talk to a human"
-         | - "speak to someone"
-         | - "real person"
-         | - "live agent"
-         | - "customer service representative"
-      actions:
-         try_again: @utils.set
-            with escalation_reason=...
-            description: "Capture reason if user wants to escalate"
+	reasoning:
+		instructions: ->
+			| Help the customer with their question.
+			| If you cannot resolve their issue after 2-3 attempts, offer to connect them with a human.
+			| If they explicitly ask for a human agent at any time, transfer immediately.
+			|
+			| Phrases that indicate escalation request:
+			| - "talk to a human"
+			| - "speak to someone"
+			| - "real person"
+			| - "live agent"
+			| - "customer service representative"
+		actions:
+			try_again: @utils.set
+				with escalation_reason=...
+				description: "Capture reason if user wants to escalate"
 
-         offer_escalation: @utils.transition to @topic.escalation
-            available when @variables.attempts_before_escalation >= 3
+			offer_escalation: @utils.transition to @topic.escalation
+				available when @variables.attempts_before_escalation >= 3
 
-         immediate_escalation: @utils.transition to @topic.escalation
-            # Use this when customer explicitly asks for human
+			immediate_escalation: @utils.transition to @topic.escalation
+				# Use this when customer explicitly asks for human
 
 topic escalation:
-   label: "Escalation"
-   description: "Transfers conversation to human agent"
+	label: "Escalation"
+	description: "Transfers conversation to human agent"
 
-   reasoning:
-      instructions: ->
-         | The customer is being transferred to a human agent.
-         | Acknowledge their request and apologize for any inconvenience.
-         | Let them know a human will be with them shortly.
-         |
-         | Say something like:
-         | "I understand you'd like to speak with a human agent. I'm connecting you now.
-         | A customer service representative will be with you shortly. Thank you for your patience."
-      actions:
-         # ★ ESCALATION ACTION
-         # This transfers the conversation to the queue defined in connection block
-         transfer_to_human: @utils.escalate
-            description: "Transfer to human agent when customer requests or issue cannot be resolved"
+	reasoning:
+		instructions: ->
+			| The customer is being transferred to a human agent.
+			| Acknowledge their request and apologize for any inconvenience.
+			| Let them know a human will be with them shortly.
+			|
+			| Say something like:
+			| "I understand you'd like to speak with a human agent. I'm connecting you now.
+			| A customer service representative will be with you shortly. Thank you for your patience."
+		actions:
+			# ★ ESCALATION ACTION
+			# This transfers the conversation to the queue defined in connection block
+			transfer_to_human: @utils.escalate
+				description: "Transfer to human agent when customer requests or issue cannot be resolved"
 
 # ★ Alternative: Skill-Based Routing
 # If you want to route based on agent skills instead of queue:

@@ -18,73 +18,73 @@
 # This is a PARTIAL template - integrate into a complete agent file
 
 topic order_processing:
-   label: "Order Processing"
-   description: "Processes orders with guaranteed confirmation and logging"
+	label: "Order Processing"
+	description: "Processes orders with guaranteed confirmation and logging"
 
-   actions:
-      create_order:
-         description: "Creates a new order in the system"
-         inputs:
-            customer_id: string
-               description: "Customer identifier"
-            items: list[string]
-               description: "List of item SKUs"
-            total: number
-               description: "Order total amount"
-         outputs:
-            order_id: string
-               description: "Generated order ID"
-            status: string
-               description: "Order creation status"
-         target: "flow://Create_Order"
+	actions:
+		create_order:
+			description: "Creates a new order in the system"
+			inputs:
+				customer_id: string
+					description: "Customer identifier"
+				items: list[string]
+					description: "List of item SKUs"
+				total: number
+					description: "Order total amount"
+			outputs:
+				order_id: string
+					description: "Generated order ID"
+				status: string
+					description: "Order creation status"
+			target: "flow://Create_Order"
 
-      send_confirmation:
-         description: "Sends order confirmation email"
-         inputs:
-            order_id: string
-               description: "Order ID to confirm"
-            customer_email: string
-               description: "Customer email address"
-         outputs:
-            sent: boolean
-               description: "Whether email was sent"
-         target: "flow://Send_Order_Confirmation"
+		send_confirmation:
+			description: "Sends order confirmation email"
+			inputs:
+				order_id: string
+					description: "Order ID to confirm"
+				customer_email: string
+					description: "Customer email address"
+			outputs:
+				sent: boolean
+					description: "Whether email was sent"
+			target: "flow://Send_Order_Confirmation"
 
-      log_activity:
-         description: "Logs activity for audit trail"
-         inputs:
-            event_type: string
-               description: "Type of event to log"
-            details: string
-               description: "Event details"
-         outputs:
-            logged: boolean
-               description: "Whether log was recorded"
-         target: "apex://AuditService.logEvent"
+		log_activity:
+			description: "Logs activity for audit trail"
+			inputs:
+				event_type: string
+					description: "Type of event to log"
+				details: string
+					description: "Event details"
+			outputs:
+				logged: boolean
+					description: "Whether log was recorded"
+			target: "apex://AuditService.logEvent"
 
-   reasoning:
-      instructions: ->
-         | Help the customer place their order.
-         | Ensure confirmation is sent after successful orders.
-         | All order activities must be logged for compliance.
-      actions:
-         # This action uses callbacks to guarantee follow-up
-         process_order: @actions.create_order
-            with customer_id=@variables.customer_id
-            with items=...
-            with total=...
-            set @variables.order_id = @outputs.order_id
-            set @variables.order_status = @outputs.status
-            # Callback 1: Always send confirmation after order created
-            run @actions.send_confirmation
-               with order_id=@variables.order_id
-               with customer_email=@variables.customer_email
-            # Callback 2: Always log the activity
-            run @actions.log_activity
-               with event_type="ORDER_CREATED"
-               with details=@variables.order_id
+	reasoning:
+		instructions: ->
+			| Help the customer place their order.
+			| Ensure confirmation is sent after successful orders.
+			| All order activities must be logged for compliance.
+		actions:
+			# This action uses callbacks to guarantee follow-up
+			process_order: @actions.create_order
+				with customer_id=@variables.customer_id
+				with items=...
+				with total=...
+				set @variables.order_id = @outputs.order_id
+				set @variables.order_status = @outputs.status
+				# Callback 1: Always send confirmation after order created
+				run @actions.send_confirmation
+					with order_id=@variables.order_id
+					with customer_email=@variables.customer_email
+				# Callback 2: Always log the activity
+				run @actions.log_activity
+					with event_type="ORDER_CREATED"
+					with details=@variables.order_id
 
-         back_to_menu: @utils.transition to @topic.topic_selector
+			back_to_menu: @utils.transition to @topic.topic_selector
 
 # ★ Anti-Pattern: Nested run (DO NOT DO THIS)
 #

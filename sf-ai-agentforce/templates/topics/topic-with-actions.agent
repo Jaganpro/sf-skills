@@ -6,29 +6,29 @@
 # Note: Actions defined inside topic are local to that topic
 
 topic {{topic_name}}:
-   label: "{{TopicLabel}}"
-   description: "{{TopicDescription}}"
+	label: "{{TopicLabel}}"
+	description: "{{TopicDescription}}"
 
-   # Define actions available to this topic
-   actions:
-      {{action_name}}:
-         description: "{{ActionDescription}}"
-         inputs:
-            {{input_name}}: {{input_type}}
-               description: "{{InputDescription}}"
-         outputs:
-            {{output_name}}: {{output_type}}
-               description: "{{OutputDescription}}"
-         target: "{{ActionTarget}}"  # flow://FlowName or apex://ClassName.methodName
+	# Define actions available to this topic
+	actions:
+		{{action_name}}:
+			description: "{{ActionDescription}}"
+			inputs:
+				{{input_name}}: {{input_type}}
+					description: "{{InputDescription}}"
+			outputs:
+				{{output_name}}: {{output_type}}
+					description: "{{OutputDescription}}"
+			target: "{{ActionTarget}}"  # flow://FlowName or apex://ClassName.methodName
 
-   reasoning:
-      instructions: ->
-         | {{TopicInstructions}}
-         | Use the available actions to help the user.
-         | Capture and communicate results clearly.
-      actions:
-         invoke_action: @actions.{{action_name}}
-            with {{input_name}}=...
-            set @variables.{{result_variable}} = @outputs.{{output_name}}
+	reasoning:
+		instructions: ->
+			| {{TopicInstructions}}
+			| Use the available actions to help the user.
+			| Capture and communicate results clearly.
+		actions:
+			invoke_action: @actions.{{action_name}}
+				with {{input_name}}=...
+				set @variables.{{result_variable}} = @outputs.{{output_name}}
 
-         back_to_menu: @utils.transition to @topic.topic_selector
+			back_to_menu: @utils.transition to @topic.topic_selector
