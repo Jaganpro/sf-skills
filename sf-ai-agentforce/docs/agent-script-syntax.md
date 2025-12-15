@@ -531,6 +531,36 @@ instructions: ->
       | Standard order processing.
 ```
 
+### ⚠️ CRITICAL: Slot Filling (`...`) Cannot Be Inside Conditionals (Tested Dec 2025)
+
+**Slot filling with the `set @variables.x = ...` syntax CANNOT be placed inside conditionals!**
+
+This causes `SyntaxError: Unexpected 'if'` during validation.
+
+```agentscript
+# ❌ WRONG - Slot filling inside conditional causes SyntaxError
+instructions: ->
+   if @variables.name is None:
+      | Please provide your name.
+      set @variables.name = ...   # FAILS! Cannot use ... inside if block
+
+# ✅ CORRECT - Use unconditional slot filling, LLM handles context
+instructions: ->
+   | If the user hasn't provided their name, ask for it.
+   set @variables.name = ...
+   | Once you have the name, proceed with the order.
+
+# ✅ ALSO CORRECT - Use action with slot filling (not in conditional)
+reasoning:
+   actions:
+      collect_info: @actions.collect_customer_info
+         with name=...
+         with email=...
+         set @variables.name = @outputs.name
+```
+
+**Why?** The `...` ellipsis is evaluated at parse time, not runtime. The parser cannot determine conditional paths, so slot filling must be at the top level of instructions.
+
 **⚠️ CRITICAL: Pipes Cannot Be Nested Inside Pipes!**
 
 ```agentscript
@@ -844,6 +874,39 @@ checkout: @actions.process_payment
    available when @variables.verified == True
 ```
 
+### ⚠️ CRITICAL: Complex Action Invocation Syntax Not Supported (Tested Dec 2025)
+
+**The `{!@actions.x}` interpolation syntax does NOT work for action invocation!**
+
+```agentscript
+# ❌ WRONG - Template syntax for action invocation fails
+reasoning:
+   actions:
+      invoke: {!@actions.search}   # FAILS! SyntaxError
+
+# ❌ WRONG - Dynamic action selection not supported
+reasoning:
+   instructions: ->
+      | Based on the query, invoke {!@actions.search_type}.  # FAILS!
+
+# ✅ CORRECT - Define actions explicitly, LLM chooses based on description
+reasoning:
+   instructions: ->
+      | Search for information based on the user's query.
+   actions:
+      search_products: @actions.product_search
+         with query=...
+         description: "Search product catalog"
+      search_orders: @actions.order_search
+         with query=...
+         description: "Search order history"
+      search_knowledge: @actions.kb_search
+         with query=...
+         description: "Search knowledge base"
+```
+
+**How it works**: Define multiple actions with clear descriptions. The LLM automatically selects the appropriate action based on context - you don't need to explicitly "invoke" actions programmatically.
+
 ---
 
 ## Lifecycle Blocks
@@ -920,6 +983,43 @@ topic conversation:
          set @variables.last_activity = @outputs.timestamp
 ```
 
+### ⚠️ CRITICAL: Empty Lifecycle Blocks Cause Errors (Tested Dec 2025)
+
+**Lifecycle blocks with only comments or whitespace cause SyntaxError!**
+
+```agentscript
+# ❌ WRONG - Empty block with just a comment causes SyntaxError
+topic my_topic:
+   label: "My Topic"
+   description: "A topic"
+
+   before_reasoning:
+      # This is just a placeholder comment   # FAILS!
+
+   reasoning:
+      instructions: ->
+         | Help the user.
+
+# ❌ WRONG - Empty after_reasoning block
+   after_reasoning:
+      # TODO: Add logging later   # FAILS!
+
+# ✅ CORRECT - Don't include lifecycle blocks if they're empty
+topic my_topic:
+   label: "My Topic"
+   description: "A topic"
+
+   reasoning:
+      instructions: ->
+         | Help the user.
+
+# ✅ CORRECT - Include actual content if you need the block
+   before_reasoning:
+      set @variables.initialized = True
+```
+
+**Rule**: If a lifecycle block would be empty, simply omit it entirely.
+
 ### Block Order
 
 When using lifecycle blocks, the order must be:
@@ -959,6 +1059,31 @@ reasoning:
       go_orders: @utils.transition to @topic.orders
 ```
 
+### ⚠️ CRITICAL: @utils.transition Cannot Have Description on Next Line (Tested Dec 2025)
+
+**Transition actions do NOT support the `description:` field on the next line!**
+
+```agentscript
+# ❌ WRONG - description: on next line causes SyntaxError
+reasoning:
+   actions:
+      go_orders: @utils.transition to @topic.orders
+         description: "Route to orders topic"   # FAILS!
+
+# ✅ CORRECT - Simple format only (no description)
+reasoning:
+   actions:
+      go_orders: @utils.transition to @topic.orders
+
+# ✅ CORRECT - If you need documentation, use comments
+reasoning:
+   actions:
+      # Route to orders topic when user asks about orders
+      go_orders: @utils.transition to @topic.orders
+```
+
+**Note**: The LLM uses the **topic's `description:` field** to decide when to transition, not the action description.
+
 ### Conditional Transition
 
 ```agentscript
@@ -997,6 +1122,23 @@ reasoning:
 ⚠️ **CRITICAL**: `escalate` is a **RESERVED WORD** - do NOT use as action name!
 - Using `escalate:` as action name causes `SyntaxError: Unexpected 'escalate'`
 - Use alternatives like `go_to_escalate:`, `transfer_to_human:`, `human_handoff:`
+
+⚠️ **CRITICAL**: `@utils.escalate` REQUIRES `description:` field! (Tested Dec 2025)
+
+```agentscript
+# ❌ WRONG - Missing description causes ValidationError
+reasoning:
+   actions:
+      transfer: @utils.escalate   # FAILS! No description
+
+# ✅ CORRECT - Must include description on next line
+reasoning:
+   actions:
+      transfer: @utils.escalate
+         description: "Transfer to human agent"
+```
+
+**Note**: Unlike `@utils.transition` which does NOT support description, `@utils.escalate` REQUIRES it.
 
 ### Connection Block (Required for Omni-Channel Escalation)
 
@@ -1221,6 +1363,11 @@ instructions: ->
 | **Invalid outbound_route_type** | **Connection block uses `queue`/`skill`/`agent`** | **Use `"OmniChannelFlow"` as the only valid value** |
 | **Missing escalation_message** | **Connection block missing required field** | **Add `escalation_message: "..."` to connection block** |
 | **Missing required element / Unexpected 'else'** | **Nested if statements (if inside if)** | **Use flat conditionals with `and` operators instead** |
+| **SyntaxError: Unexpected 'if'** | **Slot filling (`...`) inside conditional** | **Move `set @variables.x = ...` outside conditionals** |
+| **SyntaxError on `@utils.transition`** | **`description:` on next line of transition** | **Remove description from transition actions** |
+| **ValidationError on `@utils.escalate`** | **Missing required `description:` field** | **Add `description:` on line after `@utils.escalate`** |
+| **SyntaxError in lifecycle block** | **Empty `before_reasoning` or `after_reasoning`** | **Remove empty lifecycle blocks or add actual content** |
+| **SyntaxError: Unexpected '{'** | **`{!@actions.x}` interpolation syntax** | **Define actions explicitly, LLM auto-selects based on description** |
 
 ---
 
@@ -1249,3 +1396,8 @@ instructions: ->
 | **Connection block without `escalation_message`** | **Parse/validation error** | **Add required `escalation_message` field** |
 | **Connection block referencing non-existent flow** | **HTTP 404 at Publish Agent** | **Create OmniChannelFlow before publishing agent** |
 | **Nested if statements (if inside if)** | **Parse errors** | **Use flat conditionals with `and` operators** |
+| **Slot filling (`set x = ...`) inside conditionals** | **SyntaxError: Unexpected 'if'** | **Move slot filling outside conditionals, let LLM handle context** |
+| **`description:` on `@utils.transition`** | **SyntaxError** | **Transitions don't support description - use topic description instead** |
+| **`@utils.escalate` without `description:`** | **ValidationError** | **Always include `description:` field for escalation actions** |
+| **Empty lifecycle blocks (comments only)** | **SyntaxError** | **Remove empty blocks or add actual logic** |
+| **`{!@actions.x}` for dynamic action invocation** | **SyntaxError** | **Define multiple actions with descriptions, LLM auto-selects** |

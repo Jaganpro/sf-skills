@@ -380,3 +380,62 @@ Before deploying an agent, verify:
 - [ ] No internal details exposed in messages
 - [ ] Template expressions use correct syntax `{!@variables.name}`
 - [ ] Consistent indentation throughout (tabs recommended - never mix tabs and spaces)
+
+---
+
+## ⚠️ Common Syntax Pitfalls (Tested Dec 2025)
+
+These patterns cause validation or parse errors. Avoid them!
+
+### 1. Slot Filling Inside Conditionals
+```agentscript
+# ❌ WRONG
+if @variables.name is None:
+   set @variables.name = ...   # Fails!
+
+# ✅ CORRECT - Slot filling at top level
+set @variables.name = ...
+```
+
+### 2. Description on @utils.transition
+```agentscript
+# ❌ WRONG
+go_orders: @utils.transition to @topic.orders
+   description: "Route to orders"   # Fails!
+
+# ✅ CORRECT - No description
+go_orders: @utils.transition to @topic.orders
+```
+
+### 3. Missing Description on @utils.escalate
+```agentscript
+# ❌ WRONG
+transfer: @utils.escalate   # Fails!
+
+# ✅ CORRECT - Description required
+transfer: @utils.escalate
+   description: "Transfer to human agent"
+```
+
+### 4. Empty Lifecycle Blocks
+```agentscript
+# ❌ WRONG
+before_reasoning:
+   # Just a comment   # Fails!
+
+# ✅ CORRECT - Remove empty blocks or add content
+```
+
+### 5. Dynamic Action Invocation
+```agentscript
+# ❌ WRONG
+invoke: {!@actions.search}   # Fails!
+
+# ✅ CORRECT - Define multiple actions, LLM auto-selects
+search_products: @actions.product_search
+   description: "Search products"
+search_orders: @actions.order_search
+   description: "Search orders"
+```
+
+See the [Agent Script Syntax Reference](agent-script-syntax.md) for complete details.

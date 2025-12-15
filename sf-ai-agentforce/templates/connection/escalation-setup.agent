@@ -47,7 +47,8 @@ variables:
 		description: "Whether customer requested human agent"
 	escalation_reason: mutable string
 		description: "Reason for escalation"
-	attempts_before_escalation: mutable integer = 0
+	# ⚠️ Use 'number' not 'integer' - integer type is NOT supported in AiAuthoringBundle
+	attempts_before_escalation: mutable number = 0
 		description: "Number of attempts before escalating"
 
 language:
@@ -58,10 +59,12 @@ language:
 # ★ CONNECTION BLOCK - Required for @utils.escalate to work
 # This defines where escalated conversations are routed
 connection messaging:
-	# Route type options: "queue", "skill", or "agent"
-	outbound_route_type: "queue"
-	# API name of your Omni-Channel queue
-	outbound_route_name: "{{OMNI_CHANNEL_QUEUE_NAME}}"
+	# ⚠️ IMPORTANT: Only "OmniChannelFlow" is supported (not "queue", "skill", or "agent")
+	outbound_route_type: "OmniChannelFlow"
+	# API name of your Omni-Channel Flow
+	outbound_route_name: "{{OMNI_CHANNEL_FLOW_NAME}}"
+	# ⚠️ REQUIRED: escalation_message must be included when connection block is present
+	escalation_message: "Transferring you to a human agent now..."
 
 # Entry point
 start_agent topic_selector:
@@ -94,16 +97,13 @@ topic help:
 			| - "real person"
 			| - "live agent"
 			| - "customer service representative"
+			|
+			| Track escalation reason if provided:
+			set @variables.escalation_reason = ...
 		actions:
-			try_again: @utils.set
-				with escalation_reason=...
-				description: "Capture reason if user wants to escalate"
-
 			offer_escalation: @utils.transition to @topic.escalation
-				available when @variables.attempts_before_escalation >= 3
 
 			immediate_escalation: @utils.transition to @topic.escalation
-				# Use this when customer explicitly asks for human
 
 topic escalation:
 	label: "Escalation"
@@ -124,12 +124,10 @@ topic escalation:
 			transfer_to_human: @utils.escalate
 				description: "Transfer to human agent when customer requests or issue cannot be resolved"
 
-# ★ Alternative: Skill-Based Routing
-# If you want to route based on agent skills instead of queue:
-#
-# connection messaging:
-#    outbound_route_type: "skill"
-#    outbound_route_name: "Technical_Support_Skill"
+# ★ NOTE: Skill-Based and Queue-Based Routing
+# ⚠️ As of Dec 2025, only "OmniChannelFlow" is supported for outbound_route_type
+# "queue", "skill", and "agent" cause validation errors
+# You must create an Omni-Channel Flow that routes to your desired queue/skill
 
 # ★ Alternative: GenAiPlannerBundle Escalation with Reason
 # If using GenAiPlannerBundle (not visible in Studio), you can use:

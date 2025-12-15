@@ -661,6 +661,11 @@ These words cannot be used as input/output parameter names or action names:
 | "Internal Error, try again later" | Flow variable name mismatch | Match names exactly |
 | HTTP 404 at "Retrieve Metadata" | Metadata not deployed | Run `sf project deploy start` |
 | HTTP 404 at "Publish Agent" | Missing OmniChannelFlow | Create flow first |
+| "Unexpected 'if'" (slot filling) | `set x = ...` inside conditional | Move slot filling outside conditionals |
+| "SyntaxError" on `@utils.transition` | `description:` on transition action | Remove description from transitions |
+| "ValidationError" on `@utils.escalate` | Missing `description:` field | Add required description field |
+| "SyntaxError" in lifecycle block | Empty `before/after_reasoning` block | Remove empty blocks or add content |
+| "Unexpected '{'" in action | `{!@actions.x}` interpolation | Define actions explicitly, LLM auto-selects |
 
 ---
 
