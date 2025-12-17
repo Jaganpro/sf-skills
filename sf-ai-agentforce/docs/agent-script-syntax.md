@@ -314,6 +314,72 @@ topic orders:
          back: @utils.transition to @topic.topic_selector
 ```
 
+### Topic-Level System Instruction Overrides
+
+**Topics can override the global `system:` block to change agent behavior per topic.** This enables persona switching, tone changes, or specialized behavior without creating separate agents.
+
+```agentscript
+# Global system instructions (default behavior)
+system:
+   instructions: "You are a versatile assistant that adapts based on context."
+   messages:
+      welcome: "Welcome! I adapt my behavior based on the conversation."
+      error: "I encountered an issue. Please try again."
+
+# Topic with system override - professional mode
+topic professional:
+   label: "Professional Mode"
+   description: "Professional business communication"
+
+   system:
+      instructions: "You are a formal business professional. Use professional language, avoid casual expressions, focus on efficiency and clarity."
+
+   reasoning:
+      instructions: ->
+         | [Professional Mode Engaged]
+         | Respond with formal business tone.
+      actions:
+         return_general: @utils.transition to @topic.general
+
+# Topic with different override - creative mode
+topic creative:
+   label: "Creative Mode"
+   description: "Creative brainstorming assistant"
+
+   system:
+      instructions: "You are a creative brainstorming partner. Think outside the box, suggest unconventional ideas, be imaginative and supportive."
+
+   reasoning:
+      instructions: ->
+         | [Creative Mode Activated]
+         | Generate creative solutions and explore possibilities.
+      actions:
+         return_general: @utils.transition to @topic.general
+
+# Topic without override - uses global system instructions
+topic general:
+   label: "General"
+   description: "General conversation"
+
+   reasoning:
+      instructions: ->
+         | Respond in the default conversational style.
+      actions:
+         go_professional: @utils.transition to @topic.professional
+         go_creative: @utils.transition to @topic.creative
+```
+
+**How Topic-Level Overrides Work:**
+- If a topic has a `system:` block → use that topic's instructions
+- If a topic has NO `system:` block → inherit the global `system:` instructions
+- Overrides apply only while in that topic; transitioning away restores the target topic's behavior
+
+**Use Cases:**
+- **Persona Switching**: Switch between professional, casual, technical modes
+- **Specialized Domains**: Different expertise per topic (technical support vs billing)
+- **Localization**: Different tone for different regions/contexts
+- **Compliance**: Strict guidelines for sensitive topics (financial, medical)
+
 ---
 
 ## Variable Types
@@ -530,6 +596,76 @@ instructions: ->
    else:
       | Standard order processing.
 ```
+
+### Procedural Instructions with Inline Actions (Advanced Pattern)
+
+**You can execute actions directly inside the `instructions:->` block for conditional data loading.** This pattern fetches data only when needed, reducing unnecessary API calls.
+
+```agentscript
+topic order_status:
+   label: "Order Status"
+   description: "Looks up and explains order status"
+
+   actions:
+      get_order_status:
+         description: "Retrieves current status for an order"
+         inputs:
+            order_id: string
+               description: "The unique order identifier"
+         outputs:
+            status: string
+               description: "Current order status"
+            tracking_number: string
+               description: "Shipping tracking number"
+         target: "flow://GetOrderStatus"
+
+   reasoning:
+      instructions:->
+         # Step 1: Validate input - ask for order ID if missing
+         if not @variables.order_id:
+            | Ask the customer for their order number so you can look up the status.
+
+         # Step 2: Fetch data only when we have order_id but not status yet
+         if @variables.order_id and not @variables.order_status:
+            run @actions.get_order_status
+               with order_id=@variables.order_id
+               set @variables.order_status = @outputs.status
+               set @variables.tracking_number = @outputs.tracking_number
+
+         # Step 3: Provide context-specific guidance based on status
+         | The customer's order {!@variables.order_id} has status: {!@variables.order_status}
+
+         if @variables.order_status == "pending":
+            | The order is being processed. Let them know:
+            | - Order is confirmed and being prepared
+            | - They'll receive tracking info within 24 hours
+
+         if @variables.order_status == "shipped":
+            | The order has shipped! Provide:
+            | - Tracking number: {!@variables.tracking_number}
+            | - Link to track shipment
+
+         if @variables.order_status == "delivered":
+            | The order was delivered. Confirm they received it.
+            | Ask if everything was satisfactory.
+
+         | Be proactive and helpful. Anticipate what the customer might need next.
+```
+
+**Key Pattern Features:**
+- **Conditional Data Loading**: `if @variables.x and not @variables.y:` guards prevent redundant API calls
+- **Action Inside Instructions**: `run @actions.x` executes directly in the instruction flow
+- **State-Based Guidance**: Different instructions appear based on variable values
+- **Progressive Flow**: Ask for input → Fetch data → Provide tailored response
+
+**When to Use This Pattern:**
+- Data should only be fetched after certain conditions are met
+- You need to adapt instructions based on fetched data
+- The action result determines what guidance to provide
+
+**⚠️ Note on Deployment Methods:**
+- This pattern uses `run` keyword which has limited support in AiAuthoringBundle
+- Test thoroughly - if validation fails, consider GenAiPlannerBundle deployment
 
 ### ⚠️ CRITICAL: Slot Filling (`...`) Cannot Be Inside Conditionals (Tested Dec 2025)
 
@@ -1090,6 +1226,95 @@ reasoning:
 go_checkout: @utils.transition to @topic.checkout
    available when @variables.cart_count > 0
 ```
+
+### Inline Transition After Action
+
+**You can add a `transition to` directly after an action's `set` statements to automatically change topics after the action completes.**
+
+```agentscript
+# Pattern: Action executes, then automatically transitions to next topic
+search_hotels: @actions.search_hotels
+   with location=...
+   with check_in=...
+   with check_out=...
+   set @variables.search_results = @outputs.results
+   transition to @topic.hotel_booking          # Auto-transition after action
+
+# Complete workflow example
+topic hotel_browse:
+   label: "Browse Hotels"
+   description: "Browse available hotels"
+
+   actions:
+      search_hotels:
+         description: "Search for available hotels"
+         inputs:
+            location: string
+               description: "City or area to search"
+            check_in: string
+               description: "Check-in date"
+            check_out: string
+               description: "Check-out date"
+         outputs:
+            results: object
+               description: "List of matching hotels"
+         target: "flow://SearchHotels"
+
+   reasoning:
+      instructions: ->
+         | Help the user find available hotels.
+      actions:
+         search: @actions.search_hotels
+            with location=...
+            with check_in=...
+            with check_out=...
+            set @variables.hotels = @outputs.results
+            transition to @topic.hotel_booking    # Go to booking after search
+
+topic hotel_booking:
+   label: "Book Hotel"
+   description: "Handle hotel reservation"
+
+   actions:
+      create_booking:
+         description: "Create a hotel reservation"
+         inputs:
+            hotel_id: string
+               description: "Selected hotel"
+         outputs:
+            confirmation: string
+               description: "Booking confirmation"
+            success: boolean
+               description: "Whether booking succeeded"
+         target: "flow://CreateBooking"
+
+   reasoning:
+      instructions: ->
+         | Available hotels: {!@variables.hotels}
+         | Help the user select and book a hotel.
+      actions:
+         book: @actions.create_booking
+            with hotel_id=...
+            set @variables.booking_confirmed = @outputs.success
+            set @variables.confirmation = @outputs.confirmation
+            transition to @topic.hotel_confirmation   # Go to confirmation after booking
+```
+
+**Syntax Comparison:**
+```agentscript
+# Standalone transition (in actions block)
+go_booking: @utils.transition to @topic.booking
+
+# Inline transition (after action execution)
+my_action: @actions.do_something
+   with param=...
+   set @variables.result = @outputs.result
+   transition to @topic.next                  # No @utils prefix!
+```
+
+**⚠️ Important Syntax Note:**
+- Standalone transitions use: `@utils.transition to @topic.name`
+- Inline transitions (after actions) use: `transition to @topic.name` (no `@utils` prefix)
 
 ### Escalation to Human
 

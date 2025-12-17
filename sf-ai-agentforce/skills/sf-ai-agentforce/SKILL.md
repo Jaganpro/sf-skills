@@ -31,6 +31,60 @@ Expert Agentforce developer specializing in Agent Script syntax, topic design, a
 - [Scoring System](#scoring-system-100-points) - 6-category validation
 - [Required Files Checklist](#required-files-checklist) - Pre-deployment verification
 
+**📚 Official Reference:**
+- [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) - Salesforce's official Agent Script examples
+
+---
+
+## 🆕 New Patterns (December 2025)
+
+Patterns added from cross-comparison with official Salesforce agent-script-recipes repository:
+
+| Pattern | Template | Description |
+|---------|----------|-------------|
+| **Prompt Template Actions** | `patterns/prompt-template-action.agent` | Invoke PromptTemplates directly using `generatePromptResponse://` target |
+| **Multi-Step Workflows** | `patterns/multi-step-workflow.agent` | Boolean flags for progress tracking through complex processes |
+| **Procedural Instructions** | `patterns/procedural-instructions.agent` | Execute `run @actions.x` inside `instructions:->` for conditional data loading |
+| **Topic System Overrides** | `patterns/system-instruction-overrides.agent` | Use `system:` blocks inside topics for persona switching |
+| **Input Binding Patterns** | See [best-practices.md](../../docs/best-practices.md) | When to use `...`, `@variables.x`, or fixed values |
+
+### Prompt Template Action Syntax (NEW)
+
+```agentscript
+actions:
+   Generate_Content:
+      description: "Generate AI content using a prompt template"
+      inputs:
+         # MUST use "Input:" prefix for template variables
+         "Input:email": string
+            description: "User's email"
+            is_required: True
+      outputs:
+         # Standard output field name
+         promptResponse: string
+            description: "Generated content"
+            is_used_by_planner: True
+      # Target protocol for prompt templates
+      target: "generatePromptResponse://Template_API_Name"
+```
+
+### Topic-Level System Override Syntax (NEW)
+
+```agentscript
+topic formal_mode:
+   label: "Formal Mode"
+   description: "Professional communication"
+
+   # Topic-level system: OVERRIDES global system instructions
+   system:
+      instructions: "You are a formal business professional. Use professional language."
+
+   reasoning:
+      instructions: ->
+         | [Formal Mode Engaged]
+         | How may I assist you today?
+```
+
 ---
 
 ## ⚠️ CRITICAL: Two Deployment Methods (Tested Dec 2025)
@@ -665,6 +719,10 @@ Use **AskUserQuestion** to gather:
 | Lifecycle Events | Before/after reasoning logic | `templates/patterns/lifecycle-events.agent` |
 | Action Callbacks | Guaranteed post-action steps | `templates/patterns/action-callbacks.agent` |
 | Bidirectional Routing | Consult specialist, return | `templates/patterns/bidirectional-routing.agent` |
+| **Prompt Template Actions** | AI content generation | `templates/patterns/prompt-template-action.agent` |
+| **Multi-Step Workflows** | Complex processes with progress | `templates/patterns/multi-step-workflow.agent` |
+| **Procedural Instructions** | Conditional data loading | `templates/patterns/procedural-instructions.agent` |
+| **System Overrides** | Persona/mode switching | `templates/patterns/system-instruction-overrides.agent` |
 
 **Pattern Decision Guide**: See `docs/pattern-catalog.md` for detailed decision tree.
 

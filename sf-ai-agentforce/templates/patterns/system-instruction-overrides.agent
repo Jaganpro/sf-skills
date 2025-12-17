@@ -194,16 +194,100 @@ topic support:
 		actions:
 			back: @utils.transition to @topic.topic_selector
 
-# ★ Insight: System vs Topic Instructions
+# ═══════════════════════════════════════════════════════════════════════════
+# ★ TOPIC-LEVEL SYSTEM OVERRIDES (NEW PATTERN)
+# These topics demonstrate complete persona switching using topic-level
+# system: blocks that OVERRIDE the global system instructions.
+# ═══════════════════════════════════════════════════════════════════════════
+
+topic formal_mode:
+	label: "Formal Communication"
+	description: "Professional business communication mode"
+
+	# ★ TOPIC-LEVEL SYSTEM OVERRIDE
+	# This completely replaces global system instructions for this topic
+	system:
+		instructions: "You are a formal business professional. Use professional language at all times. Address users as Sir or Madam. Avoid contractions, slang, and casual expressions. Focus on efficiency and clarity. Maintain a respectful, corporate tone."
+
+	reasoning:
+		instructions: ->
+			| [Formal Mode Engaged]
+			|
+			| Good day. How may I be of assistance?
+			| I am prepared to address your inquiry with the utmost professionalism.
+
+		actions:
+			back: @utils.transition to @topic.topic_selector
+
+topic creative_mode:
+	label: "Creative Assistant"
+	description: "Creative and imaginative communication mode"
+
+	# ★ TOPIC-LEVEL SYSTEM OVERRIDE
+	# Different persona entirely
+	system:
+		instructions: "You are a creative and imaginative assistant. Be playful, use metaphors and analogies. Think outside the box. Encourage brainstorming and wild ideas. Use emojis sparingly but effectively. Make conversations engaging and fun while still being helpful."
+
+	reasoning:
+		instructions: ->
+			| 🎨 [Creative Mode Activated!]
+			|
+			| Hey there, creative spirit! Ready to explore some ideas together?
+			| Think of me as your brainstorming buddy - no idea is too wild!
+			|
+			| What shall we dream up today?
+
+		actions:
+			back: @utils.transition to @topic.topic_selector
+
+topic technical_expert:
+	label: "Technical Expert"
+	description: "Deep technical expertise mode"
+
+	# ★ TOPIC-LEVEL SYSTEM OVERRIDE
+	# Specialist persona
+	system:
+		instructions: "You are a technical expert with deep knowledge. Use precise technical terminology. Provide detailed explanations with examples. Reference documentation when helpful. Assume the user has technical background. Be thorough but avoid unnecessary verbosity."
+
+	reasoning:
+		instructions: ->
+			| [Technical Expert Mode]
+			|
+			| I'm ready to dive deep into technical details.
+			| Feel free to use technical terminology - I'll match your level.
+			|
+			| What technical challenge are we solving?
+
+		actions:
+			back: @utils.transition to @topic.topic_selector
+
+# ★ Insight: Three Levels of Instruction Control
 #
-# SYSTEM BLOCK:
+# LEVEL 1: GLOBAL SYSTEM BLOCK
 #   - Static text only (no variables, no conditionals)
 #   - Applies to ALL topics as baseline
 #   - Good for: Guardrails, base personality, universal rules
+#   - Example: "Never share confidential information"
 #
-# TOPIC REASONING:
+# LEVEL 2: TOPIC-LEVEL SYSTEM BLOCK (NEW!)
+#   - Placed inside topic definition
+#   - COMPLETELY OVERRIDES global system for that topic
+#   - Good for: Persona switching, mode changes, specialist behavior
+#   - Example: topic formal_mode: system: instructions: "Be professional..."
+#
+# LEVEL 3: TOPIC REASONING INSTRUCTIONS
 #   - Dynamic (variables, conditionals, template expressions)
-#   - Can override/extend system behavior per topic
+#   - Extends/adjusts behavior within topic
 #   - Good for: Context-aware responses, personalization
+#   - Example: if @variables.is_vip: | Provide priority service
 #
-# Best Practice: Put guardrails in system, personalization in topics
+# OVERRIDE HIERARCHY:
+#   Topic system: > Global system: > Default behavior
+#
+# COMBINING APPROACHES:
+#   - Use GLOBAL system for universal guardrails
+#   - Use TOPIC system: for complete persona changes
+#   - Use TOPIC reasoning for dynamic conditional behavior
+#
+# Best Practice: Put guardrails in global system, personas in topic system,
+# and context-aware personalization in topic reasoning instructions.

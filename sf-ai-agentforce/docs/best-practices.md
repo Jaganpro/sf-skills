@@ -158,22 +158,158 @@ get_order_status:
     target: "flow://Get_Order_Status"
 ```
 
-### Use Appropriate Binding Patterns
+### Input Binding Decision Guide
+
+Agent Script supports four input binding patterns. Choosing the right one is critical for reliable agent behavior.
+
+#### The Four Patterns
+
+| Pattern | Syntax | When to Use |
+|---------|--------|-------------|
+| **LLM Slot-Filling** | `with param=...` | Value comes from user conversation |
+| **Fixed Value** | `with param="constant"` | Always the same, never changes |
+| **Variable Binding** | `with param=@variables.x` | Using previously captured data |
+| **Mixed** | All three combined | Complex actions with varied sources |
+
+#### Pattern 1: LLM Slot-Filling (`...`)
+
+**Use when**: The value must be extracted from what the user says.
 
 ```agentscript
-reasoning:
+# The LLM extracts "order_id" from user's message
+# User: "What's the status of order 12345?"
+# LLM fills: order_id = "12345"
+
+lookup: @actions.get_order_status
+    with order_id=...            # LLM extracts from conversation
+    set @variables.status = @outputs.status
+```
+
+**Best for:**
+- User-provided information (names, IDs, dates)
+- Information that varies per conversation
+- Values the user explicitly mentions
+
+**⚠️ Avoid when:**
+- You need a specific, predictable value
+- The value should come from previous actions
+
+#### Pattern 2: Fixed Values
+
+**Use when**: The value is constant and should never change.
+
+```agentscript
+# Always use PDF format, always check last 30 days
+generate_report: @actions.create_report
+    with format="pdf"            # Always PDF
+    with days_back=30            # Always 30 days
+    with include_charts=True     # Always include charts
+```
+
+**Best for:**
+- Configuration values
+- Default settings
+- System-level parameters
+- API-required constants
+
+#### Pattern 3: Variable Binding (`@variables`)
+
+**Use when**: Using data captured earlier in the conversation.
+
+```agentscript
+# First: Capture customer ID from earlier action
+lookup_customer: @actions.find_customer
+    with email=...
+    set @variables.customer_id = @outputs.id
+
+# Later: Use that customer_id
+create_order: @actions.create_order
+    with customer_id=@variables.customer_id    # From earlier
+    with items=...                              # From conversation
+```
+
+**Best for:**
+- Data from previous actions
+- Information persisted across turns
+- Values that build up through workflow
+
+#### Pattern 4: Mixed Binding
+
+**Use when**: An action needs inputs from multiple sources.
+
+```agentscript
+# Real-world example: Report generation
+# - report_type: User chooses from conversation
+# - customer_id: From earlier lookup
+# - format: Always PDF (company standard)
+# - start_date: From user conversation
+# - end_date: From user conversation
+
+create_report: @actions.generate_report
+    with report_type=...                       # LLM extracts
+    with customer_id=@variables.customer_id    # From variable
+    with format="pdf"                          # Fixed constant
+    with start_date=...                        # LLM extracts
+    with end_date=...                          # LLM extracts
+    set @variables.report_url = @outputs.download_url
+```
+
+#### Decision Flowchart
+
+```
+Is the value always the same?
+├─ YES → Use fixed value: with param="constant"
+│
+└─ NO → Does it come from earlier in conversation?
+        ├─ YES → Was it saved to a variable?
+        │       ├─ YES → Use variable: with param=@variables.x
+        │       └─ NO → Save it first, then use variable
+        │
+        └─ NO → Should LLM extract from user message?
+                ├─ YES → Use slot-filling: with param=...
+                └─ NO → Consider restructuring your workflow
+```
+
+#### Common Mistakes
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| Using `...` for config | LLM might guess wrong | Use fixed values for constants |
+| Using fixed value for user input | Can't personalize | Use `...` for user-provided data |
+| Not capturing outputs | Can't use data later | Always `set @variables.x = @outputs.y` |
+| Using `...` when variable exists | Redundant LLM work | Use `@variables.x` if already captured |
+
+#### Complete Example
+
+```agentscript
+topic customer_service:
     actions:
-        # LLM extracts from conversation
-        lookup: @actions.get_order
-            with order_id=...
+        # Action definitions...
 
-        # Fixed value
-        default_lookup: @actions.get_order
-            with order_id="DEFAULT"
+    reasoning:
+        instructions: ->
+            | Help the customer with their account.
+        actions:
+            # Step 1: Find customer (LLM extracts email from conversation)
+            find: @actions.lookup_customer
+                with email=...                                # LLM extracts
+                set @variables.customer_id = @outputs.id
+                set @variables.tier = @outputs.membership_tier
 
-        # From variable
-        bound_lookup: @actions.get_order
-            with order_id=@variables.current_order_id
+            # Step 2: Get recent orders (use captured customer_id)
+            orders: @actions.get_orders
+                with customer_id=@variables.customer_id       # From variable
+                with limit=5                                  # Fixed constant
+                with status="all"                             # Fixed constant
+                set @variables.recent_orders = @outputs.orders
+
+            # Step 3: Create support case (mixed sources)
+            create_case: @actions.open_case
+                with customer_id=@variables.customer_id       # From variable
+                with subject=...                              # LLM extracts
+                with description=...                          # LLM extracts
+                with priority=@variables.tier == "Gold" ? "High" : "Normal"  # Conditional
+                set @variables.case_number = @outputs.case_number
 ```
 
 ### Capture Outputs

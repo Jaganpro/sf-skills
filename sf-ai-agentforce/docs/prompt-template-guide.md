@@ -597,6 +597,120 @@ Maintain a professional, factual tone.
 </GenAiFunction>
 ```
 
+### In Agent Script (Direct Invocation)
+
+**NEW - December 2025**: You can invoke PromptTemplates directly from Agent Script without creating a separate GenAiFunction wrapper.
+
+```agentscript
+topic content_generation:
+    description: "Generates personalized content using AI"
+
+    actions:
+        # Prompt Template Action - direct invocation
+        Generate_Personalized_Schedule:
+            description: "Generate a personalized schedule with a prompt template."
+            inputs:
+                # CRITICAL: Input names MUST use "Input:" prefix
+                "Input:email": string
+                    description: "User's email address to look up preferences"
+                    is_required: True
+                "Input:timezone": string
+                    description: "User's timezone for schedule formatting"
+                    is_required: False
+            outputs:
+                # Standard output field name for prompt responses
+                promptResponse: string
+                    description: "The AI-generated schedule content"
+                    is_used_by_planner: True
+                    is_displayable: True
+            # Target uses generatePromptResponse:// protocol
+            target: "generatePromptResponse://Generate_Personalized_Schedule"
+
+    reasoning:
+        instructions: ->
+            | Help the user create a personalized schedule.
+            | Ask for their email and timezone preference.
+        actions:
+            create_schedule: @actions.Generate_Personalized_Schedule
+                with "Input:email"=...
+                with "Input:timezone"=...
+                set @variables.generated_content = @outputs.promptResponse
+```
+
+**Key Syntax Points:**
+
+| Element | Requirement | Example |
+|---------|-------------|---------|
+| Target protocol | `generatePromptResponse://` | `target: "generatePromptResponse://My_Template"` |
+| Input naming | Must have `"Input:"` prefix | `"Input:customerName": string` |
+| Output field | Use `promptResponse` | `promptResponse: string` |
+| Template name | Must match PromptTemplate API name | Template file: `My_Template.promptTemplate-meta.xml` |
+
+**Mapping Template Variables:**
+
+The `"Input:variableName"` in Agent Script maps to `{!variableName}` in your PromptTemplate:
+
+```
+Agent Script Input          →  PromptTemplate Variable
+────────────────────────────────────────────────────────
+"Input:email"              →  {!email}
+"Input:customerQuestion"   →  {!customerQuestion}
+"Input:context"            →  {!context}
+```
+
+**Complete Example Workflow:**
+
+1. **Create PromptTemplate** (`force-app/main/default/promptTemplates/Generate_Personalized_Schedule.promptTemplate-meta.xml`):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<PromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Generate_Personalized_Schedule</fullName>
+    <masterLabel>Generate Personalized Schedule</masterLabel>
+    <description>Creates personalized schedules based on user preferences</description>
+    <type>flexPrompt</type>
+    <isActive>true</isActive>
+
+    <promptContent>
+Create a personalized daily schedule for the user.
+
+User Email: {!email}
+Timezone: {!timezone}
+
+Generate a structured schedule that includes:
+1. Morning routine
+2. Work blocks with breaks
+3. Lunch break
+4. Afternoon focus time
+5. Evening wind-down
+
+Format as a clean, readable schedule.
+    </promptContent>
+
+    <promptTemplateVariables>
+        <developerName>email</developerName>
+        <promptTemplateVariableType>freeText</promptTemplateVariableType>
+        <isRequired>true</isRequired>
+    </promptTemplateVariables>
+
+    <promptTemplateVariables>
+        <developerName>timezone</developerName>
+        <promptTemplateVariableType>freeText</promptTemplateVariableType>
+        <isRequired>false</isRequired>
+    </promptTemplateVariables>
+</PromptTemplate>
+```
+
+2. **Deploy the PromptTemplate first:**
+
+```bash
+sf project deploy start -m "PromptTemplate:Generate_Personalized_Schedule"
+```
+
+3. **Then publish the agent** that references it.
+
+> ⚠️ **Deployment Order Matters**: The PromptTemplate must exist in the org before publishing an agent that references it via `generatePromptResponse://`.
+
 ### In Apex
 
 ```apex
