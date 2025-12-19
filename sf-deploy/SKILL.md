@@ -1,6 +1,13 @@
 ---
 name: sf-deploy
-description: Comprehensive Salesforce DevOps automation using sf CLI v2. Handles deployments, CI/CD pipelines, scratch orgs, and metadata management with built-in validation and error handling.
+description: >
+  Comprehensive Salesforce DevOps automation using sf CLI v2. Use when deploying
+  metadata, managing scratch orgs, setting up CI/CD pipelines, or troubleshooting
+  deployment errors.
+license: MIT
+metadata:
+  version: "2.0.0"
+  author: "Jag Valaiyapathy"
 ---
 
 # sf-deploy: Comprehensive Salesforce DevOps Automation

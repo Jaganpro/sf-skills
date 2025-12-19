@@ -1,0 +1,57 @@
+name: Validate Skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/SKILL.md'
+      - '**/.claude-plugin/plugin.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/SKILL.md'
+      - '**/.claude-plugin/plugin.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install skills-ref validator
+        run: npm install -g @anthropic/skills-ref
+
+      - name: Validate all skills
+        run: |
+          echo "🔍 Validating Agent Skills..."
+          failed=0
+          for skill in sf-apex sf-flow sf-diagram sf-metadata sf-data sf-deploy sf-ai-agentforce sf-connected-apps sf-integration skill-builder; do
+            if [ -f "./$skill/SKILL.md" ]; then
+              echo "📦 Validating $skill..."
+              if skills-ref validate "./$skill"; then
+                echo "✅ $skill passed"
+              else
+                echo "❌ $skill failed"
+                failed=1
+              fi
+            else
+              echo "⚠️ Skipping $skill (no SKILL.md found)"
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo "❌ Some skills failed validation"
+            exit 1
+          fi
+          echo "✅ All skills validated successfully"
+
+      - name: Validate plugin.json sync
+        run: |
+          echo "🔄 Checking plugin.json sync with SKILL.md..."
+          chmod +x scripts/validate-sync.sh
+          ./scripts/validate-sync.sh

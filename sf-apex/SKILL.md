@@ -1,6 +1,14 @@
 ---
 name: sf-apex
-description: Generates and reviews Salesforce Apex code with 2025 best practices. 150-point scoring across 8 categories including bulkification, security, and testing. Enforces Trigger Actions Framework (TAF) pattern.
+description: >
+  Generates and reviews Salesforce Apex code with 2025 best practices and 150-point
+  scoring. Use when writing Apex classes, triggers, test classes, batch jobs, or
+  reviewing existing Apex code for bulkification, security, and SOLID principles.
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "150 points across 8 categories"
 ---
 
 # sf-apex: Salesforce Apex Code Generation and Review

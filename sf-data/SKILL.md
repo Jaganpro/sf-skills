@@ -1,6 +1,14 @@
 ---
 name: sf-data
-description: Salesforce data operations expert for CRUD, SOQL queries, test data generation, and bulk operations. 130-point scoring across 7 categories. Integrates with sf-metadata for object discovery and supports sf-apex/sf-flow for testing.
+description: >
+  Salesforce data operations expert with 130-point scoring. Use when writing
+  SOQL queries, creating test data, performing bulk data operations, or
+  importing/exporting data via sf CLI.
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "130 points across 7 categories"
 ---
 
 # Salesforce Data Operations Expert (sf-data)

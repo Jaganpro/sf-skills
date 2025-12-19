@@ -1,7 +1,7 @@
 {
   "name": "sf-connected-apps",
   "version": "1.0.0",
-  "description": "Creates and manages Salesforce Connected Apps and External Client Apps with OAuth configuration, security best practices, and 120-point scoring validation",
+  "description": "Creates and manages Salesforce Connected Apps and External Client Apps with 120-point scoring. Use when configuring OAuth flows, creating connected apps, setting up JWT bearer auth, or managing API access policies.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

@@ -1,7 +1,7 @@
 {
   "name": "skill-builder",
   "version": "2.0.0",
-  "description": "Interactive wizard for creating, validating, and managing Claude Code skills",
+  "description": "Interactive wizard for creating Claude Code skills. Use when scaffolding new skills, validating skill structure, managing dependencies, or editing skill configuration files.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

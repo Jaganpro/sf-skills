@@ -1,6 +1,14 @@
 ---
 name: sf-integration
-description: Creates comprehensive Salesforce integrations including Named Credentials, External Services, REST/SOAP callouts, Platform Events, and Change Data Capture. 120-point scoring across 6 categories. Use this skill when the user needs to connect Salesforce to external systems.
+description: >
+  Creates comprehensive Salesforce integrations with 120-point scoring. Use when
+  setting up Named Credentials, External Services, REST/SOAP callouts, Platform
+  Events, Change Data Capture, or connecting Salesforce to external systems.
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "120 points across 6 categories"
 ---
 
 # sf-integration: Salesforce Integration Patterns Expert

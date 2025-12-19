@@ -1,6 +1,14 @@
 ---
 name: sf-metadata
-description: Generates and queries Salesforce metadata including Custom Objects, Fields, Profiles, Permission Sets, Validation Rules, Record Types, and Layouts. 120-point scoring across 6 categories. Integrates with sf-apex and sf-flow for on-demand object/field validation.
+description: >
+  Generates and queries Salesforce metadata with 120-point scoring. Use when
+  creating custom objects, fields, profiles, permission sets, validation rules,
+  or querying org metadata structures via sf CLI.
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "120 points across 6 categories"
 ---
 
 # sf-metadata: Salesforce Metadata Generation and Org Querying

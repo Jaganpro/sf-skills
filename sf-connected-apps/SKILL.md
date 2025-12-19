@@ -1,10 +1,15 @@
 ---
 name: sf-connected-apps
-description: Creates and manages Salesforce Connected Apps and External Client Apps with OAuth configuration and best practices. 120-point scoring across 6 categories including security, OAuth, and metadata compliance.
-version: 1.0.0
-author: Jag Valaiyapathy
-tags: [salesforce, connected-apps, external-client-apps, oauth, integration, security]
-allowed-tools: [Bash, Read, Write, Edit, Glob, Grep, WebFetch, AskUserQuestion, TodoWrite]
+description: >
+  Creates and manages Salesforce Connected Apps and External Client Apps with
+  120-point scoring. Use when configuring OAuth flows, creating connected apps,
+  setting up JWT bearer auth, or managing API access policies.
+license: MIT
+allowed-tools: Bash Read Write Edit Glob Grep WebFetch AskUserQuestion TodoWrite
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "120 points across 6 categories"
 ---
 
 # sf-connected-apps: Salesforce Connected Apps & External Client Apps

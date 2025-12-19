@@ -1,6 +1,14 @@
 ---
 name: sf-flow
-description: Creates and validates Salesforce flows using best practices and metadata standards. Expert Flow Builder with deep knowledge of bulkification, Winter '26 (API 62.0), and 110-point scoring validation. Supports 7 flow types with strict mode enforcement.
+description: >
+  Creates and validates Salesforce flows with 110-point scoring and Winter '26
+  best practices. Use when building record-triggered flows, screen flows,
+  autolaunched flows, scheduled flows, or reviewing existing flow performance.
+license: MIT
+metadata:
+  version: "2.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "110 points across 6 categories"
 ---
 
 # sf-flow: Salesforce Flow Creation and Validation

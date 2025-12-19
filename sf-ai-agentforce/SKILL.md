@@ -1,6 +1,15 @@
 ---
 name: sf-ai-agentforce
-description: Creates Agentforce agents using Agent Script syntax. Generates complete agents with topics, actions, and variables. 100-point scoring across 6 categories. API v64+ (AiAuthoringBundle) or v65+ (GenAiPlannerBundle).
+description: >
+  Creates Agentforce agents using Agent Script syntax with 100-point scoring.
+  Use when building AI agents, defining topics and actions, or deploying
+  AiAuthoringBundle (v65+) or GenAiPlannerBundle (v65+) metadata.
+license: MIT
+compatibility: "Requires API v65.0+ (Winter '26) for deployment"
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "100 points across 6 categories"
 ---
 
 <!-- TIER: 1 | ENTRY POINT -->

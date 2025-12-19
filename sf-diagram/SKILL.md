@@ -1,6 +1,15 @@
 ---
 name: sf-diagram
-description: Creates Salesforce architecture diagrams using Mermaid syntax with ASCII fallback. Supports OAuth flows, data models, integration sequences, system landscapes, role hierarchies, and Agentforce flows. 80-point scoring across 5 categories.
+description: >
+  Creates Salesforce architecture diagrams using Mermaid with ASCII fallback.
+  Use when visualizing OAuth flows, data models (ERDs), integration sequences,
+  system landscapes, role hierarchies, or Agentforce agent architectures.
+license: MIT
+compatibility: "Requires Mermaid-capable renderer for diagram previews"
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  scoring: "80 points across 5 categories"
 ---
 
 # sf-diagram: Salesforce Diagram Generation
@@ -138,130 +147,19 @@ Score: XX/80 ⭐⭐⭐⭐ Rating
 
 ### Phase 5.5: Preview (Optional)
 
-After generating the diagram, offer the user a localhost preview for real-time iteration.
-
-**Start Preview**:
-1. Save Mermaid code to temporary file:
-   ```
-   Write: /tmp/mermaid-preview.mmd
-   [Mermaid code content]
-   ```
-
-2. Start preview server (runs in background):
-   ```bash
-   # From marketplace folder (always available):
-   python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram/preview/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
-
-   # Or from project folder (if working locally):
-   python [project-root]/sf-diagram/preview/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
-   ```
-
-3. Provide URL to user:
-   > 📊 **Preview available**: http://localhost:8765
-   >
-   > The browser will auto-reload when you update the diagram.
-
-**Iteration Workflow**:
-- User views diagram in browser
-- User requests changes ("make boxes pink", "add another node")
-- You update `/tmp/mermaid-preview.mmd` using the Write tool
-- Browser auto-reloads with new diagram (via SSE)
-- Repeat until user is satisfied
-
-**Stop Preview** (when user is done):
-```bash
-python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram/preview/mermaid_preview.py stop
-```
-
-**Preview Server Features**:
-- Live reload via Server-Sent Events (SSE)
-- Dark/light theme auto-detection
-- Copy Mermaid code button
-- Download as SVG button
-- Connection status indicator
+Offer localhost preview for real-time diagram iteration. See [references/preview-guide.md](references/preview-guide.md) for setup instructions.
 
 ---
 
-## Mermaid Styling Guide (sf-skills Standard)
+## Mermaid Styling Guide
 
-Use individual `style` declarations with **Tailwind 200-level pastel fills** and **dark strokes** for consistent, visually soft diagrams.
+Use Tailwind 200-level pastel fills with dark strokes. See [references/mermaid-styling.md](references/mermaid-styling.md) for complete color palette and examples.
 
-### Spacing Configuration
-
-Add this init directive at the start of every flowchart for optimal readability:
-
+**Quick reference**:
 ```
 %%{init: {"flowchart": {"nodeSpacing": 80, "rankSpacing": 70}} }%%
+style A fill:#fbcfe8,stroke:#be185d,color:#1f2937
 ```
-
-| Option | Value | Effect |
-|--------|-------|--------|
-| `nodeSpacing` | 80 | 60% more horizontal space (default: 50) |
-| `rankSpacing` | 70 | 40% more vertical space (default: 50) |
-
-**Note**: Omit `curve` to use the default smooth curves (`basis`).
-
-### Primary Color Palette (Tailwind 200 + Dark Borders)
-
-| Component | Fill (200) | Stroke (700+) | Text | Usage |
-|-----------|------------|---------------|------|-------|
-| AI & Agents | `#fbcfe8` | `#be185d` | `#1f2937` | Agentforce, AI features |
-| Integration (Orange) | `#fed7aa` | `#c2410c` | `#1f2937` | Connected Apps, OAuth |
-| Integration (Teal) | `#99f6e4` | `#0f766e` | `#1f2937` | Named Creds, callouts |
-| Development (Violet) | `#ddd6fe` | `#6d28d9` | `#1f2937` | Apex, services |
-| Development (Indigo) | `#c7d2fe` | `#4338ca` | `#1f2937` | Flows, automation |
-| Foundation (Cyan) | `#a5f3fc` | `#0e7490` | `#1f2937` | Metadata, objects |
-| Foundation (Amber) | `#fde68a` | `#b45309` | `#1f2937` | Data, storage |
-| DevOps (Green) | `#a7f3d0` | `#047857` | `#1f2937` | Deploy, CI/CD |
-| Utility (Slate) | `#e2e8f0` | `#334155` | `#1f2937` | Tooling |
-
-### Subgraph Background Colors (Tailwind 50-level)
-
-| Subgraph | Fill (50) | Stroke | Style |
-|----------|-----------|--------|-------|
-| AI & Agents | `#fdf2f8` | `#be185d` | dashed |
-| Integration | `#fff7ed` | `#c2410c` | dashed |
-| Development | `#f5f3ff` | `#6d28d9` | dashed |
-| Foundation | `#ecfeff` | `#0e7490` | dashed |
-| DevOps | `#ecfdf5` | `#047857` | dashed |
-
-### Preferred: Individual Node Styling
-
-**DO use `style` declarations with 200-level fills**:
-```mermaid
-flowchart TB
-    A["🤖 Agent"]
-    B["⚡ Apex"]
-
-    A --> B
-
-    style A fill:#fbcfe8,stroke:#be185d,color:#1f2937
-    style B fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
-```
-
-**Note**: Use `%%{init}` for spacing/curve config only. Avoid using it for color theming (use individual `style` declarations instead).
-
-### Subgraph Styling
-
-Use 50-level backgrounds with dark dashed borders. Use UPPERCASE for subgraph titles:
-```mermaid
-%%{init: {"flowchart": {"nodeSpacing": 80, "rankSpacing": 70}} }%%
-flowchart TB
-    subgraph ai["🤖 AI & AGENTS"]
-        A[Agent]
-    end
-
-    style ai fill:#fdf2f8,stroke:#be185d,stroke-dasharray:5
-```
-
-### Node Label Pattern
-
-Keep labels short (icon + name only). Avoid `<br/>` and `<small>` tags:
-```
-["🔐 sf-connected-apps"]
-```
-
-**Full reference**: See `docs/color-palette.md`
 
 ---
 

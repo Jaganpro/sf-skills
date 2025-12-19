@@ -1,7 +1,7 @@
 {
   "name": "sf-data",
   "version": "1.0.0",
-  "description": "Salesforce data operations with SOQL expertise, test data factories, bulk operations, and 130-point validation. Integrates with sf-metadata for discovery and serves sf-apex/sf-flow for testing.",
+  "description": "Salesforce data operations expert with 130-point scoring. Use when writing SOQL queries, creating test data, performing bulk data operations, or importing/exporting data via sf CLI.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

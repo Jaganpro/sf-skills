@@ -1,7 +1,7 @@
 {
   "name": "sf-flow",
   "version": "2.0.0",
-  "description": "Salesforce Flow creation and validation with 110-point scoring, API 62.0 support, and best practices enforcement",
+  "description": "Creates and validates Salesforce flows with 110-point scoring and Winter '26 best practices. Use when building record-triggered flows, screen flows, autolaunched flows, scheduled flows, or reviewing existing flow performance.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

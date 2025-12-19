@@ -1,7 +1,7 @@
 {
   "name": "sf-deploy",
   "version": "2.0.0",
-  "description": "Salesforce DevOps automation using sf CLI v2 - deployments, CI/CD, scratch orgs, and metadata management",
+  "description": "Comprehensive Salesforce DevOps automation using sf CLI v2. Use when deploying metadata, managing scratch orgs, setting up CI/CD pipelines, or troubleshooting deployment errors.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

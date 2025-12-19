@@ -1,7 +1,7 @@
 {
   "name": "sf-metadata",
   "version": "1.0.0",
-  "description": "Salesforce metadata generation and org querying with 120-point scoring. Creates Custom Objects, Fields, Profiles, Permission Sets, Validation Rules, Record Types, and Layouts.",
+  "description": "Generates and queries Salesforce metadata with 120-point scoring. Use when creating custom objects, fields, profiles, permission sets, validation rules, or querying org metadata structures via sf CLI.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

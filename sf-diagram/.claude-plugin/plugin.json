@@ -1,7 +1,7 @@
 {
   "name": "sf-diagram",
   "version": "1.0.0",
-  "description": "Salesforce architecture diagrams using Mermaid syntax with 80-point scoring - OAuth flows, ERDs, integrations, and Agentforce flows",
+  "description": "Creates Salesforce architecture diagrams using Mermaid with ASCII fallback. Use when visualizing OAuth flows, data models (ERDs), integration sequences, system landscapes, role hierarchies, or Agentforce agent architectures.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"

@@ -1,6 +1,13 @@
 ---
 name: skill-builder
-description: Interactive wizard for creating, scaffolding, validating, and managing Claude Code skills. Includes YAML validation, dependency management, bulk validation, and terminal-based interactive editor.
+description: >
+  Interactive wizard for creating Claude Code skills. Use when scaffolding new
+  skills, validating skill structure, managing dependencies, or editing skill
+  configuration files.
+license: MIT
+metadata:
+  version: "2.0.0"
+  author: "Jag Valaiyapathy"
 ---
 
 # Skill-Builder: Claude Code Skill Creation Wizard
