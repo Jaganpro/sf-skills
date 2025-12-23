@@ -34,7 +34,7 @@ All actions in Agent Script support these properties:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `target` | String | Yes | Executable: `flow://`, `apex://`, `prompt://` |
+| `target` | String | Yes | Executable target (see Action Target Types below) |
 | `description` | String | Yes | Explains behavior for LLM decision-making |
 | `inputs` | Object | No | Input parameters and requirements |
 | `outputs` | Object | No | Return parameters |
@@ -51,6 +51,53 @@ All actions in Agent Script support these properties:
 | `description` | String | Explains the output parameter |
 | `filter_from_agent` | Boolean | Set `True` to hide sensitive data from LLM |
 | `complex_data_type_name` | String | Lightning data type mapping |
+
+### Action Target Types (Complete Reference)
+
+AgentScript supports **22+ action target types**. Use the correct protocol for your integration:
+
+| Short Name | Long Name | Description | Use Case |
+|------------|-----------|-------------|----------|
+| `flow` | `flow` | Salesforce Flow | Most common - Autolaunched Flows |
+| `apex` | `apex` | Apex Class | Custom business logic |
+| `prompt` | `generatePromptResponse` | Prompt Template | AI-generated responses |
+| `standardInvocableAction` | `standardInvocableAction` | Built-in Salesforce actions | Send email, create task, etc. |
+| `externalService` | `externalService` | External API via OpenAPI schema | External system calls |
+| `quickAction` | `quickAction` | Object-specific quick actions | Log call, create related record |
+| `api` | `api` | REST API calls | Direct API invocation |
+| `apexRest` | `apexRest` | Custom REST endpoints | Custom @RestResource classes |
+| `serviceCatalog` | `createCatalogItemRequest` | Service Catalog | Service catalog requests |
+| `integrationProcedureAction` | `executeIntegrationProcedure` | OmniStudio Integration | Industry Cloud procedures |
+| `expressionSet` | `runExpressionSet` | Expression calculations | Decision matrix, calculations |
+| `cdpMlPrediction` | `cdpMlPrediction` | CDP ML predictions | Data Cloud predictions |
+| `externalConnector` | `externalConnector` | External system connector | Pre-built connectors |
+| `slack` | `slack` | Slack integration | Slack messaging |
+| `namedQuery` | `namedQuery` | Predefined queries | Saved SOQL queries |
+| `auraEnabled` | `auraEnabled` | Lightning component methods | @AuraEnabled Apex methods |
+| `mcpTool` | `mcpTool` | Model Context Protocol | MCP tool integrations |
+| `retriever` | `retriever` | Knowledge retrieval | RAG/knowledge base queries |
+
+**Target Format**: `<type>://<DeveloperName>` (e.g., `flow://Get_Account_Info`, `standardInvocableAction://sendEmail`)
+
+**Common Examples:**
+```agentscript
+# Flow action (most common)
+target: "flow://Get_Customer_Orders"
+
+# Apex action
+target: "apex://CustomerServiceController"
+
+# Prompt template
+target: "generatePromptResponse://Email_Draft_Template"
+
+# Standard invocable action (built-in Salesforce)
+target: "standardInvocableAction://sendEmail"
+
+# External service (API call)
+target: "externalService://Stripe_Payment_API"
+```
+
+**⚠️ 0-shot Tip**: Before creating a custom Flow, check if a `standardInvocableAction://` already exists for your use case.
 
 ### Action Invocation Methods
 
