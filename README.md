@@ -4,7 +4,9 @@
 [![Claude Code](https://img.shields.io/badge/Claude-Code-blue.svg)](https://claude.ai/code)
 [![Salesforce](https://img.shields.io/badge/Salesforce-Apex%20%7C%20Flow%20%7C%20Metadata%20%7C%20Data%20%7C%20DevOps-00A1E0.svg)](https://www.salesforce.com/)
 
-A collection of reusable skills for Salesforce development, specializing in Apex code generation, Flow automation, Metadata management, and DevOps workflows. Built for Claude Code with planned support for other agentic coding tools.
+A collection of reusable skills for **Agentic Salesforce Development**, enabling AI-powered code generation, validation, testing, debugging, and deployment. Built for Claude Code with planned support for other agentic coding tools.
+
+> **14 skills** • **50+ templates** • **420+ validation points** • **LSP integration**
 
 ---
 
@@ -60,18 +62,43 @@ sf-apex/
 
 ## ✨ Available Skills
 
-| | Skill | Description | Status |
-|--|-------|-------------|--------|
-| ⚡ | **[sf-apex](sf-apex/)** | Apex gen & TAF patterns | 🧪 Alpha |
-| 🔄 | **[sf-flow](sf-flow/)** | Flow creation & bulk validation | 🧪 Alpha |
-| 📋 | **[sf-metadata](sf-metadata/)** | Metadata gen & org queries | 🧪 Alpha |
-| 💾 | **[sf-data](sf-data/)** | SOQL & test data factories | 🧪 Alpha |
-| 🚀 | **[sf-deploy](sf-deploy/)** | CI/CD automation (sf CLI v2) | 🧪 Alpha |
-| 🤖 | **[sf-ai-agentforce](sf-ai-agentforce/)** | Agent Script & Actions | 🧪 Alpha |
-| 🔐 | **[sf-connected-apps](sf-connected-apps/)** | OAuth apps & ECAs | 🧪 Alpha |
-| 🔗 | **[sf-integration](sf-integration/)** | Callouts, Events, CDC | 🧪 Alpha |
-| 📊 | **[sf-diagram](sf-diagram/)** | Mermaid diagrams & ERD | ✅ Stable |
-| 🛠️ | **[skill-builder](skill-builder/)** | Skill creation wizard | ✅ Stable |
+### 💻 Development
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| ⚡ | **[sf-apex](sf-apex/)** | Apex generation, TAF patterns, LSP validation | 150 | 🧪 Alpha |
+| 🔄 | **[sf-flow](sf-flow/)** | Flow creation & bulk validation | 110 | 🧪 Alpha |
+| ⚡ | **[sf-lwc](sf-lwc/)** | Lightning Web Components, Jest tests, LMS | 130 | 🆕 New |
+| 🔍 | **[sf-soql](sf-soql/)** | Natural language → SOQL, query optimization | 100 | 🆕 New |
+
+### 🧪 Quality & Testing
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| 🧪 | **[sf-testing](sf-testing/)** | Apex test runner, coverage, bulk testing | 100 | 🆕 New |
+| 🐛 | **[sf-debug](sf-debug/)** | Debug log analysis, governor limit fixes | 90 | 🆕 New |
+
+### 📦 Foundation
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| 📋 | **[sf-metadata](sf-metadata/)** | Metadata gen & org queries | 120 | 🧪 Alpha |
+| 💾 | **[sf-data](sf-data/)** | SOQL & test data factories | — | 🧪 Alpha |
+
+### 🔌 Integration & Security
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| 🔐 | **[sf-connected-apps](sf-connected-apps/)** | OAuth apps & ECAs | 120 | 🧪 Alpha |
+| 🔗 | **[sf-integration](sf-integration/)** | Callouts, Events, CDC | 120 | 🧪 Alpha |
+
+### 🤖 AI & Automation
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| 🤖 | **[sf-ai-agentforce](sf-ai-agentforce/)** | Agent Script, Topics, Actions (API v64+) | 150 | 🧪 Alpha |
+
+### 🚀 DevOps & Tooling
+| | Skill | Description | Points | Status |
+|--|-------|-------------|--------|--------|
+| 🚀 | **[sf-deploy](sf-deploy/)** | CI/CD automation (sf CLI v2) | — | 🧪 Alpha |
+| 📊 | **[sf-diagram](sf-diagram/)** | Mermaid diagrams & ERD | — | ✅ Stable |
+| 🛠️ | **[skill-builder](skill-builder/)** | Skill creation wizard | — | ✅ Stable |
 
 ## 🚀 Installation
 
@@ -105,6 +132,13 @@ flowchart TB
     subgraph development["💻 DEVELOPMENT"]
         apex["⚡ sf-apex"]
         flow["🔄 sf-flow"]
+        lwc["⚡ sf-lwc"]
+        soql["🔍 sf-soql"]
+    end
+
+    subgraph quality["🧪 QUALITY"]
+        testing["🧪 sf-testing"]
+        debug["🐛 sf-debug"]
     end
 
     subgraph foundation["📦 FOUNDATION"]
@@ -137,8 +171,16 @@ flowchart TB
     %% Development relationships
     apex -->|"schema"| metadata
     flow -->|"schema"| metadata
+    lwc -->|"@wire"| apex
+    lwc -->|"schema"| metadata
+    soql -->|"queries"| data
     apex -.->|"test data"| data
     flow -.->|"test data"| data
+
+    %% Quality relationships
+    testing -->|"validates"| apex
+    testing -.->|"test data"| data
+    debug -->|"fixes"| apex
 
     %% Foundation relationships
     data -->|"structure"| metadata
@@ -146,6 +188,7 @@ flowchart TB
     %% Deployment - all skills can deploy via sf-deploy
     apex -->|"deploy"| deploy
     flow -->|"deploy"| deploy
+    lwc -->|"deploy"| deploy
     metadata -->|"deploy"| deploy
     sfintegration -->|"deploy"| deploy
     connectedapps -->|"deploy"| deploy
@@ -162,6 +205,12 @@ flowchart TB
     %% Styling - Development (violet-200/indigo-200)
     style apex fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
     style flow fill:#c7d2fe,stroke:#4338ca,color:#1f2937
+    style lwc fill:#e9d5ff,stroke:#7c3aed,color:#1f2937
+    style soql fill:#c4b5fd,stroke:#5b21b6,color:#1f2937
+
+    %% Styling - Quality (lime-200)
+    style testing fill:#d9f99d,stroke:#65a30d,color:#1f2937
+    style debug fill:#bef264,stroke:#4d7c0f,color:#1f2937
 
     %% Styling - Foundation (cyan-200/amber-200)
     style metadata fill:#a5f3fc,stroke:#0e7490,color:#1f2937
@@ -177,6 +226,7 @@ flowchart TB
     style ai fill:#fdf2f8,stroke:#be185d,stroke-dasharray:5
     style integration fill:#fff7ed,stroke:#c2410c,stroke-dasharray:5
     style development fill:#f5f3ff,stroke:#6d28d9,stroke-dasharray:5
+    style quality fill:#f7fee7,stroke:#65a30d,stroke-dasharray:5
     style foundation fill:#ecfeff,stroke:#0e7490,stroke-dasharray:5
     style devops fill:#ecfdf5,stroke:#047857,stroke-dasharray:5
     style tooling fill:#f8fafc,stroke:#334155,stroke-dasharray:5
@@ -198,11 +248,15 @@ Each skill includes validation hooks that run automatically on **Write** and **E
 
 | | Skill | File Type | Validation |
 |--|-------|-----------|------------|
-| ⚡ | sf-apex | `*.cls`, `*.trigger` | 150-pt scoring + Code Analyzer |
+| ⚡ | sf-apex | `*.cls`, `*.trigger` | 150-pt scoring + Code Analyzer + LSP |
 | 🔄 | sf-flow | `*.flow-meta.xml` | 110-pt scoring + Flow Scanner |
+| ⚡ | sf-lwc | `*.js`, `*.html` (LWC) | 130-pt scoring + LSP |
+| 🔍 | sf-soql | `*.soql` | 100-pt scoring + selectivity checks |
+| 🧪 | sf-testing | `*Test.cls` | 100-pt scoring + coverage analysis |
+| 🐛 | sf-debug | Debug logs | 90-pt scoring + governor analysis |
 | 📋 | sf-metadata | `*.object-meta.xml`, `*.field-meta.xml` | Metadata best practices |
 | 💾 | sf-data | `*.apex`, `*.soql` | SOQL patterns, governor limits |
-| 🤖 | sf-ai-agentforce | `*.agent`, `*.genAiFunction-meta.xml` | Agent Script syntax |
+| 🤖 | sf-ai-agentforce | `*.agent`, `*.genAiFunction-meta.xml` | Agent Script syntax + LSP |
 | 🔐 | sf-connected-apps | `*.connectedApp-meta.xml` | OAuth security |
 | 🔗 | sf-integration | `*.namedCredential-meta.xml` | Callout patterns |
 | 🛠️ | skill-builder | `SKILL.md` | YAML frontmatter |
@@ -235,6 +289,7 @@ Skills leverage official Salesforce LSP servers for real-time syntax validation 
 |--|-------|-----------|------------|---------|
 | 🤖 | sf-ai-agentforce | `*.agent` | Agent Script Language Server | Node.js 18+ |
 | ⚡ | sf-apex | `*.cls`, `*.trigger` | apex-jorje-lsp.jar | Java 11+ |
+| ⚡ | sf-lwc | `*.js`, `*.html` | @salesforce/lwc-language-server | Node.js 18+ |
 
 **How Auto-Fix Loops Work:**
 1. Claude writes/edits a file
@@ -286,8 +341,9 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 - **VS Code with Salesforce Extensions** — LSP servers are bundled with VS Code extensions
   - Agent Script: Install "Agent Script" extension by Salesforce
   - Apex: Install "Salesforce Extension Pack"
+  - LWC: Install "Salesforce Extension Pack" (includes LWC Language Server)
 - **Java 11+** — Required for Apex LSP (same as Code Analyzer)
-- **Node.js 18+** — Required for Agent Script LSP
+- **Node.js 18+** — Required for Agent Script and LWC LSP
 
 ## Usage Examples
 
@@ -322,6 +378,42 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 "Insert 500 records from accounts.csv using Bulk API"
 "Generate test data hierarchy: 10 Accounts with 3 Contacts each"
 "Clean up all test records created today"
+```
+
+### ⚡ LWC Development
+```
+"Create a datatable component to display Accounts with sorting"
+"Build a form component for creating new Contacts"
+"Generate a Jest test for my accountCard component"
+"Create an Apex controller with @AuraEnabled methods for my LWC"
+"Set up Lightning Message Service for cross-component communication"
+```
+
+### 🔍 SOQL Queries
+```
+"Query all Accounts with more than 5 Contacts"
+"Get Opportunities by Stage with total Amount per Stage"
+"Find Contacts without Email addresses"
+"Optimize this query: SELECT * FROM Account WHERE Name LIKE '%Corp%'"
+"Generate a SOQL query to find duplicate Leads by Email"
+```
+
+### 🧪 Testing
+```
+"Run all Apex tests in my org and show coverage"
+"Generate a test class for my AccountTriggerHandler"
+"Create a bulk test with 251 records for trigger testing"
+"Generate mock classes for HTTP callouts"
+"Run tests for a specific class and show failures"
+```
+
+### 🐛 Debugging
+```
+"Analyze this debug log for performance issues"
+"Find governor limit violations in my log"
+"What's causing this SOQL in loop error?"
+"Show me how to fix this null pointer exception"
+"Optimize my Apex for CPU time limits"
 ```
 
 ### 🔐 Connected Apps & OAuth
@@ -388,9 +480,11 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 🔐 | `sf-connected-apps` | Connected Apps, ECAs, OAuth configuration | ✅ Live |
 | 🔗 | `sf-integration` | Named Credentials, External Services, REST/SOAP, Platform Events, CDC | ✅ Live |
 | 📊 | `sf-diagram` | Mermaid diagrams for OAuth, ERD, integrations, architecture | ✅ Live |
+| ⚡ | `sf-lwc` | Lightning Web Components, Jest, LMS | ✅ Live |
+| 🔍 | `sf-soql` | Natural language to SOQL, optimization | ✅ Live |
+| 🧪 | `sf-testing` | Test execution, coverage, bulk testing | ✅ Live |
+| 🐛 | `sf-debug` | Debug log analysis, governor fixes | ✅ Live |
 | 🔒 | `sf-security` | Sharing rules, org-wide defaults, encryption | 📋 Planned |
-| 🧪 | `sf-testing` | Test strategy, mocking, coverage | 📋 Planned |
-| 🐛 | `sf-debugging` | Debug logs, Apex replay | 📋 Planned |
 | 📦 | `sf-migration` | Org-to-org, metadata comparison | 📋 Planned |
 
 ### 🤖 AI & Automation
@@ -420,7 +514,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Total: 24 skills** (10 skills ✅ live, 14 planned 📋)
+**Total: 24 skills** (14 skills ✅ live, 10 planned 📋)
 
 ## Contributing
 

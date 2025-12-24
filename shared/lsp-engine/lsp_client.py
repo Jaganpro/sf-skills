@@ -26,6 +26,18 @@ EXTENSION_TO_LANGUAGE = {
     ".cls": "apex",
     ".trigger": "apex",
     ".apex": "apex",
+    ".js": "javascript",
+    ".html": "html",
+    ".css": "css",
+}
+
+# Wrapper script mapping based on language
+LANGUAGE_TO_WRAPPER = {
+    "agentscript": "agentscript_wrapper.sh",
+    "apex": "apex_wrapper.sh",
+    "javascript": "lwc_wrapper.sh",
+    "html": "lwc_wrapper.sh",
+    "css": "lwc_wrapper.sh",
 }
 
 
@@ -40,8 +52,8 @@ class LSPClient:
             wrapper_path: Path to the LSP wrapper script. If None, auto-discovers.
             language_id: Language ID for the LSP server. If None, auto-detects from file extension.
         """
-        self.wrapper_path = wrapper_path or self._find_wrapper()
         self.language_id = language_id
+        self.wrapper_path = wrapper_path or self._find_wrapper(language_id)
         self._server_process: Optional[subprocess.Popen] = None
         self._request_id = 0
 
@@ -50,24 +62,30 @@ class LSPClient:
         ext = Path(file_path).suffix.lower()
         return EXTENSION_TO_LANGUAGE.get(ext, "apex")
 
-    def _find_wrapper(self) -> str:
+    def _find_wrapper(self, language_id: Optional[str] = None) -> str:
         """Find the LSP wrapper script relative to this module."""
         module_dir = Path(__file__).parent
-        wrapper = module_dir / "agentscript_wrapper.sh"
+
+        # Determine which wrapper to use based on language
+        wrapper_name = "agentscript_wrapper.sh"  # default
+        if language_id and language_id in LANGUAGE_TO_WRAPPER:
+            wrapper_name = LANGUAGE_TO_WRAPPER[language_id]
+
+        wrapper = module_dir / wrapper_name
         if wrapper.exists():
             return str(wrapper)
 
         # Fallback: check common locations
         fallbacks = [
-            Path.home() / ".claude" / "lsp" / "agentscript-lsp-wrapper.sh",
-            Path.home() / ".claude" / "plugins" / "marketplaces" / "sf-skills" / "shared" / "lsp-engine" / "agentscript_wrapper.sh",
+            Path.home() / ".claude" / "lsp" / wrapper_name,
+            Path.home() / ".claude" / "plugins" / "marketplaces" / "sf-skills" / "shared" / "lsp-engine" / wrapper_name,
         ]
         for fallback in fallbacks:
             if fallback.exists():
                 return str(fallback)
 
         raise FileNotFoundError(
-            "LSP wrapper script not found. Ensure the Agent Script extension is installed."
+            f"LSP wrapper script '{wrapper_name}' not found. Ensure the required VS Code extension is installed."
         )
 
     def is_available(self) -> bool:
@@ -127,9 +145,17 @@ class LSPClient:
                 }
 
         try:
+            # Determine language ID and wrapper
+            lang_id = self.language_id or self._detect_language_id(file_path)
+            wrapper = self.wrapper_path
+
+            # If no explicit wrapper was set and we have a language, find the right wrapper
+            if not self.language_id and lang_id in LANGUAGE_TO_WRAPPER:
+                wrapper = self._find_wrapper(lang_id)
+
             # Start the LSP server with unbuffered I/O
             process = subprocess.Popen(
-                [self.wrapper_path, "--stdio"],
+                [wrapper, "--stdio"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -202,7 +228,6 @@ class LSPClient:
 
             # Open document
             file_uri = f"file://{os.path.abspath(file_path)}"
-            lang_id = self.language_id or self._detect_language_id(file_path)
             did_open_params = {
                 "textDocument": {
                     "uri": file_uri,

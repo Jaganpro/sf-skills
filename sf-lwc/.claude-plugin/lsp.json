@@ -1,0 +1,13 @@
+{
+  "lwc": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/../shared/lsp-engine/lwc_wrapper.sh",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".js": "javascript",
+      ".html": "html"
+    },
+    "initializationOptions": {},
+    "settings": {},
+    "transport": "stdio"
+  }
+}
