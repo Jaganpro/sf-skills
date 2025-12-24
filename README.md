@@ -89,15 +89,12 @@ First, add the marketplace to Claude Code:
 /plugin marketplace add Jaganpro/sf-skills
 ```
 
-<details>
-<summary><b>Video Tutorials</b> (click to expand)</summary>
+## 🎬 Video Tutorials
 
 | Video | Description |
 |-------|-------------|
 | [How to Add/Install Skills](https://youtu.be/a38MM8PBTe4) | Install the sf-skills marketplace and add skills to Claude Code |
 | [Skills Demo & Walkthrough](https://www.youtube.com/watch?v=gW2RP96jdBc) | Live demo of Apex, Flow, Metadata, and Agentforce skills in action |
-
-</details>
 
 ## 🔗 Skill Architecture
 
