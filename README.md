@@ -60,7 +60,7 @@ sf-apex/
 | **Gemini CLI** | ✅ Installer | `~/.gemini/skills/` | ![Google](https://img.shields.io/badge/Google-Gemini_CLI-4285F4?logo=google&logoColor=white) |
 | **Amp CLI** | ✅ Compatible | `.claude/skills/` | ![Amp](https://img.shields.io/badge/Sourcegraph-Amp-FF5543?logo=sourcegraph&logoColor=white) |
 | **Droid CLI** | ✅ Installer | `.factory/skills/` | ![Factory](https://img.shields.io/badge/Factory.ai-Droid-6366F1?logo=robot&logoColor=white) |
-| **Cursor** | ✅ Installer | `.cursor/rules/` | ![Cursor](https://img.shields.io/badge/Cursor-Agent_CLI-000000?logo=cursor&logoColor=white) |
+| **Cursor CLI** | ✅ Installer | `.cursor/rules/` | ![Cursor](https://img.shields.io/badge/Cursor-Agent_CLI-000000?logo=cursor&logoColor=white) |
 | **Agentforce Vibes** | ⏳ Pending Cline | `.clinerules/` | ![Salesforce](https://img.shields.io/badge/Salesforce-Vibes-00A1E0?logo=salesforce&logoColor=white) |
 
 > **Agent Skills Open Standard:** These skills follow the [Agent Skills specification](https://agentskills.io) for cross-CLI compatibility.
@@ -88,9 +88,9 @@ python tools/installer.py --cli droid --all
 </details>
 
 <details>
-<summary><b>Cursor</b> — Installer with MDC Transformation</summary>
+<summary><b>Cursor CLI</b> — Installer with MDC Transformation</summary>
 
-Cursor uses its own rules system (`.cursor/rules/` with MDC format). The installer transforms skills to Cursor's native format:
+Cursor CLI uses its own rules system (`.cursor/rules/` with MDC format). The installer transforms skills to Cursor's native format:
 
 ```bash
 # Install skills transformed to MDC format
@@ -149,7 +149,7 @@ Add the marketplace to Claude Code:
 /plugin marketplace add Jaganpro/sf-skills
 ```
 
-### Other CLIs (OpenCode, Codex, Gemini, Droid, Cursor)
+### Other CLIs (OpenCode, Codex, Gemini, Droid, Cursor CLI)
 
 Use the installer script to transform and install skills for other agentic CLIs:
 
@@ -422,7 +422,8 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 - **Java 11+** — Required for Apex LSP (same as Code Analyzer)
 - **Node.js 18+** — Required for Agent Script and LWC LSP
 
-## Usage Examples
+<details>
+<summary><h2>💬 Usage Examples</h2></summary>
 
 ### ⚡ Apex Development
 ```
@@ -540,7 +541,10 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 "Create a new Claude Code skill for code analysis"
 ```
 
-## Roadmap
+</details>
+
+<details>
+<summary><h2>🗺️ Roadmap</h2></summary>
 
 ### Naming Convention
 ```
@@ -592,6 +596,8 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
 **Total: 24 skills** (14 skills ✅ live, 10 planned 📋)
+
+</details>
 
 ## Contributing
 
