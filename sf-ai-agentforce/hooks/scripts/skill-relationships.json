@@ -1,0 +1,409 @@
+{
+  "version": "1.0.0",
+  "description": "Cross-skill relationship matrix for sf-skills suggestion hooks",
+
+  "file_patterns": {
+    "apex": {
+      "patterns": ["\\.cls$", "\\.trigger$", "\\.cls-meta\\.xml$"],
+      "skill": "sf-apex",
+      "icon": "apex"
+    },
+    "flow": {
+      "patterns": ["\\.flow-meta\\.xml$", "\\.flow$"],
+      "skill": "sf-flow",
+      "icon": "flow"
+    },
+    "lwc": {
+      "patterns": ["lwc/[^/]+/[^/]+\\.(js|html|css)$", "\\.js-meta\\.xml$"],
+      "skill": "sf-lwc",
+      "icon": "lwc"
+    },
+    "metadata": {
+      "patterns": ["\\.object-meta\\.xml$", "\\.field-meta\\.xml$", "\\.permissionset-meta\\.xml$", "\\.profile-meta\\.xml$"],
+      "skill": "sf-metadata",
+      "icon": "metadata"
+    },
+    "agent": {
+      "patterns": ["\\.agent$", "\\.agentDefinition-meta\\.xml$", "GenAi.*\\.xml$"],
+      "skill": "sf-ai-agentforce",
+      "icon": "agent"
+    },
+    "integration": {
+      "patterns": ["\\.namedCredential-meta\\.xml$", "\\.externalCredential-meta\\.xml$", "\\.externalServiceRegistration-meta\\.xml$"],
+      "skill": "sf-integration",
+      "icon": "integration"
+    },
+    "connected_app": {
+      "patterns": ["\\.connectedApp-meta\\.xml$", "\\.eca-meta\\.xml$"],
+      "skill": "sf-connected-apps",
+      "icon": "connected-app"
+    },
+    "diagram": {
+      "patterns": ["diagrams?/.*\\.md$", ".*-erd\\.md$", ".*-sequence\\.md$"],
+      "skill": "sf-diagram",
+      "icon": "diagram"
+    }
+  },
+
+  "relationships": {
+    "sf-apex": {
+      "after_creating": [
+        {
+          "skill": "sf-testing",
+          "condition": "always",
+          "message": "Run tests to validate Apex code",
+          "priority": 1
+        },
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy Apex to org with validation",
+          "priority": 2
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-flow",
+          "trigger": "@InvocableMethod",
+          "message": "Create Flow to call this @InvocableMethod",
+          "priority": 1
+        },
+        {
+          "skill": "sf-lwc",
+          "trigger": "@AuraEnabled",
+          "message": "Create LWC to call this @AuraEnabled controller",
+          "priority": 2
+        },
+        {
+          "skill": "sf-data",
+          "trigger": "test|Test",
+          "message": "Generate 251+ test records for bulk testing",
+          "priority": 3
+        }
+      ],
+      "before_this": [
+        {
+          "skill": "sf-metadata",
+          "condition": "custom_field_reference",
+          "message": "Ensure custom fields exist before Apex references them"
+        }
+      ]
+    },
+
+    "sf-flow": {
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy Flow to org (deploy as Draft first)",
+          "priority": 1
+        },
+        {
+          "skill": "sf-data",
+          "condition": "record_triggered",
+          "message": "Create 251+ test records to verify bulk behavior",
+          "priority": 2
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-apex",
+          "trigger": "actionCalls.*apex",
+          "message": "Create @InvocableMethod Apex for complex logic",
+          "priority": 1
+        },
+        {
+          "skill": "sf-lwc",
+          "trigger": "ComponentInstance|screens",
+          "message": "Create LWC screen component for custom UI",
+          "priority": 1
+        },
+        {
+          "skill": "sf-ai-agentforce",
+          "trigger": "autolaunched|AutoLaunchedFlow",
+          "message": "Use this Flow as an Agentforce action",
+          "priority": 2
+        }
+      ],
+      "before_this": [
+        {
+          "skill": "sf-metadata",
+          "condition": "custom_object_reference",
+          "message": "Deploy custom objects/fields before creating Flow"
+        },
+        {
+          "skill": "sf-apex",
+          "condition": "apex_action",
+          "message": "Deploy @InvocableMethod Apex before Flow references it"
+        }
+      ]
+    },
+
+    "sf-lwc": {
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy LWC component to org",
+          "priority": 1
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-apex",
+          "trigger": "import.*@salesforce/apex",
+          "message": "Create @AuraEnabled Apex controller",
+          "priority": 1
+        },
+        {
+          "skill": "sf-flow",
+          "trigger": "lightning__FlowScreen|FlowAttributeChangeEvent",
+          "message": "Create Flow to embed this screen component",
+          "priority": 1
+        }
+      ],
+      "before_this": [
+        {
+          "skill": "sf-apex",
+          "condition": "apex_import",
+          "message": "Deploy Apex controller before LWC imports it"
+        },
+        {
+          "skill": "sf-metadata",
+          "condition": "message_channel",
+          "message": "Create Lightning Message Channel first"
+        }
+      ]
+    },
+
+    "sf-metadata": {
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy metadata to org before using in code",
+          "priority": 1
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-flow",
+          "trigger": "object-meta\\.xml",
+          "message": "Create record-triggered Flow for this object",
+          "priority": 2
+        },
+        {
+          "skill": "sf-apex",
+          "trigger": "object-meta\\.xml",
+          "message": "Create Apex trigger or service for this object",
+          "priority": 2
+        },
+        {
+          "skill": "sf-diagram",
+          "trigger": "object-meta\\.xml",
+          "message": "Generate ERD diagram for data model",
+          "priority": 3
+        }
+      ]
+    },
+
+    "sf-ai-agentforce": {
+      "before_this": [
+        {
+          "skill": "sf-flow",
+          "condition": "always",
+          "message": "Create and deploy Flows before agent uses flow:// targets",
+          "priority": 1
+        },
+        {
+          "skill": "sf-apex",
+          "condition": "apex_action",
+          "message": "Deploy Apex (wrapped in Flow) before agent references it",
+          "priority": 1
+        },
+        {
+          "skill": "sf-metadata",
+          "condition": "custom_fields",
+          "message": "Deploy custom fields before agent queries them",
+          "priority": 1
+        }
+      ],
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Publish agent to org with sf agent publish",
+          "priority": 1
+        }
+      ]
+    },
+
+    "sf-integration": {
+      "commonly_with": [
+        {
+          "skill": "sf-connected-apps",
+          "trigger": "OAuth|namedCredential",
+          "message": "Configure Connected App for OAuth authentication",
+          "priority": 1
+        },
+        {
+          "skill": "sf-flow",
+          "trigger": "externalService",
+          "message": "Create Flow with HTTP Callout action",
+          "priority": 2
+        },
+        {
+          "skill": "sf-apex",
+          "trigger": "callout",
+          "message": "Create Queueable Apex for async callouts",
+          "priority": 2
+        }
+      ],
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy credentials before code references them",
+          "priority": 1
+        }
+      ]
+    },
+
+    "sf-connected-apps": {
+      "commonly_with": [
+        {
+          "skill": "sf-integration",
+          "trigger": "always",
+          "message": "Create Named Credential using this Connected App",
+          "priority": 1
+        },
+        {
+          "skill": "sf-diagram",
+          "trigger": "OAuth",
+          "message": "Generate OAuth flow diagram",
+          "priority": 2
+        }
+      ],
+      "after_creating": [
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy Connected App to org",
+          "priority": 1
+        }
+      ]
+    },
+
+    "sf-deploy": {
+      "commonly_with": [
+        {
+          "skill": "sf-testing",
+          "trigger": "apex|cls",
+          "message": "Run Apex tests after deployment",
+          "priority": 1
+        },
+        {
+          "skill": "sf-data",
+          "trigger": "success",
+          "message": "Create test data in deployed org",
+          "priority": 2
+        }
+      ]
+    },
+
+    "sf-testing": {
+      "commonly_with": [
+        {
+          "skill": "sf-debug",
+          "trigger": "failure|failed",
+          "message": "Analyze debug logs for test failures",
+          "priority": 1
+        },
+        {
+          "skill": "sf-apex",
+          "trigger": "failure|failed",
+          "message": "Fix failing Apex code",
+          "priority": 1
+        },
+        {
+          "skill": "sf-data",
+          "trigger": "bulk",
+          "message": "Generate 251+ records for bulk testing",
+          "priority": 2
+        }
+      ]
+    },
+
+    "sf-debug": {
+      "commonly_with": [
+        {
+          "skill": "sf-apex",
+          "trigger": "fix|error",
+          "message": "Fix identified Apex issues",
+          "priority": 1
+        },
+        {
+          "skill": "sf-soql",
+          "trigger": "SOQL|query",
+          "message": "Optimize slow SOQL queries",
+          "priority": 2
+        }
+      ]
+    },
+
+    "sf-data": {
+      "before_this": [
+        {
+          "skill": "sf-metadata",
+          "condition": "always",
+          "message": "Deploy objects to org before querying/inserting data"
+        },
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy metadata before creating data"
+        }
+      ]
+    },
+
+    "sf-diagram": {
+      "commonly_with": [
+        {
+          "skill": "sf-metadata",
+          "trigger": "erd|ERD|data model",
+          "message": "Query org metadata for accurate ERD",
+          "priority": 2
+        },
+        {
+          "skill": "sf-integration",
+          "trigger": "sequence|integration",
+          "message": "Document integration endpoints",
+          "priority": 2
+        }
+      ]
+    }
+  },
+
+  "orchestration_chains": {
+    "full_feature": {
+      "description": "Complete feature development chain",
+      "order": ["sf-metadata", "sf-apex", "sf-flow", "sf-lwc", "sf-deploy", "sf-testing", "sf-data"]
+    },
+    "integration": {
+      "description": "External API integration chain",
+      "order": ["sf-connected-apps", "sf-integration", "sf-flow", "sf-deploy"]
+    },
+    "agentforce": {
+      "description": "Agentforce agent development chain",
+      "order": ["sf-metadata", "sf-apex", "sf-flow", "sf-deploy", "sf-ai-agentforce", "sf-deploy"]
+    },
+    "triangle": {
+      "description": "Flow-LWC-Apex integration chain",
+      "order": ["sf-apex", "sf-lwc", "sf-flow", "sf-deploy"]
+    },
+    "troubleshooting": {
+      "description": "Debug and fix loop",
+      "order": ["sf-testing", "sf-debug", "sf-apex", "sf-deploy", "sf-testing"]
+    }
+  }
+}

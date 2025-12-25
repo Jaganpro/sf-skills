@@ -2,16 +2,6 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/parse-debug-log.py",
-            "timeout": 60000
-          }
-        ]
-      },
-      {
         "matcher": "Write",
         "hooks": [
           {

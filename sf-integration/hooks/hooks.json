@@ -11,7 +11,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/../shared/hooks/suggest-related-skills.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/suggest-related-skills.py",
             "timeout": 5000
           }
         ]
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/../shared/hooks/suggest-related-skills.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/suggest-related-skills.py",
             "timeout": 5000
           }
         ]
