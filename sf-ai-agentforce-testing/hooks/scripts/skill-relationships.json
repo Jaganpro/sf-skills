@@ -1,0 +1,238 @@
+{
+  "version": "1.0.0",
+  "description": "Cross-skill relationship matrix for sf-ai-agentforce-testing suggestion hooks",
+
+  "file_patterns": {
+    "agent_test_spec": {
+      "patterns": ["test.*\\.yaml$", "test.*\\.yml$", ".*-tests?\\.yaml$", ".*-tests?\\.yml$"],
+      "skill": "sf-ai-agentforce-testing",
+      "icon": "test"
+    },
+    "agent": {
+      "patterns": ["\\.agent$", "\\.agentDefinition-meta\\.xml$", "GenAi.*\\.xml$"],
+      "skill": "sf-ai-agentforce",
+      "icon": "agent"
+    },
+    "topic": {
+      "patterns": ["GenAiTopic.*\\.xml$", "topicDefinition"],
+      "skill": "sf-ai-agentforce",
+      "icon": "topic"
+    },
+    "planner": {
+      "patterns": ["GenAiPlanner.*\\.xml$", "plannerDefinition"],
+      "skill": "sf-ai-agentforce",
+      "icon": "planner"
+    },
+    "flow": {
+      "patterns": ["\\.flow-meta\\.xml$", "\\.flow$"],
+      "skill": "sf-flow",
+      "icon": "flow"
+    },
+    "connected_app": {
+      "patterns": ["\\.connectedApp-meta\\.xml$", "\\.eca-meta\\.xml$"],
+      "skill": "sf-connected-apps",
+      "icon": "connected-app"
+    }
+  },
+
+  "relationships": {
+    "sf-ai-agentforce-testing": {
+      "before_this": [
+        {
+          "skill": "sf-ai-agentforce",
+          "condition": "always",
+          "message": "Create and deploy agent before testing",
+          "priority": 1
+        }
+      ],
+      "after_creating": [
+        {
+          "skill": "sf-ai-agentforce",
+          "condition": "failure|failed",
+          "message": "Fix agent configuration based on test failures",
+          "priority": 1
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-ai-agentforce",
+          "trigger": "failure|failed|topic_failure|action_failure",
+          "message": "Fix agent issues identified by tests",
+          "priority": 1
+        },
+        {
+          "skill": "sf-connected-apps",
+          "trigger": "live.*preview|connected_app",
+          "message": "Configure Connected App for live preview mode",
+          "priority": 2
+        },
+        {
+          "skill": "sf-data",
+          "trigger": "test.*data|record",
+          "message": "Generate test data for agent testing",
+          "priority": 3
+        },
+        {
+          "skill": "sf-flow",
+          "trigger": "flow_action|action_failure",
+          "message": "Check Flow actions referenced by agent",
+          "priority": 2
+        }
+      ]
+    },
+
+    "sf-ai-agentforce": {
+      "after_creating": [
+        {
+          "skill": "sf-ai-agentforce-testing",
+          "condition": "always",
+          "message": "Generate test spec and run agent tests",
+          "priority": 1
+        },
+        {
+          "skill": "sf-deploy",
+          "condition": "always",
+          "message": "Deploy agent to org with sf agent publish",
+          "priority": 2
+        }
+      ],
+      "commonly_with": [
+        {
+          "skill": "sf-ai-agentforce-testing",
+          "trigger": "topic|action|planner",
+          "message": "Test topic routing and action invocation",
+          "priority": 1
+        },
+        {
+          "skill": "sf-flow",
+          "trigger": "flow://",
+          "message": "Create/update Flow actions for agent",
+          "priority": 2
+        }
+      ],
+      "before_this": [
+        {
+          "skill": "sf-flow",
+          "condition": "flow_action",
+          "message": "Deploy Flows before agent references them",
+          "priority": 1
+        },
+        {
+          "skill": "sf-metadata",
+          "condition": "custom_field",
+          "message": "Deploy custom fields before agent queries them",
+          "priority": 1
+        }
+      ]
+    },
+
+    "sf-connected-apps": {
+      "commonly_with": [
+        {
+          "skill": "sf-ai-agentforce-testing",
+          "trigger": "OAuth|agent.*preview",
+          "message": "Use Connected App for live agent preview",
+          "priority": 1
+        }
+      ]
+    },
+
+    "sf-flow": {
+      "commonly_with": [
+        {
+          "skill": "sf-ai-agentforce",
+          "trigger": "autolaunched|AutoLaunchedFlow|invocable",
+          "message": "Use this Flow as an Agentforce action",
+          "priority": 2
+        },
+        {
+          "skill": "sf-ai-agentforce-testing",
+          "trigger": "agent.*action",
+          "message": "Test agent action invocation for this Flow",
+          "priority": 3
+        }
+      ]
+    },
+
+    "sf-data": {
+      "commonly_with": [
+        {
+          "skill": "sf-ai-agentforce-testing",
+          "trigger": "test|agent",
+          "message": "Generate data for agent testing scenarios",
+          "priority": 2
+        }
+      ]
+    }
+  },
+
+  "orchestration_chains": {
+    "agentforce_testing": {
+      "description": "Complete agent testing workflow",
+      "order": [
+        "sf-metadata",
+        "sf-apex",
+        "sf-flow",
+        "sf-deploy",
+        "sf-ai-agentforce",
+        "sf-deploy",
+        "sf-ai-agentforce-testing"
+      ]
+    },
+    "agentforce_fix_loop": {
+      "description": "Agentic test-fix cycle",
+      "order": [
+        "sf-ai-agentforce-testing",
+        "sf-ai-agentforce",
+        "sf-deploy",
+        "sf-ai-agentforce-testing"
+      ]
+    },
+    "live_preview_setup": {
+      "description": "Configure live preview for agent testing",
+      "order": [
+        "sf-connected-apps",
+        "sf-deploy",
+        "sf-ai-agentforce-testing"
+      ]
+    }
+  },
+
+  "failure_to_skill_mapping": {
+    "TOPIC_NOT_MATCHED": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "topic scope/classificationDescription",
+      "priority": 1
+    },
+    "ACTION_NOT_INVOKED": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "action configuration/topic instructions",
+      "priority": 1
+    },
+    "WRONG_ACTION_SELECTED": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "action descriptions/preconditions",
+      "priority": 1
+    },
+    "ACTION_INVOCATION_FAILED": {
+      "skill": "sf-flow",
+      "fix_target": "underlying Flow/Apex implementation",
+      "priority": 2
+    },
+    "GUARDRAIL_NOT_TRIGGERED": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "agent system instructions",
+      "priority": 1
+    },
+    "ESCALATION_NOT_TRIGGERED": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "escalation action/instructions",
+      "priority": 1
+    },
+    "RESPONSE_QUALITY_ISSUE": {
+      "skill": "sf-ai-agentforce",
+      "fix_target": "agent instructions/grounding",
+      "priority": 2
+    }
+  }
+}

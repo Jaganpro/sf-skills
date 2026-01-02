@@ -45,6 +45,11 @@ Expert Agentforce developer specializing in Agent Script syntax, topic design, a
 | **Patterns & practices** | [patterns-and-practices.md](docs/patterns-and-practices.md) | Decision tree + best practices |
 | **Prompt templates** | [prompt-templates.md](docs/prompt-templates.md) | PromptTemplate metadata integration |
 
+### Cross-Skill: Testing
+| Need | Skill | Description |
+|------|-------|-------------|
+| **Agent Testing** | `sf-ai-agentforce-testing` | Test execution, coverage analysis, agentic fix loops |
+
 **⚡ Quick Links:**
 - [Key Insights Table](#-key-insights) - Common errors and fixes
 - [Scoring System](#scoring-system-100-points) - 6-category validation
@@ -981,6 +986,35 @@ Next Steps:
   2. Test in Agentforce Testing Center
   3. Activate when ready: sf agent activate
 ```
+
+### Phase 6: Testing (via sf-ai-agentforce-testing)
+
+After deploying your agent, use the **sf-ai-agentforce-testing** skill for comprehensive testing:
+
+```bash
+# Generate test specification
+sf agent generate test-spec --api-name [AgentName] --output-dir ./tests
+
+# Create and run tests
+sf agent test create --spec ./tests/test-spec.yaml --target-org [alias]
+sf agent test run --api-name [AgentName]_Tests --wait 10 --target-org [alias]
+
+# Preview agent interactively
+sf agent preview --api-name [AgentName] --target-org [alias]
+```
+
+**Invoke the testing skill:**
+```
+Skill(skill="sf-ai-agentforce-testing", args="Test agent [AgentName] and fix any failures")
+```
+
+The testing skill provides:
+- **Test spec generation** from agent metadata
+- **100-point test scoring** across 5 categories
+- **Agentic fix loops** - auto-fix failing tests (max 3 iterations)
+- **Coverage analysis** for topics, actions, guardrails, escalation
+
+See `sf-ai-agentforce-testing/SKILL.md` for full testing workflow.
 
 ---
 

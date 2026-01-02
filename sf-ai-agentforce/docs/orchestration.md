@@ -32,7 +32,12 @@ sf-ai-agentforce requires an **extended orchestration** because agents depend on
 │     └── sf agent publish --api-name [AgentName]                            │
 │     └── sf agent activate --api-name [AgentName]                           │
 │                                                                             │
-│  7. sf-data (optional)                                                      │
+│  7. sf-ai-agentforce-testing (NEW)                                          │
+│     └── Generate test spec from agent metadata                              │
+│     └── Run agent tests (sf agent test run)                                 │
+│     └── Agentic fix loop if failures detected                               │
+│                                                                             │
+│  8. sf-data (optional)                                                      │
 │     └── Create test data for agent testing                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -181,6 +186,40 @@ sf agent activate --api-name AgentName --target-org alias
 
 ---
 
+## Testing Phase (sf-ai-agentforce-testing)
+
+After agent deployment, use **sf-ai-agentforce-testing** for comprehensive validation:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  AGENTIC TEST-FIX LOOP                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Generate test spec from agent metadata                                   │
+│     └── sf agent generate test-spec --api-name [AgentName]                  │
+│                                                                             │
+│  2. Create and run tests                                                     │
+│     └── sf agent test run --api-name [AgentName]_Tests --wait 10            │
+│                                                                             │
+│  3. IF failures detected:                                                    │
+│     └── Parse failure type (topic routing, action, guardrail, escalation)   │
+│     └── Call sf-ai-agentforce to apply fix                                  │
+│     └── Re-publish agent                                                    │
+│     └── Re-run tests (max 3 iterations)                                     │
+│                                                                             │
+│  4. Report coverage and pass rate                                            │
+│     └── Topic coverage, action coverage, guardrail coverage                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Invoke the testing skill:**
+```
+Skill(skill="sf-ai-agentforce-testing", args="Test agent [AgentName] and fix any failures")
+```
+
+See `sf-ai-agentforce-testing/SKILL.md` for full testing workflow.
+
+---
+
 ## Related Documentation
 
 | Topic | Location |
@@ -189,3 +228,4 @@ sf agent activate --api-name AgentName --target-org alias
 | CLI guide | `sf-ai-agentforce/docs/cli-guide.md` |
 | Actions reference | `sf-ai-agentforce/docs/actions-reference.md` |
 | sf-deploy agent guide | `sf-deploy/docs/agent-deployment-guide.md` |
+| **Agent testing** | `sf-ai-agentforce-testing/SKILL.md` |
