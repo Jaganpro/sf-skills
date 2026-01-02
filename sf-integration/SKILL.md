@@ -20,10 +20,10 @@ Expert integration architect specializing in secure callout patterns, event-driv
 1. **Named Credential Generation**: Create Named Credentials with OAuth 2.0, JWT Bearer, Certificate, or Custom authentication
 2. **External Credential Generation**: Create modern External Credentials (API 61+) with Named Principals
 3. **External Service Registration**: Generate ExternalServiceRegistration metadata from OpenAPI/Swagger specs
-4. **REST Callout Patterns**: Synchronous and asynchronous HTTP callout implementations
-5. **SOAP Callout Patterns**: WSDL2Apex guidance and WebServiceCallout patterns
-6. **Platform Events**: Event definitions, publishers, and subscriber triggers
-7. **Change Data Capture**: CDC enablement and subscriber patterns
+4. **REST Callout Patterns**: Synchronous and asynchronous HTTP callout implementations ([details](resources/callout-patterns.md#rest-callout-patterns))
+5. **SOAP Callout Patterns**: WSDL2Apex guidance and WebServiceCallout patterns ([details](resources/callout-patterns.md#soap-callout-patterns))
+6. **Platform Events**: Event definitions, publishers, and subscriber triggers ([details](resources/event-patterns.md#platform-events))
+7. **Change Data Capture**: CDC enablement and subscriber patterns ([details](resources/event-patterns.md#change-data-capture-cdc))
 8. **Validation & Scoring**: Score integrations against 6 categories (0-120 points)
 
 ## Key Insights
@@ -77,109 +77,59 @@ Expert integration architect specializing in secure callout patterns, event-driv
 
 Use `AskUserQuestion` to gather:
 
-1. **Integration Type**:
-   - Outbound REST (Salesforce → External API)
-   - Outbound SOAP (Salesforce → External SOAP Service)
-   - Inbound REST (External → Salesforce REST API)
-   - Event-driven (Platform Events, CDC)
-
-2. **Authentication Method**:
-   - OAuth 2.0 Client Credentials
-   - OAuth 2.0 JWT Bearer
-   - OAuth 2.0 Authorization Code
-   - Certificate-based (Mutual TLS)
-   - API Key / Basic Auth
-
-3. **External System Details**:
-   - Base endpoint URL
-   - API version
-   - Rate limits
-   - Required headers
-
-4. **Sync vs Async Requirements**:
-   - Real-time response needed? → Sync
-   - Fire-and-forget? → Async (@future, Queueable)
-   - Triggered from DML? → MUST be async
+1. **Integration Type**: Outbound REST/SOAP, Inbound REST, Event-driven (Platform Events, CDC)
+2. **Authentication Method**: OAuth 2.0 (Client Credentials, JWT Bearer, Authorization Code), Certificate-based, API Key/Basic Auth
+3. **External System Details**: Base endpoint URL, API version, rate limits, required headers
+4. **Sync vs Async Requirements**: Real-time response needed → Sync | Fire-and-forget or DML-triggered → Async (Queueable)
 
 ### Phase 2: Template Selection
 
 | Integration Need | Template | Location |
 |-----------------|----------|----------|
-| OAuth 2.0 Client Credentials | `oauth-client-credentials.namedCredential-meta.xml` | `templates/named-credentials/` |
-| OAuth 2.0 JWT Bearer | `oauth-jwt-bearer.namedCredential-meta.xml` | `templates/named-credentials/` |
-| Certificate Auth | `certificate-auth.namedCredential-meta.xml` | `templates/named-credentials/` |
-| API Key / Basic Auth | `custom-auth.namedCredential-meta.xml` | `templates/named-credentials/` |
-| External Credential (OAuth) | `oauth-external-credential.externalCredential-meta.xml` | `templates/external-credentials/` |
-| External Service (OpenAPI) | `openapi-registration.externalServiceRegistration-meta.xml` | `templates/external-services/` |
-| REST Callout (Sync) | `rest-sync-callout.cls` | `templates/callouts/` |
-| REST Callout (Async) | `rest-queueable-callout.cls` | `templates/callouts/` |
-| Retry Handler | `callout-retry-handler.cls` | `templates/callouts/` |
-| SOAP Callout | `soap-callout-service.cls` | `templates/soap/` |
-| Platform Event | `platform-event-definition.object-meta.xml` | `templates/platform-events/` |
-| Event Publisher | `event-publisher.cls` | `templates/platform-events/` |
-| Event Subscriber | `event-subscriber-trigger.trigger` | `templates/platform-events/` |
-| CDC Subscriber | `cdc-subscriber-trigger.trigger` | `templates/cdc/` |
+| **Named Credentials** | `oauth-client-credentials.namedCredential-meta.xml` | `templates/named-credentials/` |
+| **External Credentials** | `oauth-external-credential.externalCredential-meta.xml` | `templates/external-credentials/` |
+| **External Services** | `openapi-registration.externalServiceRegistration-meta.xml` | `templates/external-services/` |
+| **REST Callouts** | `rest-sync-callout.cls`, `rest-queueable-callout.cls` | `templates/callouts/` |
+| **SOAP Callouts** | `soap-callout-service.cls` | `templates/soap/` |
+| **Platform Events** | `platform-event-definition.object-meta.xml` | `templates/platform-events/` |
+| **CDC Subscribers** | `cdc-subscriber-trigger.trigger` | `templates/cdc/` |
 
 ### Phase 3: Generation & Validation
 
 **File Locations**:
 ```
 force-app/main/default/
-├── namedCredentials/
-│   └── {{CredentialName}}.namedCredential-meta.xml
-├── externalCredentials/
-│   └── {{CredentialName}}.externalCredential-meta.xml
+├── namedCredentials/          # Legacy Named Credentials
+├── externalCredentials/       # External Credentials (API 61+)
 ├── externalServiceRegistrations/
-│   └── {{ServiceName}}.externalServiceRegistration-meta.xml
-├── classes/
-│   ├── {{ServiceName}}Callout.cls
-│   ├── {{ServiceName}}Callout.cls-meta.xml
-│   └── ...
-├── objects/
-│   └── {{EventName}}__e/
-│       └── {{EventName}}__e.object-meta.xml
-└── triggers/
-    ├── {{EventName}}Subscriber.trigger
-    └── {{EventName}}Subscriber.trigger-meta.xml
+├── classes/                   # Callout services, handlers
+├── objects/{{EventName}}__e/  # Platform Events
+└── triggers/                  # Event/CDC subscribers
 ```
 
-**Validate using scoring system** (see Scoring System section)
+**Validate using scoring system** (see [Scoring System](#scoring-system-120-points) below)
 
 ### Phase 4: Deployment
 
 **Deployment Order** (CRITICAL):
 ```
-1. Deploy Named Credentials / External Credentials FIRST
-2. Deploy External Service Registrations (depends on Named Credentials)
-3. Deploy Apex classes (callout services, handlers)
-4. Deploy Platform Events / CDC configuration
-5. Deploy Triggers (depends on events being deployed)
+1. Named Credentials / External Credentials FIRST
+2. External Service Registrations (depends on Named Credentials)
+3. Apex classes (callout services, handlers)
+4. Platform Events / CDC configuration
+5. Triggers (depends on events being deployed)
 ```
 
-**Use sf-deploy skill**:
-```
-Skill(skill="sf-deploy")
-Request: "Deploy Named Credential {{Name}} with dry-run first"
-```
+**Use sf-deploy skill**: `Skill(skill="sf-deploy")`
 
-**CLI Commands**:
-```bash
-# Deploy Named Credential
-sf project deploy start --metadata NamedCredential:{{Name}} --target-org {{alias}}
-
-# Deploy External Service
-sf project deploy start --metadata ExternalServiceRegistration:{{Name}} --target-org {{alias}}
-
-# Deploy all integration components
-sf project deploy start --source-dir force-app/main/default/namedCredentials,force-app/main/default/externalServiceRegistrations --target-org {{alias}}
-```
+**CLI Commands**: See [CLI Commands Reference](#cli-commands-reference)
 
 ### Phase 5: Testing & Verification
 
-1. **Test Named Credential** in Setup → Named Credentials → Test Connection
-2. **Test External Service** by invoking generated Apex methods
-3. **Test Callout** using Anonymous Apex or test class
-4. **Test Events** by publishing and verifying subscriber execution
+1. **Test Named Credential**: Setup → Named Credentials → Test Connection
+2. **Test External Service**: Invoke generated Apex methods
+3. **Test Callout**: Anonymous Apex or test class with `Test.setMock()`
+4. **Test Events**: Publish and verify subscriber execution
 
 ---
 
@@ -198,31 +148,24 @@ Templates in `templates/named-credentials/`. ⚠️ **NEVER hardcode credentials
 
 ## External Credentials (API 61+)
 
-### OAuth External Credential
-
 **Use Case**: Modern OAuth 2.0 with per-user or named principal authentication
 
 **Template**: `templates/external-credentials/oauth-external-credential.externalCredential-meta.xml`
 
+**Key Features**:
+- Named Principal vs Per-User Principal support
+- OAuth 2.0 with PKCE
+- JWT Bearer flow
+- Permission Set-based access control
+
+**Quick Start**:
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <ExternalCredential xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>{{CredentialLabel}}</label>
     <authenticationProtocol>Oauth</authenticationProtocol>
-    <externalCredentialParameters>
-        <parameterName>clientId</parameterName>
-        <parameterType>AuthProviderClientId</parameterType>
-        <parameterValue>{{ClientId}}</parameterValue>
-    </externalCredentialParameters>
-    <externalCredentialParameters>
-        <parameterName>clientSecret</parameterName>
-        <parameterType>AuthProviderClientSecret</parameterType>
-        <parameterValue>{{ClientSecret}}</parameterValue>
-    </externalCredentialParameters>
     <principals>
         <principalName>{{PrincipalName}}</principalName>
         <principalType>NamedPrincipal</principalType>
-        <sequenceNumber>1</sequenceNumber>
     </principals>
 </ExternalCredential>
 ```
@@ -231,45 +174,23 @@ Templates in `templates/named-credentials/`. ⚠️ **NEVER hardcode credentials
 
 ## External Services (OpenAPI/Swagger)
 
-### Generating from OpenAPI Spec
-
 **Process**:
 1. Obtain OpenAPI 2.0 (Swagger) or 3.0 spec from external API
 2. Create Named Credential for authentication
-3. Register External Service in Salesforce
-4. Salesforce auto-generates Apex classes
+3. Register External Service in Salesforce (Setup → External Services OR via metadata)
+4. Salesforce auto-generates Apex classes: `ExternalService.{{ServiceName}}`
 
 **Template**: `templates/external-services/openapi-registration.externalServiceRegistration-meta.xml`
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<ExternalServiceRegistration xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>{{ServiceLabel}}</label>
-    <namedCredential>{{NamedCredentialName}}</namedCredential>
-    <schema>{{OpenAPISchemaContent}}</schema>
-    <schemaType>OpenApi3</schemaType>
-    <serviceBinding>{{ServiceBindingName}}</serviceBinding>
-    <status>Complete</status>
-</ExternalServiceRegistration>
-```
-
 **CLI Alternative**:
 ```bash
-# Register External Service from URL
 sf api request rest /services/data/v62.0/externalServiceRegistrations \
   --method POST \
   --body '{"label":"{{Label}}","namedCredential":"{{NC}}","schemaUrl":"{{URL}}"}'
 ```
 
-### Using Auto-Generated Apex
-
-External Services generate Apex classes like:
-- `ExternalService.{{ServiceName}}`
-- `ExternalService.{{ServiceName}}_{{OperationName}}`
-
-**Example Usage**:
+**Usage Example**:
 ```apex
-// Auto-generated class usage
 ExternalService.Stripe stripe = new ExternalService.Stripe();
 ExternalService.Stripe_createCustomer_Request req = new ExternalService.Stripe_createCustomer_Request();
 req.email = 'customer@example.com';
@@ -278,431 +199,124 @@ ExternalService.Stripe_createCustomer_Response resp = stripe.createCustomer(req)
 
 ---
 
-## REST Callout Patterns
+## Callout Patterns
 
-### Synchronous REST Callout
+### REST Callouts
 
-**Use Case**: Need immediate response, NOT triggered from DML
+**For detailed REST callout patterns, see [resources/callout-patterns.md](resources/callout-patterns.md)**
 
-**Template**: `templates/callouts/rest-sync-callout.cls`
+#### Quick Reference
 
-```apex
-public with sharing class {{ServiceName}}Callout {
+| Pattern | Use Case | Template |
+|---------|----------|----------|
+| **Synchronous** | User-initiated, need immediate response | `rest-sync-callout.cls` |
+| **Asynchronous (Queueable)** | Triggered from DML (triggers), fire-and-forget | `rest-queueable-callout.cls` |
+| **Retry Handler** | Handle transient failures with exponential backoff | `callout-retry-handler.cls` |
 
-    private static final String NAMED_CREDENTIAL = 'callout:{{NamedCredentialName}}';
+**Key Points**:
+- Use Named Credentials: `req.setEndpoint('callout:{{NamedCredentialName}}/{{path}}')`
+- Set timeout: `req.setTimeout(120000)` (120s max)
+- Handle status codes: 2xx success, 4xx client error (don't retry), 5xx server error (retry)
 
-    public static HttpResponse makeRequest(String method, String endpoint, String body) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(NAMED_CREDENTIAL + endpoint);
-        req.setMethod(method);
-        req.setHeader('Content-Type', 'application/json');
-        req.setTimeout(120000); // 120 seconds max
+**Detailed Examples**:
+- [Synchronous REST Callout](resources/callout-patterns.md#synchronous-rest-callout)
+- [Asynchronous Queueable Callout](resources/callout-patterns.md#asynchronous-rest-callout-queueable)
+- [Retry Handler with Exponential Backoff](resources/callout-patterns.md#retry-handler-with-exponential-backoff)
 
-        if (String.isNotBlank(body)) {
-            req.setBody(body);
-        }
+### SOAP Callouts
 
-        Http http = new Http();
-        return http.send(req);
-    }
+**For detailed SOAP callout patterns, see [resources/callout-patterns.md#soap-callout-patterns](resources/callout-patterns.md#soap-callout-patterns)**
 
-    public static Map<String, Object> get(String endpoint) {
-        HttpResponse res = makeRequest('GET', endpoint, null);
-        return handleResponse(res);
-    }
+#### Quick Reference
 
-    public static Map<String, Object> post(String endpoint, Map<String, Object> payload) {
-        HttpResponse res = makeRequest('POST', endpoint, JSON.serialize(payload));
-        return handleResponse(res);
-    }
-
-    private static Map<String, Object> handleResponse(HttpResponse res) {
-        Integer statusCode = res.getStatusCode();
-
-        if (statusCode >= 200 && statusCode < 300) {
-            return (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-        } else if (statusCode >= 400 && statusCode < 500) {
-            throw new CalloutException('Client Error: ' + statusCode + ' - ' + res.getBody());
-        } else if (statusCode >= 500) {
-            throw new CalloutException('Server Error: ' + statusCode + ' - ' + res.getBody());
-        }
-
-        return null;
-    }
-}
-```
-
-### Asynchronous REST Callout (Queueable)
-
-**Use Case**: Callouts triggered from DML (triggers, Process Builder)
-
-**Template**: `templates/callouts/rest-queueable-callout.cls`
-
-```apex
-public with sharing class {{ServiceName}}QueueableCallout implements Queueable, Database.AllowsCallouts {
-
-    private List<Id> recordIds;
-    private String operation;
-
-    public {{ServiceName}}QueueableCallout(List<Id> recordIds, String operation) {
-        this.recordIds = recordIds;
-        this.operation = operation;
-    }
-
-    public void execute(QueueableContext context) {
-        if (recordIds == null || recordIds.isEmpty()) {
-            return;
-        }
-
-        try {
-            // Query records
-            List<{{ObjectName}}> records = [
-                SELECT Id, Name, {{FieldsToSend}}
-                FROM {{ObjectName}}
-                WHERE Id IN :recordIds
-                WITH USER_MODE
-            ];
-
-            // Make callout for each record (consider batching)
-            for ({{ObjectName}} record : records) {
-                makeCallout(record);
-            }
-
-        } catch (CalloutException e) {
-            // Log callout errors
-            System.debug(LoggingLevel.ERROR, 'Callout failed: ' + e.getMessage());
-            // Consider: Create error log record, retry logic, notification
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Error: ' + e.getMessage());
-        }
-    }
-
-    private void makeCallout({{ObjectName}} record) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint('callout:{{NamedCredentialName}}/{{Endpoint}}');
-        req.setMethod('POST');
-        req.setHeader('Content-Type', 'application/json');
-        req.setTimeout(120000);
-
-        Map<String, Object> payload = new Map<String, Object>{
-            'id' => record.Id,
-            'name' => record.Name
-            // Add more fields
-        };
-        req.setBody(JSON.serialize(payload));
-
-        Http http = new Http();
-        HttpResponse res = http.send(req);
-
-        if (res.getStatusCode() >= 200 && res.getStatusCode() < 300) {
-            // Success - update record status if needed
-        } else {
-            // Handle error
-            throw new CalloutException('API Error: ' + res.getStatusCode());
-        }
-    }
-}
-```
-
-### Retry Handler with Exponential Backoff
-
-**Use Case**: Handle transient failures with intelligent retry
-
-**Template**: `templates/callouts/callout-retry-handler.cls`
-
-```apex
-public with sharing class CalloutRetryHandler {
-
-    private static final Integer MAX_RETRIES = 3;
-    private static final Integer BASE_DELAY_MS = 1000; // 1 second
-
-    public static HttpResponse executeWithRetry(HttpRequest request) {
-        Integer retryCount = 0;
-        HttpResponse response;
-
-        while (retryCount < MAX_RETRIES) {
-            try {
-                Http http = new Http();
-                response = http.send(request);
-
-                // Success or client error (4xx) - don't retry
-                if (response.getStatusCode() < 500) {
-                    return response;
-                }
-
-                // Server error (5xx) - retry with backoff
-                retryCount++;
-                if (retryCount < MAX_RETRIES) {
-                    // Exponential backoff: 1s, 2s, 4s
-                    Integer delayMs = BASE_DELAY_MS * (Integer) Math.pow(2, retryCount - 1);
-                    // Note: Apex doesn't have sleep(), so we schedule retry via Queueable
-                    throw new RetryableException('Server error, retry ' + retryCount);
-                }
-
-            } catch (CalloutException e) {
-                retryCount++;
-                if (retryCount >= MAX_RETRIES) {
-                    throw e;
-                }
-            }
-        }
-
-        return response;
-    }
-
-    public class RetryableException extends Exception {}
-}
-```
-
----
-
-## SOAP Callout Patterns
-
-### WSDL2Apex Process
-
-**Step 1**: Generate Apex from WSDL
+**WSDL2Apex Process**:
 1. Setup → Apex Classes → Generate from WSDL
 2. Upload WSDL file
-3. Salesforce generates Apex classes
+3. Salesforce generates stub classes
 
-**Step 2**: Configure Remote Site Setting or Named Credential
-
-**Step 3**: Use generated classes in Apex
-
-**Template**: `templates/soap/soap-callout-service.cls`
-
+**Usage**:
 ```apex
-public with sharing class {{ServiceName}}SoapService {
-
-    public static {{ResponseType}} callService({{RequestType}} request) {
-        try {
-            // Generated stub class
-            {{WsdlGeneratedClass}}.{{PortType}} stub = new {{WsdlGeneratedClass}}.{{PortType}}();
-
-            // Set endpoint (use Named Credential if possible)
-            stub.endpoint_x = 'callout:{{NamedCredentialName}}';
-
-            // Set timeout
-            stub.timeout_x = 120000;
-
-            // Make the call
-            return stub.{{OperationName}}(request);
-
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'SOAP Callout Error: ' + e.getMessage());
-            throw new CalloutException('SOAP service error: ' + e.getMessage());
-        }
-    }
-}
+{{WsdlGeneratedClass}}.{{PortType}} stub = new {{WsdlGeneratedClass}}.{{PortType}}();
+stub.endpoint_x = 'callout:{{NamedCredentialName}}';
+stub.timeout_x = 120000;
+return stub.{{OperationName}}(request);
 ```
+
+**Detailed Examples**:
+- [WSDL2Apex Process](resources/callout-patterns.md#wsdl2apex-process)
+- [SOAP Service Implementation](resources/callout-patterns.md#soap-service-implementation)
 
 ---
 
-## Platform Events
+## Event-Driven Patterns
 
-### Platform Event Definition
+### Platform Events
 
-**Use Case**: Asynchronous, event-driven communication
+**For detailed Platform Event patterns, see [resources/event-patterns.md#platform-events](resources/event-patterns.md#platform-events)**
 
-**Template**: `templates/platform-events/platform-event-definition.object-meta.xml`
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
-    <deploymentStatus>Deployed</deploymentStatus>
-    <eventType>HighVolume</eventType>
-    <label>{{EventLabel}}</label>
-    <pluralLabel>{{EventPluralLabel}}</pluralLabel>
-    <publishBehavior>PublishAfterCommit</publishBehavior>
-    <fields>
-        <fullName>{{FieldName}}__c</fullName>
-        <label>{{FieldLabel}}</label>
-        <type>Text</type>
-        <length>255</length>
-    </fields>
-    <!-- Add more fields as needed -->
-</CustomObject>
-```
+#### Quick Reference
 
 **Event Types**:
-- `StandardVolume`: ~2,000 events/hour, standard delivery
-- `HighVolume`: Millions/day, at-least-once delivery, 24-hour retention
+- **Standard Volume**: ~2,000 events/hour, 3-day retention
+- **High Volume**: Millions/day, 24-hour retention, at-least-once delivery
 
-### Event Publisher
+**Templates**:
+- Event Definition: `templates/platform-events/platform-event-definition.object-meta.xml`
+- Publisher: `templates/platform-events/event-publisher.cls`
+- Subscriber: `templates/platform-events/event-subscriber-trigger.trigger`
 
-**Template**: `templates/platform-events/event-publisher.cls`
-
+**Publishing**:
 ```apex
-public with sharing class {{EventName}}Publisher {
-
-    public static void publishEvents(List<{{EventName}}__e> events) {
-        if (events == null || events.isEmpty()) {
-            return;
-        }
-
-        List<Database.SaveResult> results = EventBus.publish(events);
-
-        for (Integer i = 0; i < results.size(); i++) {
-            Database.SaveResult sr = results[i];
-            if (!sr.isSuccess()) {
-                for (Database.Error err : sr.getErrors()) {
-                    System.debug(LoggingLevel.ERROR,
-                        'Event publish error: ' + err.getStatusCode() + ' - ' + err.getMessage());
-                }
-            }
-        }
-    }
-
-    public static void publishSingleEvent(Map<String, Object> eventData) {
-        {{EventName}}__e event = new {{EventName}}__e();
-        // Map fields from eventData
-        event.{{FieldName}}__c = (String) eventData.get('{{fieldKey}}');
-
-        Database.SaveResult sr = EventBus.publish(event);
-        if (!sr.isSuccess()) {
-            throw new EventPublishException('Failed to publish event: ' + sr.getErrors());
-        }
-    }
-
-    public class EventPublishException extends Exception {}
-}
+List<Database.SaveResult> results = EventBus.publish(events);
 ```
 
-### Event Subscriber Trigger
-
-**Template**: `templates/platform-events/event-subscriber-trigger.trigger`
-
+**Subscribing**:
 ```apex
 trigger {{EventName}}Subscriber on {{EventName}}__e (after insert) {
-    // Get replay ID for resumption
-    String lastReplayId = '';
-
     for ({{EventName}}__e event : Trigger.new) {
-        // Store replay ID for potential resume
-        lastReplayId = event.ReplayId;
-
-        try {
-            // Process event
-            {{EventName}}Handler.processEvent(event);
-        } catch (Exception e) {
-            // Log error but don't throw - allow other events to process
-            System.debug(LoggingLevel.ERROR,
-                'Event processing error: ' + e.getMessage() +
-                ' ReplayId: ' + event.ReplayId);
-        }
+        {{EventName}}Handler.processEvent(event);
     }
-
-    // Set resume checkpoint (for high-volume events)
-    EventBus.TriggerContext.currentContext().setResumeCheckpoint(lastReplayId);
 }
 ```
 
----
+**Detailed Examples**:
+- [Platform Event Definition](resources/event-patterns.md#platform-event-definition)
+- [Event Publisher](resources/event-patterns.md#event-publisher)
+- [Event Subscriber Trigger](resources/event-patterns.md#event-subscriber-trigger)
 
-## Change Data Capture (CDC)
+### Change Data Capture (CDC)
 
-### CDC Enablement
+**For detailed CDC patterns, see [resources/event-patterns.md#change-data-capture-cdc](resources/event-patterns.md#change-data-capture-cdc)**
 
-Enable CDC via Setup → Integrations → Change Data Capture, or via metadata:
+#### Quick Reference
 
-**Objects supporting CDC**: Standard objects, Custom objects
+**Enablement**: Setup → Integrations → Change Data Capture
 
-**Channel Format**: `{{ObjectAPIName}}ChangeEvent` (e.g., `AccountChangeEvent`, `Order__ChangeEvent`)
+**Channel Naming**: `{{ObjectAPIName}}ChangeEvent` (e.g., `AccountChangeEvent`)
 
-### CDC Subscriber Trigger
-
-**Template**: `templates/cdc/cdc-subscriber-trigger.trigger`
-
+**Subscriber Template**:
 ```apex
 trigger {{ObjectName}}CDCSubscriber on {{ObjectName}}ChangeEvent (after insert) {
-
     for ({{ObjectName}}ChangeEvent event : Trigger.new) {
-        // Get change event header
         EventBus.ChangeEventHeader header = event.ChangeEventHeader;
-
-        String changeType = header.getChangeType();
+        String changeType = header.getChangeType(); // CREATE, UPDATE, DELETE, UNDELETE
         List<String> changedFields = header.getChangedFields();
-        String recordId = header.getRecordIds()[0]; // First record ID
+        String recordId = header.getRecordIds()[0];
 
-        System.debug('CDC Event - Type: ' + changeType +
-                     ', RecordId: ' + recordId +
-                     ', Changed Fields: ' + changedFields);
-
-        // Route based on change type
         switch on changeType {
-            when 'CREATE' {
-                // Handle new record
-                {{ObjectName}}CDCHandler.handleCreate(event);
-            }
-            when 'UPDATE' {
-                // Handle update
-                {{ObjectName}}CDCHandler.handleUpdate(event, changedFields);
-            }
-            when 'DELETE' {
-                // Handle delete
-                {{ObjectName}}CDCHandler.handleDelete(recordId);
-            }
-            when 'UNDELETE' {
-                // Handle undelete
-                {{ObjectName}}CDCHandler.handleUndelete(event);
-            }
+            when 'CREATE' { {{ObjectName}}CDCHandler.handleCreate(event); }
+            when 'UPDATE' { {{ObjectName}}CDCHandler.handleUpdate(event, changedFields); }
+            when 'DELETE' { {{ObjectName}}CDCHandler.handleDelete(recordId); }
+            when 'UNDELETE' { {{ObjectName}}CDCHandler.handleUndelete(event); }
         }
     }
 }
 ```
 
-### CDC Handler Service
-
-**Template**: `templates/cdc/cdc-handler.cls`
-
-```apex
-public with sharing class {{ObjectName}}CDCHandler {
-
-    public static void handleCreate({{ObjectName}}ChangeEvent event) {
-        // Sync to external system on create
-        Map<String, Object> payload = buildPayload(event);
-        System.enqueueJob(new ExternalSystemSyncQueueable(payload, 'CREATE'));
-    }
-
-    public static void handleUpdate({{ObjectName}}ChangeEvent event, List<String> changedFields) {
-        // Only sync if relevant fields changed
-        Set<String> fieldsToWatch = new Set<String>{'Name', 'Status__c', 'Amount__c'};
-
-        Boolean relevantChange = false;
-        for (String field : changedFields) {
-            if (fieldsToWatch.contains(field)) {
-                relevantChange = true;
-                break;
-            }
-        }
-
-        if (relevantChange) {
-            Map<String, Object> payload = buildPayload(event);
-            payload.put('changedFields', changedFields);
-            System.enqueueJob(new ExternalSystemSyncQueueable(payload, 'UPDATE'));
-        }
-    }
-
-    public static void handleDelete(String recordId) {
-        Map<String, Object> payload = new Map<String, Object>{'recordId' => recordId};
-        System.enqueueJob(new ExternalSystemSyncQueueable(payload, 'DELETE'));
-    }
-
-    public static void handleUndelete({{ObjectName}}ChangeEvent event) {
-        handleCreate(event); // Treat undelete like create
-    }
-
-    private static Map<String, Object> buildPayload({{ObjectName}}ChangeEvent event) {
-        return new Map<String, Object>{
-            'recordId' => event.ChangeEventHeader.getRecordIds()[0],
-            'commitTimestamp' => event.ChangeEventHeader.getCommitTimestamp(),
-            // Add event field values
-            'name' => event.Name
-            // Add more fields
-        };
-    }
-}
-```
+**Detailed Examples**:
+- [CDC Enablement](resources/event-patterns.md#cdc-enablement)
+- [CDC Subscriber Trigger](resources/event-patterns.md#cdc-subscriber-trigger)
+- [CDC Handler Service](resources/event-patterns.md#cdc-handler-service)
 
 ---
 
@@ -833,6 +447,22 @@ sf project deploy start --metadata CustomObject:{{EventName}}__e --target-org {{
 | 100+ callouts per transaction | Governor limit exceeded | Batch callouts, use async |
 | No logging | Can't debug production issues | Log all callout requests/responses |
 | Exposing API errors to users | Security risk, poor UX | Catch and wrap in user-friendly messages |
+
+---
+
+## Additional Resources
+
+📚 **Detailed Documentation**:
+- [Callout Patterns](resources/callout-patterns.md) - REST and SOAP callout implementations
+- [Event Patterns](resources/event-patterns.md) - Platform Events and Change Data Capture
+
+📁 **Templates**:
+- `templates/named-credentials/` - Authentication templates
+- `templates/external-credentials/` - External Credential templates (API 61+)
+- `templates/external-services/` - OpenAPI registration templates
+- `templates/callouts/` - REST/SOAP callout patterns
+- `templates/platform-events/` - Event definitions and publishers
+- `templates/cdc/` - Change Data Capture triggers
 
 ---
 

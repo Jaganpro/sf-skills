@@ -24,317 +24,226 @@ Expert in creating and managing Salesforce Connected Apps and External Client Ap
 4. **Validation & Scoring**: Score apps against 6 categories (0-120 points)
 5. **Migration Guidance**: Help migrate from Connected Apps to External Client Apps
 
+---
+
 ## Workflow (5-Phase Pattern)
 
 ### Phase 1: Requirements Gathering
 
 Use **AskUserQuestion** to gather:
 
-| # | Question | Options |
-|---|----------|---------|
+| # | Question | Key Options |
+|---|----------|-------------|
 | 1 | App Type | Connected App / External Client App |
-| 2 | OAuth Flow | Web Server (Authorization Code), User-Agent, JWT Bearer, Device, Refresh Token |
-| 3 | Primary Use Case | API Integration, SSO, Canvas App, Mobile App, CI/CD |
-| 4 | Scopes Required | api, refresh_token, full, web, chatter_api, etc. |
-| 5 | Distribution | Local (single org) / Packageable (multi-org) |
+| 2 | OAuth Flow | Authorization Code, JWT Bearer, Device, Client Credentials |
+| 3 | Use Case | API Integration, SSO, Mobile, CI/CD |
+| 4 | Scopes | api, refresh_token, full, web, etc. |
+| 5 | Distribution | Local / Packageable (multi-org) |
 
 **Then**:
-1. Check existing apps: `Glob: **/*.connectedApp-meta.xml`, `Glob: **/*.eca-meta.xml`
-2. Check for existing OAuth configurations
-3. Create TodoWrite tasks
+1. Check existing: `Glob: **/*.connectedApp-meta.xml`, `Glob: **/*.eca-meta.xml`
+2. Create TodoWrite tasks
 
 ### Phase 2: App Type Selection
 
-**Decision Matrix**:
-
-| Criteria | Connected App | External Client App (ECA) |
-|----------|--------------|--------------------------|
+| Criteria | Connected App | External Client App |
+|----------|--------------|---------------------|
 | Single Org | ✓ Good | ✓ Good |
-| Multi-Org Distribution | ⚠️ Manual recreation | ✓ Native packaging (2GP) |
-| Secret Management | ⚠️ Visible in sandboxes | ✓ Hidden in sandboxes |
-| Key Rotation | ⚠️ Manual | ✓ Automatable via API |
-| Metadata Compliance | ⚠️ Partial | ✓ Full |
-| Audit Trail | ⚠️ Limited | ✓ MFA + audit logging |
-| Setup Complexity | Low | Medium |
-| Minimum API Version | Any | 61.0+ |
+| Multi-Org | ⚠️ Manual | ✓ 2GP Packaging |
+| Secret Mgmt | ⚠️ Visible | ✓ Hidden in sandboxes |
+| Key Rotation | ⚠️ Manual | ✓ API-driven |
+| Audit Trail | ⚠️ Limited | ✓ MFA + audit |
+| API Version | Any | 61.0+ required |
 
-**Recommendation Logic**:
-- **Multi-org or ISV**: Always use External Client App
-- **Regulated industry**: Use External Client App (audit requirements)
-- **Simple single-org**: Connected App is sufficient
-- **Automated DevOps**: Use External Client App (key rotation)
+**Quick Decision**:
+- **Multi-org or ISV** → External Client App
+- **Regulated industry** → External Client App (audit requirements)
+- **Simple single-org** → Connected App sufficient
+- **Automated DevOps** → External Client App (key rotation)
 
 ### Phase 3: Template Selection & Generation
 
-**Select template based on app type**:
+**Template Locations** (try in order):
+1. `~/.claude/plugins/marketplaces/sf-skills/sf-connected-apps/templates/[template]`
+2. `[project-root]/sf-connected-apps/templates/[template]`
 
-| App Type | Template File |
-|----------|---------------|
-| Connected App (Basic) | `templates/connected-app-basic.xml` |
-| Connected App (Full OAuth) | `templates/connected-app-oauth.xml` |
-| Connected App (JWT Bearer) | `templates/connected-app-jwt.xml` |
-| Connected App (Canvas) | `templates/connected-app-canvas.xml` |
-| External Client App | `templates/external-client-app.xml` |
-| ECA Global OAuth | `templates/eca-global-oauth.xml` |
-| ECA OAuth Settings | `templates/eca-oauth-settings.xml` |
-| ECA Policies | `templates/eca-policies.xml` |
+**Template Selection**:
 
-**Template Path Resolution** (try in order):
-1. **Marketplace folder**: `~/.claude/plugins/marketplaces/sf-skills/sf-connected-apps/templates/[template]`
-2. **Project folder**: `[project-root]/sf-connected-apps/templates/[template]`
+| App Type | Template File | Flow Type |
+|----------|---------------|-----------|
+| Connected App (Basic) | `connected-app-basic.xml` | Minimal OAuth |
+| Connected App (Full) | `connected-app-oauth.xml` | Web Server Flow |
+| Connected App (JWT) | `connected-app-jwt.xml` | Server-to-Server |
+| Connected App (Canvas) | `connected-app-canvas.xml` | Canvas Apps |
+| External Client App | `external-client-app.xml` | Base ECA |
+| ECA OAuth (Global) | `eca-global-oauth.xml` | Global settings |
+| ECA OAuth (Instance) | `eca-oauth-settings.xml` | Per-org settings |
 
-**Example**: `Read: ~/.claude/plugins/marketplaces/sf-skills/sf-connected-apps/templates/connected-app-jwt.xml`
-
-**File Locations**:
+**Output Locations**:
 - Connected Apps: `force-app/main/default/connectedApps/`
 - External Client Apps: `force-app/main/default/externalClientApps/`
 
 ### Phase 4: Security Validation & Scoring
 
-**Run Validation**:
+**Scoring Categories**:
 ```
-Score: XX/120 ⭐⭐⭐⭐ Rating
-├─ Security: XX/30
-├─ OAuth Configuration: XX/25
-├─ Metadata Compliance: XX/20
-├─ Best Practices: XX/20
-├─ Scopes: XX/15
-└─ Documentation: XX/10
+Score: XX/120 ⭐⭐⭐⭐
+├─ Security: XX/30 (PKCE, token rotation, IP restrictions, certificates)
+├─ OAuth Config: XX/25 (callbacks, flows, token expiration, OIDC)
+├─ Metadata: XX/20 (required fields, API version, naming)
+├─ Best Practices: XX/20 (minimal scopes, named principal, pre-auth)
+├─ Scopes: XX/15 (least privilege, no deprecated)
+└─ Documentation: XX/10 (description, contact email)
 ```
 
-**Scoring Criteria**:
-
-#### Security (30 points)
-- PKCE enabled for public clients (+10)
-- Refresh token rotation enabled (+5)
-- IP restrictions configured (+5)
-- Certificate-based auth where applicable (+5)
-- No wildcard callback URLs (+5)
-
-#### OAuth Configuration (25 points)
-- Valid callback URLs (+10)
-- Appropriate OAuth flow for use case (+5)
-- Token expiration configured (+5)
-- ID token enabled for OpenID Connect (+5)
-
-#### Metadata Compliance (20 points)
-- All required fields present (+10)
-- Valid API version (+5)
-- Proper file naming convention (+5)
-
-#### Best Practices (20 points)
-- Minimal scopes (least privilege) (+10)
-- Named Principal for integrations (+5)
-- Admin pre-authorization configured (+5)
-
-#### Scopes (15 points)
-- Only necessary scopes selected (+10)
-- No deprecated scopes (+5)
-
-#### Documentation (10 points)
-- Description provided (+5)
-- Contact email valid (+5)
-
-### Scoring Thresholds
+**Thresholds**:
 
 | Score | Action | Meaning |
 |-------|--------|---------|
-| **80-100** | ✅ Deploy | Production-ready |
-| **54-79** | ⚠️ Review | May need security hardening |
-| **<54** | ❌ Block | Security risk - fix before deploying |
+| **80-120** | ✅ Deploy | Production-ready |
+| **54-79** | ⚠️ Review | May need hardening |
+| **<54** | ❌ Block | Security risk - fix first |
+
+> 📋 **Detailed scoring**: See Phase 4 in previous version for point breakdown per criteria.
 
 ### Phase 5: Deployment & Documentation
 
-**Deployment**:
+**Deploy**:
 ```
-Skill(skill="sf-deploy", args="Deploy connected apps at force-app/main/default/connectedApps/ to [target-org] with --dry-run")
+Skill(skill="sf-deploy", args="Deploy connected apps to [target-org] with --dry-run")
 ```
 
-**Completion Summary**:
+**Completion Output**:
 ```
 ✓ App Created: [AppName]
   Type: [Connected App | External Client App]
-  API: 62.0
-  Location: force-app/main/default/[connectedApps|externalClientApps]/[AppName].*
-  OAuth Flow: [flow type]
-  Scopes: [scope list]
-  Validation: PASSED (Score: XX/120)
+  Location: force-app/main/default/[connectedApps|externalClientApps]/
+  OAuth Flow: [flow]
+  Scopes: [list]
+  Score: XX/120
 
 Next Steps:
-- For Connected App: Retrieve Consumer Key from Setup after deployment
+- Retrieve Consumer Key from Setup > App Manager
+- Test OAuth flow (Postman/curl)
 - For ECA: Configure policies in subscriber org
-- Test OAuth flow with Postman or curl
 ```
 
 ---
 
-## Connected App Metadata Structure
+## Quick Reference: OAuth Flow Selection
 
-### ConnectedApp XML Structure
+| Use Case | Flow | PKCE | Secret | Template |
+|----------|------|------|--------|----------|
+| Web Backend | Authorization Code | Optional | Yes | `connected-app-oauth.xml` |
+| SPA/Mobile | Authorization Code | Required | No | `external-client-app.xml` |
+| Server-to-Server | JWT Bearer | N/A | Certificate | `connected-app-jwt.xml` |
+| CI/CD | JWT Bearer | N/A | Certificate | `connected-app-jwt.xml` |
+| CLI/IoT | Device | N/A | No | `connected-app-basic.xml` |
+| Service Account | Client Credentials | N/A | Yes | `eca-oauth-settings.xml` (ECA only) |
+
+> 📘 **Detailed flows**: See [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) for implementation patterns, security checklists, and code examples.
+
+---
+
+## Metadata Structure Essentials
+
+### Connected App XML
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <ConnectedApp xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>My Integration App</label>
     <contactEmail>admin@company.com</contactEmail>
-    <description>Integration for external system</description>
+    <description>Integration description</description>
 
     <!-- OAuth Configuration -->
     <oauthConfig>
         <callbackUrl>https://app.example.com/oauth/callback</callbackUrl>
-        <certificate>MyCertificate</certificate>
-        <consumerKey>AUTO_GENERATED</consumerKey>
-        <isAdminApproved>true</isAdminApproved>
-        <isConsumerSecretOptional>false</isConsumerSecretOptional>
-        <isIntrospectAllTokens>false</isIntrospectAllTokens>
+        <certificate>MyCertificate</certificate> <!-- JWT Bearer only -->
         <scopes>Api</scopes>
         <scopes>RefreshToken</scopes>
+        <isAdminApproved>true</isAdminApproved>
+        <isConsumerSecretOptional>false</isConsumerSecretOptional>
+        <isPkceRequired>true</isPkceRequired> <!-- Public clients -->
     </oauthConfig>
 
     <!-- OAuth Policy -->
     <oauthPolicy>
         <ipRelaxation>ENFORCE</ipRelaxation>
         <refreshTokenPolicy>infinite</refreshTokenPolicy>
+        <isRefreshTokenRotationEnabled>true</isRefreshTokenRotationEnabled>
     </oauthPolicy>
 </ConnectedApp>
 ```
 
-### Key Fields
+### External Client App Files
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `label` | Yes | Display name of the app |
-| `contactEmail` | Yes | Admin contact email |
-| `description` | No | App description |
-| `oauthConfig` | No | OAuth settings (required for API access) |
-| `oauthPolicy` | No | Token and IP policies |
-| `samlConfig` | No | SAML SSO settings |
-| `canvasConfig` | No | Canvas app settings |
-
-### OAuth Scopes Reference
-
-| Scope | API Name | Description |
-|-------|----------|-------------|
-| Access and manage your data | `Api` | REST/SOAP API access |
-| Perform requests at any time | `RefreshToken` | Offline access via refresh token |
-| Full access | `Full` | Complete access (use sparingly) |
-| Access your basic information | `OpenID` | OpenID Connect |
-| Web access | `Web` | Access via web browser |
-| Access Chatter | `ChatterApi` | Chatter REST API |
-| Access custom permissions | `CustomPermissions` | Custom permission access |
-| Access Einstein Analytics | `Wave` | Analytics API access |
-| Content access | `Content` | Content delivery |
-| Access custom applications | `VisualForce` | Visualforce pages |
-
----
-
-## External Client App Metadata Structure
-
-### ExternalClientApplication (Header File)
-
-**File**: `[AppName].eca-meta.xml`
-
+**1. Header File** (`[AppName].eca-meta.xml`):
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <ExternalClientApplication xmlns="http://soap.sforce.com/2006/04/metadata">
-    <contactEmail>admin@company.com</contactEmail>
-    <description>External integration with modern security</description>
-    <distributionState>Local</distributionState>
-    <iconUrl>https://example.com/icon.png</iconUrl>
-    <isProtected>false</isProtected>
     <label>My External Client App</label>
-    <logoUrl>https://example.com/logo.png</logoUrl>
+    <contactEmail>admin@company.com</contactEmail>
+    <description>Modern integration</description>
+    <distributionState>Local</distributionState> <!-- or Packageable -->
 </ExternalClientApplication>
 ```
 
-### ExtlClntAppGlobalOauthSettings (Global OAuth)
-
-**File**: `[AppName].ecaGlblOauth-meta.xml`
-
-> ⚠️ **IMPORTANT**: File suffix is `.ecaGlblOauth` (abbreviated), NOT `.ecaGlobalOauth`
-
+**2. Global OAuth** (`[AppName].ecaGlblOauth-meta.xml`):
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <ExtlClntAppGlobalOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
     <callbackUrl>https://app.example.com/oauth/callback</callbackUrl>
     <externalClientApplication>My_App_Name</externalClientApplication>
-    <isConsumerSecretOptional>false</isConsumerSecretOptional>
-    <isIntrospectAllTokens>false</isIntrospectAllTokens>
+    <label>Global OAuth Settings</label>
     <isPkceRequired>true</isPkceRequired>
-    <isSecretRequiredForRefreshToken>true</isSecretRequiredForRefreshToken>
-    <label>My App Global OAuth Settings</label>
-    <shouldRotateConsumerKey>false</shouldRotateConsumerKey>
-    <shouldRotateConsumerSecret>false</shouldRotateConsumerSecret>
+    <isConsumerSecretOptional>true</isConsumerSecretOptional>
 </ExtlClntAppGlobalOauthSettings>
 ```
 
-**ECA Required Fields** (both GlobalOauth and OauthSettings):
-- `externalClientApplication` - Reference to parent ECA (must match .eca file name)
-- `label` - Display label
-- Global: `callbackUrl` | Instance: `commaSeparatedOauthScopes` (NOT individual `<scopes>` tags)
+> ⚠️ **Important**: File suffix is `.ecaGlblOauth` (abbreviated), NOT `.ecaGlobalOauth`
 
-### ExtlClntAppOauthSettings (Instance OAuth)
-
-**File**: `[AppName].ecaOauth-meta.xml`
-
-> **Note**: OAuth flows are configured via Admin UI or `ExtlClntAppConfigurablePolicies`.
-
-### ExtlClntAppConfigurablePolicies (Admin Policies)
-
-**File**: `[AppName].ecaPolicy-meta.xml` (auto-generated, admin-configurable)
-
+**3. Instance OAuth** (`[AppName].ecaOauth-meta.xml`):
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<ExtlClntAppConfigurablePolicies xmlns="http://soap.sforce.com/2006/04/metadata">
-    <ipRelaxation>ENFORCE</ipRelaxation>
-    <refreshTokenPolicy>infinite</refreshTokenPolicy>
-    <sessionTimeout>120</sessionTimeout>
-</ExtlClntAppConfigurablePolicies>
+<ExtlClntAppOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <externalClientApplication>My_App_Name</externalClientApplication>
+    <commaSeparatedOauthScopes>api,refresh_token</commaSeparatedOauthScopes>
+    <label>Instance OAuth Settings</label>
+    <isClientCredentialsEnabled>false</isClientCredentialsEnabled>
+</ExtlClntAppOauthSettings>
 ```
 
-### ECA Distribution States
+---
 
-| State | Description | Use Case |
-|-------|-------------|----------|
-| `Local` | Available only in creating org | Development, single-org integrations |
-| `Packageable` | Can be included in 2GP packages | ISV apps, multi-org distribution |
+## OAuth Scopes Reference
+
+| Scope Display Name | API Name | Use Case |
+|-------------------|----------|----------|
+| Access and manage your data | `Api` | REST/SOAP API access |
+| Perform requests at any time | `RefreshToken` | Offline access |
+| Full access | `Full` | Complete access (use sparingly) |
+| Access your basic information | `OpenID` | OpenID Connect |
+| Web access | `Web` | Web browser access |
+| Access Chatter | `ChatterApi` | Chatter REST API |
+| Access custom permissions | `CustomPermissions` | Custom permissions |
+| Access Einstein Analytics | `Wave` | Analytics API |
 
 ---
 
 ## Security Best Practices
 
-> 📋 **Scoring details**: See Phase 4 Scoring Criteria above for point breakdown.
+| Anti-Pattern | Risk | Fix | Score Impact |
+|--------------|------|-----|--------------|
+| Wildcard callback | Token hijacking | Specific URLs | -10 points |
+| `Full` scope everywhere | Over-privileged | Minimal scopes | -15 points |
+| No token expiration | Long-term compromise | Set expiration | -5 points |
+| Secret in code | Credential leak | Named Credentials | -15 points |
+| PKCE disabled (mobile) | Code interception | Enable PKCE | -10 points |
+| No IP restrictions | Unauthorized access | Configure IP ranges | -5 points |
 
-### Anti-Patterns
-
-| Anti-Pattern | Risk | Fix |
-|--------------|------|-----|
-| Wildcard callback URL | Token hijacking | Use specific URLs |
-| `Full` scope everywhere | Over-privileged | Use minimal scopes |
-| No token expiration | Long-term compromise | Set expiration policy |
-| Consumer secret in code | Credential leak | Use Named Credentials |
-| PKCE disabled for mobile | Authorization code interception | Enable PKCE |
-| No IP restrictions | Unauthorized access | Configure IP ranges |
+> 🔒 **Security details**: See [docs/security-checklist.md](docs/security-checklist.md) for comprehensive security review.
 
 ---
 
-## OAuth Flow Decision Matrix
-
-| Use Case | Recommended Flow | PKCE | Refresh Token |
-|----------|-----------------|------|---------------|
-| Web Server Application | Authorization Code | Optional | Yes |
-| Single Page Application | Authorization Code | Required | Yes (rotate) |
-| Mobile Application | Authorization Code | Required | Yes (rotate) |
-| Server-to-Server | JWT Bearer | N/A | No |
-| CI/CD Pipeline | JWT Bearer | N/A | No |
-| Device (TV, CLI) | Device Authorization | N/A | Yes |
-| Legacy (avoid) | Username-Password | N/A | Yes |
-
----
-
-## Scratch Org Configuration
-
-For **External Client Apps**, add these features to your scratch org definition:
+## Scratch Org Setup (External Client Apps)
 
 ```json
 {
@@ -343,76 +252,98 @@ For **External Client Apps**, add these features to your scratch org definition:
   "features": [
     "ExternalClientApps",
     "ExtlClntAppSecretExposeCtl"
-  ],
-  "settings": {
-    "securitySettings": {
-      "enableAdminLoginAsAnyUser": true
-    }
-  }
+  ]
 }
 ```
 
 ---
 
-## Cross-Skill Integration
+## Common CLI Commands
 
-| Skill | When to Use | Example |
-|-------|-------------|---------|
-| sf-metadata | Create Named Credentials for secure callouts | `Skill(skill="sf-metadata")` → "Create Named Credential for Stripe API" |
-| sf-deploy | Deploy to org | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
-| sf-apex | Create Apex for OAuth token handling | `Skill(skill="sf-apex")` → "Create OAuth token refresh service" |
+```bash
+# List Connected Apps in org
+sf org list metadata --metadata-type ConnectedApp --target-org [alias]
+
+# Retrieve Connected App
+sf project retrieve start --metadata ConnectedApp:[AppName] --target-org [alias]
+
+# Deploy
+sf project deploy start --source-dir force-app/main/default/connectedApps --target-org [alias]
+
+# Retrieve Consumer Key (after deployment)
+# Go to Setup > App Manager > [App] > View
+```
 
 ---
 
 ## Migration: Connected App → External Client App
 
-**Step 1: Assess Current State**
-```
-Glob: **/*.connectedApp-meta.xml
-```
-Review existing Connected Apps and their configurations.
+**Quick Steps**:
+1. **Assess**: `Glob: **/*.connectedApp-meta.xml`
+2. **Create**: Map OAuth settings to ECA structure
+3. **Parallel**: Deploy ECA alongside old app
+4. **Test**: Verify flows with new Consumer Key
+5. **Cutover**: Update integrations, disable old app
+6. **Archive**: Remove after 30-day grace period
 
-**Step 2: Create ECA Equivalent**
-- Map OAuth settings to ECA structure
-- Create all required ECA metadata files
-- Set `distributionState` based on needs
+**Scoring Benefit**: ECAs typically score 15-20 points higher.
 
-**Step 3: Update Integrations**
-- Generate new Consumer Key/Secret
-- Update external systems with new credentials
-- Test OAuth flows
-
-**Step 4: Deprecate Old App**
-- Remove from Connected App policies
-- Archive or delete Connected App metadata
+> 📘 **Detailed migration**: See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step process.
 
 ---
 
-## Common Commands
+## Cross-Skill Integration
 
-**List Connected Apps in Org**:
-```bash
-sf org list metadata --metadata-type ConnectedApp --target-org [alias]
-```
+| Skill | Use Case | Example |
+|-------|----------|---------|
+| sf-metadata | Named Credentials for callouts | `Skill(skill="sf-metadata")` → "Create Named Credential" |
+| sf-deploy | Deploy to org | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
+| sf-apex | OAuth token handling | `Skill(skill="sf-apex")` → "Create token refresh service" |
 
-**Retrieve Connected App**:
-```bash
-sf project retrieve start --metadata ConnectedApp:[AppName] --target-org [alias]
-```
+---
 
-**Deploy Connected App**:
-```bash
-sf project deploy start --source-dir force-app/main/default/connectedApps --target-org [alias]
-```
+## Key Insights
+
+| Insight | Description | Reference |
+|---------|-------------|-----------|
+| **ECA vs Connected App** | ECAs provide better secret management and 2GP packaging | Phase 2 Decision Matrix |
+| **PKCE for Public Clients** | Always required for mobile/SPA apps | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **JWT Bearer for CI/CD** | Server-to-server auth without user interaction | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **Token Rotation** | Enable for SPAs to prevent token reuse | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **Named Credentials** | Store secrets securely, automatic refresh | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **Minimal Scopes** | Use least privilege (api instead of full) | Phase 4 Scoring |
+| **IP Restrictions** | Add when integration has known IP ranges | Phase 4 Scoring |
+| **Certificate Auth** | Stronger than username/password for JWT | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
 
 ---
 
 ## Notes
 
 - **API Version**: 62.0+ recommended, 61.0+ required for External Client Apps
-- **Scoring**: Block deployment if score < 54
+- **Scoring**: Block deployment if score < 54 (54% threshold)
+- **Consumer Secret**: Never commit to version control - use environment variables
 - **External Client Apps**: Preferred for new development (modern security model)
-- **Consumer Secret**: Never commit to version control
+- **Testing**: Use Postman for OAuth flow testing before production
+
+---
+
+## Additional Resources
+
+### Detailed References
+- **OAuth Flow Patterns**: [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md)
+  - Implementation examples (Node.js, Python, JavaScript)
+  - Security checklists per flow
+  - Error handling patterns
+  - Named Credentials integration
+
+### Documentation
+- **OAuth Flow Diagrams**: [docs/oauth-flows.md](docs/oauth-flows.md)
+- **Security Review**: [docs/security-checklist.md](docs/security-checklist.md)
+- **Migration Guide**: [docs/migration-guide.md](docs/migration-guide.md)
+- **Testing & Validation**: [docs/testing-validation-guide.md](docs/testing-validation-guide.md)
+
+### Examples
+- **Usage Examples**: [examples/example-usage.md](examples/example-usage.md)
 
 ---
 

@@ -22,6 +22,8 @@ Expert Apex developer specializing in clean code, SOLID principles, and 2025 bes
 3. **Validation & Scoring**: Score code against 8 categories (0-150 points)
 4. **Deployment Integration**: Validate and deploy via sf-deploy skill
 
+---
+
 ## Workflow (5-Phase Pattern)
 
 ### Phase 1: Requirements Gathering
@@ -36,6 +38,8 @@ Use **AskUserQuestion** to gather:
 1. Check existing code: `Glob: **/*.cls`, `Glob: **/*.trigger`
 2. Check for existing Trigger Actions Framework setup: `Glob: **/*TriggerAction*.cls`
 3. Create TodoWrite tasks
+
+---
 
 ### Phase 2: Design & Template Selection
 
@@ -57,6 +61,8 @@ Use **AskUserQuestion** to gather:
 2. **Project folder**: `[project-root]/sf-apex/templates/[template]`
 
 **Example**: `Read: ~/.claude/plugins/marketplaces/sf-skills/sf-apex/templates/apex-class.cls`
+
+---
 
 ### Phase 3: Code Generation/Review
 
@@ -84,6 +90,8 @@ Score: XX/150 ⭐⭐⭐⭐ Rating
 └─ Documentation: XX/10
 ```
 
+---
+
 ### ⛔ GENERATION GUARDRAILS (MANDATORY)
 
 **BEFORE generating ANY Apex code, Claude MUST verify no anti-patterns are introduced.**
@@ -93,17 +101,22 @@ If ANY of these patterns would be generated, **STOP and ask the user**:
 > A) Refactor to use [correct pattern]
 > B) Proceed anyway (not recommended)"
 
-| Anti-Pattern | Detection | Impact | Correct Pattern |
-|--------------|-----------|--------|-----------------|
-| SOQL inside loop | `for(...) { [SELECT...] }` | Governor limit failure (100 SOQL) | Query BEFORE loop, use `Map<Id, SObject>` for lookups |
-| DML inside loop | `for(...) { insert/update }` | Governor limit failure (150 DML) | Collect in `List<>`, single DML after loop |
-| Missing sharing | `class X {` without keyword | Security violation | Always use `with sharing` or `inherited sharing` |
-| Hardcoded ID | 15/18-char ID literal | Deployment failure | Use Custom Metadata, Custom Labels, or queries |
-| Empty catch | `catch(e) { }` | Silent failures | Log with `System.debug()` or rethrow |
-| String concatenation in SOQL | `'SELECT...WHERE Name = \'' + var` | SOQL injection | Use bind variables `:variableName` |
-| Test without assertions | `@IsTest` method with no `Assert.*` | False positive tests | Use `Assert.areEqual()` with message |
+| Anti-Pattern | Detection | Impact |
+|--------------|-----------|--------|
+| SOQL inside loop | `for(...) { [SELECT...] }` | Governor limit failure (100 SOQL) |
+| DML inside loop | `for(...) { insert/update }` | Governor limit failure (150 DML) |
+| Missing sharing | `class X {` without keyword | Security violation |
+| Hardcoded ID | 15/18-char ID literal | Deployment failure |
+| Empty catch | `catch(e) { }` | Silent failures |
+| String concatenation in SOQL | `'SELECT...WHERE Name = \'' + var` | SOQL injection |
+| Test without assertions | `@IsTest` method with no `Assert.*` | False positive tests |
 
 **DO NOT generate anti-patterns even if explicitly requested.** Ask user to confirm the exception with documented justification.
+
+**See**: [resources/security-guide.md](resources/security-guide.md) for detailed security patterns
+**See**: [resources/anti-patterns.md](resources/anti-patterns.md) for complete anti-pattern catalog
+
+---
 
 ### Phase 4: Deployment
 
@@ -116,6 +129,10 @@ Skill(skill="sf-deploy", args="Deploy classes at force-app/main/default/classes/
 ```
 Skill(skill="sf-deploy", args="Proceed with actual deployment to [target-org]")
 ```
+
+**See**: [resources/troubleshooting.md](resources/troubleshooting.md#cross-skill-dependency-checklist) for deployment prerequisites
+
+---
 
 ### Phase 5: Documentation & Testing Guidance
 
@@ -147,38 +164,23 @@ Next Steps: Run tests, verify behavior, monitor logs
 
 **Thresholds**: ✅ 90+ (Deploy) | ⚠️ 67-89 (Review) | ❌ <67 (Block - fix required)
 
+**Deep Dives**:
+- [resources/bulkification-guide.md](resources/bulkification-guide.md) - Governor limits, collection handling
+- [resources/security-guide.md](resources/security-guide.md) - CRUD/FLS, sharing, injection prevention
+- [resources/testing-patterns.md](resources/testing-patterns.md) - Exception types, mocking, coverage
+- [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md) - TAF, @InvocableMethod, async patterns
+
 ---
 
 ## Trigger Actions Framework (TAF)
 
-### ⚠️ CRITICAL PREREQUISITES
+### Quick Reference
 
-**Before using TAF patterns, the target org MUST have:**
+**When to Use**: If TAF package is installed in target org (check: `sf package installed list`)
 
-1. **Trigger Actions Framework Package Installed**
-   - GitHub: https://github.com/mitchspano/apex-trigger-actions-framework
-   - Install via: `sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10`
-   - Or use unlocked package from repository
-
-2. **Custom Metadata Type Records Created**
-   - TAF triggers do NOTHING without `Trigger_Action__mdt` records!
-   - Each trigger action class needs a corresponding CMT record
-
-**If TAF is NOT installed, use the Standard Trigger Pattern instead (see below).**
-
----
-
-### TAF Pattern (Requires Package)
-
-All triggers MUST use the Trigger Actions Framework pattern:
-
-**Trigger** (one per object):
+**Trigger Pattern** (one per object):
 ```apex
-trigger AccountTrigger on Account (
-    before insert, after insert,
-    before update, after update,
-    before delete, after delete, after undelete
-) {
+trigger AccountTrigger on Account (before insert, after insert, before update, after update, before delete, after delete, after undelete) {
     new MetadataTriggerHandler().run();
 }
 ```
@@ -196,112 +198,16 @@ public class TA_Account_SetDefaults implements TriggerAction.BeforeInsert {
 }
 ```
 
-**Multi-Interface Action Class** (BeforeInsert + BeforeUpdate):
-```apex
-public class TA_Lead_CalculateScore implements TriggerAction.BeforeInsert, TriggerAction.BeforeUpdate {
+**⚠️ CRITICAL**: TAF triggers do NOTHING without `Trigger_Action__mdt` records! Each action class needs a corresponding Custom Metadata record.
 
-    // Called on new record creation
-    public void beforeInsert(List<Lead> newList) {
-        calculateScores(newList);
-    }
-
-    // Called on record updates
-    public void beforeUpdate(List<Lead> newList, List<Lead> oldList) {
-        // Only recalculate if scoring fields changed
-        List<Lead> leadsToScore = new List<Lead>();
-        Map<Id, Lead> oldMap = new Map<Id, Lead>(oldList);
-
-        for (Lead newLead : newList) {
-            Lead oldLead = oldMap.get(newLead.Id);
-            if (scoringFieldsChanged(newLead, oldLead)) {
-                leadsToScore.add(newLead);
-            }
-        }
-
-        if (!leadsToScore.isEmpty()) {
-            calculateScores(leadsToScore);
-        }
-    }
-
-    private void calculateScores(List<Lead> leads) {
-        // Scoring logic here
-    }
-
-    private Boolean scoringFieldsChanged(Lead newLead, Lead oldLead) {
-        return newLead.Industry != oldLead.Industry ||
-               newLead.NumberOfEmployees != oldLead.NumberOfEmployees;
-    }
-}
+**Installation**:
+```bash
+sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10
 ```
 
-### ⚠️ REQUIRED: Custom Metadata Type Records
+**Fallback**: If TAF is NOT installed, use standard trigger pattern (see [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#standard-trigger-pattern))
 
-**TAF triggers will NOT execute without `Trigger_Action__mdt` records!**
-
-For each trigger action class, create a Custom Metadata record:
-
-| Field | Value | Description |
-|-------|-------|-------------|
-| Label | TA Lead Calculate Score | Human-readable name |
-| Trigger_Action_Name__c | TA_Lead_CalculateScore | Apex class name |
-| Object__c | Lead | sObject API name |
-| Context__c | Before Insert | Trigger context |
-| Order__c | 1 | Execution order (lower = first) |
-| Active__c | true | Enable/disable without deploy |
-
-**Example Custom Metadata XML** (`Trigger_Action.TA_Lead_CalculateScore_BI.md-meta.xml`):
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>TA Lead Calculate Score - Before Insert</label>
-    <protected>false</protected>
-    <values>
-        <field>Apex_Class_Name__c</field>
-        <value xsi:type="xsd:string">TA_Lead_CalculateScore</value>
-    </values>
-    <values>
-        <field>Object__c</field>
-        <value xsi:type="xsd:string">Lead</value>
-    </values>
-    <values>
-        <field>Order__c</field>
-        <value xsi:type="xsd:double">1.0</value>
-    </values>
-    <values>
-        <field>Bypass_Execution__c</field>
-        <value xsi:type="xsd:boolean">false</value>
-    </values>
-</CustomMetadata>
-```
-
-**NOTE**: Create separate CMT records for each context (Before Insert, Before Update, etc.)
-
----
-
-### Standard Trigger Pattern (No Package Required)
-
-**Use this when TAF package is NOT installed in the target org:**
-
-```apex
-trigger LeadTrigger on Lead (before insert, before update) {
-
-    LeadScoringService scoringService = new LeadScoringService();
-
-    if (Trigger.isBefore) {
-        if (Trigger.isInsert) {
-            scoringService.calculateScores(Trigger.new);
-        }
-        else if (Trigger.isUpdate) {
-            scoringService.recalculateIfChanged(Trigger.new, Trigger.oldMap);
-        }
-    }
-}
-```
-
-**Pros**: No external dependencies, works in any org
-**Cons**: Less maintainable for complex triggers, no declarative control
-
-See `docs/trigger-actions-framework.md` (in sf-apex folder) for full patterns.
+**See**: [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#trigger-actions-framework-taf) for complete TAF patterns and Custom Metadata setup
 
 ---
 
@@ -315,22 +221,7 @@ See `docs/trigger-actions-framework.md` (in sf-apex folder) for full patterns.
 | Scheduled/recurring job | `Schedulable` |
 | Post-queueable cleanup | `Queueable Finalizer` |
 
----
-
-## Code Review Red Flags
-
-| Anti-Pattern | Fix |
-|--------------|-----|
-| SOQL/DML in loop | Collect in loop, operate after |
-| `without sharing` everywhere | Use `with sharing` by default |
-| No trigger bypass flag | Add Boolean Custom Setting |
-| Multiple triggers on object | Single trigger + TAF |
-| SOQL without WHERE/LIMIT | Always filter and limit |
-| `System.debug()` everywhere | Control via Custom Metadata |
-| `isEmpty()` before DML | Remove - empty list = 0 DMLs |
-| Generic Exception only | Catch specific types first |
-| Hard-coded Record IDs | Query dynamically |
-| No Test Data Factory | Implement Factory pattern |
+**See**: [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#async-patterns) for detailed async patterns
 
 ---
 
@@ -343,26 +234,7 @@ See `docs/trigger-actions-framework.md` (in sf-apex folder) for full patterns.
 
 **Breaking Change (API 62.0)**: Cannot modify Set while iterating - throws `System.FinalException`
 
----
-
-## Reference
-
-**Docs**: `docs/` folder (in sf-apex):
-| Document | Description |
-|----------|-------------|
-| `best-practices.md` | Bulkification, collections, null safety, guard clauses, DML performance |
-| `code-smells-guide.md` | Code smells detection and refactoring patterns (**NEW**) |
-| `design-patterns.md` | 12 patterns including Domain Class, Abstraction Levels (**NEW patterns**) |
-| `trigger-actions-framework.md` | TAF setup and patterns |
-| `security-guide.md` | CRUD/FLS, sharing, SOQL injection prevention |
-| `testing-guide.md` | Test patterns, mocking, bulk testing |
-| `naming-conventions.md` | Variable, method, class naming rules |
-| `solid-principles.md` | SOLID principles for Apex |
-| `code-review-checklist.md` | 150-point scoring criteria |
-
-- **Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/docs/`
-
-> 💡 New content from *"Clean Apex Code"* (Pablo Gonzalez) integrated into best-practices.md, design-patterns.md, and the new code-smells-guide.md.
+**See**: [resources/bulkification-guide.md](resources/bulkification-guide.md#collection-handling-best-practices) for collection usage
 
 ---
 
@@ -370,18 +242,7 @@ See `docs/trigger-actions-framework.md` (in sf-apex folder) for full patterns.
 
 Apex classes can be called from Flow using `@InvocableMethod`. This pattern enables complex business logic, DML, callouts, and integrations from declarative automation.
 
-### Quick Reference
-
-| Annotation | Purpose |
-|------------|---------|
-| `@InvocableMethod` | Makes method callable from Flow |
-| `@InvocableVariable` | Exposes properties in Request/Response wrappers |
-
-### Template
-
-Use `templates/invocable-method.cls` for the complete pattern with Request/Response wrappers.
-
-### Example
+### Quick Pattern
 
 ```apex
 public with sharing class RecordProcessor {
@@ -412,50 +273,79 @@ public with sharing class RecordProcessor {
 }
 ```
 
-**See Also**:
-- [docs/flow-integration.md](docs/flow-integration.md) - Complete @InvocableMethod guide
-- [docs/triangle-pattern.md](docs/triangle-pattern.md) - Flow-LWC-Apex triangle (Apex perspective)
+**Template**: Use `templates/invocable-method.cls` for complete pattern
+
+**See**:
+- [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#flow-integration-invocablemethod) - Complete @InvocableMethod guide
+- [docs/flow-integration.md](docs/flow-integration.md) - Advanced Flow-Apex patterns
+- [docs/triangle-pattern.md](docs/triangle-pattern.md) - Flow-LWC-Apex triangle
 
 ---
 
-## Cross-Skill Integration
+## Testing Best Practices
 
-| Skill | When to Use | Example |
-|-------|-------------|---------|
-| sf-metadata | Discover object/fields before coding | `Skill(skill="sf-metadata")` → "Describe Invoice__c" |
-| sf-data | Generate 251+ test records after deploy | `Skill(skill="sf-data")` → "Create 251 Accounts for bulk testing" |
-| sf-deploy | Deploy to org - see Phase 4 | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
-| sf-flow | Create Flow that calls your Apex | See @InvocableMethod section above |
-| sf-lwc | Create LWC that calls your Apex | `@AuraEnabled` controller patterns |
+### The 3 Test Types (PNB Pattern)
 
-## Dependencies
+Every feature needs:
+1. **Positive**: Happy path test
+2. **Negative**: Error handling test
+3. **Bulk**: 251+ records test
 
-**All optional**: sf-deploy, sf-metadata, sf-data. Install: `/plugin install github:Jaganpro/sf-skills/[skill-name]`
+**Example**:
+```apex
+@IsTest
+static void testPositive() {
+    Account acc = new Account(Name = 'Test', Industry = 'Tech');
+    insert acc;
+    Assert.areEqual('Tech', [SELECT Industry FROM Account WHERE Id = :acc.Id].Industry);
+}
 
-## Common Exception Types Reference
+@IsTest
+static void testNegative() {
+    try {
+        insert new Account(); // Missing Name
+        Assert.fail('Expected DmlException');
+    } catch (DmlException e) {
+        Assert.isTrue(e.getMessage().contains('REQUIRED_FIELD_MISSING'));
+    }
+}
+
+@IsTest
+static void testBulk() {
+    List<Account> accounts = new List<Account>();
+    for (Integer i = 0; i < 251; i++) {
+        accounts.add(new Account(Name = 'Bulk ' + i));
+    }
+    insert accounts;
+    Assert.areEqual(251, [SELECT COUNT() FROM Account]);
+}
+```
+
+**See**:
+- [resources/testing-patterns.md](resources/testing-patterns.md) - Exception types, mocking, Test Data Factory
+- [docs/testing-guide.md](docs/testing-guide.md) - Complete testing reference
+
+---
+
+## Common Exception Types
 
 When writing test classes, use these specific exception types:
 
-| Exception Type | When to Use | Example |
-|----------------|-------------|---------|
-| `DmlException` | Insert/update/delete failures | `Assert.isTrue(e.getMessage().contains('FIELD_CUSTOM_VALIDATION'))` |
-| `QueryException` | SOQL query failures | Malformed query, no rows for assignment |
-| `NullPointerException` | Null reference access | Accessing field on null object |
-| `ListException` | List operation failures | Index out of bounds |
-| `MathException` | Mathematical errors | Division by zero |
-| `TypeException` | Type conversion failures | Invalid type casting |
-| `LimitException` | Governor limit exceeded | Too many SOQL queries, DML statements |
-| `CalloutException` | HTTP callout failures | Timeout, invalid endpoint |
-| `JSONException` | JSON parsing failures | Malformed JSON |
-| `InvalidParameterValueException` | Invalid method parameters | Bad input values |
+| Exception Type | When to Use |
+|----------------|-------------|
+| `DmlException` | Insert/update/delete failures |
+| `QueryException` | SOQL query failures |
+| `NullPointerException` | Null reference access |
+| `ListException` | List operation failures |
+| `LimitException` | Governor limit exceeded |
+| `CalloutException` | HTTP callout failures |
 
-**Test Example:**
+**Example**:
 ```apex
 @IsTest
-static void testShouldThrowExceptionForMissingRequiredField() {
+static void testExceptionHandling() {
     try {
-        // Code that should throw
-        insert new Account(); // Missing Name
+        insert new Account(); // Missing required Name
         Assert.fail('Expected DmlException was not thrown');
     } catch (DmlException e) {
         Assert.isTrue(e.getMessage().contains('REQUIRED_FIELD_MISSING'),
@@ -464,27 +354,7 @@ static void testShouldThrowExceptionForMissingRequiredField() {
 }
 ```
 
----
-
-## Cross-Skill Dependency Checklist
-
-**Before deploying Apex code, verify these prerequisites:**
-
-| Prerequisite | Check Command | Required For |
-|--------------|---------------|--------------|
-| TAF Package | `sf package installed list --target-org alias` | TAF trigger pattern |
-| Custom Fields | `sf sobject describe --sobject Lead --target-org alias` | Field references in code |
-| Permission Sets | `sf org list metadata --metadata-type PermissionSet` | FLS for custom fields |
-| Trigger_Action__mdt | Check Setup → Custom Metadata Types | TAF trigger execution |
-
-**Common Deployment Order:**
-```
-1. sf-metadata: Create custom fields
-2. sf-metadata: Create Permission Sets
-3. sf-deployment: Deploy fields + Permission Sets
-4. sf-apex: Deploy Apex classes/triggers
-5. sf-data: Create test data
-```
+**See**: [resources/testing-patterns.md](resources/testing-patterns.md#common-exception-types) for complete reference
 
 ---
 
@@ -504,54 +374,61 @@ The sf-apex skill includes Language Server Protocol (LSP) integration for real-t
 ### Prerequisites
 
 For LSP validation to work, users must have:
+- **VS Code Salesforce Extension Pack**: VS Code → Extensions → "Salesforce Extension Pack"
+- **Java 11+**: https://adoptium.net/temurin/releases/
 
-| Requirement | How to Install |
-|-------------|----------------|
-| **VS Code Salesforce Extension Pack** | VS Code → Extensions → "Salesforce Extension Pack" |
-| **Java 11+ (Adoptium recommended)** | https://adoptium.net/temurin/releases/ |
+**Graceful Degradation**: If LSP is unavailable, validation silently skips - the skill continues to work with only 150-point semantic validation.
 
-### Validation Flow
+**See**: [resources/troubleshooting.md](resources/troubleshooting.md#lsp-based-validation-auto-fix-loop) for complete LSP guide
 
-```
-User writes Apex code → Write/Edit tool executes
-                              ↓
-                    ┌─────────────────────────┐
-                    │   LSP Validation (fast) │
-                    │   Syntax errors only    │
-                    └─────────────────────────┘
-                              ↓
-                    ┌─────────────────────────┐
-                    │  150-Point Validation   │
-                    │  Semantic best practices│
-                    └─────────────────────────┘
-                              ↓
-                    Claude sees any errors and auto-fixes
-```
+---
 
-### Sample LSP Error Output
+## Cross-Skill Integration
 
-```
-============================================================
-🔍 APEX LSP VALIDATION RESULTS
-   File: force-app/main/default/classes/MyClass.cls
-   Attempt: 1/3
-============================================================
+| Skill | When to Use | Example |
+|-------|-------------|---------|
+| sf-metadata | Discover object/fields before coding | `Skill(skill="sf-metadata")` → "Describe Invoice__c" |
+| sf-data | Generate 251+ test records after deploy | `Skill(skill="sf-data")` → "Create 251 Accounts for bulk testing" |
+| sf-deploy | Deploy to org - see Phase 4 | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
+| sf-flow | Create Flow that calls your Apex | See @InvocableMethod section above |
+| sf-lwc | Create LWC that calls your Apex | `@AuraEnabled` controller patterns |
 
-Found 1 error(s), 0 warning(s)
+---
 
-ISSUES TO FIX:
-----------------------------------------
-❌ [ERROR] line 4: Missing ';' at 'System.debug' (source: apex)
+## Reference Documentation
 
-ACTION REQUIRED:
-Please fix the Apex syntax errors above and try again.
-(Attempt 1/3)
-============================================================
-```
+### Quick Guides (resources/)
+| Guide | Description |
+|-------|-------------|
+| [patterns-deep-dive.md](resources/patterns-deep-dive.md) | TAF, @InvocableMethod, async patterns, service layer |
+| [security-guide.md](resources/security-guide.md) | CRUD/FLS, sharing, SOQL injection, guardrails |
+| [bulkification-guide.md](resources/bulkification-guide.md) | Governor limits, collections, monitoring |
+| [testing-patterns.md](resources/testing-patterns.md) | Exception types, mocking, Test Data Factory, coverage |
+| [anti-patterns.md](resources/anti-patterns.md) | Code smells, red flags, refactoring patterns |
+| [troubleshooting.md](resources/troubleshooting.md) | LSP validation, deployment errors, debug logs |
 
-### Graceful Degradation
+### Full Documentation (docs/)
+| Document | Description |
+|----------|-------------|
+| `best-practices.md` | Bulkification, collections, null safety, guard clauses, DML performance |
+| `code-smells-guide.md` | Code smells detection and refactoring patterns |
+| `design-patterns.md` | 12 patterns including Domain Class, Abstraction Levels |
+| `trigger-actions-framework.md` | TAF setup and advanced patterns |
+| `security-guide.md` | Complete CRUD/FLS and sharing reference |
+| `testing-guide.md` | Complete test patterns and mocking |
+| `naming-conventions.md` | Variable, method, class naming rules |
+| `solid-principles.md` | SOLID principles for Apex |
+| `code-review-checklist.md` | 150-point scoring criteria |
+| `flow-integration.md` | Complete @InvocableMethod guide |
+| `triangle-pattern.md` | Flow-LWC-Apex integration |
 
-If LSP is unavailable (no VS Code extension or Java), validation silently skips - the skill continues to work with only 150-point semantic validation.
+**Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/docs/`
+
+---
+
+## Dependencies
+
+**All optional**: sf-deploy, sf-metadata, sf-data. Install: `/plugin install github:Jaganpro/sf-skills/[skill-name]`
 
 ---
 

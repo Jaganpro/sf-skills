@@ -1,0 +1,234 @@
+{
+  "version": "1.0.0",
+  "description": "Auto-activation rules for sf-skills UserPromptSubmit hook. Matches user prompts to relevant skills via keywords and intent patterns.",
+
+  "sf-apex": {
+    "keywords": ["apex", "trigger", "class", "test class", "batch", "queueable", "schedulable", "invocable", "aura enabled", "apex controller", "selector", "domain", "service layer", "trigger handler", "fflib", "apex test"],
+    "intentPatterns": [
+      "create.*apex", "write.*trigger", "implement.*batch", "build.*class",
+      "create.*test.*class", "add.*method", "implement.*interface",
+      "fix.*apex", "debug.*apex", "refactor.*apex", "optimize.*apex"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*.cls|**/*.trigger"
+    },
+    "priority": "high",
+    "description": "Apex code development with validation and best practices"
+  },
+
+  "sf-flow": {
+    "keywords": ["flow", "screen flow", "record-triggered", "record triggered", "autolaunched", "auto-launched", "subflow", "scheduled flow", "platform event flow", "flow builder", "flow element", "assignment", "decision", "loop element", "get records", "create records", "update records", "delete records"],
+    "intentPatterns": [
+      "create.*flow", "build.*automation", "automate.*process",
+      "screen.*flow", "record.*triggered", "scheduled.*trigger",
+      "flow.*trigger", "update.*flow", "fix.*flow", "debug.*flow"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*.flow-meta.xml"
+    },
+    "priority": "high",
+    "description": "Flow Builder automation with validation"
+  },
+
+  "sf-lwc": {
+    "keywords": ["lwc", "lightning web component", "web component", "wire", "wire adapter", "apex wire", "lightning card", "lightning button", "slds", "css", "html template", "js controller", "lightning message service", "lms", "jest", "lwc test"],
+    "intentPatterns": [
+      "create.*component", "build.*lwc", "lightning.*component",
+      "create.*web.*component", "add.*wire", "wire.*apex",
+      "test.*lwc", "jest.*test", "style.*component", "fix.*lwc"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/lwc/**/*.js|**/lwc/**/*.html"
+    },
+    "priority": "high",
+    "description": "Lightning Web Components with SLDS compliance"
+  },
+
+  "sf-ai-agentforce": {
+    "keywords": ["agent", "agentforce", "copilot", "einstein copilot", "topic", "action", "agent script", "genai", "ai agent", "conversational", "bot", "agent definition", "agent channel"],
+    "intentPatterns": [
+      "create.*agent", "build.*agentforce", "configure.*copilot",
+      "agent.*topic", "add.*action", "einstein.*agent",
+      "conversational.*ai", "setup.*agent", "deploy.*agent"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*.agent|**/GenAi*.xml"
+    },
+    "priority": "high",
+    "description": "Agentforce agent development with Agent Script DSL"
+  },
+
+  "sf-metadata": {
+    "keywords": ["custom object", "custom field", "metadata", "permission set", "profile", "page layout", "record type", "validation rule", "formula field", "picklist", "lookup", "master-detail", "field-level security", "fls", "object permissions"],
+    "intentPatterns": [
+      "create.*object", "add.*field", "configure.*permissions",
+      "new.*custom.*field", "setup.*validation", "create.*picklist",
+      "add.*lookup", "create.*master.*detail", "setup.*layout"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*.object-meta.xml|**/*.field-meta.xml"
+    },
+    "priority": "medium",
+    "description": "Salesforce metadata configuration"
+  },
+
+  "sf-deploy": {
+    "keywords": ["deploy", "deployment", "release", "push", "sandbox", "production", "source deploy", "metadata deploy", "package", "changeset", "scratch org", "ci", "cd", "pipeline", "devops"],
+    "intentPatterns": [
+      "deploy.*org", "release.*production", "push.*changes",
+      "deploy.*sandbox", "create.*package", "deploy.*metadata",
+      "run.*deployment", "validate.*deployment", "quick.*deploy"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "medium",
+    "description": "CI/CD deployment automation"
+  },
+
+  "sf-testing": {
+    "keywords": ["test", "coverage", "assert", "mock", "unit test", "integration test", "apex test", "test method", "test setup", "test factory", "code coverage", "run tests", "test failure"],
+    "intentPatterns": [
+      "run.*tests", "check.*coverage", "write.*test",
+      "test.*class", "increase.*coverage", "fix.*test",
+      "mock.*data", "create.*test.*method", "test.*trigger"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*Test.cls|**/*_Test.cls"
+    },
+    "priority": "medium",
+    "description": "Test execution and coverage analysis"
+  },
+
+  "sf-soql": {
+    "keywords": ["soql", "query", "select", "where clause", "relationship query", "aggregate", "group by", "having", "order by", "limit", "offset", "parent-child", "child-parent", "subquery", "sosl", "search"],
+    "intentPatterns": [
+      "write.*query", "optimize.*soql", "build.*select",
+      "query.*records", "search.*data", "soql.*performance",
+      "fix.*query", "debug.*soql", "create.*subquery"
+    ],
+    "trigger": {
+      "type": "suggest",
+      "pathPattern": "**/*.soql"
+    },
+    "priority": "medium",
+    "description": "SOQL query optimization and analysis"
+  },
+
+  "sf-data": {
+    "keywords": ["test data", "data factory", "sample data", "bulk data", "data load", "record creation", "test records", "bulk insert", "anonymous apex", "data import", "dataloader", "251 records"],
+    "intentPatterns": [
+      "create.*test.*data", "generate.*data", "load.*records",
+      "bulk.*insert", "sample.*records", "factory.*method",
+      "setup.*test.*data", "create.*251", "bulk.*test"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "medium",
+    "description": "Test data generation and management"
+  },
+
+  "sf-integration": {
+    "keywords": ["callout", "http", "rest", "soap", "platform event", "cdc", "webhook", "named credential", "external credential", "external service", "api", "endpoint", "integration", "callback", "http request", "http response"],
+    "intentPatterns": [
+      "call.*external", "integrate.*api", "send.*event",
+      "http.*callout", "rest.*api", "create.*named.*credential",
+      "platform.*event", "change.*data.*capture", "webhook"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "medium",
+    "description": "External system integrations"
+  },
+
+  "sf-connected-apps": {
+    "keywords": ["connected app", "oauth", "jwt", "named credential", "external credential", "client credentials", "authorization", "token", "consumer key", "consumer secret", "callback url", "scopes", "pkce", "refresh token"],
+    "intentPatterns": [
+      "configure.*oauth", "setup.*authentication", "create.*connected",
+      "jwt.*bearer", "client.*credentials", "oauth.*flow",
+      "named.*credential", "external.*credential"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "OAuth and authentication configuration"
+  },
+
+  "sf-debug": {
+    "keywords": ["debug", "log", "trace", "troubleshoot", "error", "exception", "stack trace", "apex log", "debug log", "log level", "fine", "finest", "callout", "workflow", "validation", "system debug"],
+    "intentPatterns": [
+      "debug.*issue", "analyze.*log", "trace.*execution",
+      "fix.*error", "troubleshoot.*issue", "read.*debug.*log",
+      "enable.*debug", "check.*exception", "find.*error"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "Debug log analysis and troubleshooting"
+  },
+
+  "sf-diagram": {
+    "keywords": ["diagram", "erd", "mermaid", "architecture", "visualization", "data model", "entity relationship", "sequence diagram", "flowchart", "class diagram", "object diagram", "schema"],
+    "intentPatterns": [
+      "create.*diagram", "visualize.*schema", "draw.*architecture",
+      "generate.*erd", "show.*relationships", "data.*model.*diagram",
+      "sequence.*diagram", "architecture.*diagram"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "Mermaid diagram generation"
+  },
+
+  "sf-imagen": {
+    "keywords": ["mockup", "visual", "image", "erd image", "wireframe", "ui design", "visual erd", "png", "svg", "screenshot", "preview"],
+    "intentPatterns": [
+      "create.*mockup", "generate.*visual", "design.*ui",
+      "visual.*erd", "image.*diagram", "wireframe.*component",
+      "preview.*design"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "Visual mockups and image generation"
+  },
+
+  "sf-ai-agentforce-testing": {
+    "keywords": ["agent test", "test spec", "agent validation", "agentic testing", "test case", "utterance", "expectation", "topic routing", "action sequence", "test definition", "agent test run"],
+    "intentPatterns": [
+      "test.*agent", "validate.*agentforce", "create.*test.*spec",
+      "agent.*test.*case", "test.*topic.*routing", "verify.*agent",
+      "run.*agent.*test"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "Agentforce agent test automation"
+  },
+
+  "skill-builder": {
+    "keywords": ["create skill", "new skill", "skill template", "build skill", "skill development", "custom skill", "plugin", "hook development"],
+    "intentPatterns": [
+      "create.*skill", "build.*new.*skill", "develop.*plugin",
+      "new.*sf.*skill", "skill.*template"
+    ],
+    "trigger": {
+      "type": "suggest"
+    },
+    "priority": "low",
+    "description": "Create new sf-skills modules"
+  }
+}

@@ -461,6 +461,39 @@ Skill(skill="sf-deploy", args="Deploy to [org]")
 
 ## 🔌 Plugin Features
 
+### 💡 Auto-Activation (NEW)
+
+Skills now **automatically suggest themselves** based on your prompts! No need to remember skill names.
+
+**How It Works:**
+```
+You: "I need to create an apex trigger for Account"
+    ↓
+🔍 UserPromptSubmit hook analyzes your prompt
+    ↓
+💡 Relevant Skills Detected
+   ⭐ /sf-apex (relevance: 7) - Apex code development with validation
+   ▸ /sf-metadata (relevance: 3) - Salesforce metadata configuration
+    ↓
+You can invoke the suggested skill or let Claude help directly
+```
+
+**Matching System:**
+| Match Type | Score | Example |
+|------------|-------|---------|
+| Keyword match | +2 per keyword | "apex", "trigger", "batch" |
+| Intent pattern | +3 | "create.*apex", "build.*flow" |
+| File pattern | +2 | Working on `*.cls` files |
+
+**Supported Triggers (all 16 skills):**
+- **High Priority**: sf-apex, sf-flow, sf-lwc, sf-ai-agentforce
+- **Medium Priority**: sf-metadata, sf-deploy, sf-testing, sf-soql, sf-data, sf-integration
+- **Low Priority**: sf-connected-apps, sf-debug, sf-diagram, sf-imagen, sf-ai-agentforce-testing, skill-builder
+
+**Configuration:** Auto-activation is powered by `shared/hooks/skill-rules.json` and `shared/hooks/skill-activation-prompt.py`.
+
+---
+
 ### Automatic Validation Hooks
 
 Each skill includes validation hooks that run automatically on **Write** and **Edit** operations:
