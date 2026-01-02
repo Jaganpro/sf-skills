@@ -64,6 +64,7 @@ See `docs/orchestration.md` for extended orchestration patterns including Agentf
 | **Before vs After Save** | Before-Save: same-record updates (no DML), validation. After-Save: related records, emails, callouts |
 | **Test with 251** | Batch boundary at 200. Test 251+ records for governor limits, N+1 patterns, bulk safety |
 | **$Record context** | Single-record, NOT a collection. Platform handles batching. Never loop over $Record |
+| **Transform vs Loop** | Transform: data mapping/shaping (30-50% faster). Loop: per-record decisions, counters, varying logic. See `docs/transform-vs-loop-guide.md` |
 
 ---
 

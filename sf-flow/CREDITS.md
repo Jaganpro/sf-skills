@@ -86,6 +86,16 @@ Key contributions:
 - Flow structure analysis approaches
 - Anti-pattern detection strategies
 
+### Jalumchi Akpoke
+**[LinkedIn](https://www.linkedin.com/in/jalumchi-akpoke/)** | 2X Salesforce Certified
+
+Key contributions:
+- Transform vs Loop decision pattern documentation
+- Data mapping vs decision-making distinction
+- Visual comparison of Loop+Assignment vs Transform flow patterns
+
+Inspired by: **Shubham Bhardwaj** (YouTube video referenced in original post)
+
 ---
 
 ## Official Salesforce Resources
@@ -104,6 +114,7 @@ Key contributions:
 - Flow tutorials and guides
 - Flow vs Process Builder comparisons
 - Best practice articles
+- [Flow Cheat Sheet](https://www.salesforceben.com/salesforce-flow-cheat-sheet-examples-infographic/) - Flow type selection, element reference, variable types
 
 ### Automation Champion
 **[automationchampion.com](https://automationchampion.com/)**

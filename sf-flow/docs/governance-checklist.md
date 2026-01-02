@@ -39,6 +39,10 @@ This checklist ensures that Salesforce Flows meet enterprise governance standard
 - [ ] **No DML inside loops** (CRITICAL - causes bulk failures)
 - [ ] **Bulkified operations** (handles collections, not single records)
 - [ ] **Transform element used** where applicable (faster than loops for field mapping)
+  - Use Transform for: bulk field mapping, collection conversion, simple formulas
+  - Use Loop for: per-record IF/ELSE, counters/flags, varying business rules
+  - See `docs/transform-vs-loop-guide.md` for decision criteria
+  - ⚠️ Create Transform in Flow Builder UI, then deploy (complex XML)
 - [ ] **SOQL queries minimized** (get all needed data in fewest queries)
 - [ ] **Record lookups have appropriate filters** (don't query unnecessary records)
 

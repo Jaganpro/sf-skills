@@ -12,16 +12,18 @@ This guide consolidates best practices for building maintainable, performant, an
 
 1. [Flow Element Organization](#1-flow-element-organization)
 2. [Using $Record in Record-Triggered Flows](#2-using-record-in-record-triggered-flows)
-3. [Querying Relationship Data](#3-querying-relationship-data) ⚠️ NEW
+3. [Querying Relationship Data](#3-querying-relationship-data)
 4. [Query Optimization](#4-query-optimization)
-5. [When to Use Subflows](#5-when-to-use-subflows)
-6. [Three-Tier Error Handling](#6-three-tier-error-handling)
-7. [Multi-Step DML Rollback Strategy](#7-multi-step-dml-rollback-strategy)
-8. [Transaction Management](#8-transaction-management)
-9. [Screen Flow UX Best Practices](#9-screen-flow-ux-best-practices)
-10. [Bypass Mechanism for Data Loads](#10-bypass-mechanism-for-data-loads)
-11. [Flow Activation Guidelines](#11-flow-activation-guidelines)
-12. [Variable Naming Conventions](#12-variable-naming-conventions)
+5. [Transform vs Loop Elements](#5-transform-vs-loop-elements) ⚠️ NEW
+6. [Collection Filter Optimization](#6-collection-filter-optimization) ⚠️ NEW
+7. [When to Use Subflows](#7-when-to-use-subflows)
+8. [Three-Tier Error Handling](#8-three-tier-error-handling)
+9. [Multi-Step DML Rollback Strategy](#9-multi-step-dml-rollback-strategy)
+10. [Transaction Management](#10-transaction-management)
+11. [Screen Flow UX Best Practices](#11-screen-flow-ux-best-practices)
+12. [Bypass Mechanism for Data Loads](#12-bypass-mechanism-for-data-loads)
+13. [Flow Activation Guidelines](#13-flow-activation-guidelines)
+14. [Variable Naming Conventions](#14-variable-naming-conventions)
 
 ---
 
@@ -201,7 +203,122 @@ When `storeOutputAutomatically="true"`, ALL fields are retrieved and stored:
 
 ---
 
-## 5. When to Use Subflows
+## 5. Transform vs Loop Elements
+
+When processing collections, choosing between **Transform** and **Loop** elements significantly impacts performance and maintainability.
+
+### Quick Decision Rule
+
+> **Shaping data** → Use **Transform** (30-50% faster)
+> **Making decisions per record** → Use **Loop**
+
+### When to Use Transform
+
+Transform is the right choice for:
+
+| Use Case | Example |
+|----------|---------|
+| **Mapping collections** | Contact[] → OpportunityContactRole[] |
+| **Bulk field assignments** | Set Status = "Processed" for all records |
+| **Simple formulas** | Calculate FullName from FirstName + LastName |
+| **Preparing records for DML** | Build collection for Create Records |
+
+### When to Use Loop
+
+Loop is required when:
+
+| Use Case | Example |
+|----------|---------|
+| **Per-record IF/ELSE** | Different processing based on Amount threshold |
+| **Counters/flags** | Count records meeting criteria |
+| **State tracking** | Running totals, comma-separated lists |
+| **Varying business rules** | Different logic paths per record type |
+
+### Visual Comparison
+
+```
+❌ ANTI-PATTERN: Loop for simple field mapping
+   Get Records → Loop → Assignment → Add to Collection → Create Records
+   (5 elements, client-side iteration)
+
+✅ BEST PRACTICE: Transform for field mapping
+   Get Records → Transform → Create Records
+   (3 elements, server-side bulk operation, 30-50% faster)
+```
+
+### Performance Impact
+
+Transform processes the entire collection server-side as a single bulk operation, while Loop iterates client-side. For collections of 100+ records, Transform can be **30-50% faster**.
+
+### XML Recommendation
+
+> ⚠️ **Create Transform elements in Flow Builder UI, then deploy.**
+> Transform XML is complex with strict ordering—do not hand-write.
+
+See [Transform vs Loop Guide](./transform-vs-loop-guide.md) for detailed decision criteria, examples, and testing strategies.
+
+---
+
+## 6. Collection Filter Optimization
+
+Collection Filter is a powerful tool for reducing governor limit usage by filtering in memory instead of making additional SOQL queries.
+
+### The Pattern
+
+Instead of multiple Get Records calls, query once and filter in memory:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ❌ ANTI-PATTERN: Multiple Get Records calls                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+For each Account in loop:
+  → Get Records: Contacts WHERE AccountId = {!current_Account.Id}
+  → Process contacts...
+
+Problem: N SOQL queries (one per Account) = Governor limit risk!
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ✅ BEST PRACTICE: Query once + Collection Filter                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+1. Get Records: ALL Contacts WHERE AccountId IN {!col_AccountIds}
+   → 1 SOQL query total
+
+2. Loop through Accounts:
+   → Collection Filter: Contacts WHERE AccountId = {!current_Account.Id}
+   → Process filtered contacts (in-memory, no SOQL!)
+```
+
+### Benefits
+
+| Metric | Multiple Queries | Query Once + Filter |
+|--------|------------------|---------------------|
+| SOQL Queries | N (one per parent) | 1 |
+| Performance | Slow | Fast |
+| Governor Risk | High | Low |
+| Scalability | Poor | Excellent |
+
+### Implementation Steps
+
+1. **Collect parent IDs** into a collection variable
+2. **Single Get Records** using `IN` operator with ID collection
+3. **Loop through parents**, using Collection Filter to get related records
+4. **Process filtered subset** in each iteration
+
+### When to Use
+
+- Parent-child processing (Account → Contacts, Opportunity → Line Items)
+- Batch operations where you need related records
+- Any scenario requiring records from the same object for multiple parents
+
+### Governor Limit Savings
+
+With Collection Filter, you can process thousands of related records with a **single SOQL query** instead of hitting the 100-query limit.
+
+---
+
+## 7. When to Use Subflows
 
 Use subflows for:
 
@@ -239,7 +356,7 @@ Use the `Sub_` prefix:
 
 ---
 
-## 6. Three-Tier Error Handling
+## 8. Three-Tier Error Handling
 
 Implement comprehensive error handling at three levels:
 
@@ -283,7 +400,7 @@ Include context in every error message:
 
 ---
 
-## 7. Multi-Step DML Rollback Strategy
+## 9. Multi-Step DML Rollback Strategy
 
 When a flow performs multiple DML operations, implement rollback paths.
 
@@ -320,7 +437,7 @@ Use `errorMessage` output variable to surface failures:
 
 ---
 
-## 8. Transaction Management
+## 10. Transaction Management
 
 ### Understanding Flow Transactions
 
@@ -355,7 +472,7 @@ TRANSACTION: Creates Account → Creates Contact → Updates related Opportuniti
 
 ---
 
-## 9. Screen Flow UX Best Practices
+## 11. Screen Flow UX Best Practices
 
 ### Progress Indicators
 
@@ -363,6 +480,52 @@ For multi-step flows (3+ screens):
 - Use Screen component headers to show "Step X of Y"
 - Consider visual progress bars for long wizards
 - Update progress on each screen transition
+
+### Stage Resource for Multi-Screen Flows
+
+The **Stage** resource provides visual progress tracking across multiple screens, showing users where they are in a multi-step process.
+
+#### When to Use Stage
+
+- Flows with 3+ screens that represent distinct phases
+- Onboarding wizards (Identity → Configuration → Confirmation)
+- Order processes (Cart → Shipping → Payment → Review)
+- Application workflows with logical sections
+
+#### How Stages Work
+
+1. **Define stages** in your flow resources (Stage elements)
+2. **Assign current stage** using Assignment element at each phase transition
+3. **Display progress** using the Stage component in screens
+
+#### Stage Example
+
+```
+Flow: New Customer Onboarding
+
+Stages:
+1. Identity (collect customer info)
+2. Configuration (set preferences)
+3. Payment (billing details)
+4. Confirmation (review and submit)
+
+Each screen shows visual indicator: ● ○ ○ ○ → ● ● ○ ○ → ● ● ● ○ → ● ● ● ●
+```
+
+#### Benefits
+
+| Feature | Benefit |
+|---------|---------|
+| Visual progress | Users know how far along they are |
+| Reduced abandonment | Clear expectation of remaining steps |
+| Better UX | Professional wizard-like experience |
+| Navigation context | Users understand their position |
+
+#### Implementation Tips
+
+- Keep stage names short (1-3 words)
+- Use consistent naming pattern (nouns: "Identity", "Payment" vs verbs: "Collect Info", "Enter Payment")
+- Consider allowing users to click back to previous stages (if safe)
 
 ### Button Design
 
@@ -414,7 +577,7 @@ Example: "Complete all required fields (*) before proceeding."
 
 ---
 
-## 10. Bypass Mechanism for Data Loads
+## 12. Bypass Mechanism for Data Loads
 
 When loading large amounts of data, flows can cause performance issues. Implement a bypass mechanism using Custom Metadata.
 
@@ -449,7 +612,7 @@ Add a Decision element as the first step after Start:
 
 ---
 
-## 11. Flow Activation Guidelines
+## 13. Flow Activation Guidelines
 
 ### When to Keep Flows in Draft
 
@@ -475,7 +638,7 @@ Scheduled flows run automatically without user interaction:
 
 ---
 
-## 12. Variable Naming Conventions
+## 14. Variable Naming Conventions
 
 Use consistent prefixes for all variables:
 
@@ -536,6 +699,8 @@ For flow elements (decisions, assignments, etc.):
 
 ## Related Documentation
 
+- [Transform vs Loop Guide](./transform-vs-loop-guide.md) - When to use each element
+- [Flow Quick Reference](./flow-quick-reference.md) - Comprehensive cheat sheet
 - [Orchestration Guide](./orchestration-guide.md) - Parent-child and sequential patterns
 - [Subflow Library](./subflow-library.md) - Reusable subflow templates
 - [Testing Guide](./testing-guide.md) - Comprehensive testing strategies

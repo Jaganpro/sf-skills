@@ -8,7 +8,9 @@ Creates and validates Salesforce Flows with 110-point scoring and Winter '26 bes
 - **110-Point Scoring**: Automated validation across 6 categories
 - **Template Library**: Pre-built patterns for common flow types
 - **Bulk Safety**: Automatic checks for 251+ record handling
-- **Element Library**: Complete Wait, Loop, Get Records patterns
+- **Element Library**: Complete Wait, Loop, Get Records, Transform patterns
+- **Transform vs Loop Guide**: Decision pattern for choosing Transform (data mapping) vs Loop (per-record decisions)
+- **Flow Quick Reference**: Comprehensive cheat sheet with flow type selection trees and element reference
 
 ## Installation
 
@@ -64,6 +66,7 @@ The skill generates:
 | Before vs After Save | Before: same-record updates (no DML). After: related records, callouts |
 | Test with 251 records | Batch boundary at 200. Test bulk behavior |
 | $Record context | Single record, not a collection. Platform handles batching |
+| Transform vs Loop | Transform: data mapping (30-50% faster). Loop: per-record decisions |
 | Deploy as Draft | Always deploy flows as Draft first, then activate |
 
 ## Templates
@@ -96,10 +99,12 @@ Always deploy custom objects/fields BEFORE flows that reference them.
 
 ## Documentation
 
-- [Flow Best Practices](docs/flow-best-practices.md)
-- [LWC Integration](docs/lwc-integration-guide.md)
-- [Wait Patterns](docs/wait-patterns.md)
-- [Testing Guide](docs/testing-guide.md)
+- [Transform vs Loop Guide](docs/transform-vs-loop-guide.md) - When to use each element
+- [Flow Quick Reference](docs/flow-quick-reference.md) - Comprehensive cheat sheet
+- [Flow Best Practices](docs/flow-best-practices.md) - Performance and design patterns
+- [LWC Integration](docs/lwc-integration-guide.md) - Screen components
+- [Wait Patterns](docs/wait-patterns.md) - Delay and scheduling
+- [Testing Guide](docs/testing-guide.md) - Validation strategies
 
 ## Requirements
 
