@@ -520,6 +520,117 @@ Retrieve all components:
 
 ---
 
+## 🐛 Known Issues & CLI Bugs
+
+> **Last Updated**: 2026-01-04 | **Tested With**: sf CLI v2.118.16
+
+### CRITICAL: `sf agent test create` MasterLabel Bug
+
+**Status**: 🔴 BLOCKING - Prevents YAML-based test creation
+
+**Error**:
+```
+Error (SfError): Required fields are missing: [MasterLabel]
+```
+
+**Root Cause**: The CLI generates XML from YAML but omits the required `<name>` element (MasterLabel).
+
+**Generated XML** (broken):
+```xml
+<AiEvaluationDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <subjectName>My_Agent</subjectName>
+    <subjectType>AGENT</subjectType>
+    <!-- ❌ MISSING: <name>Test Name</name> -->
+    <testCase>...</testCase>
+</AiEvaluationDefinition>
+```
+
+**Working XML** (from existing tests):
+```xml
+<AiEvaluationDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Test description</description>
+    <name>Test Name</name>  <!-- ✅ REQUIRED -->
+    <subjectName>My_Agent</subjectName>
+    <subjectType>AGENT</subjectType>
+    <testCase>...</testCase>
+</AiEvaluationDefinition>
+```
+
+**Workarounds**:
+1. ✅ Use `sf agent generate test-spec --from-definition` to convert existing XML to YAML (produces correct format)
+2. ✅ Use interactive `sf agent generate test-spec` wizard (works correctly)
+3. ✅ Create tests via Salesforce Testing Center UI
+4. ✅ Deploy XML metadata directly (bypass YAML conversion)
+
+---
+
+### MEDIUM: Interactive Mode Not Scriptable
+
+**Status**: 🟡 Blocks CI/CD automation
+
+**Issue**: `sf agent generate test-spec` only works interactively:
+- No `--quiet`, `--json`, or non-interactive flags
+- Piped input causes "User force closed the prompt" error
+- Cannot automate in CI/CD pipelines
+
+**What Works**:
+```bash
+# Interactive (requires terminal)
+sf agent generate test-spec --output-file ./tests/my-test.yaml
+
+# Convert existing XML to YAML (non-interactive)
+sf agent generate test-spec --from-definition path/to/test.xml --output-file ./output.yaml
+```
+
+**Workaround**: Use Python scripts in `hooks/scripts/` to generate YAML programmatically.
+
+---
+
+### MEDIUM: YAML vs XML Format Discrepancy
+
+**Issue**: Documentation shows one YAML format, but Salesforce stores as different XML structure.
+
+**Doc Shows** (doesn't map correctly):
+```yaml
+testCases:
+  - utterance: "Hello"
+    expectation:
+      topic: Welcome
+      actionSequence: []
+```
+
+**Actual Working Format** (from `--from-definition`):
+```yaml
+testCases:
+  - utterance: "Hello"
+    expectedTopic: Welcome
+    expectedActions: []
+    expectedOutcome: "Greeting response shown"
+```
+
+**Key Mappings**:
+| YAML Field | XML Element |
+|------------|-------------|
+| `expectedTopic` | `<expectation><name>topic_sequence_match</name><expectedValue>...</expectedValue>` |
+| `expectedActions` | `<expectation><name>action_sequence_match</name><expectedValue>[...]</expectedValue>` |
+| `expectedOutcome` | `<expectation><name>bot_response_rating</name><expectedValue>...</expectedValue>` |
+
+---
+
+### LOW: Expectation Name Variations
+
+**Issue**: Different test creation methods use different expectation names:
+
+| CLI Generates | Manually Created Tests Use |
+|---------------|---------------------------|
+| `topic_assertion` | `topic_sequence_match` |
+| `actions_assertion` | `action_sequence_match` |
+| `output_validation` | `bot_response_rating` |
+
+**Impact**: May cause confusion when comparing test results from different sources.
+
+---
+
 ## Quick Start Example
 
 ```bash
