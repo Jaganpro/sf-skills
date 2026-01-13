@@ -8,10 +8,5 @@
   },
   "license": "MIT",
   "repository": "https://github.com/Jaganpro/sf-skills",
-  "keywords": ["salesforce", "gemini", "nano-banana", "image-generation", "erd", "lwc", "mockup", "visual", "ai"],
-  "dependencies": {
-    "cli": ["gemini", "timg"],
-    "extensions": ["nanobanana"]
-  },
-  "skills": ["sf-imagen"]
+  "keywords": ["salesforce", "gemini", "nano-banana", "image-generation", "erd", "lwc", "mockup", "visual", "ai"]
 }

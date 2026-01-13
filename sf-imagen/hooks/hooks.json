@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/plugins/marketplaces/sf-skills/shared/hooks/suggest-related-skills.py sf-imagen",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
