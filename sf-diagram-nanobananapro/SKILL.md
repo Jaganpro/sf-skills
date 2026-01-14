@@ -55,6 +55,7 @@ Generate actual rendered ERD diagrams (not just Mermaid code):
 - Query object metadata via sf-metadata
 - Generate visual diagram with Nano Banana Pro
 - **Display in macOS Preview app** (default)
+- **Default style**: architect.salesforce.com aesthetic (see below)
 
 ### 2. LWC/UI Mockups
 Generate wireframes and component mockups:
@@ -73,6 +74,43 @@ Parallel Salesforce documentation research:
 - Look up API references and limits
 - Find best practices and patterns
 - Research release notes
+
+---
+
+## 🎨 Default Visual Style: Architect.salesforce.com
+
+All ERD diagrams now default to the **official Salesforce architect.salesforce.com** aesthetic.
+
+### The Signature Look: Dark Border + Light Fill
+
+| Property | Value |
+|----------|-------|
+| **Border** | Solid 2px in cloud's brand color |
+| **Fill** | Same hue at ~25% opacity (translucent) |
+| **Corners** | Rounded (8-12px radius) |
+| **Text** | Dark gray/black on light fill |
+
+### Cloud-Specific Colors (Auto-Detected)
+
+| Cloud | Border Color | Detect By Objects |
+|-------|--------------|-------------------|
+| **Sales Cloud** | `#0B827C` (Teal) | Lead, Opportunity, Quote, Campaign |
+| **Service Cloud** | `#9E2A7D` (Magenta) | Case, Knowledge, Entitlement |
+| **Platform** | `#5A67D8` (Purple) | Account, Contact only |
+| **Industries** | `#BA4383` (Pink) | ServiceTerritory, WorkType |
+
+### Standard Elements
+
+| Element | Description |
+|---------|-------------|
+| **Page Title** | "[Cloud Name] Overview Data Model" at top |
+| **Header Banner** | Salesforce logo + "[CLOUD] Overview" |
+| **Legend Bar** | ENTITIES + RELATIONSHIPS notation |
+| **Entity Boxes** | Name + API name + bullet fields |
+| **Relationship Lines** | Labeled ("child of", "parent of") |
+| **Footer** | Copyright + Last modified date |
+
+See `resources/architect-aesthetic-guide.md` for full specification.
 
 ---
 

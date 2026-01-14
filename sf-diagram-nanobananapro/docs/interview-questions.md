@@ -63,8 +63,8 @@ User mentions: ERD, entity relationship, data model, object relationships, schem
       "multiSelect": false,
       "options": [
         {
-          "label": "Professional (Recommended)",
-          "description": "Clean lines, SLDS colors, suitable for documentation"
+          "label": "Architect.salesforce.com (Recommended)",
+          "description": "Official Salesforce style: dark border + light fill, header banner, legend bar"
         },
         {
           "label": "Whiteboard",
@@ -134,21 +134,21 @@ User mentions: ERD, entity relationship, data model, object relationships, schem
 
 | Answer | Prompt Addition |
 |--------|-----------------|
-| Core CRM | "Account (blue, center), Contact (green), Opportunity (yellow), Case (orange)" |
+| Core CRM | "Account, Contact, Opportunity, Case with standard relationships" |
 | Sales Cloud | "Lead, Campaign, Quote, Order, PriceBook, Product with conversion flows" |
 | Service Cloud | "Case, Knowledge, Entitlement, Asset, ServiceContract hierarchy" |
-| Professional | "Clean white background, SLDS colors, professional diagram style" |
+| Architect.salesforce.com | "Official architect.salesforce.com style: page title, header banner with Salesforce logo, LEGEND bar (ENTITIES + RELATIONSHIPS), dark border + light translucent fill boxes (~25% opacity), labeled relationship lines, footer with copyright" |
 | Whiteboard | "Hand-drawn sketch style, informal, whiteboard aesthetic" |
-| Technical | "Include field names, data types, API names" |
-| Documentation (4K) | Use Python script with `-r 4K` |
+| Technical | "Include field names, data types, API names in each box" |
+| Documentation (4K) | Use Python script with `-r 4K`, include full header + legend |
 | Quick draft (1K) | Use CLI or Python with `-r 1K` |
-| Include legend | "Include legend in bottom-right corner" |
-| Color-code | "Color coding: Standard (blue), Custom (orange), External (green)" |
+| Include legend | "Include LEGEND bar at top with ENTITIES and RELATIONSHIPS sections" |
+| Color-code | "Auto-detect cloud color: Sales=Teal #0B827C, Service=Magenta #9E2A7D, Platform=Purple #5A67D8" |
 
 ### Default Values (for Skip Mode)
 
 - Objects: Core CRM
-- Style: Professional
+- Style: Architect.salesforce.com
 - Purpose: Quick draft (1K)
 - Extras: Include legend
 
