@@ -72,11 +72,15 @@ See `docs/orchestration.md` for extended orchestration patterns including Agentf
 
 ### Phase 1: Requirements Gathering
 
+**Before building, evaluate alternatives**: See `docs/flow-best-practices.md` Section 1 "When NOT to Use Flow" - sometimes a Formula Field, Validation Rule, or Roll-Up Summary Field is the better choice.
+
 Use **AskUserQuestion** to gather:
 - Flow type (Screen, Record-Triggered After/Before Save/Delete, Platform Event, Autolaunched, Scheduled)
 - Primary purpose (one sentence)
 - Trigger object/conditions (if record-triggered)
 - Target org alias
+
+**Pre-Development Planning**: For complex flows, document requirements and sketch logic before building. See `docs/flow-best-practices.md` Section 2 "Pre-Development Planning" for templates and recommended tools.
 
 **Then**:
 1. Check existing flows: `Glob: pattern="**/*.flow-meta.xml"`

@@ -96,6 +96,19 @@ Key contributions:
 
 Inspired by: **Shubham Bhardwaj** (YouTube video referenced in original post)
 
+### Flow Best Practices Gap Analysis (January 2026)
+**Community Consensus Best Practices**
+
+Key contributions (added to `flow-best-practices.md`):
+- "When NOT to Use Flow" — choosing Formula Fields, Validation Rules, Roll-Up Summary Fields over Flow when appropriate
+- "Pre-Development Planning" — flowcharting and requirements documentation before building
+- "When to Escalate to Apex" — recognizing when Invocable Apex is the better tool
+- "Indexed Fields for Large Data Volumes" — query optimization for 100K+ record objects
+- "Custom Metadata for Business Logic" — externalizing thresholds and settings
+- "Flow & Element Descriptions" — Agentforce discoverability and maintenance documentation
+
+Sources: Salesforce official documentation, Salesforce Architects guidance, Trailhead modules, community consensus from Salesforce Stack Exchange, and published Flow best practice articles.
+
 ---
 
 ## Official Salesforce Resources
