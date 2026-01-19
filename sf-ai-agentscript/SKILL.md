@@ -6,7 +6,7 @@ description: >
   FSM architecture, instruction resolution, and hybrid reasoning.
   Covers syntax, debugging, testing, and CLI deployment.
 license: MIT
-compatibility: "Requires Agentforce license, API v62.0+, Einstein Agent User"
+compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
   version: "1.0.0"
   author: "Jag Valaiyapathy"
@@ -26,7 +26,7 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 ### API & Version Requirements
 | Requirement | Value | Notes |
 |-------------|-------|-------|
-| **API Version** | 62.0+ | Required for Agent Script support |
+| **API Version** | 65.0+ | Required for Agent Script support |
 | **License** | Agentforce | Required for agent authoring |
 | **Einstein Agent User** | Required | Must exist in org for `default_agent_user` |
 | **File Extension** | `.agent` | Single file contains entire agent definition |
