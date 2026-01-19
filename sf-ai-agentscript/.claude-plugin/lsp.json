@@ -1,0 +1,12 @@
+{
+  "agentscript": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/../shared/lsp-engine/agentscript_wrapper.sh",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".agent": "agentscript"
+    },
+    "initializationOptions": {},
+    "settings": {},
+    "transport": "stdio"
+  }
+}

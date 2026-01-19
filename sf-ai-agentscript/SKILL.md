@@ -111,13 +111,46 @@ start_agent:   # Required: Entry point (exactly one)
 3. **Configure actions** with appropriate target protocols
 4. **Add `available when` guards** to enforce security
 
-### Phase 3: Validation
-1. **Run syntax validation**: `sf agent validate --source-dir ./my-agent`
-2. **Check common errors**:
-   - `default_agent_user` exists and is active
-   - No mixed tabs/spaces
-   - All topic references exist
-   - Booleans use `True`/`False`
+### Phase 3: Validation (LSP + CLI)
+
+> **AUTOMATIC**: LSP validation runs on every Write/Edit to `.agent` files. Errors are reported with line numbers and autofix suggestions.
+
+#### LSP Validation Loop (Find Error → Autofix)
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Write/Edit  │ ──▶ │ LSP Analyze │ ──▶ │ Report      │
+│ .agent file │     │ (automatic) │     │ Errors      │
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                               │
+      ┌────────────────────────────────────────┘
+      ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Claude      │ ──▶ │ Apply Fix   │ ──▶ │ Re-validate │
+│ Suggests Fix│     │ (Edit tool) │     │ (loop)      │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+#### LSP Checks (Automatic)
+| Check | Severity | Autofix |
+|-------|----------|---------|
+| Mixed tabs/spaces | ❌ Error | Convert to consistent spacing |
+| Lowercase booleans (`true`/`false`) | ❌ Error | Capitalize to `True`/`False` |
+| Missing required blocks | ❌ Error | Add missing block template |
+| Missing `default_agent_user` | ❌ Error | Add placeholder with comment |
+| Mutable + linked conflict | ❌ Error | Remove conflicting modifier |
+| Undefined topic references | ⚠️ Warning | Create topic stub |
+| Post-action check position | ⚠️ Warning | Move to top of instructions |
+
+#### CLI Validation (Before Deploy)
+```bash
+# Validate authoring bundle syntax
+sf agent validate authoring-bundle --source-dir ./force-app/main/default/aiAuthoringBundles/MyAgent
+```
+
+#### Manual Checks
+- `default_agent_user` exists and is active Einstein Agent User
+- All topic references resolve to existing topics
+- Action targets (`flow://`, `apex://`, etc.) exist in org
 
 ### Phase 4: Testing (Delegate to `/sf-ai-agentforce-testing`)
 1. **Batch testing** - Run up to 100 test cases simultaneously
