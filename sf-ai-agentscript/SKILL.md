@@ -8,9 +8,10 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.0.0"
+  version: "1.0.3"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
+  validated: "0-shot generation tested successfully (Pet Adoption Advisor, TechCorp IT Agent)"
 ---
 
 # SF-AI-AgentScript Skill
@@ -514,8 +515,8 @@ topic refund:
 
 | Issue | Symptom | Fix |
 |-------|---------|-----|
-| `Internal Error, try again later` | Invalid `default_agent_user` | Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User'` |
-| `Default agent user X could not be found` | User doesn't exist | Use exact username from query above |
+| `Internal Error, try again later` | Invalid `default_agent_user` | Query: `sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User'" -o TARGET_ORG` |
+| `Default agent user X could not be found` | User doesn't exist in target org | Query the **specific target org** (user formats vary: some use `user@orgid.ext`) |
 | `No .agent file found in directory` | `agent_name` doesn't match folder | Make `agent_name` identical to folder name (case-sensitive) |
 | `SyntaxError: cannot mix spaces and tabs` | Mixed indentation | Use consistent spacing throughout |
 | `SyntaxError: Unexpected 'if'` | Nested if statements | Use compound condition: `if A and B:` |
@@ -539,6 +540,21 @@ topic refund:
 | `AgentName.aiAuthoringBundle-meta.xml` | `AgentName.bundle-meta.xml` |
 | `sf project deploy start` | `sf agent publish authoring-bundle` |
 | `sf agent validate --source-dir` | `sf agent validate authoring-bundle --source-dir` |
+| Query user from wrong org | Query **target org** specifically with `-o` flag |
+
+### Einstein Agent User Format (Org-Specific)
+
+Einstein Agent User formats vary between orgs:
+- **Production/Partner orgs**: Often use `username@orgid.ext` format (e.g., `resort_manager@00dak00000gdgwu480119933.ext`)
+- **Dev orgs**: May use `username.suffix@orgfarm.salesforce.com` format
+
+**Always query the specific target org:**
+```bash
+# Query target org specifically
+sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o YOUR_TARGET_ORG
+```
+
+> ⚠️ A user existing in one org does NOT mean it exists in another. Always verify in the deployment target.
 
 ---
 
