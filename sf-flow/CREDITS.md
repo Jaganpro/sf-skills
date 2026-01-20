@@ -123,11 +123,14 @@ Sources: Salesforce official documentation, Salesforce Architects guidance, Trai
 ## Community Resources
 
 ### Salesforce Ben
-**[salesforceben.com](https://www.salesforceben.com/)**
+**[salesforceben.com](https://www.salesforceben.com/)** | Founder: Ben McCarthy
+
+Key contributions:
 - Flow tutorials and guides
 - Flow vs Process Builder comparisons
 - Best practice articles
 - [Flow Cheat Sheet](https://www.salesforceben.com/salesforce-flow-cheat-sheet-examples-infographic/) - Flow type selection, element reference, variable types
+- [Using Custom Metadata to Build Dynamic, Scalable Flows](https://www.salesforceben.com/using-custom-metadata-to-build-dynamic-scalable-flows-in-salesforce/) - Two access patterns (Formula vs Get Records), ID storage warnings, migration checklist for hard-coded values (January 2026)
 
 ### Automation Champion
 **[automationchampion.com](https://automationchampion.com/)**

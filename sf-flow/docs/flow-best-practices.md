@@ -685,6 +685,78 @@ Store frequently changing business logic values in **Custom Metadata Types (CMDT
 | **Admin-friendly** | Non-developers can update business rules |
 | **Testable** | CMDT records are accessible in test context |
 
+### Two Access Patterns
+
+| Pattern | Syntax | SOQL Count | Use When |
+|---------|--------|------------|----------|
+| **Formula Reference** | `$CustomMetadata.Type__mdt.Record.Field__c` | 0 | Single known record, simple value |
+| **Get Records Query** | Get Records → CMDT object | 1 | Multiple records, dynamic filtering |
+
+#### Formula Pattern (Preferred for Single Values)
+
+- **No SOQL consumed** - platform resolves at runtime
+- Direct reference in conditions/assignments
+- Syntax: `{!$CustomMetadata.Flow_Settings__mdt.Discount_Threshold.Numeric_Value__c}`
+
+```
+Decision: Check_Threshold
+├── Condition: {!$Record.Amount} >= {!$CustomMetadata.Flow_Settings__mdt.Discount_Threshold.Numeric_Value__c}
+└── Outcome: Apply_Discount
+```
+
+#### Get Records Pattern (For Dynamic Queries)
+
+- **Consumes 1 SOQL** per query
+- Enables filtering, multiple record retrieval
+- Visible in Flow debug logs for troubleshooting
+- Useful when CMDT record name is dynamic or you need to iterate
+
+```
+Get Records: Flow_Settings__mdt
+├── Filter: Category__c = "Discount"
+├── Store All Records: col_DiscountSettings
+└── Use in Loop or Transform
+```
+
+> **Rule of Thumb**: Use Formula Reference when you know the exact CMDT record at design time. Use Get Records when the record selection is dynamic or you need multiple records.
+
+### What to Store in CMDT
+
+| Value Type | Example CMDT Field | ⚠️ Key Guidance |
+|------------|-------------------|-----------------|
+| **Business Thresholds** | `Discount_Threshold__c`, `Max_Approval_Amount__c` | Ideal for values that change quarterly or less |
+| **Feature Toggles** | `Enable_Auto_Assignment__c` | Boolean flags for gradual rollouts |
+| **Record Type Names** | `RecordType_DeveloperName__c` | Store DeveloperName, NOT 15/18-char IDs |
+| **Queue/User Names** | `Assignment_Queue_Name__c` | Store DeveloperName, resolve ID at runtime |
+| **Email Recipients** | `Notification_Email__c`, `Template_Name__c` | Store template API names, not IDs |
+| **URLs/Endpoints** | `External_API_Endpoint__c` | Enables sandbox vs production differences |
+| **Picklist Mappings** | `Source_Value__c` → `Target_Value__c` | Great for value translations |
+
+> ⚠️ **CRITICAL: Never Store Salesforce IDs in CMDT**
+>
+> Salesforce 15/18-character IDs (RecordTypeId, QueueId, UserId, ProfileId) are **org-specific**.
+> The same Queue has different IDs in sandbox vs production. Storing IDs in CMDT causes deployment failures.
+>
+> **❌ Wrong**: `Queue_Id__c = '00G5f000004XXXX'`
+> **✅ Right**: `Queue_Name__c = 'Support_Queue'` → Resolve ID at runtime with Get Records
+
+#### Runtime ID Resolution Pattern
+
+When you need to route to a Queue, User, or RecordType stored in CMDT:
+
+```
+1. Get CMDT Value:
+   Formula: {!$CustomMetadata.Flow_Settings__mdt.Support_Queue.Queue_Name__c}
+   → Returns: "Support_Queue" (DeveloperName)
+
+2. Get Records: Group (Queue)
+   Filter: DeveloperName = {!var_QueueName} AND Type = 'Queue'
+   Store: rec_Queue
+
+3. Assignment:
+   Set {!$Record.OwnerId} = {!rec_Queue.Id}
+```
+
 ### Common Use Cases
 
 | Use Case | CMDT Field Example | Flow Usage |
@@ -740,6 +812,47 @@ Decision Element: Check_Discount_Eligibility
 | **Include in deployment packages** | CMDT records are metadata, deploy with code |
 | **Test with realistic values** | Verify Flow behavior with production thresholds |
 
+### Identifying Hard-Coded Candidates (Migration Checklist)
+
+Review existing flows for these hard-coded patterns that should migrate to CMDT:
+
+```
+HARD-CODED PATTERN AUDIT
+═══════════════════════════════════════════════════════════
+
+📋 CHECK YOUR FLOWS FOR:
+
+□ 15/18-character Salesforce IDs
+  └─ RecordTypeIds, QueueIds, UserIds, ProfileIds
+  └─ Example: OwnerId = '005...' → Store Queue DeveloperName
+
+□ Hardcoded URLs or endpoints
+  └─ HTTP callout URLs, redirect paths
+  └─ Example: endpoint = 'https://api.prod...' → Store in CMDT
+
+□ Magic numbers (thresholds, limits, percentages)
+  └─ Discount rates, approval limits, SLA hours
+  └─ Example: Amount > 10000 → Use CMDT threshold
+
+□ Email addresses in Send Email actions
+  └─ Notification recipients, CC lists
+  └─ Example: To = 'admin@company.com' → Store in CMDT
+
+□ Profile/Permission Set names
+  └─ Used in Decision conditions
+  └─ Store as text, query Profile/PermissionSet at runtime
+
+□ Object API names used in dynamic references
+  └─ Hard-coded object strings for generic patterns
+
+□ Picklist values used in conditions
+  └─ Values that might change across regions/deployments
+
+═══════════════════════════════════════════════════════════
+```
+
+> **Validator Note**: The sf-flow validator automatically flags `HardcodedId` and `HardcodedUrl` patterns during analysis.
+
 ### When NOT to Use CMDT
 
 | Scenario | Better Alternative |
@@ -750,6 +863,19 @@ Decision Element: Check_Discount_Eligibility
 | Binary file storage | Static Resource or Files |
 
 > **Tip**: CMDT is ideal for business rules that change quarterly or less. For daily-changing values, use Custom Objects or Custom Settings.
+
+#### Deployment vs Data Load Distinction
+
+CMDT records are **metadata**, not data. This has important implications:
+
+| Aspect | Custom Metadata Type | Custom Object / Custom Setting |
+|--------|---------------------|-------------------------------|
+| **Move between orgs** | Change Sets, Metadata API, sf deploy | Data Loader, sf data import |
+| **Update in production** | Setup → Custom Metadata Types | Data operations (update records) |
+| **Included in packages** | ✅ Yes (managed/unmanaged) | ❌ No (data must be seeded separately) |
+| **Test context access** | ✅ Accessible without `@TestSetup` | Requires test data creation |
+
+> **Common Mistake**: Trying to use Data Loader to update CMDT values. CMDT records are deployed as metadata—use Change Sets, Metadata API (`sf project deploy`), or Setup UI to modify values between environments.
 
 ---
 
