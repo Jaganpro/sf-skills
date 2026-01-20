@@ -252,14 +252,33 @@ actions:
 
 ### Action Target Protocols
 
-| Protocol | Use When | Example |
-|----------|----------|---------|
-| `flow://` | Data operations, business logic | `target: "flow://GetOrderStatus"` |
-| `apex://` | Custom calculations, validation | `target: "apex://RefundCalculator"` |
-| `generatePromptResponse://` | Grounded LLM responses | `target: "generatePromptResponse://Summary"` |
-| `retriever://` | RAG knowledge search | `target: "retriever://Policy_Index"` |
-| `externalService://` | Third-party APIs | `target: "externalService://AddressAPI"` |
-| `standardInvocableAction://` | Built-in SF actions | `target: "standardInvocableAction://email"` |
+**Core Targets (Validated)**
+
+| Protocol | Use When | Status |
+|----------|----------|--------|
+| `flow://` | Data operations, business logic | ✅ Validated |
+| `apex://` | Custom calculations, validation | ✅ Validated |
+| `generatePromptResponse://` | Grounded LLM responses | ✅ Validated |
+| `api://` | REST API callouts | ✅ Validated |
+| `retriever://` | RAG knowledge search | ✅ Validated |
+| `externalService://` | Third-party APIs via Named Credential | ✅ Validated |
+| `standardInvocableAction://` | Built-in SF actions | ✅ Validated |
+
+**Additional Targets (From agent-script-recipes)**
+
+| Protocol | Use When | Status |
+|----------|----------|--------|
+| `datacloudDataGraphAction://` | Data Cloud graph queries | ⚠️ Untested |
+| `datacloudSegmentAction://` | Data Cloud segment operations | ⚠️ Untested |
+| `triggerByKnowledgeSource://` | Knowledge-triggered actions | ⚠️ Untested |
+| `contextGrounding://` | Context grounding operations | ⚠️ Untested |
+| `predictiveAI://` | Einstein predictions | ⚠️ Untested |
+| `runAction://` | Sub-action execution | ⚠️ Untested |
+| `external://` | External services | ⚠️ Untested |
+| `copilotAction://` | Copilot actions | ⚠️ Untested |
+| `@topic.X` | Topic delegation (supervision) | ✅ Validated |
+
+> **Note**: Untested targets are documented in the official AGENT_SCRIPT.md rules. They may require specific licenses, org configurations, or future API versions.
 
 ### Utility Actions
 

@@ -1,0 +1,60 @@
+# Val_Before_Reasoning - Tests before_reasoning lifecycle hook
+# Purpose: Verify before_reasoning block executes deterministic pre-processing
+#
+# Tests:
+#   ✓ before_reasoning block within topic
+#   ✓ Deterministic set operations in before_reasoning
+#   ✓ Variable updates before LLM reasoning begins
+#   ✓ Conditional logic in before_reasoning with procedural syntax
+#
+# SKILL.md Section: Lifecycle Hooks - before_reasoning
+# Source: trailheadapps/agent-script-recipes (CustomerServiceAgent.agent)
+
+system:
+   messages:
+      welcome: "Before reasoning validation ready."
+      error: "Before reasoning validation error."
+   instructions: "This agent tests the before_reasoning lifecycle hook."
+
+config:
+   agent_name: "Val_Before_Reasoning"
+   agent_label: "Validation: Before Reasoning Hook"
+   description: "Tests before_reasoning deterministic pre-processing"
+   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+
+variables:
+   customer_tier: mutable string = "unknown"
+   pre_processed: mutable boolean = False
+
+topic main:
+   description: "Test before_reasoning lifecycle hook"
+   before_reasoning:
+      # Deterministic pre-processing before LLM sees instructions
+      # Content goes DIRECTLY under before_reasoning (no instructions: wrapper)
+      set @variables.pre_processed = True
+      set @variables.customer_tier = "gold"
+   reasoning:
+      instructions: ->
+         # LLM now has pre-processed data available
+         if @variables.pre_processed == True:
+            | Pre-processing complete. Customer tier: {!@variables.customer_tier}
+         else:
+            | Pre-processing did not run.
+
+topic verify:
+   description: "Verify before_reasoning executed"
+   reasoning:
+      instructions: ->
+         if @variables.customer_tier == "gold":
+            | Before reasoning validation PASSED.
+         else:
+            | Before reasoning validation FAILED.
+
+start_agent entry:
+   description: "Entry point for before_reasoning validation"
+   reasoning:
+      instructions: |
+         Begin before_reasoning lifecycle hook validation.
+      actions:
+         begin: @utils.transition to @topic.main
+            description: "Start before_reasoning tests"

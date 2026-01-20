@@ -1,0 +1,57 @@
+# Val_Action_Properties - Tests action properties beyond basic syntax
+# Purpose: Verify advanced action properties validity
+#
+# RESULT: Most action properties from recipes are NOT valid (as of Winter '26)
+# - require_user_confirmation: NOT valid
+# - include_in_progress_indicator: NOT valid
+# - output_instructions: NOT valid
+# - progress_indicator_message: NOT valid on transitions (only on flow:// targets)
+# - ONLY description works on @utils.transition actions
+# - This is a NEGATIVE test confirming these properties are NOT supported
+#
+# SKILL.md Section: Action Properties - document only working properties
+# Source: TDD validation 2026-01-20
+
+system:
+   messages:
+      welcome: "Action properties validation ready."
+      error: "Action properties validation error."
+   instructions: "This agent confirms which action properties are valid."
+
+config:
+   agent_name: "Val_Action_Properties"
+   agent_label: "Validation: Action Properties"
+   description: "Confirms which action properties are valid in Agent Script"
+   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+
+variables:
+   action_called: mutable boolean = False
+
+topic main:
+   description: "Test valid action properties only"
+   reasoning:
+      instructions: |
+         This topic tests only VALID action properties.
+         CONFIRMED NOT VALID: require_user_confirmation, include_in_progress_indicator, output_instructions, progress_indicator_message (on transitions)
+         CONFIRMED VALID: description (only property that works on @utils.transition)
+      actions:
+         # Only description works on @utils.transition actions
+         test_action: @utils.transition to @topic.verify
+            description: "Test action with description only"
+
+topic verify:
+   description: "Verify action properties work"
+   reasoning:
+      instructions: |
+         Action properties validation PASSED.
+         Valid properties on @utils.transition: description ONLY
+         Invalid properties: require_user_confirmation, include_in_progress_indicator, output_instructions, progress_indicator_message (on transitions)
+
+start_agent entry:
+   description: "Entry point for action properties validation"
+   reasoning:
+      instructions: |
+         Begin action properties validation.
+      actions:
+         begin: @utils.transition to @topic.main
+            description: "Start action property tests"

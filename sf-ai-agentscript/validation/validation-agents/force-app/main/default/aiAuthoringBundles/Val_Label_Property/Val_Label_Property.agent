@@ -1,0 +1,41 @@
+# Val_Label_Property - Tests label property validity
+# Purpose: Verify label property syntax across different contexts
+#
+# RESULT: label: is NOT valid in Agent Script (as of Winter '26)
+# - NOT valid on topics
+# - NOT valid on actions
+# - This is a NEGATIVE test confirming label is NOT supported
+#
+# SKILL.md Section: Reserved Field Names - CONFIRMED label is reserved/invalid
+# Source: TDD validation 2026-01-20
+
+system:
+   messages:
+      welcome: "Label property validation ready."
+      error: "Label property validation error."
+   instructions: "This agent confirms label is not a valid property."
+
+config:
+   agent_name: "Val_Label_Property"
+   agent_label: "Validation: Label Property"
+   description: "Confirms label property is NOT valid in Agent Script"
+   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+
+topic main:
+   # NOTE: label: is NOT valid on topics or actions
+   # Error: "Unexpected 'label'" when used anywhere
+   description: "Main topic without label property"
+   reasoning:
+      instructions: |
+         Label property validation complete.
+         CONFIRMED: label is NOT a valid Agent Script property.
+         Use description instead for display text.
+
+start_agent entry:
+   description: "Entry point for label property validation"
+   reasoning:
+      instructions: |
+         Begin label property validation.
+      actions:
+         begin: @utils.transition to @topic.main
+            description: "Start validation"

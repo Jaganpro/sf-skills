@@ -8,14 +8,14 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.1.0"
+  version: "1.3.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
   # Validation Framework
   last_validated: "2026-01-20"
   validation_status: "PASS"
-  validation_agents: 8
+  validation_agents: 13
   validate_by: "2026-02-19"  # 30 days from last validation
   validation_org: "R6-Agentforce-SandboxFull"
 ---
@@ -71,6 +71,29 @@ description, label, is_required, is_displayable, is_used_by_planner
 description  → descriptions, description_text, desc_field
 label        → label_text, display_label, label_field
 ```
+
+### 🔴 Features NOT Valid in Current Release (TDD Validated 2026-01-20)
+
+> **These features appear in documentation or recipes but do NOT compile in Winter '26.**
+
+| Feature | Where Mentioned | Error | Status |
+|---------|-----------------|-------|--------|
+| `label:` on topics | agentforce.guide | `Unexpected 'label'` | ❌ NOT valid anywhere |
+| `label:` on actions | agentforce.guide | `Unexpected 'label'` | ❌ NOT valid anywhere |
+| `always_expect_input:` | Some docs | `Unexpected 'always_expect_input'` | ❌ NOT implemented |
+| `require_user_confirmation:` on transitions | Recipes | `Unexpected 'require_user_confirmation'` | ❌ NOT valid on `@utils.transition` |
+| `include_in_progress_indicator:` on transitions | Recipes | `Unexpected 'include_in_progress_indicator'` | ❌ NOT valid on `@utils.transition` |
+| `output_instructions:` on transitions | Recipes | `Unexpected 'output_instructions'` | ❌ NOT valid on `@utils.transition` |
+| `progress_indicator_message:` on transitions | Recipes | `Unexpected 'progress_indicator_message'` | ❌ May only work on `flow://` targets |
+
+**What DOES work on `@utils.transition` actions:**
+```yaml
+actions:
+   go_next: @utils.transition to @topic.next
+      description: "Navigate to next topic"   # ✅ ONLY this works
+```
+
+> **Note**: Some of these may work on `flow://` action targets (not validated). The `@utils.transition` utility action has limited property support.
 
 ### 🔴 `complex_data_type_name` Mapping Table (Critical for Actions)
 
@@ -233,15 +256,64 @@ topic verification_success:
 | `@utils.setVariables` | FREE | Framework state management |
 | `@utils.escalate` | FREE | Framework escalation |
 | `if`/`else` control flow | FREE | Deterministic resolution |
-| `before_reasoning` | FREE | Deterministic pre-processing |
-| `after_reasoning` | FREE | Deterministic post-processing |
+| `before_reasoning` | FREE | Deterministic pre-processing (see note below) |
+| `after_reasoning` | FREE | Deterministic post-processing (see note below) |
 | `reasoning` (LLM turn) | FREE | LLM reasoning itself is not billed |
 | Prompt Templates | 2-16 | Per invocation (varies by complexity) |
 | Flow actions | 20 | Per action execution |
 | Apex actions | 20 | Per action execution |
 | Any other action | 20 | Per action execution |
 
-**Cost Optimization Pattern**: Fetch data once in `before_reasoning`, cache in variables, reuse across topics.
+> **✅ Lifecycle Hooks Validated (v1.3.0)**: The `before_reasoning:` and `after_reasoning:` lifecycle hooks are now TDD-validated. Content goes **directly** under the block (no `instructions:` wrapper). See "Lifecycle Hooks" section below for correct syntax.
+
+**Cost Optimization Pattern**: Fetch data once in `before_reasoning:`, cache in variables, reuse across topics.
+
+### Lifecycle Hooks: `before_reasoning:` and `after_reasoning:`
+
+> **TDD Validated (2026-01-20)**: These hooks enable deterministic pre/post-processing around LLM reasoning.
+
+```yaml
+topic main:
+   description: "Topic with lifecycle hooks"
+
+   # BEFORE: Runs deterministically BEFORE LLM sees instructions
+   before_reasoning:
+      # Content goes DIRECTLY here (NO instructions: wrapper!)
+      set @variables.pre_processed = True
+      set @variables.customer_tier = "gold"
+
+   # LLM reasoning phase
+   reasoning:
+      instructions: ->
+         | Customer tier: {!@variables.customer_tier}
+         | How can I help you today?
+
+   # AFTER: Runs deterministically AFTER LLM finishes reasoning
+   after_reasoning:
+      # Content goes DIRECTLY here (NO instructions: wrapper!)
+      set @variables.interaction_logged = True
+      if @variables.needs_audit == True:
+         set @variables.audit_flag = True
+```
+
+**Key Points:**
+- Content goes **directly** under `before_reasoning:` / `after_reasoning:` (NO `instructions:` wrapper)
+- Supports `set`, `if`, `run` statements (same as procedural `instructions: ->`)
+- `before_reasoning:` is FREE (no credit cost) - use for data prep
+- `after_reasoning:` is FREE (no credit cost) - use for logging, cleanup
+
+**❌ WRONG Syntax (causes compile error):**
+```yaml
+before_reasoning:
+   instructions: ->      # ❌ NO! Don't wrap with instructions:
+      set @variables.x = True
+```
+
+**✅ CORRECT Syntax:**
+```yaml
+before_reasoning:
+   set @variables.x = True   # ✅ Direct content under the block
+```
 
 ### Supervision vs Handoff (Clarified Terminology)
 
@@ -488,16 +560,47 @@ checkout: @utils.transition to @topic.checkout
 
 > ⚠️ **Linked variables CANNOT use `object` or `list` types**
 
+### Variable vs Action I/O Type Matrix
+> **Critical distinction**: Some types are valid ONLY for action inputs/outputs, NOT for Agent Script variables.
+
+| Type | Variables | Action I/O | Notes |
+|------|-----------|------------|-------|
+| `string` | ✅ | ✅ | Universal |
+| `number` | ✅ | ✅ | Universal |
+| `boolean` | ✅ | ✅ | Universal |
+| `date` | ✅ | ✅ | Universal |
+| `currency` | ✅ | ✅ | Universal |
+| `id` | ✅ | ✅ | Salesforce IDs |
+| `list` | ✅ (mutable only) | ✅ | Collections |
+| `object` | ✅ (mutable only) | ✅ | ⚠️ Not for linked vars |
+| `datetime` | ❌ | ✅ | **Actions only** |
+| `time` | ❌ | ✅ | **Actions only** |
+| `integer` | ❌ | ✅ | **Actions only** |
+| `long` | ❌ | ✅ | **Actions only** |
+
+> **Source**: AGENT_SCRIPT.md rules document from trailheadapps/agent-script-recipes
+
 ### Action Target Protocols
-| Short | Long Form | Use When |
-|-------|-----------|----------|
-| `flow` | `flow://` | Data operations, business logic |
-| `apex` | `apex://` | Custom calculations, validation |
-| `prompt` | `generatePromptResponse://` | Grounded LLM responses |
-| `api` | `api://` | REST API calls |
-| `retriever` | `retriever://` | RAG knowledge search |
-| `externalService` | `externalService://` | Third-party APIs via Named Credentials |
-| `standardInvocableAction` | `standardInvocableAction://` | Built-in SF actions (email, tasks) |
+| Short | Long Form | Use When | Validated? |
+|-------|-----------|----------|------------|
+| `flow` | `flow://` | Data operations, business logic | ✅ TDD |
+| `apex` | `apex://` | Custom calculations, validation | ✅ TDD |
+| `prompt` | `generatePromptResponse://` | Grounded LLM responses | ✅ TDD |
+| `api` | `api://` | REST API calls | ✅ TDD |
+| `retriever` | `retriever://` | RAG knowledge search | ✅ TDD |
+| `externalService` | `externalService://` | Third-party APIs via Named Credentials | ✅ TDD |
+| `standardInvocableAction` | `standardInvocableAction://` | Built-in SF actions (email, tasks) | ✅ TDD |
+| `datacloudDataGraphAction` | `datacloudDataGraphAction://` | Data Cloud graph queries | 📋 Spec |
+| `datacloudSegmentAction` | `datacloudSegmentAction://` | Data Cloud segment operations | 📋 Spec |
+| `triggerByKnowledgeSource` | `triggerByKnowledgeSource://` | Knowledge article triggers | 📋 Spec |
+| `contextGrounding` | `contextGrounding://` | Context grounding for LLM | 📋 Spec |
+| `predictiveAI` | `predictiveAI://` | Einstein prediction models | 📋 Spec |
+| `runAction` | `runAction://` | Execute sub-actions | 📋 Spec |
+| `external` | `external://` | External service calls | 📋 Spec |
+| `copilotAction` | `copilotAction://` | Salesforce Copilot actions | 📋 Spec |
+| `@topic.X` | (inline) | Topic delegation (returns to parent) | ✅ TDD |
+
+> **Legend**: ✅ TDD = Validated via deployment testing | 📋 Spec = Documented in AGENT_SCRIPT.md spec (requires specific org setup to test)
 
 ### Connection Block (Full Escalation Pattern)
 
@@ -1007,10 +1110,28 @@ start_agent entry:
 
 ---
 
+## 📚 SOURCES & ACKNOWLEDGMENTS
+
+This skill draws from multiple authoritative sources:
+
+| Source | Contribution |
+|--------|--------------|
+| [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) | 20 reference recipes across 4 categories, AGENT_SCRIPT.md rules document, variable patterns, action target catalog |
+| Salesforce Official Documentation | Core syntax, API references, deployment guides |
+| TDD Validation (this skill) | 13 validation agents confirming current-release syntax compatibility |
+| Tribal knowledge interviews | Canvas View bugs, VS Code limitations, credit consumption patterns |
+| [agentforce.guide](https://agentforce.guide/) | Unofficial but useful examples (note: some patterns don't compile in current release) |
+
+> **⚠️ Note on Feature Validation**: Some patterns from external sources (e.g., `always_expect_input:`, `label:` property, certain action properties on transitions) do NOT compile in Winter '26. The `before_reasoning:`/`after_reasoning:` lifecycle hooks ARE valid but require **direct content** (no `instructions:` wrapper) - see the Lifecycle Hooks section for correct syntax. This skill documents only patterns that pass TDD validation.
+
+---
+
 ## 🏷️ VERSION HISTORY
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile (label on topics/actions, always_expect_input, action properties on transitions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
+| 1.2.0 | 2026-01-20 | **Gap analysis vs agent-script-recipes**: Expanded Action Target Protocols from 7 to 16 (with validation status indicators), added Variable vs Action I/O Type Matrix, added lifecycle hooks note with TDD validation caveat, added Sources & Acknowledgments section, documented future/planned features notice. TDD validation confirmed `label:` IS reserved (SKILL.md was correct), `before_reasoning:`/`after_reasoning:` syntax from recipes does NOT compile in current release |
 | 1.1.0 | 2026-01-20 | **"Ultimate Guide" tribal knowledge integration**: Added `complex_data_type_name` mapping table, Canvas View corruption bugs, Reserved field names, Preview mode workarounds, Credit consumption table, Supervision vs Handoff clarification, Action output flags for zero-hallucination routing, Latch variable pattern, Loop protection guardrails, Token/size limits, Progress indicators, Connection block escalation patterns, VS Code limitations, Language block quirks. Added 4 new templates: flow-action-lookup, prompt-rag-search, deterministic-routing, escalation-pattern |
 | 1.0.4 | 2026-01-19 | **Progressive testing validation** (Quiz_Master, Expense_Calculator, Order_Processor): Added constraints for no top-level `actions:` block, no `inputs:`/`outputs:` in reasoning.actions, expanded nested-if guidance with flattening approach, added new SyntaxError entries to common issues |
 | 1.0.3 | 2026-01-19 | Added Einstein Agent User interview requirement - mandatory user confirmation when creating new agents |
