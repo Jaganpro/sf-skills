@@ -1,6 +1,71 @@
 {
-  "version": "3.0.0",
-  "description": "Unified skills registry - single source of truth for skill discovery, orchestration, and relationships",
+  "version": "4.0.0",
+  "description": "Unified skills registry - single source of truth for skill discovery, orchestration, relationships, guardrails, and auto-approval policies",
+
+  "guardrails": {
+    "dangerous_dml": {
+      "patterns": ["DELETE FROM \\w+ (;|$)", "UPDATE \\w+ SET .* (?<!WHERE.*)$"],
+      "severity": "CRITICAL",
+      "action": "block",
+      "message": "Destructive DML without WHERE clause detected"
+    },
+    "unbounded_soql": {
+      "patterns": ["SELECT .* FROM \\w+ (?!.*LIMIT)"],
+      "severity": "HIGH",
+      "action": "auto_fix",
+      "fix": "append LIMIT 200",
+      "message": "Unbounded SOQL query - adding LIMIT 200"
+    },
+    "hardcoded_credentials": {
+      "patterns": ["(password|api_key|secret|token)\\s*=\\s*['\"][^'\"]+['\"]"],
+      "severity": "CRITICAL",
+      "action": "block",
+      "message": "Hardcoded credentials detected - use Named Credentials"
+    },
+    "production_deploy_without_validation": {
+      "patterns": ["sf project deploy start.*--target-org.*(prod|production)(?!.*--dry-run)"],
+      "severity": "HIGH",
+      "action": "auto_fix",
+      "fix": "add --dry-run flag",
+      "message": "Production deployment without validation - adding --dry-run"
+    },
+    "missing_sharing_keyword": {
+      "patterns": ["public class \\w+(?! (with|without|inherited) sharing)"],
+      "severity": "MEDIUM",
+      "action": "warn",
+      "message": "Consider adding explicit sharing keyword (with sharing recommended)"
+    },
+    "hardcoded_salesforce_ids": {
+      "patterns": ["['\"][a-zA-Z0-9]{15}['\"]|['\"][a-zA-Z0-9]{18}['\"]"],
+      "severity": "MEDIUM",
+      "action": "warn",
+      "message": "Hardcoded Salesforce ID detected - consider using Custom Metadata"
+    }
+  },
+
+  "auto_approve_policy": {
+    "description": "Rules for auto-approving Bash command permissions",
+    "read_operations": {
+      "patterns": ["sf data query", "sf org display", "sf org list", "sf project retrieve", "sf apex list log", "sf apex get log", "sf sobject describe", "sf org list metadata"],
+      "auto_approve": true,
+      "reason": "Read-only operations are safe"
+    },
+    "scratch_org_operations": {
+      "patterns": ["--target-org.*scratch", "--target-org.*dev.*scratch"],
+      "auto_approve": true,
+      "reason": "Scratch orgs are disposable"
+    },
+    "validation_deploys": {
+      "patterns": ["sf project deploy start.*--dry-run", "sf project deploy validate"],
+      "auto_approve": true,
+      "reason": "Dry-run validations don't modify org"
+    },
+    "require_confirmation": {
+      "patterns": ["--target-org.*(prod|production)", "sf org delete", "DELETE FROM", "git push.*--force"],
+      "auto_approve": false,
+      "reason": "Destructive or production operations require confirmation"
+    }
+  },
 
   "skills": {
     "sf-apex": {
@@ -431,6 +496,66 @@
         "prerequisites": [],
         "next_steps": [],
         "commonly_with": []
+      }
+    },
+
+    "sf-ai-agentscript": {
+      "keywords": ["agent script", "agentscript", "agentforce", "agent", "topic", "action", "fsm", "state machine", "deterministic agent", "hybrid reasoning", "slot filling", "instruction resolution"],
+      "intentPatterns": [
+        "create.*agent", "build.*agentforce", "new.*agent",
+        "write.*agent.*script", "agent.*topic", "agent.*action",
+        "deterministic.*agent", "fsm.*agent"
+      ],
+      "filePatterns": ["\\.agent$", "\\.agentDefinition-meta\\.xml$", "GenAi.*\\.xml$"],
+      "contentTriggers": {
+        "flow://": { "suggests": "sf-flow", "message": "Create Flow for this action target" },
+        "apex://": { "suggests": "sf-apex", "message": "Create Apex (wrapped in Flow) for this action" },
+        "start_agent": { "suggests": "sf-ai-agentforce-testing", "message": "Test agent after creation" }
+      },
+      "priority": "high",
+      "description": "Agent Script DSL for deterministic Agentforce agents",
+      "orchestration": {
+        "prerequisites": [
+          { "skill": "sf-flow", "condition": "always", "message": "Create and deploy Flows before agent uses flow:// targets", "confidence": 3 },
+          { "skill": "sf-apex", "condition": "apex_action", "message": "Deploy Apex (wrapped in Flow) before agent references it", "confidence": 2 },
+          { "skill": "sf-metadata", "condition": "custom_fields", "message": "Deploy custom fields before agent queries them", "confidence": 2 }
+        ],
+        "next_steps": [
+          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish", "confidence": 3 },
+          { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test agent topic routing and actions", "confidence": 2 }
+        ],
+        "commonly_with": [
+          { "skill": "sf-flow", "trigger": "flow://", "message": "Create autolaunched Flow for agent action", "confidence": 3 },
+          { "skill": "sf-ai-agentforce-testing", "trigger": "always", "message": "Test agent with utterances and expectations", "confidence": 2 }
+        ]
+      }
+    },
+
+    "sf-permissions": {
+      "keywords": ["permission set", "permission set group", "psg", "fls", "field level security", "object permissions", "who has access", "permission analyzer", "access audit", "hierarchy"],
+      "intentPatterns": [
+        "who.*has.*access", "permission.*set", "analyze.*permissions",
+        "field.*level.*security", "audit.*access", "permission.*hierarchy",
+        "visualize.*permissions", "export.*permissions"
+      ],
+      "filePatterns": ["\\.permissionset-meta\\.xml$", "\\.permissionsetgroup-meta\\.xml$"],
+      "contentTriggers": {
+        "PermissionSet": { "suggests": "sf-metadata", "message": "Generate Permission Set XML metadata" },
+        "fieldPermissions": { "suggests": "sf-deploy", "message": "Deploy Permission Set to org" }
+      },
+      "priority": "medium",
+      "description": "Permission Set analysis and hierarchy visualization",
+      "orchestration": {
+        "prerequisites": [
+          { "skill": "sf-metadata", "condition": "custom_field", "message": "Deploy custom fields before granting FLS", "confidence": 2 }
+        ],
+        "next_steps": [
+          { "skill": "sf-deploy", "condition": "always", "message": "Deploy Permission Set to org", "confidence": 3 }
+        ],
+        "commonly_with": [
+          { "skill": "sf-metadata", "trigger": "generate", "message": "Generate Permission Set XML metadata", "confidence": 2 },
+          { "skill": "sf-data", "trigger": "query", "message": "Query permission data from org", "confidence": 1 }
+        ]
       }
     }
   },

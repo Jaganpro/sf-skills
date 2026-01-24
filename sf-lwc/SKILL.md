@@ -7,9 +7,29 @@ description: >
   proper reactivity, accessibility, dark mode compatibility, and performance patterns.
 license: MIT
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   author: "Jag Valaiyapathy"
   scoring: "165 points across 8 categories (SLDS 2 + Dark Mode compliant)"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
+          timeout: 120000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-lwc"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-lwc"
+      timeout: 5000
 ---
 
 # sf-lwc: Lightning Web Components Development

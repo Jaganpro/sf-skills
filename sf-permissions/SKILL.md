@@ -1,10 +1,36 @@
+---
+name: sf-permissions
+description: >
+  Permission Set analysis, hierarchy viewer, and "Who has X?" auditing.
+  Use when analyzing permissions, visualizing PS/PSG hierarchies, or finding
+  which Permission Sets grant access to specific objects, fields, or Apex classes.
+license: MIT
+metadata:
+  version: "1.1.0"
+  author: "Jag Valaiyapathy"
+  inspiration: "PSLab by Oumaima Arbani (github.com/OumArbani/PSLab)"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-permissions"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-permissions"
+      timeout: 5000
+---
+
 # sf-permissions
 
 > Salesforce Permission Set analysis, visualization, and auditing tool
-
-**Version**: 1.0.0
-**Author**: Jag Valaiyapathy
-**Inspiration**: PSLab by Oumaima Arbani (github.com/OumArbani/PSLab)
 
 ## When to Use This Skill
 

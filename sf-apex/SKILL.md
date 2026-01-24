@@ -6,9 +6,36 @@ description: >
   reviewing existing Apex code for bulkification, security, and SOLID principles.
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "150 points across 8 categories"
+hooks:
+  SessionStart:
+    - type: command
+      command: "${SHARED_HOOKS}/check-env-weekly.sh"
+      timeout: 5000
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/apex-lsp-validate.py"
+          timeout: 15000
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
+          timeout: 120000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-apex"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-apex"
+      timeout: 5000
 ---
 
 # sf-apex: Salesforce Apex Code Generation and Review

@@ -7,9 +7,26 @@ description: >
 license: MIT
 allowed-tools: Bash Read Write Edit Glob Grep WebFetch AskUserQuestion TodoWrite
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "120 points across 6 categories"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-connected-apps"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-connected-apps"
+      timeout: 5000
 ---
 
 # sf-connected-apps: Salesforce Connected Apps & External Client Apps

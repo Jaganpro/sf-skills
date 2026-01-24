@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -18,6 +18,26 @@ metadata:
   validation_agents: 13
   validate_by: "2026-02-19"  # 30 days from last validation
   validation_org: "R6-Agentforce-SandboxFull"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/agentscript-syntax-validator.py"
+          timeout: 10000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-ai-agentscript"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-ai-agentscript"
+      timeout: 5000
 ---
 
 # SF-AI-AgentScript Skill

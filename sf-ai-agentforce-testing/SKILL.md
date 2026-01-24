@@ -7,9 +7,31 @@ description: >
 license: MIT
 compatibility: "Requires API v65.0+ (Winter '26) and Agentforce enabled org"
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 5 categories"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/parse-agent-test-results.py"
+          timeout: 10000
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-ai-agentforce-testing"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-ai-agentforce-testing"
+      timeout: 5000
 ---
 
 <!-- TIER: 1 | ENTRY POINT -->

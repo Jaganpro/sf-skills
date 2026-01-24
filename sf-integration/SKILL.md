@@ -6,9 +6,40 @@ description: >
   Events, Change Data Capture, or connecting Salesforce to external systems.
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   author: "Jag Valaiyapathy"
   scoring: "120 points across 6 categories"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: Write
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/suggest_credential_setup.py"
+          timeout: 5000
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/validate_integration.py"
+          timeout: 10000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-integration"
+          timeout: 5000
+    - matcher: Edit
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/suggest_credential_setup.py"
+          timeout: 5000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-integration"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-integration"
+      timeout: 5000
 ---
 
 # sf-integration: Salesforce Integration Patterns Expert

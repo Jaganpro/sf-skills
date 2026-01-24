@@ -7,9 +7,26 @@ description: >
 license: MIT
 compatibility: "Requires Mermaid-capable renderer for diagram previews"
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   author: "Jag Valaiyapathy"
   scoring: "80 points across 5 categories"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-diagram-mermaid"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-diagram-mermaid"
+      timeout: 5000
 ---
 
 # sf-diagram-mermaid: Salesforce Diagram Generation

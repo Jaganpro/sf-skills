@@ -6,8 +6,25 @@ description: >
   deployment errors.
 license: MIT
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   author: "Jag Valaiyapathy"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-deploy"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-deploy"
+      timeout: 5000
 ---
 
 # sf-deploy: Comprehensive Salesforce DevOps Automation

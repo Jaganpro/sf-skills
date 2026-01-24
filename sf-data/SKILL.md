@@ -6,9 +6,34 @@ description: >
   importing/exporting data via sf CLI.
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "130 points across 7 categories"
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          timeout: 5000
+  PostToolUse:
+    - matcher: Write
+      hooks:
+        - type: command
+          command: "python3 ${SKILL_HOOKS}/post-write-validate.py"
+          timeout: 10000
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-data"
+          timeout: 5000
+    - matcher: Edit
+      hooks:
+        - type: command
+          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-data"
+          timeout: 5000
+  SubagentStop:
+    - type: command
+      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-data"
+      timeout: 5000
 ---
 
 # Salesforce Data Operations Expert (sf-data)
