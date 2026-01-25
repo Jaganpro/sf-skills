@@ -401,13 +401,15 @@
     },
 
     "sf-diagram-mermaid": {
-      "keywords": ["diagram", "erd", "mermaid", "architecture", "visualization", "data model", "entity relationship", "sequence diagram", "flowchart", "class diagram", "object diagram", "schema"],
+      "keywords": ["diagram", "erd", "mermaid", "architecture", "visualization", "data model", "entity relationship", "sequence diagram", "flowchart", "class diagram", "object diagram", "schema", "hook lifecycle", "flowchart tb", "flowchart lr", "stateDiagram", "gantt", "pie chart"],
+      "auto_invoke_keywords": ["mermaid", "flowchart", "sequence diagram", "erDiagram", "class diagram", "stateDiagram", "gantt", "hook lifecycle", "architecture diagram"],
       "intentPatterns": [
         "create.*diagram", "visualize.*schema", "draw.*architecture",
         "generate.*erd", "show.*relationships", "data.*model.*diagram",
-        "sequence.*diagram", "architecture.*diagram"
+        "sequence.*diagram", "architecture.*diagram", "mermaid.*diagram",
+        "flowchart.*diagram", "create.*flowchart", "create.*erd"
       ],
-      "filePatterns": ["diagrams?/.*\\.md$", ".*-erd\\.md$", ".*-sequence\\.md$"],
+      "filePatterns": ["diagrams?/.*\\.md$", ".*-erd\\.md$", ".*-sequence\\.md$", ".*-diagram\\.md$"],
       "contentTriggers": {
         "erDiagram": { "suggests": "sf-metadata", "message": "Query org metadata for accurate ERD" },
         "sequenceDiagram": { "suggests": "sf-integration", "message": "Document integration endpoints" }
@@ -428,11 +430,13 @@
     },
 
     "sf-diagram-nanobananapro": {
-      "keywords": ["mockup", "visual", "image", "erd image", "wireframe", "ui design", "visual erd", "png", "svg", "screenshot", "preview"],
+      "keywords": ["mockup", "visual", "image", "erd image", "wireframe", "ui design", "visual erd", "png", "svg", "screenshot", "preview", "nano banana", "nanobananapro", "generate image"],
+      "auto_invoke_keywords": ["image", "png", "svg", "mockup", "wireframe", "visual erd", "nano banana", "nanobananapro", "visual image", "generate image"],
       "intentPatterns": [
         "create.*mockup", "generate.*visual", "design.*ui",
         "visual.*erd", "image.*diagram", "wireframe.*component",
-        "preview.*design"
+        "preview.*design", "generate.*image", "create.*image",
+        "export.*png", "export.*svg"
       ],
       "filePatterns": ["\\.png$", "\\.svg$", "\\.jpg$"],
       "contentTriggers": {},

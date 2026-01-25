@@ -174,6 +174,91 @@ def detect_chain(prompt: str, registry: dict) -> Optional[dict]:
     return None
 
 
+def detect_diagram_intent(prompt: str) -> dict:
+    """
+    Detect diagram intent and determine routing.
+
+    This function analyzes user prompts to identify diagram-related requests
+    and determines whether to auto-invoke a specific diagram skill or ask
+    for clarification when the intent is ambiguous.
+
+    Returns: {
+        "type": "mermaid" | "visual" | "ambiguous" | None,
+        "confidence": "high" | "medium" | None,
+        "auto_invoke": skill_name or None
+    }
+    """
+    prompt_lower = prompt.lower()
+
+    # High-confidence Mermaid indicators (specific to Mermaid syntax/output)
+    mermaid_keywords = [
+        "mermaid",
+        "flowchart",
+        "sequence diagram",
+        "erd diagram",
+        "erdiagram",
+        "class diagram",
+        "gantt",
+        "pie chart",
+        "statediagram",
+        "state diagram",
+        "flowchart tb",
+        "flowchart lr",
+        "hook lifecycle",
+        "architecture diagram",
+    ]
+
+    # High-confidence visual/image indicators (explicit image output)
+    visual_keywords = [
+        "image",
+        "png",
+        "svg",
+        "mockup",
+        "wireframe",
+        "visual erd",
+        "screenshot",
+        "nano banana",
+        "nanobananapro",
+        "visual image",
+        "generate image",
+    ]
+
+    # Check for keyword matches
+    has_mermaid = any(kw in prompt_lower for kw in mermaid_keywords)
+    has_visual = any(kw in prompt_lower for kw in visual_keywords)
+    has_diagram = "diagram" in prompt_lower or "erd" in prompt_lower
+
+    # Decision logic
+    if has_mermaid and not has_visual:
+        # Clear Mermaid intent - auto-invoke
+        return {
+            "type": "mermaid",
+            "confidence": "high",
+            "auto_invoke": "sf-diagram-mermaid"
+        }
+    elif has_visual and not has_mermaid:
+        # Clear visual/image intent - auto-invoke
+        return {
+            "type": "visual",
+            "confidence": "high",
+            "auto_invoke": "sf-diagram-nanobananapro"
+        }
+    elif has_diagram:
+        # Ambiguous diagram request - need clarification
+        return {
+            "type": "ambiguous",
+            "confidence": "medium",
+            "auto_invoke": None
+        }
+
+    # No diagram intent detected
+    return {
+        "type": None,
+        "confidence": None,
+        "auto_invoke": None
+    }
+
+
 def find_matching_skills(prompt: str, active_files: list, registry: dict) -> list:
     """
     Find all skills that match the prompt or active files.
@@ -308,6 +393,51 @@ def main():
     # Load skills registry
     registry = load_registry()
     if not registry.get("skills"):
+        sys.exit(0)
+
+    # DIAGRAM AUTO-INVOCATION: Check for diagram intent first (before skill suggestions)
+    diagram_intent = detect_diagram_intent(prompt)
+
+    if diagram_intent["auto_invoke"]:
+        # High-confidence match - auto-invoke the skill
+        skill = diagram_intent["auto_invoke"]
+        save_active_skill(skill)
+        output = {
+            "output_message": (
+                f"{'═' * 54}\n"
+                f"🎯 AUTO-INVOKING /{skill}\n"
+                f"{'═' * 54}\n\n"
+                f"Detected {diagram_intent['type']} diagram request.\n"
+                f"Skill activated - proceeding with diagram generation.\n\n"
+                f"💡 The /{skill} skill is now active with its validation\n"
+                f"   hooks and best practices enabled.\n"
+                f"{'═' * 54}"
+            )
+        }
+        print(json.dumps(output))
+        sys.exit(0)
+
+    if diagram_intent["type"] == "ambiguous":
+        # Ambiguous diagram request - ask clarification
+        output = {
+            "output_message": (
+                f"{'═' * 54}\n"
+                "🎨 DIAGRAM TYPE CLARIFICATION NEEDED\n"
+                f"{'═' * 54}\n\n"
+                "I detected a diagram request. Which format do you prefer?\n\n"
+                "1️⃣  **Mermaid** (text-based, version-controllable)\n"
+                "    → /sf-diagram-mermaid\n"
+                "    Best for: ERDs, flowcharts, sequence diagrams, architecture\n\n"
+                "2️⃣  **Visual Image** (PNG/SVG via Nano Banana Pro)\n"
+                "    → /sf-diagram-nanobananapro\n"
+                "    Best for: Mockups, wireframes, visual ERDs, presentations\n\n"
+                "💡 Tip: Include 'mermaid' or 'image/png/svg' in your request\n"
+                "   for automatic skill selection, or invoke directly with\n"
+                "   /sf-diagram-mermaid or /sf-diagram-nanobananapro\n"
+                f"{'═' * 54}"
+            )
+        }
+        print(json.dumps(output))
         sys.exit(0)
 
     # FIX 3: Track skill invocation if this is a slash command

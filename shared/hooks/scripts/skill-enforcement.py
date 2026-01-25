@@ -61,6 +61,12 @@ SF_FILE_PATTERNS = [
     (r"\.agent$", "sf-ai-agentscript", "Agent Script"),
     (r"\.soql$", "sf-soql", "SOQL Query"),
     (r"\.(namedCredential|externalServiceRegistration)-meta\.xml$", "sf-integration", "Integration"),
+    # Diagram file patterns (enforce diagram skills)
+    (r"/diagrams?/.*\.md$", "sf-diagram-mermaid", "Mermaid diagram"),
+    (r".*-diagram\.md$", "sf-diagram-mermaid", "Mermaid diagram"),
+    (r".*-erd\.md$", "sf-diagram-mermaid", "ERD diagram"),
+    (r".*-sequence\.md$", "sf-diagram-mermaid", "Sequence diagram"),
+    (r".*-flowchart\.md$", "sf-diagram-mermaid", "Flowchart diagram"),
 ]
 
 
