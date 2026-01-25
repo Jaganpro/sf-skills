@@ -119,19 +119,12 @@ def format_block_message(file_path: str, suggested_skill: str, file_type: str) -
     """Format the blocking message requiring skill invocation."""
     filename = Path(file_path).name
 
-    return f"""
-╔════════════════════════════════════════════════════════════╗
-║ 🛑 SF-SKILLS REQUIRED                                       ║
-╠════════════════════════════════════════════════════════════╣
-║ Cannot edit Salesforce files without activating a skill.   ║
-║                                                            ║
-║ 📄 File: {filename:<49}║
-║ 🏷️  Type: {file_type:<48}║
-║ ✅ Required: /{suggested_skill:<43}║
-║                                                            ║
-║ ACTION: Invoke /{suggested_skill} first, then retry.        ║
-╚════════════════════════════════════════════════════════════╝
-"""
+    # Use ASCII-only characters to avoid JSON encoding issues
+    return (
+        f"[SF-SKILLS REQUIRED] Cannot edit Salesforce files without activating a skill. "
+        f"File: {filename}, Type: {file_type}. "
+        f"ACTION: Invoke /{suggested_skill} first, then retry."
+    )
 
 
 def main():
@@ -142,11 +135,34 @@ def main():
         # No input - allow silently
         print(json.dumps({"hookSpecificOutput": {"permissionDecision": "allow"}}))
         sys.exit(0)
+    except Exception:
+        # Any other error - allow silently
+        print(json.dumps({"hookSpecificOutput": {"permissionDecision": "allow"}}))
+        sys.exit(0)
 
     # Get tool information
     tool_name = hook_input.get("tool_name", "")
     tool_input = hook_input.get("tool_input", {})
 
+    # Handle case where tool_input might be a string or non-dict
+    if isinstance(tool_input, str):
+        try:
+            tool_input = json.loads(tool_input)
+        except (json.JSONDecodeError, TypeError):
+            tool_input = {}
+    elif not isinstance(tool_input, dict):
+        tool_input = {}
+
+    try:
+        _process_hook(tool_name, tool_input)
+    except Exception:
+        # Catch-all: always output valid JSON
+        print(json.dumps({"hookSpecificOutput": {"permissionDecision": "allow"}}))
+        sys.exit(0)
+
+
+def _process_hook(tool_name: str, tool_input: dict) -> None:
+    """Process the hook logic. Separated for better error handling."""
     # Detect Skill tool invocation and save state
     if tool_name == "Skill":
         skill_name = tool_input.get("skill", "")
@@ -191,13 +207,12 @@ def main():
 
     output = {
         "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",  # Enforce skill-first workflow
-            "permissionDecisionReason": f"Must invoke /{suggested_skill} first before editing {file_type} files. {block_message}"
+            "permissionDecision": "deny",
+            "permissionDecisionReason": block_message
         }
     }
 
-    print(json.dumps(output))
+    print(json.dumps(output, ensure_ascii=True))
     sys.exit(0)
 
 
