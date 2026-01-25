@@ -360,8 +360,28 @@ def validate_skill_file(file_path: Path) -> bool:
 
 
 def main():
-    """Main entry point."""
-    if len(sys.argv) < 2:
+    """Main entry point with dual-mode input support."""
+    import json
+
+    file_path = None
+
+    # Mode 1: Hook mode - read from stdin JSON (PostToolUse hooks)
+    if not sys.stdin.isatty():
+        try:
+            hook_input = json.load(sys.stdin)
+            tool_input = hook_input.get("tool_input", {})
+            fp = tool_input.get("file_path", "")
+            if fp:
+                file_path = Path(fp)
+        except (json.JSONDecodeError, EOFError):
+            pass
+
+    # Mode 2: CLI mode - read from command-line argument
+    if not file_path and len(sys.argv) >= 2:
+        file_path = Path(sys.argv[1])
+
+    # Validate we have a file path
+    if not file_path:
         print("Usage: validate_yaml.py <path-to-SKILL.md>")
         print()
         print("Validates a Claude Code SKILL.md file:")
@@ -372,7 +392,9 @@ def main():
         print("  - Content structure")
         sys.exit(1)
 
-    file_path = Path(sys.argv[1])
+    # Only validate SKILL.md files
+    if file_path.name != "SKILL.md":
+        sys.exit(0)  # Silently skip non-SKILL.md files
 
     if not file_path.exists():
         print_error(f"File not found: {file_path}")
