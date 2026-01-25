@@ -56,7 +56,7 @@ Screen Flow: Order_Confirmation (displays final results)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Entry point for order processing. Collects order details and initiates sequential pipeline.</description>
     <label>Screen_OrderEntry</label>
     <processType>Flow</processType>
@@ -365,7 +365,7 @@ Screen Flow: Order_Confirmation (displays final results)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>First step in sequential pipeline. Validates order details and returns validation status.</description>
     <label>Auto_ValidateOrder</label>
     <processType>AutoLaunchedFlow</processType>

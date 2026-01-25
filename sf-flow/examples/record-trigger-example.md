@@ -52,11 +52,11 @@ The skill designs a **bulkified** flow:
 ### Phase 3: Validation
 
 ```
-Flow Validation Report: Opportunity_Closed_Won_Update_Contacts (API 62.0)
+Flow Validation Report: Opportunity_Closed_Won_Update_Contacts (API 65.0)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✓ XML Structure: Valid
-✓ API Version: 62.0 (current - Winter '26)
+✓ API Version: 65.0 (current - Winter '26)
 ✓ Required Elements: Present
 ✓ Element References: All valid
 ✓ Naming Conventions: Compliant

@@ -80,7 +80,7 @@ Benefits:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Parent orchestrator that coordinates industry change automation. Calls child subflows for each responsibility.</description>
     <label>RTF_Account_IndustryChange_Orchestrator</label>
     <processMetadataValues>
@@ -220,7 +220,7 @@ Benefits:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Updates Industry field on all Contacts related to an Account. Bulkified and reusable.</description>
     <label>Sub_UpdateContactIndustry</label>
     <processType>AutoLaunchedFlow</processType>
@@ -347,7 +347,7 @@ Benefits:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Updates Opportunity Stages based on Industry. Demonstrates conditional logic in child flows.</description>
     <label>Sub_UpdateOpportunityStages</label>
     <processType>AutoLaunchedFlow</processType>

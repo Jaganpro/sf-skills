@@ -33,7 +33,7 @@ This checklist ensures that Salesforce Flows meet enterprise governance standard
 - [ ] **Description is clear and complete** (one-sentence summary of what flow does)
 - [ ] **Elements have meaningful names** (no "Decision_0162847" default names)
 - [ ] **Variables use type prefixes** (`var` for single, `col` for collection)
-- [ ] **API version is current** (62.0 for Winter '26)
+- [ ] **API version is current** (65.0 for Summer '26)
 
 #### Performance & Bulkification
 - [ ] **No DML inside loops** (CRITICAL - causes bulk failures)

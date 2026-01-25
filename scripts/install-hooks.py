@@ -44,6 +44,11 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/guardrails.py",
                     "timeout": 5000
+                },
+                {
+                    "type": "command",
+                    "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/api-version-check.py",
+                    "timeout": 10000
                 }
             ],
             "_sf_skills": True  # Marker for identification
@@ -121,6 +126,28 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/chain-validator.py",
                     "timeout": 5000
+                }
+            ],
+            "_sf_skills": True
+        }
+    ],
+    "SessionStart": [
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/org-preflight.py",
+                    "timeout": 10000
+                }
+            ],
+            "_sf_skills": True
+        },
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/lsp-prewarm.py",
+                    "timeout": 15000
                 }
             ],
             "_sf_skills": True
@@ -232,18 +259,30 @@ def merge_hooks(existing: Dict[str, Any], new_hooks: Dict[str, Any], verbose: bo
 
         for new_hook in event_hooks:
             # Check if similar hook already exists
-            # Must compare matchers when both are sf-skills hooks
+            # Must compare matchers AND commands when both are sf-skills hooks
             duplicate = False
             for existing_hook in existing_hooks:
                 if is_sf_skills_hook(existing_hook) and is_sf_skills_hook(new_hook):
-                    # Both are sf-skills hooks - compare matchers to detect true duplicate
+                    # Both are sf-skills hooks - compare matchers first
                     existing_matcher = existing_hook.get("matcher", "")
                     new_matcher = new_hook.get("matcher", "")
                     if existing_matcher == new_matcher:
-                        duplicate = True
-                        if verbose:
-                            print_info(f"Skipping duplicate: {event_name} (matcher: {new_matcher})")
-                        break
+                        # Same matcher - now compare commands to detect true duplicate
+                        # Extract commands from nested hooks
+                        existing_cmds = set()
+                        new_cmds = set()
+                        for h in existing_hook.get("hooks", []):
+                            if cmd := h.get("command"):
+                                existing_cmds.add(cmd)
+                        for h in new_hook.get("hooks", []):
+                            if cmd := h.get("command"):
+                                new_cmds.add(cmd)
+                        # Duplicate if same commands (or both have same single command)
+                        if existing_cmds == new_cmds:
+                            duplicate = True
+                            if verbose:
+                                print_info(f"Skipping duplicate: {event_name} (matcher: {new_matcher})")
+                            break
 
             if not duplicate:
                 existing_hooks.append(new_hook)
@@ -291,6 +330,9 @@ def verify_scripts_exist() -> bool:
         PLUGIN_ROOT / "shared/hooks/scripts/auto-approve.py",
         PLUGIN_ROOT / "shared/hooks/scripts/chain-validator.py",
         PLUGIN_ROOT / "shared/hooks/scripts/skill-enforcement.py",
+        PLUGIN_ROOT / "shared/hooks/scripts/org-preflight.py",
+        PLUGIN_ROOT / "shared/hooks/scripts/lsp-prewarm.py",
+        PLUGIN_ROOT / "shared/hooks/scripts/api-version-check.py",
         PLUGIN_ROOT / "shared/hooks/suggest-related-skills.py",
         PLUGIN_ROOT / "shared/hooks/skill-activation-prompt.py",
     ]

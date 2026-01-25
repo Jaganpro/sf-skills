@@ -63,7 +63,7 @@ Parent: RTF_Case_TriageRouter (Decision Hub)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Conditional orchestrator that routes Cases to appropriate subflows based on priority and type.</description>
     <label>RTF_Case_TriageRouter</label>
     <processMetadataValues>
@@ -260,7 +260,7 @@ Parent: RTF_Case_TriageRouter (Decision Hub)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Handles critical case escalation with immediate notifications and special routing.</description>
     <label>Sub_EscalateCriticalCase</label>
     <processType>AutoLaunchedFlow</processType>
@@ -410,7 +410,7 @@ Parent: RTF_Case_TriageRouter (Decision Hub)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Handles high-priority technical cases with Jira integration and senior support assignment.</description>
     <label>Sub_HandleTechnicalCase</label>
     <processType>AutoLaunchedFlow</processType>

@@ -110,7 +110,7 @@ S → Security     │ Enforce permissions, FLS, and data protection
 - sf CLI v2
 - Node.js 18+ (for Jest tests)
 - Target Salesforce org
-- API Version 62.0+ (Winter '26) or 66.0+ (Spring '26)
+- API Version 65.0+ (Winter '26) or 66.0+ (Spring '26)
 
 ## License
 

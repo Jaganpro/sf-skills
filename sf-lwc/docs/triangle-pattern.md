@@ -101,7 +101,7 @@ export default class RecordSelector extends LightningElement {
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Record Selector</masterLabel>
     <description>Custom record selection component for Flow screens</description>

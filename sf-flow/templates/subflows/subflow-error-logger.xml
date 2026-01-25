@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <description>Reusable error logging subflow that captures flow name, record ID, error message, and timestamp. Use this in fault paths to provide structured error observability across all flows.</description>
     <label>Sub_LogError</label>
     <processType>AutoLaunchedFlow</processType>

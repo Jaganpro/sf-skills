@@ -268,7 +268,7 @@ sf org assign permset --name [ObjectName]_Access --target-org [alias]
 **For Generated Metadata**:
 ```
 ✓ Metadata Complete: [MetadataName]
-  Type: [CustomObject/CustomField/Profile/etc.] | API: 62.0
+  Type: [CustomObject/CustomField/Profile/etc.] | API: 65.0
   Location: force-app/main/default/[path]
   Validation: PASSED (Score: XX/120)
 
@@ -292,7 +292,7 @@ Next Steps:
 **Structure & Format** (20 points):
 - Valid XML syntax (-10 if invalid)
 - Correct Salesforce namespace: `http://soap.sforce.com/2006/04/metadata` (-5 if missing)
-- API version present and >= 62.0 (-5 if outdated)
+- API version present and >= 65.0 (-5 if outdated)
 - Correct file path and naming structure (-5 if wrong)
 
 **Naming Conventions** (20 points):
@@ -496,7 +496,7 @@ sf schema generate field --label "My Field" --object Account
 
 **Dependencies**: sf-deploy (optional) for deployment. Install: `/plugin install github:Jaganpro/sf-skills/sf-deploy`
 
-**Notes**: API 62.0 required | Permission Sets over Profiles | Block if score < 72
+**Notes**: API 65.0 required | Permission Sets over Profiles | Block if score < 72
 
 ---
 

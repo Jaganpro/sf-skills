@@ -140,11 +140,11 @@ custom_rules:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: FlowOldApiVersion
-    description: "Flow using API version older than 62.0"
-    message: "Update Flow to API version 62.0 or later for latest features"
+    description: "Flow using API version older than 65.0"
+    message: "Update Flow to API version 65.0 or later for latest features"
     file_extensions:
       - ".flow-meta.xml"
-    regex: /<apiVersion>(4[0-9]|5[0-9]|6[01])\.[0-9]<\/apiVersion>/g
+    regex: /<apiVersion>(4[0-9]|5[0-9]|6[0-4])\.[0-9]<\/apiVersion>/g
     severity: 3
     tags:
       - BestPractices
@@ -210,14 +210,14 @@ custom_rules:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: OldApiVersionMeta
-    description: "Metadata using API version older than 62.0"
-    message: "Update metadata to API version 62.0 or later"
+    description: "Metadata using API version older than 65.0"
+    message: "Update metadata to API version 65.0 or later"
     file_extensions:
       - ".cls-meta.xml"
       - ".trigger-meta.xml"
       - ".component-meta.xml"
       - ".page-meta.xml"
-    regex: /<apiVersion>(4[0-9]|5[0-9]|6[01])\.[0-9]<\/apiVersion>/g
+    regex: /<apiVersion>(4[0-9]|5[0-9]|6[0-4])\.[0-9]<\/apiVersion>/g
     severity: 4
     tags:
       - BestPractices

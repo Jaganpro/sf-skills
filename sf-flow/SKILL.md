@@ -33,7 +33,7 @@ hooks:
 
 # sf-flow: Salesforce Flow Creation and Validation
 
-Expert Salesforce Flow Builder with deep knowledge of best practices, bulkification, and Winter '26 (API 62.0) metadata. Create production-ready, performant, secure, and maintainable flows.
+Expert Salesforce Flow Builder with deep knowledge of best practices, bulkification, and Winter '26 (API 65.0) metadata. Create production-ready, performant, secure, and maintainable flows.
 
 ## 📋 Quick Reference: Validation Script
 
@@ -166,7 +166,7 @@ mkdir -p force-app/main/default/flows
 Write: force-app/main/default/flows/[FlowName].flow-meta.xml
 ```
 
-**Populate template**: Replace placeholders, API version: 62.0
+**Populate template**: Replace placeholders, API Version: 65.0
 
 **CRITICAL Requirements**:
 - Alphabetical XML element ordering at root level
@@ -181,7 +181,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/validate_flow.py force-app/main/defa
 ```
 
 **Validation (STRICT MODE)**:
-- **BLOCK**: XML invalid, missing required fields (apiVersion/label/processType/status), API <62.0, broken refs, DML in loops
+- **BLOCK**: XML invalid, missing required fields (apiVersion/label/processType/status), API <65.0, broken refs, DML in loops
 - **WARN**: Element ordering, deprecated elements, non-zero coords, missing fault paths, unused vars, naming violations
 
 **New v2.0.0 Validations**:
@@ -268,7 +268,7 @@ Quick reference:
 **Completion Summary**:
 ```
 ✓ Flow Creation Complete: [FlowName]
-  Type: [type] | API: 62.0 | Status: [Draft/Active]
+  Type: [type] | API: 65.0 | Status: [Draft/Active]
   Location: force-app/main/default/flows/[FlowName].flow-meta.xml
   Validation: PASSED (Score: XX/110)
   Deployment: Org=[target-org], Job=[job-id]
@@ -308,7 +308,7 @@ Resources: `examples/`, `docs/subflow-library.md`, `docs/orchestration-guide.md`
 | `filterLogic` | Use `and` for multiple filters | Clear filter behavior |
 
 ### Critical Requirements
-- **API 62.0**: Latest features
+- **API 65.0**: Latest features
 - **No DML in Loops**: Collect in loop → DML after loop (causes bulk failures otherwise)
 - **Bulkify**: For RELATED records only - platform handles triggered record batching
 - **Fault Paths**: All DML must have fault connectors
@@ -496,7 +496,7 @@ Call Apex `@InvocableMethod` classes from Flow for complex business logic.
 
 ## Notes
 
-**Dependencies** (optional): sf-deploy, sf-metadata, sf-data | **API**: 62.0 | **Mode**: Strict (warnings block) | Python validators recommended
+**Dependencies** (optional): sf-deploy, sf-metadata, sf-data | **API**: 65.0 | **Mode**: Strict (warnings block) | Python validators recommended
 
 ---
 

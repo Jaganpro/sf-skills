@@ -16,7 +16,7 @@
     create object-specific versions for better type safety.
 -->
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <assignments>
         <name>Set_Success_Message</name>
         <label>Set Success Message</label>

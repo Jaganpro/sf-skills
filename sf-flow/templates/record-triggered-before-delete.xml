@@ -2,7 +2,7 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <!--
     Template: Record-Triggered Flow (Before-Delete) v2.0.0
-    API Version: 62.0+
+    API Version: 65.0+
 
     IMPORTANT: This template follows strict alphabetical element ordering required by Salesforce Metadata API
 
@@ -52,7 +52,7 @@
     ═══════════════════════════════════════════════════════════════════════════════
     -->
 
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
 
     <!-- Assignment: Allow Deletion (Log or Archive First) -->
     <assignments>

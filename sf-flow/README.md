@@ -110,7 +110,7 @@ Always deploy custom objects/fields BEFORE flows that reference them.
 
 - sf CLI v2
 - Target Salesforce org
-- API Version 62.0+ (Winter '26)
+- API Version 65.0+ (Winter '26)
 
 ## License
 

@@ -499,7 +499,7 @@ This generates:
     <fullName>Stripe_Create_Customer</fullName>
     <label>Stripe Create Customer</label>
     <processType>AutoLaunchedFlow</processType>
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <status>Active</status>
 
     <!-- Input Variables -->

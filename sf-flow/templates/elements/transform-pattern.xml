@@ -2,7 +2,7 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <!--
     Template: Transform Element Pattern v1.0.0
-    API Version: 62.0+
+    API Version: 65.0+
 
     ═══════════════════════════════════════════════════════════════════════════════
     ⚠️  IMPORTANT: CREATE TRANSFORM ELEMENTS IN FLOW BUILDER UI
@@ -77,7 +77,7 @@
     ═══════════════════════════════════════════════════════════════════════════════
     -->
 
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
 
     <!--
     ═══════════════════════════════════════════════════════════════════════════════

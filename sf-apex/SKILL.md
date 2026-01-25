@@ -166,7 +166,7 @@ Skill(skill="sf-deploy", args="Proceed with actual deployment to [target-org]")
 **Completion Summary**:
 ```
 ✓ Apex Code Complete: [ClassName]
-  Type: [type] | API: 62.0
+  Type: [type] | API: 65.0
   Location: force-app/main/default/classes/[ClassName].cls
   Test Class: [TestClassName].cls
   Validation: PASSED (Score: XX/150)

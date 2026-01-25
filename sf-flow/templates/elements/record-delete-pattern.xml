@@ -2,7 +2,7 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <!--
     Template: Record Delete (recordDeletes) Patterns v1.0.0
-    API Version: 62.0+
+    API Version: 65.0+
 
     ═══════════════════════════════════════════════════════════════════════════════
     RECORDDELETES ELEMENT OPTIONS
@@ -52,7 +52,7 @@
     ═══════════════════════════════════════════════════════════════════════════════
     -->
 
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
 
     <!--
     ═══════════════════════════════════════════════════════════════════════════════

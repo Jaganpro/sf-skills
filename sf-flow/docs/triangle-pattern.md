@@ -196,7 +196,7 @@ The **Triangle Architecture** is a foundational Salesforce pattern where Flow, L
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>65.0</apiVersion>
     <label>Quote Builder Flow</label>
     <processType>Flow</processType>
     <status>Active</status>

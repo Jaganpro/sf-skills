@@ -332,7 +332,7 @@ Ensure API version matches:
         <members>My_Flow</members>
         <name>Flow</name>
     </types>
-    <version>62.0</version>  <!-- Must match flow's apiVersion -->
+    <version>65.0</version>  <!-- Must match flow's apiVersion -->
 </Package>
 ```
 
