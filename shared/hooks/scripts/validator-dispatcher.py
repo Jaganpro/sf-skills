@@ -79,7 +79,14 @@ VALIDATOR_REGISTRY: List[tuple] = [
         "sf-flow/hooks/scripts/post-tool-validate.py"
     ),
 
-    # LWC JavaScript files (in lwc/ folders)
+    # LWC JavaScript files - LSP syntax validation (in lwc/ folders)
+    (
+        r"/lwc/[^/]+/[^/]+\.js$",
+        "sf-lwc",
+        "sf-lwc/hooks/scripts/lwc-lsp-validate.py"
+    ),
+
+    # LWC JavaScript files - SLDS 2 scoring (in lwc/ folders)
     (
         r"/lwc/[^/]+/[^/]+\.js$",
         "sf-lwc",

@@ -62,6 +62,31 @@ class LSPClient:
         ext = Path(file_path).suffix.lower()
         return EXTENSION_TO_LANGUAGE.get(ext, "apex")
 
+    def _find_project_root(self, file_path: str) -> str:
+        """
+        Find the project root directory by looking for project markers.
+
+        Walks up the directory tree looking for:
+        - sfdx-project.json (Salesforce DX projects)
+        - .git (git repository root)
+        - package.json (Node.js projects)
+
+        Falls back to the file's parent directory if no markers found.
+        """
+        current = Path(file_path).resolve().parent
+
+        # Project markers in order of priority
+        markers = ["sfdx-project.json", ".git", "package.json"]
+
+        while current != current.parent:  # Stop at filesystem root
+            for marker in markers:
+                if (current / marker).exists():
+                    return str(current)
+            current = current.parent
+
+        # Fallback: use file's parent directory
+        return str(Path(file_path).parent)
+
     def _find_wrapper(self, language_id: Optional[str] = None) -> str:
         """Find the LSP wrapper script relative to this module."""
         module_dir = Path(__file__).parent
@@ -172,6 +197,45 @@ class LSPClient:
                 process.stdin.write(header + content_bytes)
                 process.stdin.flush()
 
+            def send_response(req_id: int, result: Any):
+                """Send a JSON-RPC response to the LSP server."""
+                msg = {"jsonrpc": "2.0", "id": req_id, "result": result}
+                content_bytes = json.dumps(msg).encode("utf-8")
+                header = f"Content-Length: {len(content_bytes)}\r\n\r\n".encode("utf-8")
+                process.stdin.write(header + content_bytes)
+                process.stdin.flush()
+
+            def handle_server_request(msg: Dict) -> bool:
+                """
+                Handle requests FROM the server that require a response.
+                Returns True if the message was a request that was handled.
+                """
+                # Server requests have both 'id' and 'method' (no 'result')
+                if "id" in msg and "method" in msg and "result" not in msg:
+                    method = msg.get("method", "")
+                    req_id = msg["id"]
+
+                    if method == "workspace/configuration":
+                        # LWC Language Server asks for TypeScript support config
+                        # Return empty/default config for each requested item
+                        items = msg.get("params", {}).get("items", [])
+                        # Return null (default) for each config item requested
+                        result = [None] * len(items)
+                        send_response(req_id, result)
+                        return True
+
+                    elif method == "client/registerCapability":
+                        # Server wants to register dynamic capabilities
+                        send_response(req_id, None)
+                        return True
+
+                    elif method == "window/workDoneProgress/create":
+                        # Server wants to create a progress indicator
+                        send_response(req_id, None)
+                        return True
+
+                return False
+
             def read_responses(timeout: float = 3.0) -> List[Dict]:
                 """Read LSP responses with Content-Length header parsing."""
                 responses = []
@@ -202,7 +266,11 @@ class LSPClient:
                                 break
                             msg = buffer[msg_start:msg_end].decode("utf-8")
                             try:
-                                responses.append(json.loads(msg))
+                                parsed = json.loads(msg)
+                                # Handle server requests that need responses
+                                if not handle_server_request(parsed):
+                                    # Not a handled request, add to responses
+                                    responses.append(parsed)
                             except json.JSONDecodeError:
                                 pass
                             buffer = buffer[msg_end:]
@@ -210,8 +278,9 @@ class LSPClient:
                 return responses
 
             # Initialize LSP
-            # Note: LWC Language Server requires workspaceFolders (not just rootUri)
-            workspace_root = os.path.dirname(file_path)
+            # Note: LWC Language Server requires workspaceFolders pointing to project root
+            # (where sfdx-project.json lives), not just the file's parent directory
+            workspace_root = self._find_project_root(file_path)
             root_uri = f"file://{workspace_root}"
             init_params = {
                 "processId": os.getpid(),
@@ -226,6 +295,7 @@ class LSPClient:
                     },
                     "workspace": {
                         "workspaceFolders": True,
+                        "configuration": True,  # Support workspace/configuration requests
                     }
                 },
             }
@@ -249,8 +319,9 @@ class LSPClient:
             send_message("textDocument/didOpen", did_open_params)
 
             # Wait for diagnostics (async from server)
+            # LWC Language Server needs more time than Apex LSP
             time.sleep(0.5)
-            responses = read_responses(timeout=3)
+            responses = read_responses(timeout=5)
 
             # Extract diagnostics from responses
             diagnostics = []
