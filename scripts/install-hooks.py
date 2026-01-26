@@ -137,7 +137,8 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
                 {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/org-preflight.py",
-                    "timeout": 10000
+                    "timeout": 30000,  # Longer timeout OK since async doesn't block
+                    "async": True  # Fire-and-forget, writes to ~/.claude/.sf-org-state.json
                 }
             ],
             "_sf_skills": True
@@ -147,7 +148,8 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
                 {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/lsp-prewarm.py",
-                    "timeout": 15000
+                    "timeout": 60000,  # Java LSP can be slow on cold start
+                    "async": True  # Fire-and-forget, spawns LSP servers in background
                 }
             ],
             "_sf_skills": True
