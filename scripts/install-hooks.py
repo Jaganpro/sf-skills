@@ -133,12 +133,25 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
     ],
     "SessionStart": [
         {
+            # MUST run first (synchronous) to create session directory
+            # before async hooks write to it
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/session-init.py",
+                    "timeout": 3000
+                    # No async - runs synchronously to ensure session dir exists
+                }
+            ],
+            "_sf_skills": True
+        },
+        {
             "hooks": [
                 {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/org-preflight.py",
                     "timeout": 30000,  # Longer timeout OK since async doesn't block
-                    "async": True  # Fire-and-forget, writes to ~/.claude/.sf-org-state.json
+                    "async": True  # Fire-and-forget, writes to sessions/{PID}/org-state.json
                 }
             ],
             "_sf_skills": True
@@ -149,7 +162,7 @@ SF_SKILLS_HOOKS: Dict[str, Any] = {
                     "type": "command",
                     "command": f"python3 {PLUGIN_ROOT}/shared/hooks/scripts/lsp-prewarm.py",
                     "timeout": 60000,  # Java LSP can be slow on cold start
-                    "async": True  # Fire-and-forget, spawns LSP servers in background
+                    "async": True  # Fire-and-forget, writes to sessions/{PID}/lsp-state.json
                 }
             ],
             "_sf_skills": True
@@ -166,7 +179,7 @@ def print_banner():
     print("""
 ╔═══════════════════════════════════════════════════════════════╗
 ║           sf-skills Hook Installation Script                  ║
-║                      Version 4.1.0                            ║
+║                      Version 4.2.0                            ║
 ╚═══════════════════════════════════════════════════════════════╝
 """)
 
@@ -410,6 +423,7 @@ def verify_scripts_exist() -> bool:
         PLUGIN_ROOT / "shared/hooks/scripts/auto-approve.py",
         PLUGIN_ROOT / "shared/hooks/scripts/chain-validator.py",
         PLUGIN_ROOT / "shared/hooks/scripts/skill-enforcement.py",
+        PLUGIN_ROOT / "shared/hooks/scripts/session-init.py",
         PLUGIN_ROOT / "shared/hooks/scripts/org-preflight.py",
         PLUGIN_ROOT / "shared/hooks/scripts/lsp-prewarm.py",
         PLUGIN_ROOT / "shared/hooks/scripts/api-version-check.py",

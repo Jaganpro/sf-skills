@@ -26,6 +26,7 @@ Installation:
 """
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -33,8 +34,11 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 
-# State file for status line to read
-STATE_FILE = Path.home() / ".claude" / ".sf-org-state.json"
+# Session directory and state file (PID-keyed for multi-session support)
+# The session directory is created by session-init.py which runs synchronously first
+SESSION_PID = os.getppid()
+SESSION_DIR = Path.home() / ".claude" / "sessions" / str(SESSION_PID)
+STATE_FILE = SESSION_DIR / "org-state.json"
 
 
 def run_sf_command(args: list) -> Tuple[bool, str, str]:

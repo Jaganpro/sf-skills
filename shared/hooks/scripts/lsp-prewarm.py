@@ -43,9 +43,14 @@ from typing import Dict, List, Optional, Tuple
 
 # Configuration
 PID_FILE = Path("/tmp/sf-skills-lsp-pids.json")
-STATE_FILE = Path.home() / ".claude" / ".lsp-prewarm-state.json"
 PREWARM_TIMEOUT = 10  # Max seconds to wait for each server init
 MODULE_DIR = Path(__file__).parent.parent.parent / "lsp-engine"
+
+# Session directory and state file (PID-keyed for multi-session support)
+# The session directory is created by session-init.py which runs synchronously first
+SESSION_PID = os.getppid()
+SESSION_DIR = Path.home() / ".claude" / "sessions" / str(SESSION_PID)
+STATE_FILE = SESSION_DIR / "lsp-state.json"
 
 
 # LSP Server configurations
