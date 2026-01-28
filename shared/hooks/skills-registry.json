@@ -561,6 +561,36 @@
           { "skill": "sf-data", "trigger": "query", "message": "Query permission data from org", "confidence": 1 }
         ]
       }
+    },
+
+    "sf-ai-agentforce-observability": {
+      "keywords": ["session tracing", "stdm", "observability", "agent session", "agentforce analytics", "agent debugging", "data cloud", "parquet", "polars", "session extraction", "agent telemetry"],
+      "intentPatterns": [
+        "extract.*session", "debug.*agent.*session", "analyze.*agentforce",
+        "session.*tracing", "agent.*observability", "agent.*analytics",
+        "extract.*stdm", "session.*data", "agent.*telemetry"
+      ],
+      "filePatterns": ["\\.parquet$", "stdm_data/"],
+      "contentTriggers": {
+        "ssot__AIAgentSession__dlm": { "suggests": "sf-ai-agentscript", "message": "Review agent configuration based on session analysis" },
+        "Escalated|Failed": { "suggests": "sf-ai-agentforce-testing", "message": "Create tests to reproduce failure patterns" }
+      },
+      "priority": "medium",
+      "description": "Extract and analyze Agentforce session tracing data from Data Cloud",
+      "orchestration": {
+        "prerequisites": [
+          { "skill": "sf-connected-apps", "condition": "always", "message": "JWT Bearer authentication required for Data Cloud Query API", "confidence": 3 }
+        ],
+        "next_steps": [
+          { "skill": "sf-ai-agentscript", "condition": "issues_found", "message": "Fix agent issues identified in session analysis", "confidence": 2 },
+          { "skill": "sf-ai-agentforce-testing", "condition": "patterns_found", "message": "Create tests based on observed patterns", "confidence": 2 }
+        ],
+        "commonly_with": [
+          { "skill": "sf-ai-agentscript", "trigger": "debug|issue|failure", "message": "Debug agent issues found in traces", "confidence": 2 },
+          { "skill": "sf-ai-agentforce-testing", "trigger": "pattern|test", "message": "Create test cases from observed patterns", "confidence": 2 },
+          { "skill": "sf-diagram-mermaid", "trigger": "visualize|diagram", "message": "Create session flow diagrams", "confidence": 1 }
+        ]
+      }
     }
   },
 
@@ -579,6 +609,11 @@
       "description": "Agentforce agent development - prerequisites to testing",
       "trigger_phrases": ["build agent", "create agentforce", "agentforce agent", "copilot"],
       "order": ["sf-metadata", "sf-apex", "sf-flow", "sf-deploy", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
+    },
+    "agentforce_observability": {
+      "description": "Agentforce agent monitoring and debugging - extract, analyze, fix",
+      "trigger_phrases": ["debug agent", "agent sessions", "session tracing", "agent analytics", "agent observability"],
+      "order": ["sf-ai-agentforce-observability", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
     },
     "triangle": {
       "description": "Flow-LWC-Apex integration - the classic triangle pattern",
