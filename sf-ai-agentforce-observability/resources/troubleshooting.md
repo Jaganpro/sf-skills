@@ -320,6 +320,111 @@ Error: Unexpected token at position X
 
 ---
 
+## Lessons Learned (Live Deployment - Jan 2026)
+
+Critical discoveries from live testing against Vivint-DevInt org.
+
+### API Version: v64.0 Required
+
+**Problem:** Documentation referenced v60.0, but Data Cloud Query SQL API requires v64.0.
+
+**Fix:**
+```python
+# Wrong (v60.0)
+url = f"{instance_url}/services/data/v60.0/ssot/querybuilder/execute"
+
+# Correct (v64.0)
+url = f"{instance_url}/services/data/v64.0/ssot/query-sql"
+```
+
+### Field Naming: AiAgent (lowercase 'i')
+
+**Problem:** Documentation shows `AIAgent` but actual schema uses `AiAgent`.
+
+**Wrong:**
+```sql
+SELECT ssot__AIAgentSessionId__c FROM ssot__AIAgentInteraction__dlm
+```
+
+**Correct:**
+```sql
+SELECT ssot__AiAgentSessionId__c FROM ssot__AIAgentInteraction__dlm
+```
+
+**Affected fields:** All FK references in Interaction, Step, and Moment DMOs.
+
+### AIAgentMoment Links to Sessions, Not Interactions
+
+**Problem:** Documentation implied Moments link to Interactions via `AIAgentInteractionId__c`.
+
+**Reality:** AIAgentMoment links directly to Sessions via `ssot__AiAgentSessionId__c`.
+
+**Correct Schema:**
+```
+AIAgentSession → AIAgentInteraction → AIAgentInteractionStep
+       ↓
+AIAgentMoment (links to session, not interaction)
+```
+
+### Response Format: Array of Arrays
+
+**Problem:** Expected array of objects, but v64.0 returns array of arrays.
+
+**v64.0 Response:**
+```json
+{
+  "metadata": [{"name": "ssot__Id__c"}, {"name": "ssot__Name__c"}],
+  "data": [
+    ["019abc...", "Session 1"],
+    ["019def...", "Session 2"]
+  ]
+}
+```
+
+**Fix:** Convert using metadata column names:
+```python
+column_names = [col["name"] for col in metadata]
+records = [dict(zip(column_names, row)) for row in data]
+```
+
+### External Client App Setup URL
+
+**Problem:** Documentation had wrong Setup URL.
+
+**Wrong:** `/lightning/setup/ExternalClientAppManager/home`
+**Correct:** `/lightning/setup/ManageExternalClientApplication/home`
+
+### Incremental Extraction Overwrites Data
+
+**Problem:** `extract-incremental` was overwriting Parquet files instead of appending.
+
+**Symptoms:**
+- Running incremental after full extract → lost all historical data
+- Session count dropped from 447 to 17
+
+**Fix:** Added `append` + `dedupe_key` parameters to `query_to_parquet()`:
+```python
+# Now correctly reads existing, appends new, dedupes by ID
+result = client.query_to_parquet(
+    sql, output_path,
+    append=True,
+    dedupe_key="ssot__Id__c"
+)
+```
+
+### Session End Types All NOT_SET
+
+**Observation:** 100% of sessions had `ssot__AiAgentSessionEndType__c = 'NOT_SET'`.
+
+**Possible causes:**
+- Sessions not explicitly closed
+- Agent Builder sessions don't track end types
+- Potential data quality issue in source org
+
+**Recommendation:** Investigate session closure patterns in agent configuration.
+
+---
+
 ## Getting Help
 
 ### Debug Mode
