@@ -49,6 +49,12 @@ KEYWORD_SCORE = 2  # Score for keyword match
 INTENT_PATTERN_SCORE = 3  # Score for intent pattern match
 FILE_PATTERN_SCORE = 2  # Score for file pattern match
 
+# Operations that should run in background due to long execution time
+SLOW_OPERATIONS = {
+    "sf-testing",      # sf apex run test (2-15 min)
+    "sf-deploy",       # sf project deploy (1-10 min) - only when not dry-run
+}
+
 # Script directory for loading registry
 SCRIPT_DIR = Path(__file__).parent
 REGISTRY_FILE = SCRIPT_DIR / "skills-registry.json"
@@ -172,6 +178,93 @@ def detect_chain(prompt: str, registry: dict) -> Optional[dict]:
                 }
 
     return None
+
+
+def generate_task_directive(chain: dict, registry: dict) -> str:
+    """
+    Generate a TASK_ORCHESTRATION directive for Claude to execute.
+
+    This function creates a structured instruction block that tells Claude
+    to automatically create tasks with dependencies based on the detected chain.
+    """
+    chain_name = chain["name"]
+    chain_order = chain["order"]
+    skills_config = registry.get("skills", {})
+    background_ops = registry.get("background_operations", {})
+
+    # Build tasks with dependencies from orchestration rules
+    tasks = []
+    for i, skill in enumerate(chain_order):
+        skill_config = skills_config.get(skill, {})
+        orchestration = skill_config.get("orchestration", {})
+        prerequisites = [p["skill"] for p in orchestration.get("prerequisites", [])]
+
+        # Map prerequisite skills to task indices (only those earlier in chain)
+        blocked_by = []
+        for p in prerequisites:
+            if p in chain_order[:i]:
+                blocked_by.append(f"task-{chain_order.index(p) + 1}")
+
+        # If no explicit prerequisites but not first, block on previous task
+        if not blocked_by and i > 0:
+            blocked_by.append(f"task-{i}")
+
+        # Detect slow operations for background execution
+        is_background = skill in SLOW_OPERATIONS
+        # Also check background_operations config from registry
+        if skill in background_ops:
+            bg_config = background_ops[skill]
+            if bg_config.get("always_background", False):
+                is_background = True
+
+        tasks.append({
+            "id": f"task-{i + 1}",
+            "skill": skill,
+            "blocked_by": blocked_by,
+            "background": is_background,
+            "description": skill_config.get("description", "")[:60]
+        })
+
+    return format_task_directive(chain_name, chain.get("description", ""), tasks)
+
+
+def format_task_directive(chain_name: str, chain_description: str, tasks: list) -> str:
+    """Format the task directive as a Claude-interpretable instruction block."""
+    lines = [
+        "",
+        "╔══════════════════════════════════════════════════════╗",
+        "║  🎯 TASK_ORCHESTRATION DIRECTIVE                     ║",
+        "╠══════════════════════════════════════════════════════╣",
+        f"║  Chain: {chain_name:<44}║",
+        "║  Action: AUTO-CREATE tasks with dependencies         ║",
+        "╚══════════════════════════════════════════════════════╝",
+        "",
+        f"📋 {chain_description}",
+        "",
+        "Claude: Execute the following automatically:",
+        ""
+    ]
+
+    for task in tasks:
+        blocked = ""
+        if task['blocked_by']:
+            blocked = f", blockedBy: {task['blocked_by']}"
+        bg_marker = " (BACKGROUND)" if task['background'] else ""
+        desc_truncated = task['description'][:50] if task['description'] else "Execute skill"
+        lines.append(f"  TaskCreate(\"{task['skill']}: {desc_truncated}\"{blocked}){bg_marker}")
+
+    lines.extend([
+        "",
+        "┌──────────────────────────────────────────────────────┐",
+        "│ ⚡ EXECUTION RULES:                                  │",
+        "│ • Create ALL tasks above with TaskCreate             │",
+        "│ • Set blockedBy relationships as specified           │",
+        "│ • For (BACKGROUND) tasks, use run_in_background=true │",
+        "│ • Invoke first skill (/{}) automatically       │".format(tasks[0]['skill'] if tasks else "skill"),
+        "└──────────────────────────────────────────────────────┘",
+    ])
+
+    return "\n".join(lines)
 
 
 def detect_diagram_intent(prompt: str) -> dict:
@@ -320,7 +413,8 @@ def find_matching_skills(prompt: str, active_files: list, registry: dict) -> lis
     return matches[:MAX_SUGGESTIONS]
 
 
-def format_suggestions(matches: list, chain: Optional[dict], registry: dict) -> str:
+def format_suggestions(matches: list, chain: Optional[dict], registry: dict,
+                       include_task_directive: bool = False) -> str:
     """Format skill suggestions as a user-friendly message."""
     if not matches and not chain:
         return ""
@@ -369,6 +463,11 @@ def format_suggestions(matches: list, chain: Optional[dict], registry: dict) -> 
     lines.append(f"{'─' * 54}")
     lines.append("💡 Invoke with /skill-name or ask Claude to use it")
     lines.append(f"{'═' * 54}")
+
+    # If chain detected, append the task orchestration directive
+    if chain and include_task_directive:
+        task_directive = generate_task_directive(chain, registry)
+        lines.append(task_directive)
 
     return "\n".join(lines)
 
@@ -475,7 +574,8 @@ def main():
         sys.exit(0)
 
     # Format and output suggestions
-    message = format_suggestions(matches, chain, registry)
+    # Include task directive when a chain is detected for automatic orchestration
+    message = format_suggestions(matches, chain, registry, include_task_directive=bool(chain))
 
     output = {
         "output_message": message

@@ -1,6 +1,29 @@
 {
-  "version": "4.0.0",
-  "description": "Unified skills registry - single source of truth for skill discovery, orchestration, relationships, guardrails, and auto-approval policies",
+  "version": "4.1.0",
+  "description": "Unified skills registry - single source of truth for skill discovery, orchestration, relationships, guardrails, auto-approval policies, and background operation rules",
+
+  "background_operations": {
+    "sf-testing": {
+      "commands": ["sf apex run test", "sf apex test run"],
+      "typical_duration": "2-15 minutes",
+      "always_background": true,
+      "reason": "Apex tests can run for extended periods depending on org size and test volume"
+    },
+    "sf-deploy": {
+      "commands": ["sf project deploy start", "sf org create scratch", "sf org create sandbox"],
+      "typical_duration": "1-10 minutes",
+      "background_if_no_wait": true,
+      "exclude_patterns": ["--dry-run", "--validate-only", "--check-only"],
+      "reason": "Full deployments and org creation are long-running operations"
+    },
+    "sf-data": {
+      "commands": ["sf data import tree", "sf data import bulk", "sf data upsert bulk"],
+      "typical_duration": "5-30 minutes",
+      "background_if_large": true,
+      "large_threshold": "1000 records",
+      "reason": "Large data imports can take significant time"
+    }
+  },
 
   "guardrails": {
     "dangerous_dml": {

@@ -175,13 +175,42 @@ def get_skipped_skills(current_skill: str, chain_order: List[str], completed: Li
         return []
 
 
+def format_task_completion_directive(current_skill: str, next_skills: List[str]) -> str:
+    """
+    Format task completion instruction for Claude.
+
+    This directive tells Claude to mark the current task as completed
+    and automatically invoke the next unblocked skill in the chain.
+    """
+    lines = [
+        "",
+        "╔══════════════════════════════════════════════════════╗",
+        "║  ✅ TASK_COMPLETION DIRECTIVE                        ║",
+        "╚══════════════════════════════════════════════════════╝",
+        "",
+        f"Claude: Mark current task ({current_skill}) as completed:",
+        f"  TaskUpdate(taskId: find by skill '{current_skill}', status: 'completed')",
+        ""
+    ]
+
+    if next_skills:
+        lines.append("Next unblocked task(s) - invoke automatically:")
+        for skill in next_skills:
+            lines.append(f"  → /{skill}")
+    else:
+        lines.append("🎉 All chain tasks complete!")
+
+    return "\n".join(lines)
+
+
 def format_chain_validation(
     current_skill: str,
     chain: Optional[dict],
     next_skills: List[str],
     skipped_skills: List[str],
     completed_skills: List[str],
-    registry: dict
+    registry: dict,
+    include_completion_directive: bool = True
 ) -> str:
     """Format chain validation output."""
 
@@ -254,6 +283,11 @@ def format_chain_validation(
     lines.append(f"{'─' * 54}")
     lines.append("💡 Invoke next skill with /skill-name")
     lines.append(f"{'═' * 54}\n")
+
+    # Append task completion directive for Claude's automatic task management
+    if include_completion_directive:
+        completion_directive = format_task_completion_directive(current_skill, next_skills)
+        lines.append(completion_directive)
 
     return "\n".join(lines)
 
