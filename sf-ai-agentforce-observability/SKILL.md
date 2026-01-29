@@ -84,17 +84,26 @@ Before extracting session data, verify:
 ### Auth Setup (via sf-connected-apps)
 
 ```bash
-# 1. Generate certificate
+# 1. Create key directory
+mkdir -p ~/.sf/jwt
+
+# 2. Generate certificate (naming convention: {org}-agentforce-observability)
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ~/.sf/jwt/myorg.key \
-  -out ~/.sf/jwt/myorg.crt \
-  -subj "/CN=DataCloudAuth"
+  -keyout ~/.sf/jwt/myorg-agentforce-observability.key \
+  -out ~/.sf/jwt/myorg-agentforce-observability.crt \
+  -subj "/CN=AgentforceObservability/O=MyOrg"
 
-# 2. Create External Client App (use sf-connected-apps skill)
-Skill(skill="sf-connected-apps", args="Create ECA with JWT Bearer for Data Cloud")
+# 3. Secure the private key
+chmod 600 ~/.sf/jwt/myorg-agentforce-observability.key
 
-# Required scopes: cdp_query_api, cdp_profile_api
+# 4. Create External Client App in Salesforce (see docs/auth-setup.md)
+# Required scopes: cdp_query_api, refresh_token/offline_access
 ```
+
+**Key Path Resolution Order:**
+1. Explicit `--key-path` argument
+2. App-specific: `~/.sf/jwt/{org}-agentforce-observability.key`
+3. Generic fallback: `~/.sf/jwt/{org}.key`
 
 See [docs/auth-setup.md](docs/auth-setup.md) for detailed instructions.
 
@@ -274,6 +283,8 @@ Based on analysis findings:
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--org` | Target org alias | Required |
+| `--consumer-key` | ECA consumer key | `$SF_CONSUMER_KEY` env var |
+| `--key-path` | JWT private key path | `~/.sf/jwt/{org}-agentforce-observability.key` |
 | `--days` | Last N days | 7 |
 | `--since` | Start date (YYYY-MM-DD) | - |
 | `--until` | End date (YYYY-MM-DD) | Today |

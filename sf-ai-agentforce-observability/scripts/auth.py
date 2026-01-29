@@ -8,10 +8,24 @@ Prerequisites (via sf-connected-apps skill):
 1. Generate certificate: openssl req -x509 -sha256 -nodes ...
 2. Create External Client App with JWT Bearer flow
 3. Upload certificate to Salesforce
-4. Store private key at ~/.sf/jwt/{org_alias}.key
+4. Store private key at ~/.sf/jwt/{org_alias}-agentforce-observability.key
+
+Key Path Resolution (in order):
+1. Explicit key_path parameter
+2. App-specific: ~/.sf/jwt/{org_alias}-agentforce-observability.key
+3. Generic fallback: ~/.sf/jwt/{org_alias}.key
 
 Usage:
+    # With app-specific key (recommended)
     auth = DataCloudAuth(org_alias="myorg", consumer_key="3MVG9...")
+
+    # With explicit key path
+    auth = DataCloudAuth(
+        org_alias="myorg",
+        consumer_key="3MVG9...",
+        key_path=Path("~/.sf/jwt/custom.key").expanduser()
+    )
+
     token = auth.get_token()
     # Use token for Data Cloud API requests
 """
@@ -85,9 +99,21 @@ class DataCloudAuth:
     _org_info: Optional[OrgInfo] = field(default=None, repr=False)
 
     def __post_init__(self):
-        """Initialize key path if not provided."""
+        """Initialize key path if not provided.
+
+        Key path resolution order:
+        1. Explicit key_path parameter (already set)
+        2. App-specific: ~/.sf/jwt/{org_alias}-agentforce-observability.key
+        3. Generic fallback: ~/.sf/jwt/{org_alias}.key
+        """
         if self.key_path is None:
-            self.key_path = DEFAULT_KEY_DIR / f"{self.org_alias}.key"
+            # Try app-specific key first
+            app_specific_key = DEFAULT_KEY_DIR / f"{self.org_alias}-agentforce-observability.key"
+            if app_specific_key.exists():
+                self.key_path = app_specific_key
+            else:
+                # Fall back to generic org key
+                self.key_path = DEFAULT_KEY_DIR / f"{self.org_alias}.key"
 
     @property
     def org_info(self) -> OrgInfo:

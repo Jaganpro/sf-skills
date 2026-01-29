@@ -1,81 +1,142 @@
 # Authentication Setup
 
-This skill uses JWT Bearer authentication to access the Data Cloud Query API. The setup process leverages the **sf-connected-apps** skill for External Client App (ECA) configuration.
+This skill uses JWT Bearer authentication to access the Data Cloud Query API. Authentication is configured via an **External Client App (ECA)** in Salesforce.
 
 ## Prerequisites
 
 1. **Salesforce CLI** installed and authenticated to your org
-2. **sf-connected-apps** skill available (for ECA templates)
-3. **OpenSSL** for certificate generation
+2. **OpenSSL** for certificate generation
+3. **Data Cloud** enabled in your org
+4. **System Administrator** profile (or appropriate permissions for ECA setup)
 
 ---
 
-## Quick Setup
+## Quick Setup (5 Steps)
 
-### Step 1: Generate Certificate
+### Step 1: Generate JWT Certificate
 
 ```bash
 # Create directory for JWT keys
 mkdir -p ~/.sf/jwt
 
 # Generate private key and self-signed certificate (valid 1 year)
-openssl req -x509 -sha256 -nodes \
+# Naming convention: {org_alias}-agentforce-observability.key
+openssl req -x509 -sha256 -nodes -days 365 \
     -newkey rsa:2048 \
-    -days 365 \
-    -keyout ~/.sf/jwt/myorg.key \
-    -out ~/.sf/jwt/myorg.crt \
-    -subj "/CN=Data Cloud STDM Extractor/O=My Company"
+    -keyout ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key \
+    -out ~/.sf/jwt/Vivint-DevInt-agentforce-observability.crt \
+    -subj "/CN=AgentforceObservability/O=Vivint"
+
+# Secure the private key (required - Salesforce rejects world-readable keys)
+chmod 600 ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key
 ```
 
 ### Step 2: Create External Client App
 
-Use the **sf-connected-apps** skill to create an ECA with JWT Bearer flow:
+In Salesforce Setup:
 
-```
-/sf-connected-apps create-eca jwt-bearer --org myorg
-```
+1. **Setup** → **External Client App Manager** → **New External Client App**
+2. Fill in the basic details:
 
-Or manually create in Salesforce Setup:
+| Field | Value |
+|-------|-------|
+| Name | `Agentforce Observability` |
+| API Name | `Agentforce_Observability` |
+| Description | `JWT Bearer auth for Agentforce STDM extraction via Claude Code` |
+| Distribution State | `Local` |
 
-1. **Setup** → **App Manager** → **New Connected App**
-2. Enable OAuth Settings:
-   - **Callback URL**: `https://login.salesforce.com/services/oauth2/callback`
-   - **Use digital signatures**: ✅ Upload `~/.sf/jwt/myorg.crt`
-   - **Selected OAuth Scopes**:
-     - `cdp_query_api` (Data Cloud Query API)
-     - `cdp_profile_api` (Data Cloud Profile API)
-     - `refresh_token, offline_access`
+3. Click **Save**
 
-### Step 3: Configure Policies
+### Step 3: Configure OAuth Settings
 
-1. **Manage** → **Edit Policies**:
-   - **Permitted Users**: Admin approved users are pre-authorized
-   - **IP Relaxation**: Relax IP restrictions
+In the ECA → **OAuth Settings** tab:
 
-2. **Manage Profiles** or **Manage Permission Sets**:
-   - Add your user's profile or a permission set
+| Setting | Value |
+|---------|-------|
+| Enable OAuth | ✅ Checked |
+| Callback URL | `https://login.salesforce.com/services/oauth2/callback` |
+| Selected OAuth Scopes | `cdp_query_api`, `refresh_token, offline_access` |
+| Require PKCE | ❌ Unchecked (not needed for JWT Bearer) |
+| Enable Client Credentials Flow | ❌ Optional |
 
-### Step 4: Get Consumer Key
+**Upload Certificate:**
+1. Check **Use digital signatures**
+2. Click **Choose File**
+3. Upload `~/.sf/jwt/{org}-agentforce-observability.crt`
+4. Click **Save**
 
-1. **View** the Connected App
+### Step 4: Configure App Policies
+
+In the ECA → **Policies** tab:
+
+| Setting | Value |
+|---------|-------|
+| Permitted Users | **Admin approved users are pre-authorized** |
+| IP Relaxation | Relax IP restrictions (for CLI usage) |
+
+**Add Your User:**
+1. Click **Manage** → **Manage Profiles** or **Manage Permission Sets**
+2. Add your user's profile or an appropriate permission set
+3. Click **Save**
+
+### Step 5: Get Consumer Key & Test
+
+1. Go to ECA → **OAuth Settings** tab
 2. Copy the **Consumer Key** (starts with `3MVG9...`)
-3. Set environment variable:
+3. Test authentication:
 
 ```bash
+# Option 1: Pass consumer key directly
+python3 scripts/cli.py test-auth \
+    --org Vivint-DevInt \
+    --consumer-key "3MVG9..."
+
+# Option 2: Use environment variable
 export SF_CONSUMER_KEY="3MVG9..."
+python3 scripts/cli.py test-auth --org Vivint-DevInt
 ```
 
-### Step 5: Test Authentication
+**Expected output:**
+```
+Testing Authentication
+Org: Vivint-DevInt
+Key: /Users/you/.sf/jwt/Vivint-DevInt-agentforce-observability.key
+
+Getting org info...
+Instance: https://vivint--devint.sandbox.my.salesforce.com
+Username: your.user@vivint.com.devint
+Sandbox: True
+
+Testing token generation...
+✓ Token generated
+
+Testing Data Cloud access...
+✓ Data Cloud accessible
+
+Authentication successful!
+```
+
+---
+
+## Key Path Resolution
+
+The CLI resolves the private key path in this order:
+
+1. **Explicit `--key-path`** argument (highest priority)
+2. **App-specific key**: `~/.sf/jwt/{org_alias}-agentforce-observability.key`
+3. **Generic org key**: `~/.sf/jwt/{org_alias}.key` (fallback)
+
+### Examples
 
 ```bash
-stdm-extract test-auth --org myorg
-```
+# Uses app-specific key automatically
+python3 scripts/cli.py test-auth --org Vivint-DevInt --consumer-key "..."
+# → Resolves to: ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key
 
-Expected output:
-```
-✅ Authentication successful
-   Instance URL: https://myorg.my.salesforce.com
-   Token valid for: 3599 seconds
+# Explicit key path (overrides all defaults)
+python3 scripts/cli.py test-auth --org Vivint-DevInt \
+    --consumer-key "..." \
+    --key-path ~/.sf/jwt/custom-key.key
 ```
 
 ---
@@ -84,20 +145,19 @@ Expected output:
 
 | File | Location | Description |
 |------|----------|-------------|
-| Private Key | `~/.sf/jwt/{org_alias}.key` | RSA private key for JWT signing |
-| Certificate | `~/.sf/jwt/{org_alias}.crt` | X.509 certificate uploaded to Salesforce |
-| Consumer Key | `$SF_CONSUMER_KEY` | Environment variable or CLI option |
+| Private Key | `~/.sf/jwt/{org}-agentforce-observability.key` | RSA private key (chmod 600) |
+| Certificate | `~/.sf/jwt/{org}-agentforce-observability.crt` | X.509 cert uploaded to Salesforce |
+| Consumer Key | `$SF_CONSUMER_KEY` or `--consumer-key` | From ECA OAuth Settings |
 
 ---
 
 ## Required OAuth Scopes
 
-| Scope | Purpose |
-|-------|---------|
-| `cdp_query_api` | Execute Data Cloud SQL queries |
-| `cdp_profile_api` | Access profile and DMO metadata |
-| `refresh_token` | Token refresh capability |
-| `offline_access` | Server-to-server access |
+| Scope | Purpose | Required |
+|-------|---------|----------|
+| `cdp_query_api` | Execute Data Cloud SQL queries | ✅ Yes |
+| `refresh_token, offline_access` | Server-to-server access | ✅ Yes |
+| `cdp_profile_api` | Access profile and DMO metadata | Optional |
 
 ---
 
@@ -109,14 +169,18 @@ Expected output:
 RuntimeError: Token exchange failed: invalid_grant
 ```
 
-**Causes:**
-1. Certificate mismatch - re-upload certificate to Salesforce
-2. Expired certificate - regenerate with new validity period
-3. User not authorized - assign to Connected App
+**Causes & Fixes:**
 
-**Verify certificate:**
+| Cause | Fix |
+|-------|-----|
+| Certificate mismatch | Re-upload `.crt` file to ECA |
+| Expired certificate | Regenerate with `openssl` (see Step 1) |
+| User not authorized | Add user to ECA policies (see Step 4) |
+| Wrong login URL | Verify sandbox detection is working |
+
+**Verify certificate expiry:**
 ```bash
-openssl x509 -enddate -noout -in ~/.sf/jwt/myorg.crt
+openssl x509 -enddate -noout -in ~/.sf/jwt/Vivint-DevInt-agentforce-observability.crt
 ```
 
 ### 403 Forbidden
@@ -125,38 +189,74 @@ openssl x509 -enddate -noout -in ~/.sf/jwt/myorg.crt
 RuntimeError: Access denied: Ensure ECA has cdp_query_api scope
 ```
 
-**Solution:** Add `cdp_query_api` and `cdp_profile_api` scopes to the Connected App.
+**Fix:** Add `cdp_query_api` scope to the ECA OAuth Settings.
 
-### User Not Authorized
+### Key Not Found
 
-Ensure your user is either:
-- Assigned to a Profile with access to the Connected App, OR
-- Assigned to a Permission Set with Connected App access
+```
+FileNotFoundError: Private key not found at ~/.sf/jwt/myorg.key
+```
+
+**Causes:**
+1. Key file doesn't exist → Generate with Step 1
+2. Wrong org alias → Check `sf org list` for correct alias
+3. Using old naming convention → Rename to `{org}-agentforce-observability.key`
+
+### Permission Denied on Key
+
+```
+PermissionError: [Errno 13] Permission denied: '~/.sf/jwt/...'
+```
+
+**Fix:**
+```bash
+chmod 600 ~/.sf/jwt/*.key
+```
 
 ---
 
 ## Sandbox vs Production
 
-For **sandbox** orgs, use the sandbox login URL:
+The skill automatically detects sandbox orgs:
 
-1. The skill automatically detects sandbox from `sf org display --json`
-2. Token exchange uses `https://test.salesforce.com` for sandboxes
+1. Reads `isSandbox` from `sf org display --json`
+2. Uses `https://test.salesforce.com` for token exchange (sandboxes)
+3. Uses `https://login.salesforce.com` for production
 
-No additional configuration needed - the auth module handles this automatically.
+No additional configuration needed.
 
 ---
 
 ## Security Best Practices
 
-1. **Protect private keys**: Set `chmod 600 ~/.sf/jwt/*.key`
-2. **Rotate certificates**: Regenerate annually before expiration
-3. **Use separate ECAs**: One per org/environment
-4. **Audit access**: Review Connected App usage in Setup → Security → Connected Apps OAuth Usage
+1. **Protect private keys**: Always `chmod 600 ~/.sf/jwt/*.key`
+2. **Rotate certificates annually**: Regenerate before expiration
+3. **Use separate ECAs**: One per org/environment for isolation
+4. **Never commit keys**: Add `*.key` to `.gitignore`
+5. **Audit access**: Review ECA usage in Setup → Security → Connected Apps OAuth Usage
+
+---
+
+## Environment Variables
+
+For automation/CI, set these environment variables:
+
+```bash
+# Consumer key (org-specific takes priority)
+export SF_VIVINT_DEVINT_CONSUMER_KEY="3MVG9..."
+# or generic fallback
+export SF_CONSUMER_KEY="3MVG9..."
+```
+
+The CLI checks in this order:
+1. `--consumer-key` argument
+2. `SF_{ORG_ALIAS}_CONSUMER_KEY` (uppercase, hyphens to underscores)
+3. `SF_CONSUMER_KEY`
 
 ---
 
 ## See Also
 
-- [sf-connected-apps skill](../../sf-connected-apps/SKILL.md) - Detailed ECA setup
-- [CLI Reference](cli-reference.md) - Command options
+- [sf-connected-apps skill](../../sf-connected-apps/SKILL.md) - General ECA patterns
+- [CLI Reference](cli-reference.md) - All command options
 - [Troubleshooting](../resources/troubleshooting.md) - More error solutions

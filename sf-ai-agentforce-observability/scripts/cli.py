@@ -35,16 +35,38 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 console = Console()
 
 
-def get_auth(org_alias: str, consumer_key: Optional[str] = None):
-    """Get authentication for the specified org."""
+def get_auth(org_alias: str, consumer_key: Optional[str] = None, key_path: Optional[str] = None):
+    """Get authentication for the specified org.
+
+    Args:
+        org_alias: Salesforce org alias from sf CLI
+        consumer_key: OAuth consumer key (optional, can use env var)
+        key_path: Explicit path to JWT private key (optional)
+
+    Key path resolution (in order):
+    1. Explicit key_path argument
+    2. App-specific: ~/.sf/jwt/{org_alias}-agentforce-observability.key
+    3. Generic fallback: ~/.sf/jwt/{org_alias}.key
+    """
     from scripts.auth import DataCloudAuth, get_auth_from_env
 
+    # Convert key_path to Path if provided
+    resolved_key_path = Path(key_path).expanduser() if key_path else None
+
     if consumer_key:
-        return DataCloudAuth(org_alias=org_alias, consumer_key=consumer_key)
+        return DataCloudAuth(
+            org_alias=org_alias,
+            consumer_key=consumer_key,
+            key_path=resolved_key_path
+        )
 
     # Try environment variable
     try:
-        return get_auth_from_env(org_alias)
+        auth = get_auth_from_env(org_alias)
+        # Override key_path if explicitly provided
+        if resolved_key_path:
+            auth.key_path = resolved_key_path
+        return auth
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         console.print("\nTo configure authentication:")
@@ -67,7 +89,8 @@ def cli():
 
 @cli.command()
 @click.option("--org", required=True, help="Salesforce org alias")
-@click.option("--consumer-key", help="Connected App consumer key")
+@click.option("--consumer-key", help="External Client App consumer key")
+@click.option("--key-path", type=click.Path(), help="Path to JWT private key (default: ~/.sf/jwt/{org}-agentforce-observability.key)")
 @click.option("--days", default=7, help="Extract last N days (default: 7)")
 @click.option("--since", type=click.DateTime(), help="Start date (YYYY-MM-DD)")
 @click.option("--until", type=click.DateTime(), help="End date (YYYY-MM-DD)")
@@ -78,6 +101,7 @@ def cli():
 def extract(
     org: str,
     consumer_key: Optional[str],
+    key_path: Optional[str],
     days: int,
     since: Optional[datetime],
     until: Optional[datetime],
@@ -116,7 +140,7 @@ def extract(
     end_date = until or datetime.utcnow()
 
     # Get authentication
-    auth = get_auth(org, consumer_key)
+    auth = get_auth(org, consumer_key, key_path)
 
     console.print(f"\n[bold cyan]📊 STDM Extraction[/bold cyan]")
     console.print(f"Org: [cyan]{org}[/cyan]")
@@ -162,13 +186,15 @@ def extract(
 
 @cli.command("extract-tree")
 @click.option("--org", required=True, help="Salesforce org alias")
-@click.option("--consumer-key", help="Connected App consumer key")
+@click.option("--consumer-key", help="External Client App consumer key")
+@click.option("--key-path", type=click.Path(), help="Path to JWT private key")
 @click.option("--session-id", required=True, multiple=True, help="Session ID(s) to extract")
 @click.option("--output", type=click.Path(), default="./stdm_debug", help="Output directory")
 @click.option("--verbose", is_flag=True, help="Show detailed progress")
 def extract_tree(
     org: str,
     consumer_key: Optional[str],
+    key_path: Optional[str],
     session_id: tuple,
     output: str,
     verbose: bool,
@@ -190,7 +216,7 @@ def extract_tree(
     from scripts.datacloud_client import DataCloudClient
     from scripts.extractor import STDMExtractor
 
-    auth = get_auth(org, consumer_key)
+    auth = get_auth(org, consumer_key, key_path)
 
     console.print(f"\n[bold cyan]📊 Session Tree Extraction[/bold cyan]")
     console.print(f"Sessions: {len(session_id)}")
@@ -219,13 +245,15 @@ def extract_tree(
 
 @cli.command("extract-incremental")
 @click.option("--org", required=True, help="Salesforce org alias")
-@click.option("--consumer-key", help="Connected App consumer key")
+@click.option("--consumer-key", help="External Client App consumer key")
+@click.option("--key-path", type=click.Path(), help="Path to JWT private key")
 @click.option("--agent", multiple=True, help="Filter by agent API name")
 @click.option("--output", type=click.Path(), default="./stdm_data", help="Output directory")
 @click.option("--verbose", is_flag=True, help="Show detailed progress")
 def extract_incremental(
     org: str,
     consumer_key: Optional[str],
+    key_path: Optional[str],
     agent: tuple,
     output: str,
     verbose: bool,
@@ -243,7 +271,7 @@ def extract_incremental(
     from scripts.datacloud_client import DataCloudClient
     from scripts.extractor import STDMExtractor
 
-    auth = get_auth(org, consumer_key)
+    auth = get_auth(org, consumer_key, key_path)
 
     console.print(f"\n[bold cyan]📊 Incremental Extraction[/bold cyan]")
     console.print(f"Output: {output}")
@@ -419,11 +447,12 @@ def actions(data_dir: str, output_format: str):
 
 @cli.command()
 @click.option("--org", required=True, help="Salesforce org alias")
-@click.option("--consumer-key", help="Connected App consumer key")
+@click.option("--consumer-key", help="External Client App consumer key")
+@click.option("--key-path", type=click.Path(), help="Path to JWT private key")
 @click.option("--entity", type=click.Choice(["sessions", "interactions", "steps", "messages"]),
               default="sessions", help="Entity to count")
 @click.option("--days", default=7, help="Count last N days")
-def count(org: str, consumer_key: Optional[str], entity: str, days: int):
+def count(org: str, consumer_key: Optional[str], key_path: Optional[str], entity: str, days: int):
     """
     Count records in Data Cloud.
 
@@ -436,7 +465,7 @@ def count(org: str, consumer_key: Optional[str], entity: str, days: int):
     from scripts.datacloud_client import DataCloudClient
     from scripts.models import DMO_NAMES
 
-    auth = get_auth(org, consumer_key)
+    auth = get_auth(org, consumer_key, key_path)
 
     since = datetime.utcnow() - timedelta(days=days)
     timestamp_field = "ssot__StartTimestamp__c" if entity == "sessions" else None
@@ -463,8 +492,9 @@ def count(org: str, consumer_key: Optional[str], entity: str, days: int):
 
 @cli.command("test-auth")
 @click.option("--org", required=True, help="Salesforce org alias")
-@click.option("--consumer-key", help="Connected App consumer key")
-def test_auth(org: str, consumer_key: Optional[str]):
+@click.option("--consumer-key", help="External Client App consumer key")
+@click.option("--key-path", type=click.Path(), help="Path to JWT private key")
+def test_auth(org: str, consumer_key: Optional[str], key_path: Optional[str]):
     """
     Test authentication to Data Cloud.
 
@@ -473,11 +503,13 @@ def test_auth(org: str, consumer_key: Optional[str]):
     Examples:
 
         stdm-extract test-auth --org prod
+        stdm-extract test-auth --org prod --key-path ~/.sf/jwt/custom.key
     """
-    auth = get_auth(org, consumer_key)
+    auth = get_auth(org, consumer_key, key_path)
 
     console.print(f"\n[bold cyan]Testing Authentication[/bold cyan]")
     console.print(f"Org: {org}")
+    console.print(f"Key: {auth.key_path}")
 
     try:
         # Get org info
