@@ -258,16 +258,16 @@
     },
     {
       "name": "sf-ai-agentforce-observability",
-      "description": "Extract and analyze Agentforce session tracing data from Data Cloud with 233-test validation suite",
+      "description": "Extract and analyze Agentforce session tracing data from Data Cloud. 24 DMOs verified, 260+ tests, GenAI Trust Layer support.",
       "source": "./sf-ai-agentforce-observability",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Jag Valaiyapathy",
         "url": "https://github.com/Jaganpro"
       },
       "category": "ai",
-      "tags": ["salesforce", "agentforce", "observability", "data-cloud", "analytics"],
-      "keywords": ["session-tracing", "data-cloud", "polars", "parquet", "genai-quality"]
+      "tags": ["salesforce", "agentforce", "observability", "data-cloud", "analytics", "genai"],
+      "keywords": ["session-tracing", "data-cloud", "polars", "parquet", "genai-quality", "trust-layer", "toxicity", "pii-detection"]
     }
   ]
 }
