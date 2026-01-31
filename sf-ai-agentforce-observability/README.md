@@ -1,14 +1,30 @@
 # sf-ai-agentforce-observability
 
-Extract and analyze Agentforce session tracing data from Salesforce Data 360.
+![Status: GA](https://img.shields.io/badge/Status-GA-brightgreen)
+![Tests: 233 Passed](https://img.shields.io/badge/Tests-233%20Passed-success)
+![Validation: Live API Tested](https://img.shields.io/badge/Validation-Live%20API%20Tested-blue)
+
+Extract and analyze Agentforce session tracing data from Salesforce Data Cloud (Data 360).
+
+## Status: General Availability (GA)
+
+This skill has been validated against live Salesforce orgs and is production-ready.
+
+| Metric | Value |
+|--------|-------|
+| **Test Coverage** | 233 tests across 6 tiers |
+| **Live API Validation** | All SQL patterns tested against Data Cloud |
+| **Schema Accuracy** | Verified column names match actual API |
+| **Last Validated** | January 2026 (Vivint-DevInt) |
 
 ## Features
 
-- **High-Volume Extraction**: Handle 1-10M records/day via Data 360 Query API
+- **High-Volume Extraction**: Handle 1-10M records/day via Data Cloud Query API
 - **Parquet Storage**: Efficient columnar storage (10x smaller than JSON)
 - **Polars Analysis**: Lazy evaluation for memory-efficient analysis of 100M+ rows
 - **Session Debugging**: Reconstruct session timelines for troubleshooting
 - **Incremental Sync**: Watermark-based extraction for continuous monitoring
+- **GenAI Quality Analysis**: Extract Trust Layer metrics (toxicity, adherence, resolution)
 
 ## Quick Start
 
@@ -18,13 +34,13 @@ Extract and analyze Agentforce session tracing data from Salesforce Data 360.
 # Install Python dependencies
 pip install polars pyarrow pyjwt cryptography httpx rich click pydantic
 
-# Verify Data 360 access
+# Verify Data Cloud access
 sf org display --target-org myorg
 ```
 
 ### 2. Configure Authentication
 
-Session tracing extraction requires JWT Bearer auth to the Data 360 Query API.
+Session tracing extraction requires JWT Bearer auth to the Data Cloud Query API.
 
 ```bash
 # Generate certificate
@@ -48,8 +64,8 @@ python3 scripts/cli.py extract --org myorg --days 7 --output ./data
 # Extract specific date range
 python3 scripts/cli.py extract --org myorg --since 2026-01-01 --until 2026-01-15
 
-# Extract for specific agent
-python3 scripts/cli.py extract --org myorg --agent Customer_Support_Agent
+# Extract complete session tree for debugging
+python3 scripts/cli.py extract-tree --org myorg --session-id "a0x..."
 ```
 
 ### 4. Analyze Data
@@ -63,6 +79,9 @@ python3 scripts/cli.py debug-session --data-dir ./data --session-id "a0x..."
 
 # Topic analysis
 python3 scripts/cli.py topics --data-dir ./data
+
+# Extract GenAI quality metrics
+python3 scripts/cli.py extract-quality --data-dir ./data
 ```
 
 ### 5. Use with Python
@@ -85,27 +104,40 @@ print(analyzer.message_timeline("a0x..."))
 
 ## Data Model
 
-The Session Tracing Data Model (STDM) consists of 4 DMOs:
+The Session Tracing Data Model (STDM) consists of 4 core DMOs plus GenAI quality DMOs:
 
 ```
 AIAgentSession (Session)
-└── AIAgentInteraction (Turn)
-    ├── AIAgentInteractionStep (LLM/Action Step)
-    └── AIAgentMoment (Message)
+├── AIAgentSessionParticipant (Participants)
+├── AIAgentInteraction (Turn)
+│   ├── AIAgentInteractionStep (LLM/Action Step)
+│   │   └── → GenAIGeneration (LLM Output)
+│   │       └── GenAIContentQuality (Trust Layer)
+│   │           └── GenAIContentCategory (Toxicity/Adherence/Resolution)
+│   └── AIAgentInteractionMessage (Raw Messages)
+└── AIAgentMoment (Summaries)
 ```
+
+**Important**: Data Cloud uses `AiAgent` (lowercase 'i') in column names, not `AIAgent`.
 
 See [resources/data-model-reference.md](resources/data-model-reference.md) for full schema.
 
 ## Output Format
 
-Data is stored in Parquet format with date partitioning:
+Data is stored in Parquet format:
 
 ```
 stdm_data/
-├── sessions/date=YYYY-MM-DD/*.parquet
-├── interactions/date=YYYY-MM-DD/*.parquet
-├── steps/date=YYYY-MM-DD/*.parquet
-└── messages/date=YYYY-MM-DD/*.parquet
+├── sessions/data.parquet
+├── interactions/data.parquet
+├── steps/data.parquet
+├── messages/data.parquet
+├── generations/data.parquet        # GenAI quality
+├── content_quality/data.parquet    # Trust Layer
+├── content_categories/data.parquet # Toxicity/Adherence
+└── metadata/
+    ├── extraction.json
+    └── watermark.json
 ```
 
 ## CLI Reference
@@ -115,11 +147,35 @@ stdm_data/
 | `extract` | Extract session data for time range |
 | `extract-tree` | Extract full tree for specific session |
 | `extract-incremental` | Continue from last extraction |
+| `extract-quality` | Extract GenAI Trust Layer metrics |
 | `analyze` | Generate summary statistics |
 | `debug-session` | Show session timeline |
 | `topics` | Topic routing analysis |
+| `count` | Count records per DMO |
 
 See [docs/cli-reference.md](docs/cli-reference.md) for all options.
+
+## Validation
+
+This skill includes comprehensive validation testing:
+
+| Tier | Category | Tests | Description |
+|------|----------|-------|-------------|
+| T1 | Auth & Connectivity | 5 | JWT auth, API access, DMO existence |
+| T2 | Extraction Commands | 35 | CLI extract, tree, incremental |
+| T3 | Analysis Commands | 46 | Analyze, debug-session, topics |
+| T4 | Schema/Documentation | 96 | Field validation, query patterns |
+| T5 | Negative Cases | 12 | Error handling, invalid args |
+| T6 | **Live SQL Execution** | 39 | All SQL patterns against live API |
+
+**Total: 233 tests | 100% pass rate**
+
+Run validation:
+```bash
+cd validation
+source .venv/bin/activate
+pytest scenarios/ -v --org YourOrgAlias
+```
 
 ## Integration with Other Skills
 
@@ -133,9 +189,17 @@ See [docs/cli-reference.md](docs/cli-reference.md) for all options.
 ## Requirements
 
 - Python 3.10+
-- Salesforce org with Data 360 and Agentforce enabled
+- Salesforce org with Data Cloud and Agentforce enabled
 - Session Tracing enabled in Agentforce settings
 - JWT Bearer auth configured (via External Client App)
+- Salesforce Standard Data Model v1.124+
+
+## Resources
+
+- [Data Model Reference](resources/data-model-reference.md) - Full STDM schema
+- [Query Patterns](resources/query-patterns.md) - SQL examples for Data Cloud
+- [Analysis Cookbook](resources/analysis-cookbook.md) - Polars analysis patterns
+- [Polars Cheatsheet](docs/polars-cheatsheet.md) - Quick reference
 
 ## License
 
@@ -144,3 +208,7 @@ MIT License - See [LICENSE](LICENSE) file.
 ## Author
 
 Jag Valaiyapathy
+
+---
+
+*Last updated: January 2026 | Validated against: Vivint-DevInt*
