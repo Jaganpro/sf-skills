@@ -236,6 +236,236 @@ SELECT * FROM ssot__AIAgentInteractionStep__dlm;  -- Has large text fields
 
 ---
 
+---
+
+## Advanced Session Inspection
+
+### Full Session Details (All Related Entities)
+
+Join all session tracing entities for complete visibility:
+
+```sql
+SELECT *
+FROM ssot__AiAgentSession__dlm s
+JOIN ssot__AiAgentSessionParticipant__dlm sp
+    ON s.ssot__id__c = sp.ssot__aiAgentSessionId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON s.ssot__id__c = i.ssot__aiAgentSessionId__c
+JOIN ssot__AiAgentInteractionMessage__dlm im
+    ON i.ssot__id__c = im.ssot__aiAgentInteractionId__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON i.ssot__id__c = st.ssot__aiAgentInteractionId__c
+WHERE s.ssot__id__c = '{{SESSION_ID}}'
+LIMIT 100;
+```
+
+**Note:** This query includes `SessionParticipant` and `InteractionMessage` entities not in basic extraction.
+
+### Session Insights with CTEs
+
+Use CTEs for complex session analysis with messages and steps:
+
+```sql
+WITH
+  -- Store session ID for reuse
+  params AS (
+    SELECT '{{SESSION_ID}}' AS session_id
+  ),
+
+  -- Get interactions with their messages
+  interactionsWithMessages AS (
+    SELECT
+      i.ssot__Id__c AS InteractionId,
+      i.ssot__TopicApiName__c AS TopicName,
+      i.ssot__AiAgentInteractionType__c AS InteractionType,
+      i.ssot__StartTimestamp__c AS InteractionStartTime,
+      i.ssot__EndTimestamp__c AS InteractionEndTime,
+      im.ssot__SentTime__c AS MessageSentTime,
+      im.ssot__MessageType__c AS InteractionMessageType,
+      im.ssot__ContextText__c AS ContextText,
+      NULL AS InteractionStepType,
+      NULL AS Name,
+      NULL AS InputValueText,
+      NULL AS OutputValueText,
+      NULL AS PreStepVariableText,
+      NULL AS PostStepVariableText
+    FROM ssot__AiAgentInteraction__dlm i
+    JOIN ssot__AiAgentInteractionMessage__dlm im
+      ON i.ssot__Id__c = im.ssot__aiAgentInteractionId__c
+    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+  ),
+
+  -- Get interactions with their steps
+  interactionsWithSteps AS (
+    SELECT
+      i.ssot__Id__c AS InteractionId,
+      i.ssot__TopicApiName__c AS TopicName,
+      i.ssot__AiAgentInteractionType__c AS InteractionType,
+      i.ssot__StartTimestamp__c AS InteractionStartTime,
+      i.ssot__EndTimestamp__c AS InteractionEndTime,
+      st.ssot__StartTimestamp__c AS MessageSentTime,
+      NULL AS InteractionMessageType,
+      NULL AS ContextText,
+      st.ssot__AiAgentInteractionStepType__c AS InteractionStepType,
+      st.ssot__Name__c AS Name,
+      st.ssot__InputValueText__c AS InputValueText,
+      st.ssot__OutputValueText__c AS OutputValueText,
+      st.ssot__PreStepVariableText__c AS PreStepVariableText,
+      st.ssot__PostStepVariableText__c AS PostStepVariableText
+    FROM ssot__AiAgentInteraction__dlm i
+    JOIN ssot__AiAgentInteractionStep__dlm st
+      ON i.ssot__Id__c = st.ssot__aiAgentInteractionId__c
+    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+  ),
+
+  -- Combine messages and steps
+  combined AS (
+    SELECT * FROM interactionsWithMessages
+    UNION ALL
+    SELECT * FROM interactionsWithSteps
+  )
+
+-- Final output sorted chronologically
+SELECT
+  TopicName,
+  InteractionType,
+  InteractionStartTime,
+  InteractionEndTime,
+  MessageSentTime,
+  InteractionMessageType,
+  ContextText,
+  InteractionStepType,
+  Name,
+  InputValueText,
+  OutputValueText,
+  PreStepVariableText,
+  PostStepVariableText
+FROM combined
+ORDER BY MessageSentTime ASC;
+```
+
+**Tips for Finding Session IDs:**
+- For Service Agent: Use `ssot__RelatedMessagingSessionId__c` field on `ssot__AiAgentSession__dlm`
+- Use start/end timestamp fields to narrow down timeframes
+
+---
+
+## Quality Analysis Queries
+
+### Toxic Response Detection
+
+Find generations flagged as toxic and trace back to sessions:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    g.responseText__c AS ResponseText,
+    c.category__c AS ToxicityCategory,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentQuality__dlm AS q
+JOIN GenAIContentCategory__dlm AS c
+    ON c.parent__c = q.id__c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = q.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    q.isToxicityDetected__c = 'true'
+    AND TRY_CAST(c.value__c AS DECIMAL) >= 0.5
+LIMIT 100;
+```
+
+**Join Chain:** ContentQuality → ContentCategory → Generation → Step → Interaction → Session
+
+### Low Instruction Adherence Detection
+
+Find sessions where agent responses didn't follow instructions well:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    g.responseText__c AS ResponseText,
+    c.category__c AS AdherenceLevel,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentCategory__dlm AS c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    c.detectorType__c = 'InstructionAdherence'
+    AND c.category__c = 'Low'
+LIMIT 100;
+```
+
+**Detector Types:**
+- `InstructionAdherence`: Categories are `Low`, `Medium`, `High`
+- `TaskResolution`: Categories are `FULLY_RESOLVED`, `PARTIALLY_RESOLVED`, `NOT_RESOLVED`
+- `Toxicity`: `value__c >= 0.5` indicates toxic content
+
+### Unresolved Tasks Detection
+
+Find sessions where tasks weren't fully resolved:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    c.category__c AS ResolutionStatus,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentCategory__dlm AS c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    c.detectorType__c = 'TaskResolution'
+    AND c.category__c IN ('NOT_RESOLVED', 'PARTIALLY_RESOLVED')
+LIMIT 100;
+```
+
+---
+
+## Entity Relationship Reference
+
+### Session Tracing Data Model (STDM)
+
+```
+Session (ssot__AiAgentSession__dlm)
+├── SessionParticipant (ssot__AiAgentSessionParticipant__dlm)  [1:N]
+├── Interaction (ssot__AiAgentInteraction__dlm)                [1:N]
+│   ├── InteractionMessage (ssot__AiAgentInteractionMessage__dlm)  [1:N]
+│   └── InteractionStep (ssot__AiAgentInteractionStep__dlm)        [1:N]
+│       └── → links to GenAIGeneration via GenerationId
+└── Moment (ssot__AiAgentMoment__dlm)                          [1:N]
+```
+
+### Quality Data Model (GenAI Trust Layer)
+
+```
+GenAIGeneration__dlm
+└── GenAIContentQuality__dlm          [1:1]
+    └── GenAIContentCategory__dlm     [1:N]
+        ├── detectorType__c: 'Toxicity' | 'InstructionAdherence' | 'TaskResolution'
+        ├── category__c: Result category
+        └── value__c: Confidence score (0.0-1.0, string format)
+```
+
+**Key Join Fields:**
+- `ssot__GenerationId__c` on Steps → `generationId__c` on Generation
+- `parent__c` on ContentQuality → `generationId__c` on Generation
+- `parent__c` on ContentCategory → `id__c` on ContentQuality
+
+---
+
 ## Template Variables
 
 The query templates use these placeholders:
@@ -246,4 +476,5 @@ The query templates use these placeholders:
 | `{{END_DATE}}` | End timestamp | `2026-01-28T23:59:59.000Z` |
 | `{{AGENT_NAMES}}` | Comma-separated agent names | `'Agent1', 'Agent2'` |
 | `{{SESSION_IDS}}` | Comma-separated session IDs | `'a0x...', 'a0x...'` |
+| `{{SESSION_ID}}` | Single session ID | `'01999669-0a54-724f-80d6-9cb495a7cee4'` |
 | `{{INTERACTION_IDS}}` | Comma-separated interaction IDs | `'a0y...', 'a0y...'` |
