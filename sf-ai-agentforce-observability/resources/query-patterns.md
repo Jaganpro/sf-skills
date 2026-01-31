@@ -11,23 +11,27 @@ Common query patterns for extracting and analyzing Agentforce session tracing da
 ```sql
 SELECT
     ssot__Id__c,
-    ssot__AIAgentApiName__c,
+    ssot__AiAgentChannelType__c,
     ssot__StartTimestamp__c,
     ssot__EndTimestamp__c,
-    ssot__AIAgentSessionEndType__c
+    ssot__AiAgentSessionEndType__c
 FROM ssot__AIAgentSession__dlm
 WHERE ssot__StartTimestamp__c >= '2026-01-21T00:00:00.000Z'
 ORDER BY ssot__StartTimestamp__c DESC;
 ```
 
-### Sessions by Agent
+### Sessions by Agent (via Moment Join)
+
+> **Note:** Agent name is stored on the Moment table, not Session. Use a JOIN to filter by agent.
 
 ```sql
-SELECT *
-FROM ssot__AIAgentSession__dlm
-WHERE ssot__AIAgentApiName__c = 'Customer_Support_Agent'
-  AND ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-ORDER BY ssot__StartTimestamp__c DESC;
+SELECT DISTINCT s.*
+FROM ssot__AIAgentSession__dlm s
+JOIN ssot__AiAgentMoment__dlm m
+    ON m.ssot__AiAgentSessionId__c = s.ssot__Id__c
+WHERE m.ssot__AiAgentApiName__c = 'Customer_Support_Agent'
+  AND s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+ORDER BY s.ssot__StartTimestamp__c DESC;
 ```
 
 ### Failed/Escalated Sessions
@@ -35,7 +39,7 @@ ORDER BY ssot__StartTimestamp__c DESC;
 ```sql
 SELECT *
 FROM ssot__AIAgentSession__dlm
-WHERE ssot__AIAgentSessionEndType__c IN ('Escalated', 'Abandoned', 'Failed')
+WHERE ssot__AiAgentSessionEndType__c IN ('Escalated', 'Abandoned', 'Failed')
   AND ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
 ORDER BY ssot__StartTimestamp__c DESC;
 ```
@@ -44,15 +48,17 @@ ORDER BY ssot__StartTimestamp__c DESC;
 
 ## Aggregation Queries
 
-### Session Count by Agent
+### Session Count by Agent (via Moment)
+
+> **Note:** Agent name is on the Moment table. Query Moments and count distinct sessions.
 
 ```sql
 SELECT
-    ssot__AIAgentApiName__c as agent,
-    COUNT(*) as session_count
-FROM ssot__AIAgentSession__dlm
+    ssot__AiAgentApiName__c as agent,
+    COUNT(DISTINCT ssot__AiAgentSessionId__c) as session_count
+FROM ssot__AiAgentMoment__dlm
 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-GROUP BY ssot__AIAgentApiName__c
+GROUP BY ssot__AiAgentApiName__c
 ORDER BY session_count DESC;
 ```
 
@@ -60,11 +66,11 @@ ORDER BY session_count DESC;
 
 ```sql
 SELECT
-    ssot__AIAgentSessionEndType__c as end_type,
+    ssot__AiAgentSessionEndType__c as end_type,
     COUNT(*) as count
 FROM ssot__AIAgentSession__dlm
 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-GROUP BY ssot__AIAgentSessionEndType__c;
+GROUP BY ssot__AiAgentSessionEndType__c;
 ```
 
 ### Topic Usage
@@ -74,7 +80,7 @@ SELECT
     ssot__TopicApiName__c as topic,
     COUNT(*) as turn_count
 FROM ssot__AIAgentInteraction__dlm
-WHERE ssot__InteractionType__c = 'TURN'
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
 GROUP BY ssot__TopicApiName__c
 ORDER BY turn_count DESC;
 ```
@@ -86,7 +92,7 @@ SELECT
     ssot__Name__c as action_name,
     COUNT(*) as invocation_count
 FROM ssot__AIAgentInteractionStep__dlm
-WHERE ssot__AIAgentInteractionStepType__c = 'ACTION_STEP'
+WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
 GROUP BY ssot__Name__c
 ORDER BY invocation_count DESC;
 ```
@@ -100,14 +106,14 @@ ORDER BY invocation_count DESC;
 ```sql
 SELECT
     s.ssot__Id__c,
-    s.ssot__AIAgentApiName__c,
+    s.ssot__AiAgentChannelType__c,
     COUNT(i.ssot__Id__c) as turn_count
 FROM ssot__AIAgentSession__dlm s
 LEFT JOIN ssot__AIAgentInteraction__dlm i
     ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
-    AND i.ssot__InteractionType__c = 'TURN'
+    AND i.ssot__AiAgentInteractionType__c = 'TURN'
 WHERE s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-GROUP BY s.ssot__Id__c, s.ssot__AIAgentApiName__c;
+GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c;
 ```
 
 ### Complete Session Tree
@@ -169,7 +175,7 @@ SELECT
     ssot__aiAgentSessionId__c,
     COUNT(DISTINCT ssot__TopicApiName__c) as topic_count
 FROM ssot__AIAgentInteraction__dlm
-WHERE ssot__InteractionType__c = 'TURN'
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
 GROUP BY ssot__aiAgentSessionId__c
 HAVING COUNT(DISTINCT ssot__TopicApiName__c) > 1;
 ```
@@ -181,7 +187,7 @@ SELECT
     ssot__aiAgentSessionId__c,
     COUNT(*) as turn_count
 FROM ssot__AIAgentInteraction__dlm
-WHERE ssot__InteractionType__c = 'TURN'
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
 GROUP BY ssot__aiAgentSessionId__c
 HAVING COUNT(*) > 10
 ORDER BY turn_count DESC;
@@ -196,7 +202,7 @@ SELECT
     COUNT(*) as total_invocations,
     COUNT(CASE WHEN ssot__OutputValueText__c LIKE '%error%' THEN 1 END) as errors
 FROM ssot__AIAgentInteractionStep__dlm
-WHERE ssot__AIAgentInteractionStepType__c = 'ACTION_STEP'
+WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
 GROUP BY ssot__Name__c;
 ```
 
@@ -209,10 +215,10 @@ GROUP BY ssot__Name__c;
 ```sql
 -- Good: Filter by date first
 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-  AND ssot__AIAgentApiName__c = 'My_Agent'
+  AND ssot__AiAgentSessionEndType__c = 'Completed'
 
 -- Avoid: No date filter on large tables
-WHERE ssot__AIAgentApiName__c = 'My_Agent'
+WHERE ssot__AiAgentSessionEndType__c = 'Completed'
 ```
 
 ### Limit Result Sets
@@ -229,7 +235,7 @@ LIMIT 100;
 
 ```sql
 -- Good: Select specific columns
-SELECT ssot__Id__c, ssot__AIAgentApiName__c, ssot__StartTimestamp__c
+SELECT ssot__Id__c, ssot__AiAgentChannelType__c, ssot__StartTimestamp__c
 FROM ssot__AIAgentSession__dlm;
 
 -- Avoid: SELECT * on wide tables
@@ -644,8 +650,8 @@ Aggregate turn counts and step counts per session:
 WITH session_stats AS (
     SELECT
         s.ssot__Id__c,
-        s.ssot__AIAgentApiName__c as agent_name,
-        s.ssot__AIAgentSessionEndType__c as end_type,
+        s.ssot__AiAgentChannelType__c as channel_type,
+        s.ssot__AiAgentSessionEndType__c as end_type,
         COUNT(DISTINCT i.ssot__Id__c) as turn_count,
         COUNT(DISTINCT st.ssot__Id__c) as step_count
     FROM ssot__AIAgentSession__dlm s
@@ -654,7 +660,7 @@ WITH session_stats AS (
     LEFT JOIN ssot__AIAgentInteractionStep__dlm st
         ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
     WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
-    GROUP BY s.ssot__Id__c, s.ssot__AIAgentApiName__c, s.ssot__AIAgentSessionEndType__c
+    GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c, s.ssot__AiAgentSessionEndType__c
 )
 SELECT * FROM session_stats WHERE turn_count > 5
 ORDER BY step_count DESC;
