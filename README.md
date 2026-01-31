@@ -49,231 +49,44 @@ sf-apex/
 
 ---
 
-## 🤖 Supported Agentic Coding Tools
-
-| Tool | Status | Install Path | |
-|------|--------|--------------|--|
-| **Claude Code CLI** | ✅ Full Support | `.claude-plugin/` | ![Claude](https://img.shields.io/badge/Anthropic-Claude_Code-191919?logo=anthropic&logoColor=white) |
-| **OpenCode CLI** | ✅ Installer | `.opencode/skill/` | ![OpenCode](https://img.shields.io/badge/Open-Code-4B32C3?logo=github&logoColor=white) |
-| **Codex CLI** | ✅ Installer | `.codex/skills/` | ![OpenAI](https://img.shields.io/badge/OpenAI-Codex-412991?logo=openai&logoColor=white) |
-| **Gemini CLI** | ✅ Installer | `~/.gemini/skills/` | ![Google](https://img.shields.io/badge/Google-Gemini_CLI-4285F4?logo=google&logoColor=white) |
-| **Amp CLI** | ✅ Compatible | `.claude/skills/` | ![Amp](https://img.shields.io/badge/Sourcegraph-Amp-FF5543?logo=sourcegraph&logoColor=white) |
-| **Droid CLI** | ✅ Installer | `.factory/skills/` | ![Factory](https://img.shields.io/badge/Factory.ai-Droid-6366F1?logo=robot&logoColor=white) |
-| **Cursor CLI** | ✅ Installer | `.cursor/rules/` | ![Cursor](https://img.shields.io/badge/Cursor-Agent_CLI-000000?logo=cursor&logoColor=white) |
-| **Agentforce Vibes** | ✅ Installer | `.clinerules/` | ![Salesforce](https://img.shields.io/badge/Salesforce-Vibes-00A1E0?logo=salesforce&logoColor=white) |
-
-> **Agent Skills Open Standard:** These skills follow the [Agent Skills specification](https://agentskills.io) for cross-CLI compatibility.
-
-### CLI Compatibility Notes
-
-> 🤝 **Call for Volunteers!** This repo is community-driven, sharing knowledge to strengthen the Salesforce ecosystem. We need volunteers to test skills on different CLIs (OpenCode, Codex, Gemini, Cursor, etc.). You'll learn a ton about agentic workflows while helping the community! [Open an issue](https://github.com/Jaganpro/sf-skills/issues) to get started.
-
-<details>
-<summary><b>Claude Code</b> (Anthropic) — Full Native Support</summary>
-
-Claude Code is the **recommended** platform for sf-skills with full native support for all features.
-
-```bash
-# Install via marketplace
-/plugin marketplace add Jaganpro/sf-skills
-```
-
-- **Install Path:** `.claude-plugin/` (per-skill plugin structure)
-- **Format:** Native SKILL.md with hooks, templates, and examples
-- **Hooks:** ✅ Automatic validation on Write/Edit operations
-- **LSP:** ✅ Real-time syntax validation with auto-fix loops
-- **Templates:** ✅ Referenced dynamically (no duplication)
-- **Tool Execution:** Local tools (Read, Write, Edit, Bash, Grep, Glob) — no MCP overhead
-- **Docs:** [claude.ai/code](https://claude.ai/code)
-
-**Why Claude Code for sf-skills:**
-- **Zero-latency tools** — Local execution vs. MCP JSON-RPC roundtrips
-- **Automatic hooks** — Validation runs on every file save without manual invocation
-- **Context efficiency** — Skills load on-demand, saving ~2000 tokens per conversation
-- **LSP integration** — Apex, Agent Script, and LWC syntax errors caught in real-time
-
-</details>
-
-<details>
-<summary><b>OpenCode CLI</b> — Open-Source Claude Code Alternative</summary>
-
-[OpenCode](https://github.com/opencode-ai/opencode) is an open-source alternative to Claude Code with skill support.
-
-```bash
-# Install all skills for OpenCode
-python tools/installer.py --cli opencode --all
-```
-
-- **Install Path:** `.opencode/skill/` (project) or `~/.opencode/skill/` (global)
-- **Format:** SKILL.md with scripts and templates
-- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Claude Compatibility:** Also reads `.claude/skills/` directory
-- **Docs:** [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode)
-
-</details>
-
-<details>
-<summary><b>Codex CLI</b> (OpenAI) — GPT-Powered Coding Agent</summary>
-
-[Codex CLI](https://github.com/openai/codex) is OpenAI's terminal-based coding agent.
-
-```bash
-# Install all skills for Codex
-python tools/installer.py --cli codex --all
-```
-
-- **Install Path:** `.codex/skills/` (project) or `~/.codex/skills/` (global)
-- **Format:** SKILL.md with `assets/` (templates) and `references/` (docs)
-- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Enable Skills:** `codex --enable skills`
-- **Docs:** [github.com/openai/codex](https://github.com/openai/codex)
-
-</details>
-
-<details>
-<summary><b>Gemini CLI</b> (Google) — 1M+ Token Context</summary>
-
-[Gemini CLI](https://github.com/anthropics/gemini-cli) is Google's Gemini-powered terminal agent with massive context window.
-
-```bash
-# Install all skills for Gemini
-python tools/installer.py --cli gemini --all
-```
-
-- **Install Path:** `~/.gemini/skills/` (user scope by default)
-- **Format:** SKILL.md with scripts and templates
-- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Context:** 1M+ tokens — can load entire codebases
-- **Symlink:** `ln -s ~/.gemini/skills/sf-apex ~/.claude/skills/sf-apex`
-- **Docs:** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
-
-</details>
-
-<details>
-<summary><b>Amp CLI</b> (Sourcegraph) — Claude Code Compatible</summary>
-
-[Amp](https://sourcegraph.com/amp) is Sourcegraph's agentic coding tool, fully compatible with Claude Code skills.
-
-```bash
-# No installer needed — Amp reads Claude Code skills directly
-# Place skills in .claude/skills/ directory
-```
-
-- **Install Path:** `.claude/skills/` (same as Claude Code)
-- **Format:** Native Claude Code format (SKILL.md + hooks + templates)
-- **Hooks:** ✅ Compatible with Claude Code hooks
-- **Codebase Search:** Powered by Sourcegraph's code intelligence
-- **Docs:** [sourcegraph.com/amp](https://sourcegraph.com/amp)
-
-</details>
-
-<details>
-<summary><b>Droid CLI</b> (Factory.ai) — Claude Code Compatible</summary>
-
-Droid CLI (v0.26.0+) natively supports Claude Code skills format. Use the installer or import directly:
-
-```bash
-# Install via installer
-python tools/installer.py --cli droid --all
-
-# Or Droid auto-discovers skills from .claude/skills/ directory
-# Use the /skills command within Droid to manage skills
-```
-
-- **Install Path:** `.factory/skills/` or `~/.factory/skills/`
-- **Format:** Claude Code compatible (SKILL.md + scripts/)
-- **Prerequisite:** Enable Custom Droids in `/settings → Experimental`
-- **Docs:** [docs.factory.ai/cli/configuration/skills](https://docs.factory.ai/cli/configuration/skills)
-
-</details>
-
-<details>
-<summary><b>Cursor CLI</b> — Installer with MDC Transformation</summary>
-
-Cursor CLI uses its own rules system (`.cursor/rules/` with MDC format). The installer transforms skills to Cursor's native format:
-
-```bash
-# Install skills transformed to MDC format
-python tools/installer.py --cli cursor --all
-```
-
-- **Install Path:** `.cursor/rules/{name}.mdc`
-- **Format:** MDC (Markdown with YAML frontmatter: description, globs, alwaysApply)
-- **Templates:** Copied to `assets/`, docs to `references/`
-- **Alternative:** [SkillPort](https://github.com/gotalab/skillport) MCP bridge for runtime skill access
-- **Docs:** [docs.cursor.com/context/rules-for-ai](https://docs.cursor.com/context/rules-for-ai)
-
-</details>
-
-<details>
-<summary><b>Agentforce Vibes</b> (Salesforce) — Enterprise Vibe-Coding Tool</summary>
-
-[Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html) is Salesforce's enterprise vibe-coding tool with strong Model Context Protocol (MCP) support.
-
-```bash
-# Install all skills for Agentforce Vibes
-python tools/installer.py --cli agentforce-vibes --all
-```
-
-- **Install Path:** `.clinerules/` (project directory)
-- **Format:** Pure markdown files with numeric prefixes (`01-sf-apex.md`, `02-sf-flow.md`, etc.)
-- **Templates:** Inlined directly into markdown rules (self-contained)
-- **Includes:** `/newrule` command references, Salesforce DX MCP Server tips
-- **Docs:** [Agentforce Vibes Blog](https://developer.salesforce.com/blogs/2025/10/unleash-your-innovation-with-agentforce-vibes-vibe-coding-for-the-enterprise)
-
-**Output Structure:**
-```
-.clinerules/
-├── 01-sf-apex.md
-├── 02-sf-flow.md
-├── 03-sf-lwc.md
-└── ... (16 skills total)
-```
-
-**Why Agentforce Vibes:** Strong MCP support enables integration with Salesforce DX MCP Server (20+ tools) for org connectivity, metadata operations, and deployment.
-
-</details>
-
-### Claude Code vs. Agentforce Vibes
-
-| Feature | Claude Code | Agentforce Vibes |
-|---------|-------------|------------------|
-| **Platform** | Terminal CLI | VS Code Extension |
-| **Skills System** | ✅ Native (`SKILL.md` + hooks + templates) | ❌ No skills — uses `.clinerules` markdown |
-| **Automatic Hooks** | ✅ Validation on Write/Edit (150+ point rubrics) | ❌ No hooks — manual validation only |
-| **LSP Integration** | ✅ Agentic auto-fix loops (detect → fix → validate) | ✅ Via VS Code (manual fixes only) |
-| **Tool Execution** | ✅ Local tools (zero latency) | ⚡ MCP-based (JSON-RPC overhead) |
-| **Salesforce Tools** | `sf` CLI + pre-templated skill scripts | Salesforce DX MCP (20+ tools) |
-| **Templates** | ✅ Dynamic references (50+ templates) | 📄 Inlined in markdown |
-| **Models** | Claude Sonnet 4, Opus 4.5 | GPT-4.1, SFR (Salesforce Research) |
-| **Context Window** | 200K (Sonnet) or 1M (extended) | Varies by model |
-| **Enterprise Features** | Community-driven | Trust Layer, audit logging |
-
-> **Bottom line:** Claude Code offers deeper integration (hooks, agentic LSP auto-fix, local tools) for Salesforce development. Agentforce Vibes provides enterprise compliance and native Salesforce ecosystem integration via MCP.
-
 ## ✨ Available Skills
 
-| | Skill | Description | Category | Points | Status |
-|--|-------|-------------|----------|--------|--------|
-| ⚡ | **[sf-apex](sf-apex/)** | Apex generation, TAF patterns, LSP validation | 💻 Development | 150 | 🔬 Alpha |
-| 🔄 | **[sf-flow](sf-flow/)** | Flow creation & bulk validation | 💻 Development | 110 | 🔬 Alpha |
-| ⚡ | **[sf-lwc](sf-lwc/)** | Lightning Web Components, Jest tests, LMS | 💻 Development | 140 | 🔬 Alpha |
-| 🔍 | **[sf-soql](sf-soql/)** | Natural language → SOQL, query optimization | 💻 Development | 100 | 🔬 Alpha |
-| 🧪 | **[sf-testing](sf-testing/)** | Apex test runner, coverage, bulk testing | 🧪 Quality | 100 | 🔬 Alpha |
-| 🐛 | **[sf-debug](sf-debug/)** | Debug log analysis, governor limit fixes | 🧪 Quality | 90 | 🔬 Alpha |
-| 📋 | **[sf-metadata](sf-metadata/)** | Metadata gen & org queries | 📦 Foundation | 120 | 🔬 Alpha |
-| 💾 | **[sf-data](sf-data/)** | SOQL & test data factories | 📦 Foundation | — | 🔬 Alpha |
-| 🔐 | **[sf-permissions](sf-permissions/)** | Permission Set analysis, hierarchy viewer, "Who has X?" | 📦 Foundation | — | 🔬 Alpha |
-| 🔐 | **[sf-connected-apps](sf-connected-apps/)** | OAuth apps & ECAs | 🔌 Integration | 120 | 🔬 Alpha |
-| 🔗 | **[sf-integration](sf-integration/)** | Callouts, Events, CDC | 🔌 Integration | 120 | 🔬 Alpha |
-| ⚠️ | **[sf-ai-agentforce-legacy](sf-ai-agentforce-legacy/)** | Legacy agent patterns (use sf-ai-agentscript) | 🤖 AI & Automation | 150 | ⚠️ Deprecated |
-| 🧪 | **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** | Agent test specs, agentic fix loops | 🤖 AI & Automation | 100 | 🔬 Alpha |
-| 📈 | **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** | Session tracing extraction & analysis (Data Cloud) | 🤖 AI & Automation | 233 | ✅ GA |
-| 📝 | **[sf-ai-agentscript](sf-ai-agentscript/)** | Agent Script DSL, FSM patterns, 100-pt scoring (API v65+) | 🤖 AI & Automation | 100 | 🔬 Alpha |
-| 🚀 | **[sf-deploy](sf-deploy/)** | CI/CD automation (sf CLI v2) | 🚀 DevOps | — | 🔬 Alpha |
-| 📊 | **[sf-diagram-mermaid](sf-diagram-mermaid/)** | Mermaid diagrams & ERD | 🛠️ Tooling | — | 🔬 Alpha |
-| 📸 | **[sf-diagram-nanobananapro](sf-diagram-nanobananapro/)** | Visual ERD, LWC mockups, Gemini sub-agent | 🛠️ Tooling | — | 🔬 Alpha |
-| 🛠️ | **[skill-builder](skill-builder/)** | Skill creation wizard | 🛠️ Tooling | — | ✅ Stable |
+### 💻 Development
+
+- ⚡ **[sf-apex](sf-apex/)** — Apex generation, TAF patterns, LSP validation `150 pts` `🔬 Alpha`
+- 🔄 **[sf-flow](sf-flow/)** — Flow creation & bulk validation `110 pts` `🔬 Alpha`
+- ⚡ **[sf-lwc](sf-lwc/)** — Lightning Web Components, Jest tests, LMS `140 pts` `🔬 Alpha`
+- 🔍 **[sf-soql](sf-soql/)** — Natural language → SOQL, query optimization `100 pts` `🔬 Alpha`
+
+### 🧪 Quality
+
+- 🧪 **[sf-testing](sf-testing/)** — Apex test runner, coverage, bulk testing `100 pts` `🔬 Alpha`
+- 🐛 **[sf-debug](sf-debug/)** — Debug log analysis, governor limit fixes `90 pts` `🔬 Alpha`
+
+### 📦 Foundation
+
+- 📋 **[sf-metadata](sf-metadata/)** — Metadata gen & org queries `120 pts` `🔬 Alpha`
+- 💾 **[sf-data](sf-data/)** — SOQL & test data factories `🔬 Alpha`
+- 🔐 **[sf-permissions](sf-permissions/)** — Permission Set analysis, "Who has X?" `🔬 Alpha`
+
+### 🔌 Integration
+
+- 🔐 **[sf-connected-apps](sf-connected-apps/)** — OAuth apps & ECAs `120 pts` `🔬 Alpha`
+- 🔗 **[sf-integration](sf-integration/)** — Callouts, Events, CDC `120 pts` `🔬 Alpha`
+
+### 🤖 AI & Automation
+
+- 📝 **[sf-ai-agentscript](sf-ai-agentscript/)** — Agent Script DSL, FSM patterns `100 pts` `🔬 Alpha`
+- 📈 **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** — Session tracing (Data Cloud) `233 pts` `✅ GA`
+- 🧪 **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops `100 pts` `🔬 Alpha`
+- ⚠️ **[sf-ai-agentforce-legacy](sf-ai-agentforce-legacy/)** — Legacy patterns (use sf-ai-agentscript) `⚠️ Deprecated`
+
+### 🛠️ DevOps & Tooling
+
+- 🚀 **[sf-deploy](sf-deploy/)** — CI/CD automation (sf CLI v2) `🔬 Alpha`
+- 📊 **[sf-diagram-mermaid](sf-diagram-mermaid/)** — Mermaid diagrams & ERD `🔬 Alpha`
+- 📸 **[sf-diagram-nanobananapro](sf-diagram-nanobananapro/)** — Visual ERD, LWC mockups `🔬 Alpha`
+- 🛠️ **[skill-builder](skill-builder/)** — Skill creation wizard `✅ Stable`
 
 ## 🚀 Installation
 
@@ -804,6 +617,211 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
 **Total: 29 skills** (19 skills ✅ live, 10 planned 📋)
+
+</details>
+
+<details>
+<summary><h2>🤖 Supported Agentic Coding Tools & CLI Compatibility</h2></summary>
+
+| Tool | Status | Install Path | |
+|------|--------|--------------|--|
+| **Claude Code CLI** | ✅ Full Support | `.claude-plugin/` | ![Claude](https://img.shields.io/badge/Anthropic-Claude_Code-191919?logo=anthropic&logoColor=white) |
+| **OpenCode CLI** | ✅ Installer | `.opencode/skill/` | ![OpenCode](https://img.shields.io/badge/Open-Code-4B32C3?logo=github&logoColor=white) |
+| **Codex CLI** | ✅ Installer | `.codex/skills/` | ![OpenAI](https://img.shields.io/badge/OpenAI-Codex-412991?logo=openai&logoColor=white) |
+| **Gemini CLI** | ✅ Installer | `~/.gemini/skills/` | ![Google](https://img.shields.io/badge/Google-Gemini_CLI-4285F4?logo=google&logoColor=white) |
+| **Amp CLI** | ✅ Compatible | `.claude/skills/` | ![Amp](https://img.shields.io/badge/Sourcegraph-Amp-FF5543?logo=sourcegraph&logoColor=white) |
+| **Droid CLI** | ✅ Installer | `.factory/skills/` | ![Factory](https://img.shields.io/badge/Factory.ai-Droid-6366F1?logo=robot&logoColor=white) |
+| **Cursor CLI** | ✅ Installer | `.cursor/rules/` | ![Cursor](https://img.shields.io/badge/Cursor-Agent_CLI-000000?logo=cursor&logoColor=white) |
+| **Agentforce Vibes** | ✅ Installer | `.clinerules/` | ![Salesforce](https://img.shields.io/badge/Salesforce-Vibes-00A1E0?logo=salesforce&logoColor=white) |
+
+> **Agent Skills Open Standard:** These skills follow the [Agent Skills specification](https://agentskills.io) for cross-CLI compatibility.
+
+### CLI Compatibility Notes
+
+> 🤝 **Call for Volunteers!** This repo is community-driven, sharing knowledge to strengthen the Salesforce ecosystem. We need volunteers to test skills on different CLIs (OpenCode, Codex, Gemini, Cursor, etc.). You'll learn a ton about agentic workflows while helping the community! [Open an issue](https://github.com/Jaganpro/sf-skills/issues) to get started.
+
+<details>
+<summary><b>Claude Code</b> (Anthropic) — Full Native Support</summary>
+
+Claude Code is the **recommended** platform for sf-skills with full native support for all features.
+
+```bash
+# Install via marketplace
+/plugin marketplace add Jaganpro/sf-skills
+```
+
+- **Install Path:** `.claude-plugin/` (per-skill plugin structure)
+- **Format:** Native SKILL.md with hooks, templates, and examples
+- **Hooks:** ✅ Automatic validation on Write/Edit operations
+- **LSP:** ✅ Real-time syntax validation with auto-fix loops
+- **Templates:** ✅ Referenced dynamically (no duplication)
+- **Tool Execution:** Local tools (Read, Write, Edit, Bash, Grep, Glob) — no MCP overhead
+- **Docs:** [claude.ai/code](https://claude.ai/code)
+
+**Why Claude Code for sf-skills:**
+- **Zero-latency tools** — Local execution vs. MCP JSON-RPC roundtrips
+- **Automatic hooks** — Validation runs on every file save without manual invocation
+- **Context efficiency** — Skills load on-demand, saving ~2000 tokens per conversation
+- **LSP integration** — Apex, Agent Script, and LWC syntax errors caught in real-time
+
+</details>
+
+<details>
+<summary><b>OpenCode CLI</b> — Open-Source Claude Code Alternative</summary>
+
+[OpenCode](https://github.com/opencode-ai/opencode) is an open-source alternative to Claude Code with skill support.
+
+```bash
+# Install all skills for OpenCode
+python tools/installer.py --cli opencode --all
+```
+
+- **Install Path:** `.opencode/skill/` (project) or `~/.opencode/skill/` (global)
+- **Format:** SKILL.md with scripts and templates
+- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
+- **Claude Compatibility:** Also reads `.claude/skills/` directory
+- **Docs:** [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode)
+
+</details>
+
+<details>
+<summary><b>Codex CLI</b> (OpenAI) — GPT-Powered Coding Agent</summary>
+
+[Codex CLI](https://github.com/openai/codex) is OpenAI's terminal-based coding agent.
+
+```bash
+# Install all skills for Codex
+python tools/installer.py --cli codex --all
+```
+
+- **Install Path:** `.codex/skills/` (project) or `~/.codex/skills/` (global)
+- **Format:** SKILL.md with `assets/` (templates) and `references/` (docs)
+- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
+- **Enable Skills:** `codex --enable skills`
+- **Docs:** [github.com/openai/codex](https://github.com/openai/codex)
+
+</details>
+
+<details>
+<summary><b>Gemini CLI</b> (Google) — 1M+ Token Context</summary>
+
+[Gemini CLI](https://github.com/google-gemini/gemini-cli) is Google's Gemini-powered terminal agent with massive context window.
+
+```bash
+# Install all skills for Gemini
+python tools/installer.py --cli gemini --all
+```
+
+- **Install Path:** `~/.gemini/skills/` (user scope by default)
+- **Format:** SKILL.md with scripts and templates
+- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
+- **Context:** 1M+ tokens — can load entire codebases
+- **Symlink:** `ln -s ~/.gemini/skills/sf-apex ~/.claude/skills/sf-apex`
+- **Docs:** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
+
+</details>
+
+<details>
+<summary><b>Amp CLI</b> (Sourcegraph) — Claude Code Compatible</summary>
+
+[Amp](https://sourcegraph.com/amp) is Sourcegraph's agentic coding tool, fully compatible with Claude Code skills.
+
+```bash
+# No installer needed — Amp reads Claude Code skills directly
+# Place skills in .claude/skills/ directory
+```
+
+- **Install Path:** `.claude/skills/` (same as Claude Code)
+- **Format:** Native Claude Code format (SKILL.md + hooks + templates)
+- **Hooks:** ✅ Compatible with Claude Code hooks
+- **Codebase Search:** Powered by Sourcegraph's code intelligence
+- **Docs:** [sourcegraph.com/amp](https://sourcegraph.com/amp)
+
+</details>
+
+<details>
+<summary><b>Droid CLI</b> (Factory.ai) — Claude Code Compatible</summary>
+
+Droid CLI (v0.26.0+) natively supports Claude Code skills format. Use the installer or import directly:
+
+```bash
+# Install via installer
+python tools/installer.py --cli droid --all
+
+# Or Droid auto-discovers skills from .claude/skills/ directory
+# Use the /skills command within Droid to manage skills
+```
+
+- **Install Path:** `.factory/skills/` or `~/.factory/skills/`
+- **Format:** Claude Code compatible (SKILL.md + scripts/)
+- **Prerequisite:** Enable Custom Droids in `/settings → Experimental`
+- **Docs:** [docs.factory.ai/cli/configuration/skills](https://docs.factory.ai/cli/configuration/skills)
+
+</details>
+
+<details>
+<summary><b>Cursor CLI</b> — Installer with MDC Transformation</summary>
+
+Cursor CLI uses its own rules system (`.cursor/rules/` with MDC format). The installer transforms skills to Cursor's native format:
+
+```bash
+# Install skills transformed to MDC format
+python tools/installer.py --cli cursor --all
+```
+
+- **Install Path:** `.cursor/rules/{name}.mdc`
+- **Format:** MDC (Markdown with YAML frontmatter: description, globs, alwaysApply)
+- **Templates:** Copied to `assets/`, docs to `references/`
+- **Alternative:** [SkillPort](https://github.com/gotalab/skillport) MCP bridge for runtime skill access
+- **Docs:** [docs.cursor.com/context/rules-for-ai](https://docs.cursor.com/context/rules-for-ai)
+
+</details>
+
+<details>
+<summary><b>Agentforce Vibes</b> (Salesforce) — Enterprise Vibe-Coding Tool</summary>
+
+[Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html) is Salesforce's enterprise vibe-coding tool with strong Model Context Protocol (MCP) support.
+
+```bash
+# Install all skills for Agentforce Vibes
+python tools/installer.py --cli agentforce-vibes --all
+```
+
+- **Install Path:** `.clinerules/` (project directory)
+- **Format:** Pure markdown files with numeric prefixes (`01-sf-apex.md`, `02-sf-flow.md`, etc.)
+- **Templates:** Inlined directly into markdown rules (self-contained)
+- **Includes:** `/newrule` command references, Salesforce DX MCP Server tips
+- **Docs:** [Agentforce Vibes Blog](https://developer.salesforce.com/blogs/2025/10/unleash-your-innovation-with-agentforce-vibes-vibe-coding-for-the-enterprise)
+
+**Output Structure:**
+```
+.clinerules/
+├── 01-sf-apex.md
+├── 02-sf-flow.md
+├── 03-sf-lwc.md
+└── ... (16 skills total)
+```
+
+**Why Agentforce Vibes:** Strong MCP support enables integration with Salesforce DX MCP Server (20+ tools) for org connectivity, metadata operations, and deployment.
+
+</details>
+
+### Claude Code vs. Agentforce Vibes
+
+| Feature | Claude Code | Agentforce Vibes |
+|---------|-------------|------------------|
+| **Platform** | Terminal CLI | VS Code Extension |
+| **Skills System** | ✅ Native (`SKILL.md` + hooks + templates) | ❌ No skills — uses `.clinerules` markdown |
+| **Automatic Hooks** | ✅ Validation on Write/Edit (150+ point rubrics) | ❌ No hooks — manual validation only |
+| **LSP Integration** | ✅ Agentic auto-fix loops (detect → fix → validate) | ✅ Via VS Code (manual fixes only) |
+| **Tool Execution** | ✅ Local tools (zero latency) | ⚡ MCP-based (JSON-RPC overhead) |
+| **Salesforce Tools** | `sf` CLI + pre-templated skill scripts | Salesforce DX MCP (20+ tools) |
+| **Templates** | ✅ Dynamic references (50+ templates) | 📄 Inlined in markdown |
+| **Models** | Claude Sonnet 4, Opus 4.5 | GPT-4.1, SFR (Salesforce Research) |
+| **Context Window** | 200K (Sonnet) or 1M (extended) | Varies by model |
+| **Enterprise Features** | Community-driven | Trust Layer, audit logging |
+
+> **Bottom line:** Claude Code offers deeper integration (hooks, agentic LSP auto-fix, local tools) for Salesforce development. Agentforce Vibes provides enterprise compliance and native Salesforce ecosystem integration via MCP.
 
 </details>
 
