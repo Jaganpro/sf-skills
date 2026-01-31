@@ -101,7 +101,8 @@ GLOBAL_HOOKS_TEMPLATE = {
                 "hooks": [{
                     "type": "command",
                     "command": f"python3 {HOOKS_DIR}/scripts/session-update-check.py",
-                    "timeout": 5000
+                    "timeout": 10000,
+                    "async": True
                 }],
                 "_sf_skills": True
             },
