@@ -632,6 +632,154 @@ ORDER BY st.ssot__StartTimestamp__c;
 
 ---
 
+## Advanced CTE Patterns
+
+Complex CTE (Common Table Expression) patterns for advanced session analysis.
+
+### CTE Pattern 1: Session Summary with Stats
+
+Aggregate turn counts and step counts per session:
+
+```sql
+WITH session_stats AS (
+    SELECT
+        s.ssot__Id__c,
+        s.ssot__AIAgentApiName__c as agent_name,
+        s.ssot__AIAgentSessionEndType__c as end_type,
+        COUNT(DISTINCT i.ssot__Id__c) as turn_count,
+        COUNT(DISTINCT st.ssot__Id__c) as step_count
+    FROM ssot__AIAgentSession__dlm s
+    LEFT JOIN ssot__AIAgentInteraction__dlm i
+        ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
+    LEFT JOIN ssot__AIAgentInteractionStep__dlm st
+        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+    WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+    GROUP BY s.ssot__Id__c, s.ssot__AIAgentApiName__c, s.ssot__AIAgentSessionEndType__c
+)
+SELECT * FROM session_stats WHERE turn_count > 5
+ORDER BY step_count DESC;
+```
+
+### CTE Pattern 2: Error Analysis by Topic
+
+Find which topics have the most action errors:
+
+```sql
+WITH topic_errors AS (
+    SELECT
+        i.ssot__TopicApiName__c as topic,
+        st.ssot__Name__c as action_name,
+        st.ssot__ErrorMessageText__c as error
+    FROM ssot__AIAgentInteractionStep__dlm st
+    JOIN ssot__AIAgentInteraction__dlm i
+        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+    WHERE length(st.ssot__ErrorMessageText__c) > 0
+      AND st.ssot__ErrorMessageText__c != 'NOT_SET'
+      AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
+)
+SELECT topic, action_name, COUNT(*) as error_count
+FROM topic_errors
+GROUP BY topic, action_name
+ORDER BY error_count DESC;
+```
+
+### CTE Pattern 3: Session Timeline Reconstruction
+
+Reconstruct the full timeline of events (messages + steps) for a session:
+
+```sql
+WITH
+  params AS (
+    SELECT '{{SESSION_ID}}' AS session_id
+  ),
+  session_events AS (
+    -- Messages
+    SELECT
+        'MESSAGE' as event_type,
+        im.ssot__MessageSentTimestamp__c as timestamp,
+        im.ssot__AiAgentInteractionMessageType__c as detail,
+        i.ssot__aiAgentSessionId__c as session_id
+    FROM ssot__AiAgentInteractionMessage__dlm im
+    JOIN ssot__AiAgentInteraction__dlm i
+        ON im.ssot__aiAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+
+    UNION ALL
+
+    -- Steps
+    SELECT
+        st.ssot__AiAgentInteractionStepType__c as event_type,
+        st.ssot__StartTimestamp__c as timestamp,
+        st.ssot__Name__c as detail,
+        i.ssot__aiAgentSessionId__c as session_id
+    FROM ssot__AIAgentInteractionStep__dlm st
+    JOIN ssot__AiAgentInteraction__dlm i
+        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+  )
+SELECT event_type, timestamp, detail
+FROM session_events
+ORDER BY timestamp ASC;
+```
+
+### CTE Pattern 4: Quality Metrics Dashboard
+
+Aggregate quality metrics by detector type:
+
+```sql
+WITH quality_summary AS (
+    SELECT
+        c.detectorType__c,
+        c.category__c,
+        COUNT(*) as count,
+        AVG(TRY_CAST(c.value__c AS DECIMAL)) as avg_score
+    FROM GenAIContentCategory__dlm c
+    GROUP BY c.detectorType__c, c.category__c
+)
+SELECT
+    detectorType__c as detector,
+    category__c as category,
+    count,
+    ROUND(avg_score, 3) as avg_confidence
+FROM quality_summary
+ORDER BY detector, count DESC;
+```
+
+**Note:** This query requires GenAI Trust Layer DMOs to be enabled.
+
+### CTE Pattern 5: Topic Routing Analysis
+
+Analyze how users are routed between topics within sessions:
+
+```sql
+WITH topic_transitions AS (
+    SELECT
+        curr.ssot__aiAgentSessionId__c as session_id,
+        prev.ssot__TopicApiName__c as from_topic,
+        curr.ssot__TopicApiName__c as to_topic,
+        curr.ssot__StartTimestamp__c as transition_time
+    FROM ssot__AIAgentInteraction__dlm curr
+    JOIN ssot__AIAgentInteraction__dlm prev
+        ON curr.ssot__PrevInteractionId__c = prev.ssot__Id__c
+    WHERE curr.ssot__TopicApiName__c != prev.ssot__TopicApiName__c
+      AND curr.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
+)
+SELECT
+    from_topic,
+    to_topic,
+    COUNT(*) as transition_count
+FROM topic_transitions
+GROUP BY from_topic, to_topic
+ORDER BY transition_count DESC;
+```
+
+**Use Cases:**
+- Identify common topic escalation paths
+- Find topics that frequently need fallback routing
+- Understand user journey patterns
+
+---
+
 ## Entity Relationship Reference
 
 ### Session Tracing Data Model (STDM)

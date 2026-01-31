@@ -136,6 +136,40 @@
           "description": "Invalid CLI args produce clear errors"
         }
       ]
+    },
+    "T6": {
+      "name": "Live SQL Execution",
+      "weight": 50,
+      "is_bonus": true,
+      "description": "Validates documented SQL patterns execute against live Data Cloud",
+      "requires_live_api": true,
+      "tests": [
+        {
+          "name": "test_basic_extraction_queries",
+          "points": 10,
+          "description": "T6.1: Session, Interaction, Step, Message extraction queries"
+        },
+        {
+          "name": "test_aggregation_queries",
+          "points": 10,
+          "description": "T6.2: COUNT, GROUP BY, HAVING aggregation queries"
+        },
+        {
+          "name": "test_relationship_joins",
+          "points": 10,
+          "description": "T6.3: LEFT JOIN, multi-table join queries"
+        },
+        {
+          "name": "test_cte_queries",
+          "points": 10,
+          "description": "T6.4: WITH clause CTE complex analysis queries"
+        },
+        {
+          "name": "test_quality_analysis_queries",
+          "points": 10,
+          "description": "T6.5: GenAI Trust Layer quality join queries"
+        }
+      ]
     }
   },
   "metadata": {

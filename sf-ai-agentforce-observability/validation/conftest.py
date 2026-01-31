@@ -78,6 +78,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "tier5: Tier 5 - Negative/Error Case tests"
     )
+    config.addinivalue_line(
+        "markers", "tier6: Tier 6 - Live SQL Execution tests (bonus)"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -107,7 +110,7 @@ def pytest_addoption(parser):
         "--tier",
         action="store",
         default=None,
-        help="Run only specific tier (T1, T2, T3, T4, T5)"
+        help="Run only specific tier (T1, T2, T3, T4, T5, T6)"
     )
 
 
