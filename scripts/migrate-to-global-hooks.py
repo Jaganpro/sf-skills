@@ -3,17 +3,19 @@
 sf-skills Migration Script: Migrate to Global Hooks
 ====================================================
 
-Migrates sf-skills hooks from settings.json (per-project) to the global
-~/.claude/hooks.json system with a stable hooks directory.
+Migrates sf-skills hooks to use a stable global hooks directory with
+absolute paths in ~/.claude/settings.json.
+
+NOTE: Claude Code does NOT support a separate hooks.json file.
+All hooks must be in settings.json under the "hooks" key.
 
 ACTIONS:
 1. Detect current installation state
 2. Backup existing configs to ~/.claude/backups/migration-{timestamp}/
 3. Copy shared/hooks/ → ~/.claude/sf-skills-hooks/
-4. Create global ~/.claude/hooks.json with absolute paths
-5. Remove sf-skills hooks from settings.json (if present - old method)
-6. Clean orphaned cache entries
-7. Verify installation
+4. Update ~/.claude/settings.json with hooks using absolute paths
+5. Clean orphaned cache entries
+6. Verify installation
 
 Usage:
     python3 scripts/migrate-to-global-hooks.py [--dry-run] [--verbose]
@@ -43,7 +45,6 @@ SOURCE_HOOKS_DIR = PLUGIN_ROOT / "shared" / "hooks"
 # Target locations
 CLAUDE_DIR = Path.home() / ".claude"
 HOOKS_DIR = CLAUDE_DIR / "sf-skills-hooks"
-GLOBAL_HOOKS_JSON = CLAUDE_DIR / "hooks.json"
 SETTINGS_JSON = CLAUDE_DIR / "settings.json"
 BACKUP_DIR = CLAUDE_DIR / "backups"
 
@@ -101,7 +102,7 @@ def print_step(num: int, title: str):
 
 def get_global_hooks_template() -> Dict[str, Any]:
     """
-    Generate the global hooks.json template with absolute paths.
+    Generate the hooks template with absolute paths for settings.json.
 
     All paths point to ~/.claude/sf-skills-hooks/ which is a stable
     location that auto-updates from the marketplace clone.
@@ -263,19 +264,17 @@ def detect_installation_state() -> Dict[str, Any]:
     Detect the current installation state.
 
     Returns dict with:
-        - has_settings_hooks: bool - hooks in settings.json
-        - has_global_hooks: bool - hooks in hooks.json
+        - has_settings_hooks: bool - sf-skills hooks in settings.json
         - has_hooks_dir: bool - ~/.claude/sf-skills-hooks/ exists
         - settings_hook_count: int - number of sf-skills events in settings.json
-        - global_hook_count: int - number of sf-skills events in hooks.json
+        - uses_absolute_paths: bool - hooks use absolute paths to sf-skills-hooks/
         - version: str - current version if known
     """
     state = {
         "has_settings_hooks": False,
-        "has_global_hooks": False,
         "has_hooks_dir": HOOKS_DIR.exists(),
         "settings_hook_count": 0,
-        "global_hook_count": 0,
+        "uses_absolute_paths": False,
         "version": None
     }
 
@@ -289,20 +288,11 @@ def detect_installation_state() -> Dict[str, Any]:
                         if is_sf_skills_hook(hook):
                             state["has_settings_hooks"] = True
                             state["settings_hook_count"] += 1
-                            break
-        except (json.JSONDecodeError, KeyError):
-            pass
-
-    # Check hooks.json for sf-skills hooks
-    if GLOBAL_HOOKS_JSON.exists():
-        try:
-            hooks_data = json.loads(GLOBAL_HOOKS_JSON.read_text())
-            if "hooks" in hooks_data:
-                for event_name, hooks in hooks_data["hooks"].items():
-                    for hook in hooks:
-                        if is_sf_skills_hook(hook):
-                            state["has_global_hooks"] = True
-                            state["global_hook_count"] += 1
+                            # Check if using absolute paths to sf-skills-hooks
+                            for nested in hook.get("hooks", []):
+                                cmd = nested.get("command", "")
+                                if "sf-skills-hooks" in cmd:
+                                    state["uses_absolute_paths"] = True
                             break
         except (json.JSONDecodeError, KeyError):
             pass
@@ -347,8 +337,6 @@ def create_backup(dry_run: bool = False, verbose: bool = False) -> Optional[Path
 
     if SETTINGS_JSON.exists():
         files_to_backup.append(SETTINGS_JSON)
-    if GLOBAL_HOOKS_JSON.exists():
-        files_to_backup.append(GLOBAL_HOOKS_JSON)
     if HOOKS_DIR.exists():
         files_to_backup.append(HOOKS_DIR)
 
@@ -434,27 +422,30 @@ def write_version_file(version: str, dry_run: bool = False) -> bool:
         return False
 
 
-def create_global_hooks_json(dry_run: bool = False, verbose: bool = False) -> bool:
+def update_settings_json_hooks(dry_run: bool = False, verbose: bool = False) -> bool:
     """
-    Create ~/.claude/hooks.json with sf-skills hooks.
+    Update ~/.claude/settings.json with sf-skills hooks using absolute paths.
+
+    NOTE: Claude Code does NOT support a separate hooks.json file.
+    All hooks must be in settings.json under the "hooks" key.
 
     Merges with existing user hooks without overwriting them.
     """
     template = get_global_hooks_template()
 
     if dry_run:
-        print_info(f"Would create/update: {GLOBAL_HOOKS_JSON}")
+        print_info(f"Would update hooks in: {SETTINGS_JSON}")
         if verbose:
             for event_name in template["hooks"]:
                 print_info(f"  └─ {event_name}: {len(template['hooks'][event_name])} hook(s)")
         return True
 
     try:
-        # Load existing hooks if present
+        # Load existing settings if present
         existing = {}
-        if GLOBAL_HOOKS_JSON.exists():
+        if SETTINGS_JSON.exists():
             try:
-                existing = json.loads(GLOBAL_HOOKS_JSON.read_text())
+                existing = json.loads(SETTINGS_JSON.read_text())
             except json.JSONDecodeError:
                 pass
 
@@ -476,8 +467,8 @@ def create_global_hooks_json(dry_run: bool = False, verbose: bool = False) -> bo
             existing["hooks"][event_name] = non_sf_hooks + new_hooks
 
         # Write back
-        GLOBAL_HOOKS_JSON.parent.mkdir(parents=True, exist_ok=True)
-        GLOBAL_HOOKS_JSON.write_text(json.dumps(existing, indent=2) + "\n")
+        SETTINGS_JSON.parent.mkdir(parents=True, exist_ok=True)
+        SETTINGS_JSON.write_text(json.dumps(existing, indent=2) + "\n")
 
         if verbose:
             user_hook_count = sum(
@@ -487,11 +478,11 @@ def create_global_hooks_json(dry_run: bool = False, verbose: bool = False) -> bo
             if user_hook_count > 0:
                 print_info(f"Preserved {user_hook_count} user-defined hooks")
 
-        print_success(f"Created: {GLOBAL_HOOKS_JSON}")
+        print_success(f"Updated hooks in: {SETTINGS_JSON}")
         return True
 
     except (OSError, IOError) as e:
-        print_error(f"Failed to create hooks.json: {e}")
+        print_error(f"Failed to update settings.json: {e}")
         return False
 
 
@@ -614,18 +605,28 @@ def verify_installation(verbose: bool = False) -> bool:
             if not (HOOKS_DIR / script).exists():
                 issues.append(f"Missing: {script}")
 
-    # Check hooks.json exists and is valid
-    if not GLOBAL_HOOKS_JSON.exists():
-        issues.append("hooks.json not found")
+    # Check settings.json has hooks configured
+    if not SETTINGS_JSON.exists():
+        issues.append("settings.json not found")
     else:
         try:
-            hooks_data = json.loads(GLOBAL_HOOKS_JSON.read_text())
-            if "hooks" not in hooks_data:
-                issues.append("hooks.json missing 'hooks' key")
-            elif "SessionStart" not in hooks_data["hooks"]:
-                issues.append("hooks.json missing SessionStart event")
+            settings = json.loads(SETTINGS_JSON.read_text())
+            if "hooks" not in settings:
+                issues.append("settings.json missing 'hooks' key")
+            elif "SessionStart" not in settings.get("hooks", {}):
+                issues.append("settings.json missing SessionStart hooks")
+            else:
+                # Verify hooks point to sf-skills-hooks directory
+                has_correct_path = False
+                for hook in settings["hooks"].get("SessionStart", []):
+                    for nested in hook.get("hooks", []):
+                        if "sf-skills-hooks" in nested.get("command", ""):
+                            has_correct_path = True
+                            break
+                if not has_correct_path:
+                    issues.append("Hooks not pointing to sf-skills-hooks directory")
         except json.JSONDecodeError:
-            issues.append("hooks.json is invalid JSON")
+            issues.append("settings.json is invalid JSON")
 
     # Check VERSION file
     version_file = HOOKS_DIR / "VERSION"
@@ -658,14 +659,10 @@ def run_migration(dry_run: bool = False, verbose: bool = False):
 
     print(f"  Current state:")
     if state["has_settings_hooks"]:
-        print(f"    • settings.json: {state['settings_hook_count']} sf-skills events")
+        path_type = "(absolute paths)" if state["uses_absolute_paths"] else "(relative paths)"
+        print(f"    • settings.json: {state['settings_hook_count']} sf-skills events {path_type}")
     else:
         print(f"    • settings.json: No sf-skills hooks")
-
-    if state["has_global_hooks"]:
-        print(f"    • hooks.json: {state['global_hook_count']} sf-skills events")
-    else:
-        print(f"    • hooks.json: Not configured")
 
     if state["has_hooks_dir"]:
         print(f"    • sf-skills-hooks/: Exists (v{state['version'] or 'unknown'})")
@@ -696,21 +693,18 @@ def run_migration(dry_run: bool = False, verbose: bool = False):
             return False
     print_success(f"Version set: v{version}")
 
-    # Step 5: Create global hooks.json
-    print_step(4, "Creating global hooks.json")
-    if not create_global_hooks_json(dry_run=dry_run, verbose=verbose):
+    # Step 5: Update settings.json with hooks using absolute paths
+    print_step(4, "Updating settings.json hooks")
+    if not update_settings_json_hooks(dry_run=dry_run, verbose=verbose):
         if not dry_run:
             print_error("Migration failed at step 5")
             return False
 
-    # Step 6: Remove from settings.json
-    print_step(5, "Cleaning up old installation")
-    remove_from_settings_json(dry_run=dry_run, verbose=verbose)
-
-    # Step 7: Clean orphan caches
+    # Step 6: Clean orphan caches
+    print_step(5, "Cleaning up caches")
     clean_orphan_caches(dry_run=dry_run, verbose=verbose)
 
-    # Step 8: Verify installation
+    # Step 7: Verify installation
     print_step(6, "Verifying installation")
     if dry_run:
         print_info("Skipping verification (dry run)")
@@ -732,7 +726,7 @@ def run_migration(dry_run: bool = False, verbose: bool = False):
         print(f"{Colors.GREEN}✅ MIGRATION COMPLETE!{Colors.RESET}")
         print(f"""
   Hooks installed to: {HOOKS_DIR}
-  Config created at:  {GLOBAL_HOOKS_JSON}
+  Config updated at:  {SETTINGS_JSON}
 """)
         if backup_path:
             print(f"  Backup saved to:    {backup_path}")

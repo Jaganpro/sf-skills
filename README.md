@@ -112,7 +112,7 @@ python3 scripts/migrate-to-global-hooks.py
 # Restart Claude Code to activate hooks
 ```
 
-This installs hooks to `~/.claude/sf-skills-hooks/` and configures `~/.claude/hooks.json`. **Updates are automatic** — on each session start, sf-skills checks for new releases and updates silently in the background.
+This installs hooks to `~/.claude/sf-skills-hooks/` and updates `~/.claude/settings.json` with absolute paths. **Updates are automatic** — on each session start, sf-skills checks for new releases and updates silently in the background.
 
 **What hooks provide:**
 
@@ -147,11 +147,11 @@ python3 scripts/install-hooks.py --uninstall
 
 **Global vs Local Installation:**
 
-| Method | Location | Auto-Updates | Best For |
-|--------|----------|--------------|----------|
-| `migrate-to-global-hooks.py` | `~/.claude/hooks.json` | ✅ Yes | Marketplace users (recommended) |
-| `install-hooks.py --global` | `~/.claude/hooks.json` | ✅ Yes | Manual global install |
-| `install-hooks.py` | `~/.claude/settings.json` | ❌ No | Project-specific or development |
+| Method | Hooks Location | Scripts Location | Auto-Updates | Best For |
+|--------|---------------|------------------|--------------|----------|
+| `migrate-to-global-hooks.py` | `~/.claude/settings.json` | `~/.claude/sf-skills-hooks/` | ✅ Yes | Marketplace users (recommended) |
+| `install-hooks.py --global` | `~/.claude/settings.json` | `~/.claude/sf-skills-hooks/` | ✅ Yes | Manual global install |
+| `install-hooks.py` | `~/.claude/settings.json` | Project directory | ❌ No | Development |
 
 </details>
 

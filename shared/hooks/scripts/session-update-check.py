@@ -15,7 +15,7 @@ BEHAVIOR:
    b. git checkout <latest-tag>
    c. rsync shared/hooks/ → ~/.claude/sf-skills-hooks/
    d. Write new VERSION file
-5. Verify global hooks.json exists (create if missing)
+5. Verify hooks in ~/.claude/settings.json (update if needed)
 6. Update .last-update-check timestamp
 
 CONSTRAINTS:
@@ -376,21 +376,24 @@ def is_sf_skills_hook(hook: dict) -> bool:
     return False
 
 
-def ensure_global_hooks_json() -> bool:
+def ensure_global_hooks_in_settings() -> bool:
     """
-    Ensure ~/.claude/hooks.json exists and contains sf-skills hooks.
+    Ensure ~/.claude/settings.json contains sf-skills hooks.
+
+    NOTE: Claude Code does NOT support a separate hooks.json file.
+    All hooks must be in settings.json under the "hooks" key.
 
     Merges with existing user hooks without overwriting them.
-    Returns True if hooks.json is valid, False on error.
+    Returns True if settings.json is valid, False on error.
     """
-    hooks_json_path = Path.home() / ".claude" / "hooks.json"
+    settings_path = Path.home() / ".claude" / "settings.json"
 
     try:
-        # Load existing hooks.json if it exists
+        # Load existing settings.json if it exists
         existing = {}
-        if hooks_json_path.exists():
+        if settings_path.exists():
             try:
-                existing = json.loads(hooks_json_path.read_text())
+                existing = json.loads(settings_path.read_text())
             except json.JSONDecodeError:
                 existing = {}
 
@@ -412,8 +415,8 @@ def ensure_global_hooks_json() -> bool:
             existing["hooks"][event_name] = non_sf_hooks + template_hooks
 
         # Write back
-        hooks_json_path.parent.mkdir(parents=True, exist_ok=True)
-        hooks_json_path.write_text(json.dumps(existing, indent=2) + "\n")
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(json.dumps(existing, indent=2) + "\n")
 
         return True
 
@@ -439,8 +442,8 @@ def perform_update(current_version: str, latest_version: str) -> bool:
     if not write_version(latest_version):
         return False
 
-    # Step 4: Ensure hooks.json is up to date
-    ensure_global_hooks_json()
+    # Step 4: Ensure settings.json hooks are up to date
+    ensure_global_hooks_in_settings()
 
     return True
 

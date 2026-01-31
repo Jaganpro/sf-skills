@@ -16,7 +16,9 @@ Options:
     --dry-run         Show what would be changed without making changes
     --verbose         Show detailed output
     --global          Install to ~/.claude/sf-skills-hooks/ with absolute paths
-    --to-hooks-json   Write to ~/.claude/hooks.json instead of settings.json
+
+NOTE: Claude Code does NOT support a separate hooks.json file.
+All hooks must be in settings.json under the "hooks" key.
 """
 
 import json
@@ -35,7 +37,6 @@ import argparse
 SCRIPT_DIR = Path(__file__).parent
 PLUGIN_ROOT = SCRIPT_DIR.parent
 SETTINGS_FILE = Path.home() / ".claude" / "settings.json"
-HOOKS_JSON_FILE = Path.home() / ".claude" / "hooks.json"
 GLOBAL_HOOKS_DIR = Path.home() / ".claude" / "sf-skills-hooks"
 BACKUP_DIR = Path.home() / ".claude" / "backups"
 
@@ -416,7 +417,7 @@ def get_hook_details(hook_config: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def load_settings(target_file: Path = None) -> Dict[str, Any]:
-    """Load existing settings.json or hooks.json, or return empty dict."""
+    """Load existing settings.json or return empty dict."""
     if target_file is None:
         target_file = SETTINGS_FILE
 
@@ -428,11 +429,6 @@ def load_settings(target_file: Path = None) -> Dict[str, Any]:
             print_error(f"Invalid JSON in {target_file.name}: {e}")
             sys.exit(1)
     return {}
-
-
-def load_hooks_json() -> Dict[str, Any]:
-    """Load existing hooks.json or return empty dict."""
-    return load_settings(HOOKS_JSON_FILE)
 
 
 def save_settings(settings: Dict[str, Any], dry_run: bool = False, target_file: Path = None):
@@ -741,9 +737,10 @@ def get_registry_version() -> str:
 
 def install_hooks_global(dry_run: bool = False, verbose: bool = False):
     """
-    Install sf-skills hooks globally to ~/.claude/sf-skills-hooks/ and hooks.json.
+    Install sf-skills hooks globally to ~/.claude/sf-skills-hooks/ with absolute paths.
 
-    This creates a stable hooks directory and configures hooks.json with absolute paths.
+    This creates a stable hooks directory and configures settings.json with absolute paths.
+    NOTE: Claude Code does NOT support a separate hooks.json file.
     """
     print("\n📦 Installing sf-skills hooks (global mode)...\n")
 
@@ -764,14 +761,14 @@ def install_hooks_global(dry_run: bool = False, verbose: bool = False):
     version = f"v{get_registry_version()}"
     write_version_file(version, dry_run=dry_run)
 
-    # Step 4: Generate and save hooks.json
-    print_info("\nStep 2: Configuring hooks.json...")
+    # Step 4: Update settings.json with hooks using absolute paths
+    print_info("\nStep 2: Configuring hooks in settings.json...")
     global_hooks = get_global_hooks_config()
 
-    # Load existing hooks.json to preserve user hooks
-    existing = load_hooks_json()
+    # Load existing settings to preserve user hooks
+    existing = load_settings()
     if verbose:
-        print_info(f"Loaded existing hooks from: {HOOKS_JSON_FILE}")
+        print_info(f"Loaded existing settings from: {SETTINGS_FILE}")
 
     # Upsert hooks (update or insert)
     new_settings, status = upsert_hooks(existing, global_hooks, verbose)
@@ -793,9 +790,9 @@ def install_hooks_global(dry_run: bool = False, verbose: bool = False):
         else:
             print(f"  {event_name:18} │ ⚪ Up to date")
 
-    # Save to hooks.json
+    # Save to settings.json
     print()
-    save_settings(new_settings, dry_run=dry_run, target_file=HOOKS_JSON_FILE)
+    save_settings(new_settings, dry_run=dry_run, target_file=SETTINGS_FILE)
 
     # Summary
     if not dry_run:
@@ -804,7 +801,7 @@ def install_hooks_global(dry_run: bool = False, verbose: bool = False):
         print("═" * 60)
         print(f"""
   Hooks installed to: {GLOBAL_HOOKS_DIR}
-  Config created at:  {HOOKS_JSON_FILE}
+  Config updated at:  {SETTINGS_FILE}
   Version: {version}
 
 ⚠️  Restart Claude Code to activate hooks
@@ -1032,7 +1029,7 @@ Examples:
 
 Global installation (recommended for marketplace users):
   python3 install-hooks.py --global     # Install to ~/.claude/sf-skills-hooks/
-                                        # and configure ~/.claude/hooks.json
+                                        # with absolute paths in settings.json
         """
     )
     parser.add_argument("--uninstall", action="store_true", help="Remove sf-skills hooks")
@@ -1040,9 +1037,7 @@ Global installation (recommended for marketplace users):
     parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
     parser.add_argument("--status", action="store_true", help="Show current installation status")
     parser.add_argument("--global", dest="use_global", action="store_true",
-                        help="Install to ~/.claude/sf-skills-hooks/ with absolute paths")
-    parser.add_argument("--to-hooks-json", action="store_true",
-                        help="Write to ~/.claude/hooks.json instead of settings.json (implied by --global)")
+                        help="Install to ~/.claude/sf-skills-hooks/ with absolute paths in settings.json")
 
     args = parser.parse_args()
 
@@ -1052,7 +1047,7 @@ Global installation (recommended for marketplace users):
         show_status(verbose=args.verbose)
     elif args.uninstall:
         uninstall_hooks(dry_run=args.dry_run, verbose=args.verbose)
-    elif args.use_global or args.to_hooks_json:
+    elif args.use_global:
         # Global installation mode
         install_hooks_global(dry_run=args.dry_run, verbose=args.verbose)
     else:

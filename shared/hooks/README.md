@@ -14,6 +14,10 @@ shared/hooks/
 │   ├── chain-validator.py       # SubagentStop hook (workflow chain validation)
 │   ├── auto-approve.py          # PermissionRequest hook (smart auto-approval)
 │   └── llm-eval.py              # LLM-powered semantic evaluation (Haiku)
+├── docs/
+│   ├── hook-lifecycle-diagram.md    # Visual lifecycle diagram with all SF-Skills hooks
+│   ├── ORCHESTRATION-ARCHITECTURE.md # How skill recommendations work
+│   └── hooks-frontmatter-schema.md  # Hook configuration format
 └── README.md                    # This file
 ```
 
