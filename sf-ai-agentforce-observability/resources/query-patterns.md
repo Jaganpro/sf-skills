@@ -2,6 +2,8 @@
 
 Common query patterns for extracting and analyzing Agentforce session tracing data.
 
+> **Official Reference**: [Get Insights from Agent Session Tracing Data](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_use.htm)
+
 ## Basic Extraction Queries
 
 ### All Sessions (Last 7 Days)
@@ -235,6 +237,94 @@ SELECT * FROM ssot__AIAgentInteractionStep__dlm;  -- Has large text fields
 ```
 
 ---
+
+## Official Example Queries (from Salesforce Help)
+
+These are official query patterns from the Salesforce documentation.
+
+### Full Session Join (All Entities)
+
+```sql
+SELECT *
+FROM "AiAgentSession__dlm"
+JOIN "AiAgentSessionParticipant__dlm"
+    ON "AiAgentSession__dlm"."id__c" = "AiAgentSessionParticipant__dlm"."aiAgentSessionId__c"
+JOIN "AiAgentInteraction__dlm"
+    ON "AiAgentSession__dlm"."id__c" = "AiAgentInteraction__dlm"."aiAgentSessionId__c"
+JOIN "AiAgentInteractionMessage__dlm"
+    ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionMessage__dlm"."aiAgentInteractionId__c"
+JOIN "AiAgentInteractionStep__dlm"
+    ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionStep__dlm"."aiAgentInteractionId__c"
+WHERE "AiAgentSession__dlm"."id__c" = '{{SESSION_ID}}'
+LIMIT 10;
+```
+
+### Recent Sessions (Last N Days)
+
+```sql
+SELECT
+    ssot__Id__c,
+    ssot__StartTimestamp__c
+FROM ssot__AiAgentSession__dlm s
+WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY s.ssot__StartTimestamp__c DESC;
+```
+
+### All Messages in an Interaction
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__AiAgentInteractionMessageType__c,     -- user or agent
+    ssot__AiAgentInteractionMsgContentType__c,  -- e.g., text
+    ssot__ContentText__c,
+    ssot__AiAgentSessionParticipantId__c AS SenderParticipantId,
+    ssot__ParentMessageId__c                    -- if part of a thread
+FROM "ssot__AiAgentInteractionMessage__dlm"
+WHERE ssot__AiAgentInteractionId__c = '{{INTERACTION_ID}}'
+ORDER BY ssot__MessageSentTimestamp__c ASC;
+```
+
+### Steps with Errors
+
+Find all interaction steps that encountered errors:
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__Id__c AS StepId,
+    ssot__Name__c AS StepName,
+    ssot__InputValueText__c AS Input,
+    ssot__ErrorMessageText__c AS StepErrorMessage
+FROM "ssot__AiAgentInteractionStep__dlm"
+WHERE length(ssot__ErrorMessageText__c) > 0
+  AND ssot__ErrorMessageText__c != 'NOT_SET'
+LIMIT 100;
+```
+
+### Join with GenAI Feedback Data
+
+Combine session tracing with feedback and guardrails metrics:
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__Name__c AS StepName,
+    GenAIGatewayRequest__dlm.prompt__c AS Input_Prompt,
+    GenAIGeneration__dlm.responseText__c AS LLM_Response,
+    GenAIFeedback__dlm.feedback__c AS Feedback
+FROM ssot__AiAgentInteractionStep__dlm
+LEFT JOIN GenAIGeneration__dlm
+    ON ssot__AiAgentInteractionStep__dlm.ssot__GenerationId__c = GenAIGeneration__dlm.generationId__c
+LEFT JOIN GenAIGatewayRequest__dlm
+    ON ssot__AiAgentInteractionStep__dlm.ssot__GenAiGatewayRequestId__c = GenAIGatewayRequest__dlm.gatewayRequestId__c
+LEFT JOIN GenAIGatewayResponse__dlm
+    ON GenAIGatewayRequest__dlm.gatewayRequestId__c = GenAIGatewayResponse__dlm.generationRequestId__c
+LEFT JOIN GenAIFeedback__dlm
+    ON GenAIGeneration__dlm.generationId__c = GenAIFeedback__dlm.generationId__c
+WHERE GenAIGatewayResponse__dlm.generationResponseId__c = GenAIGeneration__dlm.generationResponseId__c
+LIMIT 100;
+```
 
 ---
 

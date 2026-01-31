@@ -77,9 +77,12 @@ Before extracting session data, verify:
 | Check | How to Verify | Why |
 |-------|---------------|-----|
 | **Data 360 enabled** | Setup → Data 360 | Required for Query API |
-| **Agentforce activated** | Setup → Agentforce | Generates session data |
-| **Session Tracing enabled** | Agent Settings | Must be ON to collect data |
+| **Salesforce Standard Data Model v1.124+** | Setup → Apps → Packaging → Installed Packages | Required for session tracing DMOs |
+| **Einstein Generative AI enabled** | Setup → Einstein Generative AI | Enables agent capabilities |
+| **Session Tracing enabled** | Setup → Einstein Audit, Analytics, and Monitoring | Must toggle ON to collect data |
 | **JWT Auth configured** | Use `sf-connected-apps` | Required for Data 360 API |
+
+> **Official Setup Guide**: [Set Up Agentforce Session Tracing](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_setup.htm)
 
 ### Auth Setup (via sf-connected-apps)
 
@@ -407,6 +410,37 @@ TIMELINE
 | **Volume limits** | Query API: 10M records/day | Use incremental extraction |
 | **Parquet efficiency** | 10x smaller than JSON | Always use Parquet for storage |
 | **Lazy evaluation** | Polars scans without loading | Handles 100M+ rows |
+| **~24 records per LLM call** | Each round-trip generates ~24 records | Factor into volume estimates |
+| **5-minute collection interval** | Data collection runs every 5 minutes | Account for processing delay |
+
+---
+
+## Billing Considerations
+
+> **Reference**: [Billing Considerations for Agentforce Session Tracing](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_usage_types.htm)
+
+Agentforce Session Tracing consumes **Data 360 credits** for ingestion, storage, and processing.
+
+### Credit Consumption
+
+| Usage Type | Digital Wallet Card | Description |
+|------------|---------------------|-------------|
+| **Batch Data Pipeline** | Data Services | Records ingested via data streams. ~24 records per LLM round-trip. **Primary cost driver**. |
+| **Data Queries** | Data Services | Records processed when running queries, reports, dashboards |
+| **Streaming Calculated Insights** | Data Services | Used for Prompt Builder usage and feedback metrics |
+| **Storage Beyond Allocation** | Data Storage | Storage consumed above allocated amount |
+
+### Cost Estimation
+
+```
+Records per session ≈ Turns × 24 (avg per LLM call)
+Daily records ≈ Sessions/day × Avg turns × 24
+
+Example:
+  1,000 sessions/day × 4 turns × 24 = 96,000 records/day ingested
+```
+
+**Tip**: Use [Digital Wallet](https://help.salesforce.com/s/articleView?id=sf.digital_wallet.htm) for near real-time consumption tracking.
 
 ---
 
