@@ -163,7 +163,7 @@ print(sessions_df.head())  # Check ssot__Id__c values
 # Check if interactions exist for these sessions
 interaction_query = f"""
 SELECT COUNT(*) FROM ssot__AIAgentInteraction__dlm
-WHERE ssot__aiAgentSessionId__c IN ('{session_ids[0]}')
+WHERE ssot__AiAgentSessionId__c IN ('{session_ids[0]}')
 """
 ```
 

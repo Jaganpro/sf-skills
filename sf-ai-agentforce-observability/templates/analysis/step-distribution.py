@@ -53,13 +53,13 @@ def step_type_ratio(data: dict, agent_name: str = None) -> pl.DataFrame:
 
         interaction_ids = (
             interactions
-            .join(session_ids, left_on="ssot__aiAgentSessionId__c", right_on="ssot__Id__c")
+            .join(session_ids, left_on="ssot__AiAgentSessionId__c", right_on="ssot__Id__c")
             .select(pl.col("ssot__Id__c").alias("interaction_id"))
         )
 
         steps = steps.join(
             interaction_ids,
-            left_on="ssot__AIAgentInteractionId__c",
+            left_on="ssot__AiAgentInteractionId__c",
             right_on="interaction_id"
         )
 
@@ -99,13 +99,13 @@ def action_distribution(data: dict, agent_name: str = None, top_n: int = 20) -> 
 
         interaction_ids = (
             interactions
-            .join(session_ids, left_on="ssot__aiAgentSessionId__c", right_on="ssot__Id__c")
+            .join(session_ids, left_on="ssot__AiAgentSessionId__c", right_on="ssot__Id__c")
             .select(pl.col("ssot__Id__c").alias("interaction_id"))
         )
 
         action_steps = action_steps.join(
             interaction_ids,
-            left_on="ssot__AIAgentInteractionId__c",
+            left_on="ssot__AiAgentInteractionId__c",
             right_on="interaction_id"
         )
 
@@ -124,7 +124,7 @@ def steps_per_turn(data: dict) -> pl.DataFrame:
     """Calculate steps per turn distribution."""
     result = (
         data["steps"]
-        .group_by("ssot__AIAgentInteractionId__c")
+        .group_by("ssot__AiAgentInteractionId__c")
         .agg(pl.count().alias("step_count"))
         .group_by("step_count")
         .agg(pl.count().alias("turn_count"))

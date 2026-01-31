@@ -68,7 +68,7 @@ sessions.with_columns([
 turns_per_session = (
     interactions
     .filter(pl.col("ssot__AiAgentInteractionType__c") == "TURN")
-    .group_by("ssot__aiAgentSessionId__c")
+    .group_by("ssot__AiAgentSessionId__c")
     .agg(pl.count().alias("turn_count"))
 )
 
@@ -86,7 +86,7 @@ interactions.filter(
     pl.col("ssot__AiAgentInteractionType__c") == "TURN"
 ).group_by("ssot__TopicApiName__c").agg(
     pl.count().alias("turn_count"),
-    pl.col("ssot__aiAgentSessionId__c").n_unique().alias("session_count")
+    pl.col("ssot__AiAgentSessionId__c").n_unique().alias("session_count")
 ).sort("turn_count", descending=True).collect()
 ```
 
@@ -97,7 +97,7 @@ interactions.filter(
 topic_counts = (
     interactions
     .filter(pl.col("ssot__AiAgentInteractionType__c") == "TURN")
-    .group_by("ssot__aiAgentSessionId__c")
+    .group_by("ssot__AiAgentSessionId__c")
     .agg(pl.col("ssot__TopicApiName__c").n_unique().alias("topic_count"))
 )
 
@@ -134,7 +134,7 @@ steps.filter(
 ```python
 steps_per_turn = (
     steps
-    .group_by("ssot__AIAgentInteractionId__c")
+    .group_by("ssot__AiAgentInteractionId__c")
     .agg(pl.count().alias("step_count"))
 )
 
@@ -169,7 +169,7 @@ for row in action_steps.iter_rows(named=True):
 ```python
 messages.with_columns([
     pl.col("ssot__ContentText__c").str.len_chars().alias("length")
-]).group_by("ssot__AIAgentInteractionMessageType__c").agg([
+]).group_by("ssot__AiAgentInteractionMessageType__c").agg([
     pl.col("length").mean().alias("avg_length"),
     pl.col("length").max().alias("max_length"),
 ]).collect()
@@ -180,7 +180,7 @@ messages.with_columns([
 ```python
 # Word frequency in user messages (simple)
 user_messages = messages.filter(
-    pl.col("ssot__AIAgentInteractionMessageType__c") == "INPUT"
+    pl.col("ssot__AiAgentInteractionMessageType__c") == "INPUT"
 ).select("ssot__ContentText__c").collect()
 
 # Count words
@@ -256,14 +256,14 @@ def get_timeline(session_id: str) -> pl.DataFrame:
     """Reconstruct message timeline for a session."""
     # Get interaction IDs
     interaction_df = interactions.filter(
-        pl.col("ssot__aiAgentSessionId__c") == session_id
+        pl.col("ssot__AiAgentSessionId__c") == session_id
     ).collect()
 
     interaction_ids = interaction_df["ssot__Id__c"].to_list()
 
     # Get messages
     msg_df = messages.filter(
-        pl.col("ssot__AIAgentInteractionId__c").is_in(interaction_ids)
+        pl.col("ssot__AiAgentInteractionId__c").is_in(interaction_ids)
     ).sort("ssot__MessageSentTimestamp__c").collect()
 
     return msg_df
@@ -271,7 +271,7 @@ def get_timeline(session_id: str) -> pl.DataFrame:
 # Usage
 timeline = get_timeline("a0x1234567890ABC")
 for row in timeline.iter_rows(named=True):
-    msg_type = row["ssot__AIAgentInteractionMessageType__c"]
+    msg_type = row["ssot__AiAgentInteractionMessageType__c"]
     content = row["ssot__ContentText__c"]
     icon = "→" if msg_type == "INPUT" else "←"
     print(f"{icon} {content[:100]}...")

@@ -69,7 +69,7 @@ def validate_parquet_file(file_path: str) -> Dict[str, Any]:
         if "sessions" in str(file_path).lower():
             expected = ["ssot__Id__c", "ssot__AiAgentApiName__c", "ssot__StartTimestamp__c"]
         elif "interactions" in str(file_path).lower():
-            expected = ["ssot__Id__c", "ssot__aiAgentSessionId__c", "ssot__AiAgentInteractionType__c"]
+            expected = ["ssot__Id__c", "ssot__AiAgentSessionId__c", "ssot__AiAgentInteractionType__c"]
         elif "steps" in str(file_path).lower():
             expected = ["ssot__Id__c", "ssot__AiAgentInteractionId__c", "ssot__AiAgentInteractionStepType__c"]
         elif "messages" in str(file_path).lower():

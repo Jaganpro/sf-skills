@@ -296,7 +296,7 @@ class TestRelationshipJoins:
                 COUNT(i.ssot__Id__c) as turn_count
             FROM ssot__AIAgentSession__dlm s
             LEFT JOIN ssot__AIAgentInteraction__dlm i
-                ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
+                ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
                 AND i.ssot__AiAgentInteractionType__c = 'TURN'
             WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
             GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c
@@ -314,9 +314,9 @@ class TestRelationshipJoins:
                 st.ssot__Name__c as step_name
             FROM ssot__AIAgentSession__dlm s
             JOIN ssot__AIAgentInteraction__dlm i
-                ON s.ssot__Id__c = i.ssot__aiAgentSessionId__c
+                ON s.ssot__Id__c = i.ssot__AiAgentSessionId__c
             JOIN ssot__AIAgentInteractionStep__dlm st
-                ON i.ssot__Id__c = st.ssot__AIAgentInteractionId__c
+                ON i.ssot__Id__c = st.ssot__AiAgentInteractionId__c
             WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
             LIMIT 10
             """,
@@ -326,13 +326,13 @@ class TestRelationshipJoins:
             "steps_with_errors_join",
             """
             SELECT
-                i.ssot__aiAgentSessionId__c AS SessionId,
+                i.ssot__AiAgentSessionId__c AS SessionId,
                 st.ssot__Id__c AS StepId,
                 st.ssot__Name__c AS StepName,
                 st.ssot__ErrorMessageText__c AS ErrorMessage
             FROM ssot__AIAgentInteractionStep__dlm st
             JOIN ssot__AIAgentInteraction__dlm i
-                ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+                ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
             WHERE length(st.ssot__ErrorMessageText__c) > 0
               AND st.ssot__ErrorMessageText__c != 'NOT_SET'
               AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
@@ -350,9 +350,9 @@ class TestRelationshipJoins:
                 im.ssot__AiAgentInteractionMessageType__c as message_type
             FROM ssot__AIAgentSession__dlm s
             JOIN ssot__AIAgentInteraction__dlm i
-                ON s.ssot__Id__c = i.ssot__aiAgentSessionId__c
+                ON s.ssot__Id__c = i.ssot__AiAgentSessionId__c
             JOIN ssot__AiAgentInteractionMessage__dlm im
-                ON i.ssot__Id__c = im.ssot__aiAgentInteractionId__c
+                ON i.ssot__Id__c = im.ssot__AiAgentInteractionId__c
             WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
             LIMIT 10
             """,
@@ -424,9 +424,9 @@ class TestCTEQueries:
                     COUNT(DISTINCT st.ssot__Id__c) as step_count
                 FROM ssot__AIAgentSession__dlm s
                 LEFT JOIN ssot__AIAgentInteraction__dlm i
-                    ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
+                    ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
                 LEFT JOIN ssot__AIAgentInteractionStep__dlm st
-                    ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+                    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
                 WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
                 GROUP BY s.ssot__Id__c
             )
@@ -443,7 +443,7 @@ class TestCTEQueries:
                     st.ssot__ErrorMessageText__c as error
                 FROM ssot__AIAgentInteractionStep__dlm st
                 JOIN ssot__AIAgentInteraction__dlm i
-                    ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+                    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
                 WHERE length(st.ssot__ErrorMessageText__c) > 0
                   AND st.ssot__ErrorMessageText__c != 'NOT_SET'
                   AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
@@ -463,10 +463,10 @@ class TestCTEQueries:
                     'STEP' as event_type,
                     st.ssot__StartTimestamp__c as timestamp,
                     st.ssot__Name__c as detail,
-                    i.ssot__aiAgentSessionId__c as session_id
+                    i.ssot__AiAgentSessionId__c as session_id
                 FROM ssot__AIAgentInteractionStep__dlm st
                 JOIN ssot__AiAgentInteraction__dlm i
-                    ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+                    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
                 WHERE st.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
             )
             SELECT event_type, timestamp, detail, session_id
@@ -480,7 +480,7 @@ class TestCTEQueries:
             """
             WITH topic_transitions AS (
                 SELECT
-                    curr.ssot__aiAgentSessionId__c as session_id,
+                    curr.ssot__AiAgentSessionId__c as session_id,
                     prev.ssot__TopicApiName__c as from_topic,
                     curr.ssot__TopicApiName__c as to_topic,
                     curr.ssot__StartTimestamp__c as transition_time
@@ -511,11 +511,11 @@ class TestCTEQueries:
               ),
               session_interactions AS (
                 SELECT
-                    i.ssot__aiAgentSessionId__c as session_id,
+                    i.ssot__AiAgentSessionId__c as session_id,
                     COUNT(*) as interaction_count
                 FROM ssot__AIAgentInteraction__dlm i
-                WHERE i.ssot__aiAgentSessionId__c IN (SELECT session_id FROM recent_sessions)
-                GROUP BY i.ssot__aiAgentSessionId__c
+                WHERE i.ssot__AiAgentSessionId__c IN (SELECT session_id FROM recent_sessions)
+                GROUP BY i.ssot__AiAgentSessionId__c
               )
             SELECT
                 rs.session_id,

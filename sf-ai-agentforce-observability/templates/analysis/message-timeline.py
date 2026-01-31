@@ -65,7 +65,7 @@ def get_timeline(data: dict, session_id: str) -> list:
     # Get interactions for this session
     interactions = (
         data["interactions"]
-        .filter(pl.col("ssot__aiAgentSessionId__c") == session_id)
+        .filter(pl.col("ssot__AiAgentSessionId__c") == session_id)
         .collect()
     )
 
@@ -74,14 +74,14 @@ def get_timeline(data: dict, session_id: str) -> list:
     # Get messages
     messages = (
         data["messages"]
-        .filter(pl.col("ssot__AIAgentInteractionId__c").is_in(interaction_ids))
+        .filter(pl.col("ssot__AiAgentInteractionId__c").is_in(interaction_ids))
         .collect()
     )
 
     # Get steps
     steps = (
         data["steps"]
-        .filter(pl.col("ssot__AIAgentInteractionId__c").is_in(interaction_ids))
+        .filter(pl.col("ssot__AiAgentInteractionId__c").is_in(interaction_ids))
         .collect()
     )
 
@@ -93,8 +93,8 @@ def get_timeline(data: dict, session_id: str) -> list:
         timeline.append({
             "type": "message",
             "timestamp": row.get("ssot__MessageSentTimestamp__c", ""),
-            "interaction_id": row.get("ssot__AIAgentInteractionId__c"),
-            "message_type": row.get("ssot__AIAgentInteractionMessageType__c"),
+            "interaction_id": row.get("ssot__AiAgentInteractionId__c"),
+            "message_type": row.get("ssot__AiAgentInteractionMessageType__c"),
             "content": row.get("ssot__ContentText__c", ""),
         })
 
@@ -103,7 +103,7 @@ def get_timeline(data: dict, session_id: str) -> list:
         timeline.append({
             "type": "step",
             "timestamp": "",  # Steps don't have timestamps
-            "interaction_id": row.get("ssot__AIAgentInteractionId__c"),
+            "interaction_id": row.get("ssot__AiAgentInteractionId__c"),
             "step_type": row.get("ssot__AiAgentInteractionStepType__c"),
             "name": row.get("ssot__Name__c"),
             "input": row.get("ssot__InputValueText__c"),

@@ -216,7 +216,7 @@ interactions = pl.read_parquet("./stdm_data/interactions/data.parquet")
 
 long_sessions = interactions.filter(
     pl.col("ssot__AiAgentInteractionType__c") == "TURN"
-).group_by("ssot__aiAgentSessionId__c").agg(
+).group_by("ssot__AiAgentSessionId__c").agg(
     pl.count().alias("turns")
 ).filter(pl.col("turns") > 10).collect()
 
@@ -231,11 +231,11 @@ interactions = pl.read_parquet("./stdm_data/interactions/data.parquet")
 
 # Join and compare
 joined = sessions.join(
-    interactions.group_by("ssot__aiAgentSessionId__c").agg(
+    interactions.group_by("ssot__AiAgentSessionId__c").agg(
         pl.count().alias("turns")
     ),
     left_on="ssot__Id__c",
-    right_on="ssot__aiAgentSessionId__c"
+    right_on="ssot__AiAgentSessionId__c"
 )
 
 print(joined.group_by("ssot__AiAgentSessionEndType__c").agg([

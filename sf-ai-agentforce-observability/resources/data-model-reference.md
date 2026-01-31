@@ -640,17 +640,17 @@ The following DMOs were probed but **do not exist** in the live API:
 -- Session → Interactions
 SELECT i.*
 FROM ssot__AIAgentInteraction__dlm i
-WHERE i.ssot__aiAgentSessionId__c = 'SESSION_ID';
+WHERE i.ssot__AiAgentSessionId__c = 'SESSION_ID';
 
 -- Interaction → Steps
 SELECT s.*
 FROM ssot__AIAgentInteractionStep__dlm s
-WHERE s.ssot__AIAgentInteractionId__c = 'INTERACTION_ID';
+WHERE s.ssot__AiAgentInteractionId__c = 'INTERACTION_ID';
 
 -- Interaction → Messages
 SELECT m.*
 FROM ssot__AIAgentMoment__dlm m
-WHERE m.ssot__AIAgentInteractionId__c = 'INTERACTION_ID';
+WHERE m.ssot__AiAgentInteractionId__c = 'INTERACTION_ID';
 ```
 
 ---

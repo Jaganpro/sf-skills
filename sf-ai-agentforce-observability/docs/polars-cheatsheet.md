@@ -109,7 +109,7 @@ sessions.group_by("ssot__AiAgentApiName__c").agg([
 
 ### Unique Count
 ```python
-interactions.group_by("ssot__aiAgentSessionId__c").agg(
+interactions.group_by("ssot__AiAgentSessionId__c").agg(
     pl.col("ssot__TopicApiName__c").n_unique().alias("topic_count")
 ).collect()
 ```
@@ -123,7 +123,7 @@ interactions.group_by("ssot__aiAgentSessionId__c").agg(
 sessions.join(
     interactions,
     left_on="ssot__Id__c",
-    right_on="ssot__aiAgentSessionId__c",
+    right_on="ssot__AiAgentSessionId__c",
     how="inner"
 )
 ```
@@ -133,7 +133,7 @@ sessions.join(
 sessions.join(
     interactions,
     left_on="ssot__Id__c",
-    right_on="ssot__aiAgentSessionId__c",
+    right_on="ssot__AiAgentSessionId__c",
     how="left"
 )
 ```

@@ -43,7 +43,7 @@ def sessions_by_agent(data: dict) -> pl.DataFrame:
     turns = (
         interactions
         .filter(pl.col("ssot__AiAgentInteractionType__c") == "TURN")
-        .group_by("ssot__aiAgentSessionId__c")
+        .group_by("ssot__AiAgentSessionId__c")
         .agg(pl.count().alias("turn_count"))
     )
 
@@ -53,7 +53,7 @@ def sessions_by_agent(data: dict) -> pl.DataFrame:
         .join(
             turns,
             left_on="ssot__Id__c",
-            right_on="ssot__aiAgentSessionId__c",
+            right_on="ssot__AiAgentSessionId__c",
             how="left"
         )
         .group_by("ssot__AiAgentApiName__c")

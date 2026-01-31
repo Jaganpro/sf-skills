@@ -123,7 +123,7 @@ sessions.with_columns(
 turns_per_session = (
     interactions
     .filter(pl.col("ssot__AiAgentInteractionType__c") == "TURN")
-    .group_by("ssot__aiAgentSessionId__c")
+    .group_by("ssot__AiAgentSessionId__c")
     .agg(pl.count().alias("turns"))
 )
 
@@ -138,7 +138,7 @@ turns_per_session.group_by("turns").agg(
 topic_counts = (
     interactions
     .filter(pl.col("ssot__AiAgentInteractionType__c") == "TURN")
-    .group_by("ssot__aiAgentSessionId__c")
+    .group_by("ssot__AiAgentSessionId__c")
     .agg(pl.col("ssot__TopicApiName__c").n_unique().alias("topics"))
 )
 
@@ -168,7 +168,7 @@ steps.filter(
 
 **Steps Per Turn:**
 ```python
-steps.group_by("ssot__AIAgentInteractionId__c").agg(
+steps.group_by("ssot__AiAgentInteractionId__c").agg(
     pl.count().alias("steps")
 ).group_by("steps").agg(
     pl.count().alias("turns")
@@ -181,7 +181,7 @@ steps.group_by("ssot__AIAgentInteractionId__c").agg(
 ```python
 messages.with_columns(
     pl.col("ssot__ContentText__c").str.len_chars().alias("length")
-).group_by("ssot__AIAgentInteractionMessageType__c").agg([
+).group_by("ssot__AiAgentInteractionMessageType__c").agg([
     pl.col("length").mean().round(0).alias("avg_length"),
     pl.col("length").max().alias("max_length"),
 ]).collect()
@@ -190,7 +190,7 @@ messages.with_columns(
 **Common User Phrases:**
 ```python
 user_msgs = messages.filter(
-    pl.col("ssot__AIAgentInteractionMessageType__c") == "INPUT"
+    pl.col("ssot__AiAgentInteractionMessageType__c") == "INPUT"
 ).select("ssot__ContentText__c").collect()
 
 from collections import Counter

@@ -110,7 +110,7 @@ SELECT
     COUNT(i.ssot__Id__c) as turn_count
 FROM ssot__AIAgentSession__dlm s
 LEFT JOIN ssot__AIAgentInteraction__dlm i
-    ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
+    ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
     AND i.ssot__AiAgentInteractionType__c = 'TURN'
 WHERE s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
 GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c;
@@ -125,15 +125,15 @@ WHERE ssot__Id__c = 'a0x1234567890ABC';
 
 -- Step 2: Get interactions
 SELECT * FROM ssot__AIAgentInteraction__dlm
-WHERE ssot__aiAgentSessionId__c = 'a0x1234567890ABC';
+WHERE ssot__AiAgentSessionId__c = 'a0x1234567890ABC';
 
 -- Step 3: Get steps (using interaction IDs from step 2)
 SELECT * FROM ssot__AIAgentInteractionStep__dlm
-WHERE ssot__AIAgentInteractionId__c IN ('a0y...', 'a0y...');
+WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
 
 -- Step 4: Get messages (using interaction IDs from step 2)
 SELECT * FROM ssot__AIAgentMoment__dlm
-WHERE ssot__AIAgentInteractionId__c IN ('a0y...', 'a0y...');
+WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
 ```
 
 ---
@@ -172,11 +172,11 @@ ORDER BY hour;
 
 ```sql
 SELECT
-    ssot__aiAgentSessionId__c,
+    ssot__AiAgentSessionId__c,
     COUNT(DISTINCT ssot__TopicApiName__c) as topic_count
 FROM ssot__AIAgentInteraction__dlm
 WHERE ssot__AiAgentInteractionType__c = 'TURN'
-GROUP BY ssot__aiAgentSessionId__c
+GROUP BY ssot__AiAgentSessionId__c
 HAVING COUNT(DISTINCT ssot__TopicApiName__c) > 1;
 ```
 
@@ -184,11 +184,11 @@ HAVING COUNT(DISTINCT ssot__TopicApiName__c) > 1;
 
 ```sql
 SELECT
-    ssot__aiAgentSessionId__c,
+    ssot__AiAgentSessionId__c,
     COUNT(*) as turn_count
 FROM ssot__AIAgentInteraction__dlm
 WHERE ssot__AiAgentInteractionType__c = 'TURN'
-GROUP BY ssot__aiAgentSessionId__c
+GROUP BY ssot__AiAgentSessionId__c
 HAVING COUNT(*) > 10
 ORDER BY turn_count DESC;
 ```
@@ -344,13 +344,13 @@ Join all session tracing entities for complete visibility:
 SELECT *
 FROM ssot__AiAgentSession__dlm s
 JOIN ssot__AiAgentSessionParticipant__dlm sp
-    ON s.ssot__id__c = sp.ssot__aiAgentSessionId__c
+    ON s.ssot__id__c = sp.ssot__AiAgentSessionId__c
 JOIN ssot__AiAgentInteraction__dlm i
-    ON s.ssot__id__c = i.ssot__aiAgentSessionId__c
+    ON s.ssot__id__c = i.ssot__AiAgentSessionId__c
 JOIN ssot__AiAgentInteractionMessage__dlm im
-    ON i.ssot__id__c = im.ssot__aiAgentInteractionId__c
+    ON i.ssot__id__c = im.ssot__AiAgentInteractionId__c
 JOIN ssot__AiAgentInteractionStep__dlm st
-    ON i.ssot__id__c = st.ssot__aiAgentInteractionId__c
+    ON i.ssot__id__c = st.ssot__AiAgentInteractionId__c
 WHERE s.ssot__id__c = '{{SESSION_ID}}'
 LIMIT 100;
 ```
@@ -387,8 +387,8 @@ WITH
       NULL AS PostStepVariableText
     FROM ssot__AiAgentInteraction__dlm i
     JOIN ssot__AiAgentInteractionMessage__dlm im
-      ON i.ssot__Id__c = im.ssot__aiAgentInteractionId__c
-    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+      ON i.ssot__Id__c = im.ssot__AiAgentInteractionId__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
   ),
 
   -- Get interactions with their steps
@@ -410,8 +410,8 @@ WITH
       st.ssot__PostStepVariableText__c AS PostStepVariableText
     FROM ssot__AiAgentInteraction__dlm i
     JOIN ssot__AiAgentInteractionStep__dlm st
-      ON i.ssot__Id__c = st.ssot__aiAgentInteractionId__c
-    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+      ON i.ssot__Id__c = st.ssot__AiAgentInteractionId__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
   ),
 
   -- Combine messages and steps
@@ -822,9 +822,9 @@ WITH session_stats AS (
         COUNT(DISTINCT st.ssot__Id__c) as step_count
     FROM ssot__AIAgentSession__dlm s
     LEFT JOIN ssot__AIAgentInteraction__dlm i
-        ON i.ssot__aiAgentSessionId__c = s.ssot__Id__c
+        ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
     LEFT JOIN ssot__AIAgentInteractionStep__dlm st
-        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
     WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
     GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c, s.ssot__AiAgentSessionEndType__c
 )
@@ -844,7 +844,7 @@ WITH topic_errors AS (
         st.ssot__ErrorMessageText__c as error
     FROM ssot__AIAgentInteractionStep__dlm st
     JOIN ssot__AIAgentInteraction__dlm i
-        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
     WHERE length(st.ssot__ErrorMessageText__c) > 0
       AND st.ssot__ErrorMessageText__c != 'NOT_SET'
       AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
@@ -870,11 +870,11 @@ WITH
         'MESSAGE' as event_type,
         im.ssot__MessageSentTimestamp__c as timestamp,
         im.ssot__AiAgentInteractionMessageType__c as detail,
-        i.ssot__aiAgentSessionId__c as session_id
+        i.ssot__AiAgentSessionId__c as session_id
     FROM ssot__AiAgentInteractionMessage__dlm im
     JOIN ssot__AiAgentInteraction__dlm i
-        ON im.ssot__aiAgentInteractionId__c = i.ssot__Id__c
-    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+        ON im.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
 
     UNION ALL
 
@@ -883,11 +883,11 @@ WITH
         st.ssot__AiAgentInteractionStepType__c as event_type,
         st.ssot__StartTimestamp__c as timestamp,
         st.ssot__Name__c as detail,
-        i.ssot__aiAgentSessionId__c as session_id
+        i.ssot__AiAgentSessionId__c as session_id
     FROM ssot__AIAgentInteractionStep__dlm st
     JOIN ssot__AiAgentInteraction__dlm i
-        ON st.ssot__AIAgentInteractionId__c = i.ssot__Id__c
-    WHERE i.ssot__aiAgentSessionId__c = (SELECT session_id FROM params)
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
   )
 SELECT event_type, timestamp, detail
 FROM session_events
@@ -926,7 +926,7 @@ Analyze how users are routed between topics within sessions:
 ```sql
 WITH topic_transitions AS (
     SELECT
-        curr.ssot__aiAgentSessionId__c as session_id,
+        curr.ssot__AiAgentSessionId__c as session_id,
         prev.ssot__TopicApiName__c as from_topic,
         curr.ssot__TopicApiName__c as to_topic,
         curr.ssot__StartTimestamp__c as transition_time
