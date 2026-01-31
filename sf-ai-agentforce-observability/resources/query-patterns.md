@@ -500,10 +500,20 @@ WHERE
 LIMIT 100;
 ```
 
-**Detector Types:**
-- `InstructionAdherence`: Categories are `Low`, `Medium`, `High`
-- `TaskResolution`: Categories are `FULLY_RESOLVED`, `PARTIALLY_RESOLVED`, `NOT_RESOLVED`
-- `Toxicity`: `value__c >= 0.5` indicates toxic content
+**Detector Types (Live API Verified - T6 Discovery):**
+
+| Detector Type | Occurrences | Categories/Values |
+|---------------|-------------|-------------------|
+| `TOXICITY` | 627,603 | `hate`, `identity`, `physical`, `profanity`, `safety_score`, `sexual`, `toxicity`, `violence` |
+| `PROMPT_DEFENSE` | 119,050 | `aggregatePromptAttackScore`, `isPromptAttackDetected` |
+| `PII` | 27,805 | `CREDIT_CARD`, `EMAIL_ADDRESS`, `PERSON`, `US_PHONE_NUMBER` |
+| `InstructionAdherence` | 16,380 | `High`, `Low`, `Uncertain` |
+
+**Detection Thresholds:**
+- **Toxicity**: `value__c >= 0.5` indicates toxic content
+- **PII**: Any category present indicates PII detection
+- **PROMPT_DEFENSE**: `isPromptAttackDetected` = `true` indicates attack
+- **InstructionAdherence**: `Low` category indicates poor adherence
 
 ### Unresolved Tasks Detection
 
@@ -526,6 +536,52 @@ JOIN ssot__AiAgentInteraction__dlm i
 WHERE
     c.detectorType__c = 'TaskResolution'
     AND c.category__c != 'FULLY_RESOLVED'
+LIMIT 100;
+```
+
+### PII Detection Analysis ✅ NEW
+
+Find sessions where PII was detected in user inputs or agent responses:
+
+```sql
+SELECT
+    c.category__c AS PiiType,
+    COUNT(*) AS DetectionCount
+FROM GenAIContentCategory__dlm c
+WHERE c.detectorType__c = 'PII'
+  AND c.timestamp__c >= current_date - INTERVAL '30' DAY
+GROUP BY c.category__c
+ORDER BY DetectionCount DESC;
+```
+
+**PII Categories:**
+| Category | Description |
+|----------|-------------|
+| `CREDIT_CARD` | Credit card numbers |
+| `EMAIL_ADDRESS` | Email addresses |
+| `PERSON` | Person names |
+| `US_PHONE_NUMBER` | US phone numbers |
+
+### Prompt Attack Detection ✅ NEW
+
+Find sessions with potential prompt injection attacks:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    c.category__c AS AttackCategory,
+    c.value__c AS Score
+FROM GenAIContentCategory__dlm c
+JOIN GenAIGeneration__dlm g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE c.detectorType__c = 'PROMPT_DEFENSE'
+  AND c.category__c = 'isPromptAttackDetected'
+  AND c.value__c = 'true'
 LIMIT 100;
 ```
 
@@ -566,6 +622,116 @@ ORDER BY InteractionStepStartTime;
 | `AiCopilot__ReactTopicPrompt` | Topic routing decision |
 | `AiCopilot__ReactInitialPrompt` | Initial planning/reasoning |
 | `AiCopilot__ReactValidationPrompt` | Response validation (hallucination check) |
+
+---
+
+## GenAI Gateway Analysis ✅ NEW
+
+Query patterns for analyzing LLM usage, token consumption, and model performance.
+
+### Token Usage by Model
+
+Analyze token consumption across different models:
+
+```sql
+SELECT
+    model__c AS Model,
+    COUNT(*) AS RequestCount,
+    SUM(promptTokens__c) AS TotalPromptTokens,
+    SUM(completionTokens__c) AS TotalCompletionTokens,
+    SUM(totalTokens__c) AS TotalTokens,
+    AVG(totalTokens__c) AS AvgTokensPerRequest
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '7' DAY
+GROUP BY model__c
+ORDER BY TotalTokens DESC;
+```
+
+### Prompt Template Usage
+
+Find which prompt templates are most frequently used:
+
+```sql
+SELECT
+    promptTemplateDevName__c AS TemplateName,
+    promptTemplateVersionNo__c AS Version,
+    COUNT(*) AS UsageCount,
+    AVG(totalTokens__c) AS AvgTokens
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '30' DAY
+  AND promptTemplateDevName__c IS NOT NULL
+GROUP BY promptTemplateDevName__c, promptTemplateVersionNo__c
+ORDER BY UsageCount DESC;
+```
+
+### Safety Configuration Analysis
+
+Analyze which safety features are enabled across requests:
+
+```sql
+SELECT
+    enableInputSafetyScoring__c AS InputSafety,
+    enableOutputSafetyScoring__c AS OutputSafety,
+    enablePiiMasking__c AS PiiMasking,
+    COUNT(*) AS RequestCount
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '7' DAY
+GROUP BY enableInputSafetyScoring__c, enableOutputSafetyScoring__c, enablePiiMasking__c
+ORDER BY RequestCount DESC;
+```
+
+### User Feedback Summary
+
+Analyze user feedback distribution:
+
+```sql
+SELECT
+    feedback__c AS FeedbackType,
+    COUNT(*) AS FeedbackCount
+FROM GenAIFeedback__dlm
+WHERE timestamp__c >= current_date - INTERVAL '30' DAY
+GROUP BY feedback__c
+ORDER BY FeedbackCount DESC;
+```
+
+### Feedback with Details
+
+Get detailed feedback with user comments:
+
+```sql
+SELECT
+    f.feedbackId__c,
+    f.feedback__c AS FeedbackType,
+    f.action__c AS UserAction,
+    fd.feedbackText__c AS UserComment,
+    f.timestamp__c
+FROM GenAIFeedback__dlm f
+LEFT JOIN GenAIFeedbackDetail__dlm fd
+    ON fd.parent__c = f.feedbackId__c
+WHERE f.timestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY f.timestamp__c DESC
+LIMIT 100;
+```
+
+### High-Cost Requests
+
+Find requests with unusually high token consumption:
+
+```sql
+SELECT
+    gatewayRequestId__c,
+    model__c AS Model,
+    promptTokens__c,
+    completionTokens__c,
+    totalTokens__c,
+    feature__c,
+    timestamp__c
+FROM GenAIGatewayRequest__dlm
+WHERE totalTokens__c > 4000
+  AND timestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY totalTokens__c DESC
+LIMIT 50;
+```
 
 ---
 
@@ -786,35 +952,333 @@ ORDER BY transition_count DESC;
 
 ---
 
+## Tag System Queries ✅ NEW
+
+Query the Agentforce tagging system for session categorization and analytics.
+
+### Get Tag Definitions
+
+List all available tag definitions in the org:
+
+```sql
+SELECT
+    ssot__Id__c,
+    ssot__Name__c,
+    ssot__DeveloperName__c,
+    ssot__Description__c,
+    ssot__DataType__c,
+    ssot__SourceType__c
+FROM ssot__AiAgentTagDefinition__dlm
+ORDER BY ssot__CreatedDate__c DESC
+LIMIT 50;
+```
+
+### Get Tag Values for a Definition
+
+List all values for a specific tag definition:
+
+```sql
+SELECT
+    t.ssot__Id__c,
+    t.ssot__Description__c,
+    t.ssot__IsActive__c,
+    td.ssot__Name__c as TagDefinitionName
+FROM ssot__AiAgentTag__dlm t
+JOIN ssot__AiAgentTagDefinition__dlm td
+    ON t.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
+WHERE td.ssot__DeveloperName__c = 'Escalation_Reason'
+  AND t.ssot__IsActive__c = true
+ORDER BY t.ssot__CreatedDate__c DESC;
+```
+
+### Sessions with Tag Associations
+
+Find sessions that have been tagged:
+
+```sql
+SELECT
+    s.ssot__Id__c AS SessionId,
+    s.ssot__StartTimestamp__c,
+    ta.ssot__AiAgentTagDefinitionAssociationId__c AS TagAssociation,
+    ta.ssot__CreatedDate__c AS TaggedAt
+FROM ssot__AIAgentSession__dlm s
+JOIN ssot__AiAgentTagAssociation__dlm ta
+    ON s.ssot__Id__c = ta.ssot__AiAgentSessionId__c
+WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY s.ssot__StartTimestamp__c DESC
+LIMIT 100;
+```
+
+### Tag Distribution Analysis
+
+Count sessions by tag:
+
+```sql
+SELECT
+    td.ssot__Name__c AS TagName,
+    COUNT(DISTINCT ta.ssot__AiAgentSessionId__c) AS SessionCount
+FROM ssot__AiAgentTagAssociation__dlm ta
+JOIN ssot__AiAgentTagDefinitionAssociation__dlm tda
+    ON ta.ssot__AiAgentTagDefinitionAssociationId__c = tda.ssot__Id__c
+JOIN ssot__AiAgentTagDefinition__dlm td
+    ON tda.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
+WHERE ta.ssot__CreatedDate__c >= current_date - INTERVAL '30' DAY
+GROUP BY td.ssot__Name__c
+ORDER BY SessionCount DESC;
+```
+
+### Tags by Agent
+
+Find which tags are configured for each agent:
+
+```sql
+SELECT
+    tda.ssot__AiAgentApiName__c AS AgentName,
+    td.ssot__Name__c AS TagName,
+    td.ssot__DataType__c AS DataType,
+    td.ssot__SourceType__c AS SourceType
+FROM ssot__AiAgentTagDefinitionAssociation__dlm tda
+JOIN ssot__AiAgentTagDefinition__dlm td
+    ON tda.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
+ORDER BY tda.ssot__AiAgentApiName__c, td.ssot__Name__c;
+```
+
+### Tag Values with Ratings
+
+Get tag values (useful for rating-based tags):
+
+```sql
+SELECT
+    td.ssot__Name__c AS TagName,
+    t.ssot__Value__c AS Value,
+    t.ssot__Description__c AS Description,
+    t.ssot__IsActive__c AS IsActive
+FROM ssot__AiAgentTag__dlm t
+JOIN ssot__AiAgentTagDefinition__dlm td
+    ON t.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
+WHERE t.ssot__IsActive__c = true
+ORDER BY td.ssot__Name__c, t.ssot__Value__c;
+```
+
+---
+
+## Step Analysis Patterns ✅ NEW
+
+Query patterns for analyzing step execution, LLM calls, and action performance.
+
+### LLM Step Analysis by Prompt Type
+
+Analyze LLM steps by the prompt type:
+
+```sql
+SELECT
+    ssot__Name__c AS PromptName,
+    COUNT(*) AS Invocations,
+    AVG(EXTRACT(EPOCH FROM (ssot__EndTimestamp__c - ssot__StartTimestamp__c))) AS AvgDurationSeconds
+FROM ssot__AIAgentInteractionStep__dlm
+WHERE ssot__AiAgentInteractionStepType__c = 'LLM_STEP'
+  AND ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+  AND ssot__Name__c LIKE 'AiCopilot%'
+GROUP BY ssot__Name__c
+ORDER BY Invocations DESC;
+```
+
+### Common LLM Prompts
+
+| Prompt Name | Purpose |
+|-------------|---------|
+| `AiCopilot__ReactInitialPrompt` | Initial planning/reasoning |
+| `AiCopilot__ReactTopicPrompt` | Topic classification/routing |
+| `AiCopilot__ReactValidationPrompt` | Response validation (hallucination check) |
+
+### Top Actions by Invocation
+
+Find the most frequently called actions:
+
+```sql
+SELECT
+    ssot__Name__c AS ActionName,
+    COUNT(*) AS InvocationCount,
+    COUNT(CASE WHEN length(ssot__ErrorMessageText__c) > 0
+               AND ssot__ErrorMessageText__c != 'NOT_SET' THEN 1 END) AS ErrorCount
+FROM ssot__AIAgentInteractionStep__dlm
+WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
+  AND ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
+GROUP BY ssot__Name__c
+ORDER BY InvocationCount DESC
+LIMIT 20;
+```
+
+### Step Chain Analysis (Following PrevStepId)
+
+Trace the step execution chain within an interaction:
+
+```sql
+WITH RECURSIVE step_chain AS (
+    -- Base: find the first step (no PrevStepId)
+    SELECT
+        ssot__Id__c,
+        ssot__Name__c,
+        ssot__AiAgentInteractionStepType__c,
+        ssot__PrevStepId__c,
+        1 as depth
+    FROM ssot__AIAgentInteractionStep__dlm
+    WHERE ssot__AiAgentInteractionId__c = '{{INTERACTION_ID}}'
+      AND ssot__PrevStepId__c IS NULL
+
+    UNION ALL
+
+    -- Recursive: follow PrevStepId chain
+    SELECT
+        s.ssot__Id__c,
+        s.ssot__Name__c,
+        s.ssot__AiAgentInteractionStepType__c,
+        s.ssot__PrevStepId__c,
+        sc.depth + 1
+    FROM ssot__AIAgentInteractionStep__dlm s
+    JOIN step_chain sc ON s.ssot__PrevStepId__c = sc.ssot__Id__c
+    WHERE sc.depth < 20
+)
+SELECT depth, ssot__AiAgentInteractionStepType__c, ssot__Name__c
+FROM step_chain
+ORDER BY depth;
+```
+
+**Note:** Steps use linear `PrevStepId` sequencing. There is no hierarchical parent-child relationship.
+
+---
+
+## Moment-Interaction Junction Queries ✅ NEW
+
+Query the junction table linking Moments to Interactions for many-to-many analysis.
+
+### Moments with Their Interactions
+
+Get all interactions associated with a moment:
+
+```sql
+SELECT
+    m.ssot__Id__c AS MomentId,
+    m.ssot__RequestSummaryText__c,
+    mi.ssot__AiAgentInteractionId__c AS InteractionId,
+    i.ssot__TopicApiName__c AS Topic
+FROM ssot__AiAgentMoment__dlm m
+JOIN ssot__AiAgentMomentInteraction__dlm mi
+    ON m.ssot__Id__c = mi.ssot__AiAgentMomentId__c
+JOIN ssot__AIAgentInteraction__dlm i
+    ON mi.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE m.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+LIMIT 50;
+```
+
+### Interactions per Moment (Aggregated)
+
+Count interactions associated with each moment:
+
+```sql
+SELECT
+    mi.ssot__AiAgentMomentId__c AS MomentId,
+    COUNT(*) AS InteractionCount
+FROM ssot__AiAgentMomentInteraction__dlm mi
+GROUP BY mi.ssot__AiAgentMomentId__c
+HAVING COUNT(*) > 1
+ORDER BY InteractionCount DESC
+LIMIT 20;
+```
+
+### Full Session Tree with Moments
+
+Get complete session data including the Moment-Interaction relationship:
+
+```sql
+SELECT
+    s.ssot__Id__c AS SessionId,
+    m.ssot__AiAgentApiName__c AS AgentName,
+    m.ssot__RequestSummaryText__c AS RequestSummary,
+    m.ssot__ResponseSummaryText__c AS ResponseSummary,
+    i.ssot__Id__c AS InteractionId,
+    i.ssot__TopicApiName__c AS Topic
+FROM ssot__AIAgentSession__dlm s
+JOIN ssot__AiAgentMoment__dlm m
+    ON s.ssot__Id__c = m.ssot__AiAgentSessionId__c
+LEFT JOIN ssot__AiAgentMomentInteraction__dlm mi
+    ON m.ssot__Id__c = mi.ssot__AiAgentMomentId__c
+LEFT JOIN ssot__AIAgentInteraction__dlm i
+    ON mi.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE s.ssot__Id__c = '{{SESSION_ID}}'
+ORDER BY m.ssot__StartTimestamp__c, i.ssot__StartTimestamp__c;
+```
+
+---
+
 ## Entity Relationship Reference
 
 ### Session Tracing Data Model (STDM)
 
 ```
 Session (ssot__AiAgentSession__dlm)
-├── SessionParticipant (ssot__AiAgentSessionParticipant__dlm)  [1:N]
+├── SessionParticipant (ssot__AIAgentSessionParticipant__dlm)  [1:N]
 ├── Interaction (ssot__AiAgentInteraction__dlm)                [1:N]
 │   ├── InteractionMessage (ssot__AiAgentInteractionMessage__dlm)  [1:N]
 │   └── InteractionStep (ssot__AiAgentInteractionStep__dlm)        [1:N]
 │       └── → links to GenAIGeneration via GenerationId
-└── Moment (ssot__AiAgentMoment__dlm)                          [1:N]
+├── Moment (ssot__AiAgentMoment__dlm)                          [1:N]
+│   └── MomentInteraction (ssot__AiAgentMomentInteraction__dlm)    [N:M junction]
+│       └── → links Moment ↔ Interaction
+└── TagAssociation (ssot__AiAgentTagAssociation__dlm)          [1:N] ✅ NEW
+    └── → links to TagDefinition & Tag
 ```
 
-### Quality Data Model (GenAI Trust Layer)
+### Tagging Data Model ✅ NEW
+
+```
+TagDefinition (ssot__AiAgentTagDefinition__dlm)
+└── Tag (ssot__AiAgentTag__dlm)                    [1:N]
+    └── TagAssociation                              [N:M]
+        ├── → Session (AiAgentSessionId)
+        └── → Moment (AiAgentMomentId)
+```
+
+### Quality Data Model (GenAI Trust Layer) ✅ T6 Verified
 
 ```
 GenAIGeneration__dlm
-└── GenAIContentQuality__dlm          [1:1]
-    └── GenAIContentCategory__dlm     [1:N]
-        ├── detectorType__c: 'Toxicity' | 'InstructionAdherence' | 'TaskResolution'
-        ├── category__c: Result category
-        └── value__c: Confidence score (0.0-1.0, string format)
+├── GenAIContentQuality__dlm          [1:1]
+│   └── GenAIContentCategory__dlm     [1:N]
+│       ├── detectorType__c: 'TOXICITY' | 'PII' | 'PROMPT_DEFENSE' | 'InstructionAdherence'
+│       ├── category__c: Result category (see tables below)
+│       └── value__c: Confidence score (0.0-1.0, string format)
+└── GenAIFeedback__dlm                [1:N]
+    └── GenAIFeedbackDetail__dlm      [1:N]
+```
+
+**Detector Categories (Live API Verified):**
+
+| Detector | Categories |
+|----------|------------|
+| `TOXICITY` | `hate`, `identity`, `physical`, `profanity`, `safety_score`, `sexual`, `toxicity`, `violence` |
+| `PII` | `CREDIT_CARD`, `EMAIL_ADDRESS`, `PERSON`, `US_PHONE_NUMBER` |
+| `PROMPT_DEFENSE` | `aggregatePromptAttackScore`, `isPromptAttackDetected` |
+| `InstructionAdherence` | `High`, `Low`, `Uncertain` |
+
+### Gateway Data Model (GenAI Request/Response) ✅ T6 Verified
+
+```
+GenAIGatewayRequest__dlm (30 fields)
+├── GenAIGatewayResponse__dlm         [1:1]
+├── GenAIGatewayRequestTag__dlm       [1:N]
+├── GenAIGtwyRequestMetadata__dlm     [1:N]
+├── GenAIGtwyObjRecord__dlm           [1:N]
+│   └── GenAIGtwyObjRecCitationRef__dlm  [1:N]
+└── GenAIGeneration__dlm              [1:N] (via generationGroupId)
 ```
 
 **Key Join Fields:**
 - `ssot__GenerationId__c` on Steps → `generationId__c` on Generation
+- `ssot__GenAiGatewayRequestId__c` on Steps → `gatewayRequestId__c` on GatewayRequest
 - `parent__c` on ContentQuality → `generationId__c` on Generation
 - `parent__c` on ContentCategory → `id__c` on ContentQuality
+- `parent__c` on FeedbackDetail → `feedbackId__c` on Feedback
 
 ---
 

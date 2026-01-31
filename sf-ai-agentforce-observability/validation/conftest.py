@@ -177,7 +177,7 @@ def mock_auth():
 # Data Client Fixtures
 # =============================================================================
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def data_client(auth_client):
     """Create authenticated Data360Client."""
     from scripts.datacloud_client import Data360Client
