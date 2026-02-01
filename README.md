@@ -11,44 +11,6 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 
 ---
 
-## 💡 What is a Skill?
-
-> **Skills are portable knowledge packs that supercharge AI coding agents with domain expertise.**
-
-Think of skills as "installable superpowers" for your agentic coding tool. Instead of repeatedly explaining Salesforce best practices to your AI assistant, a skill pre-loads that knowledge so the AI becomes an instant expert.
-
-```
-sf-apex/
-├── SKILL.md              # 🧠 The brain - prompts & instructions
-├── templates/            # 📁 Code templates & patterns
-├── hooks/                # ✅ Validation scripts
-└── examples/             # 📖 Usage examples
-```
-
-> 💡 **Tip:** Skills are open-source and composable. You can fork, customize, or create your own!
-
-### Why Use Skills?
-
-> 🚀 **Stop explaining Salesforce patterns. Start building.**
-
-**1. Instant Expertise** — AI knows Trigger Actions Framework, Flow bulkification, deployment best practices from the first message.
-
-**2. Automatic Validation** — Every Apex class, Flow, and agent script is scored against 100-150 point rubrics. Catch anti-patterns before deployment.
-
-**3. Built-in Templates** — 50+ production-ready templates across Apex, Flow, Metadata, Agentforce, and more.
-
-**4. Tool Orchestration** — "Deploy to production" becomes a single command. Skills handle `sf` CLI complexity.
-
-**5. Context Efficiency** — Skills load only when invoked, saving ~2000 tokens per conversation vs. pasting prompts.
-
-| Before | After |
-|--------|-------|
-| ❌ Prompt engineering every conversation | ✅ `Skill(skill="sf-apex")` |
-| ❌ 10+ messages to explain requirements | ✅ 1 message, skill fills the gaps |
-| ❌ Review code manually for issues | ✅ Hooks validate on every save |
-
----
-
 ## ✨ Available Skills
 
 ### 💻 Development
@@ -108,23 +70,7 @@ That's it! The newbie-friendly installer will:
 
 **Restart Claude Code** after installation to activate hooks.
 
-#### Manual Installation
-
-If you prefer to review the script first:
-
-```bash
-curl -O https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh
-chmod +x install.sh
-./install.sh
-```
-
-Or run the Python installer directly (skips pre-flight checks):
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
-```
-
-#### Managing Your Installation
+### Managing Your Installation
 
 ```bash
 # Check installation status
@@ -167,64 +113,6 @@ python3 ~/.claude/sf-skills/tools/install.py --dry-run
 | **UserPromptSubmit** | Auto-suggests skills based on your prompt |
 | **PermissionRequest** | Auto-approves safe operations (read queries, scratch deploys) |
 | **SubagentStop** | Tracks workflow chains, suggests next steps |
-
-<details>
-<summary>Legacy Installation (Deprecated)</summary>
-
-The marketplace-based installation is deprecated. If you have an existing marketplace installation, the new installer will automatically migrate it:
-
-```bash
-# Old method (deprecated):
-# /plugin marketplace add Jaganpro/sf-skills
-# python3 scripts/migrate-to-global-hooks.py
-
-# New method (recommended):
-curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
-```
-
-The installer detects and cleans up:
-- Marketplace installations (`~/.claude/plugins/marketplaces/sf-skills/`)
-- Legacy hooks (`~/.claude/sf-skills-hooks/`)
-- Old hook configs in `settings.json`
-
-</details>
-
-### Other CLIs (OpenCode, Codex, Gemini, Droid, Cursor, Agentforce Vibes)
-
-Use the installer script to transform and install skills for other agentic CLIs:
-
-```bash
-# Clone the repository
-git clone https://github.com/Jaganpro/sf-skills
-cd sf-skills
-
-# Install all skills for a specific CLI
-python tools/installer.py --cli opencode --all         # OpenCode
-python tools/installer.py --cli codex --all            # Codex (OpenAI)
-python tools/installer.py --cli gemini --all           # Gemini (Google)
-python tools/installer.py --cli droid --all            # Droid (Factory.ai)
-python tools/installer.py --cli cursor --all           # Cursor (MDC format)
-python tools/installer.py --cli agentforce-vibes --all # Agentforce Vibes (Salesforce)
-
-# Install specific skills
-python tools/installer.py --cli gemini --skills sf-apex sf-flow sf-deploy
-
-# Auto-detect installed CLIs and install all skills
-python tools/installer.py --detect --all
-
-# List available skills and CLIs
-python tools/installer.py --list
-python tools/installer.py --list-clis
-```
-
-The installer:
-- Transforms SKILL.md for CLI compatibility (MDC for Cursor, markdown for Agentforce Vibes)
-- Bundles shared modules for self-contained installation
-- Exports validation hooks as standalone scripts (where supported)
-- Inlines templates for Agentforce Vibes (self-contained rules)
-- Generates README with manual validation instructions
-
-See [tools/README.md](tools/README.md) for detailed installer documentation.
 
 ## 🎬 Video Tutorials
 
@@ -668,6 +556,45 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 
 <details>
 <summary><h2>🤖 Supported Agentic Coding Tools & CLI Compatibility</h2></summary>
+
+### Installing for Other CLIs
+
+Use the installer script to transform and install skills for other agentic CLIs:
+
+```bash
+# Clone the repository
+git clone https://github.com/Jaganpro/sf-skills
+cd sf-skills
+
+# Install all skills for a specific CLI
+python tools/installer.py --cli opencode --all         # OpenCode
+python tools/installer.py --cli codex --all            # Codex (OpenAI)
+python tools/installer.py --cli gemini --all           # Gemini (Google)
+python tools/installer.py --cli droid --all            # Droid (Factory.ai)
+python tools/installer.py --cli cursor --all           # Cursor (MDC format)
+python tools/installer.py --cli agentforce-vibes --all # Agentforce Vibes (Salesforce)
+
+# Install specific skills
+python tools/installer.py --cli gemini --skills sf-apex sf-flow sf-deploy
+
+# Auto-detect installed CLIs and install all skills
+python tools/installer.py --detect --all
+
+# List available skills and CLIs
+python tools/installer.py --list
+python tools/installer.py --list-clis
+```
+
+The installer:
+- Transforms SKILL.md for CLI compatibility (MDC for Cursor, markdown for Agentforce Vibes)
+- Bundles shared modules for self-contained installation
+- Exports validation hooks as standalone scripts (where supported)
+- Inlines templates for Agentforce Vibes (self-contained rules)
+- Generates README with manual validation instructions
+
+See [tools/README.md](tools/README.md) for detailed installer documentation.
+
+### CLI Compatibility Table
 
 | Tool | Status | Install Path | |
 |------|--------|--------------|--|
