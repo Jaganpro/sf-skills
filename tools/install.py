@@ -1063,12 +1063,14 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
     # Detect current state
     state, current_version = detect_state()
 
-    if state == InstallState.UNIFIED:
+    if state == InstallState.UNIFIED and not force:
         print_info(f"sf-skills already installed (v{current_version})")
         print_info("Use --update to check for updates")
         return 0
 
-    if state == InstallState.MARKETPLACE:
+    if state == InstallState.UNIFIED and force:
+        print_info(f"Reinstalling sf-skills (current: v{current_version})")
+    elif state == InstallState.MARKETPLACE:
         print_warning("Found marketplace installation (will be removed)")
     elif state == InstallState.LEGACY:
         print_warning(f"Found legacy installation (v{current_version}, will be removed)")
