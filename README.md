@@ -7,8 +7,6 @@
 
 A collection of reusable skills for **Agentic Salesforce Development**, enabling AI-powered code generation, validation, testing, debugging, and deployment. Built for Claude Code with planned support for other agentic coding tools.
 
-> **19 skills** • **60+ templates** • **750+ validation points** • **LSP integration**
-
 ---
 
 ## ✨ Available Skills
