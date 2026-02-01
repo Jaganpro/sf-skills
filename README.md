@@ -13,40 +13,40 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 
 ### 💻 Development
 
-- ⚡ **[sf-apex](sf-apex/)** — Apex generation, TAF patterns, LSP validation `150 pts` `🔬 Alpha`
-- 🔄 **[sf-flow](sf-flow/)** — Flow creation & bulk validation `110 pts` `🔬 Alpha`
-- ⚡ **[sf-lwc](sf-lwc/)** — Lightning Web Components, Jest tests, LMS `140 pts` `🔬 Alpha`
-- 🔍 **[sf-soql](sf-soql/)** — Natural language → SOQL, query optimization `100 pts` `🔬 Alpha`
+- **[sf-apex](sf-apex/)** — Apex generation, TAF patterns, LSP validation
+- **[sf-flow](sf-flow/)** — Flow creation & bulk validation
+- **[sf-lwc](sf-lwc/)** — Lightning Web Components, Jest tests, LMS
+- **[sf-soql](sf-soql/)** — Natural language → SOQL, query optimization
 
 ### 🧪 Quality
 
-- 🧪 **[sf-testing](sf-testing/)** — Apex test runner, coverage, bulk testing `100 pts` `🔬 Alpha`
-- 🐛 **[sf-debug](sf-debug/)** — Debug log analysis, governor limit fixes `90 pts` `🔬 Alpha`
+- **[sf-testing](sf-testing/)** — Apex test runner, coverage, bulk testing
+- **[sf-debug](sf-debug/)** — Debug log analysis, governor limit fixes
 
 ### 📦 Foundation
 
-- 📋 **[sf-metadata](sf-metadata/)** — Metadata gen & org queries `120 pts` `🔬 Alpha`
-- 💾 **[sf-data](sf-data/)** — SOQL & test data factories `🔬 Alpha`
-- 🔐 **[sf-permissions](sf-permissions/)** — Permission Set analysis, "Who has X?" `🔬 Alpha`
+- **[sf-metadata](sf-metadata/)** — Metadata gen & org queries
+- **[sf-data](sf-data/)** — SOQL & test data factories
+- **[sf-permissions](sf-permissions/)** — Permission Set analysis, "Who has X?"
 
 ### 🔌 Integration
 
-- 🔐 **[sf-connected-apps](sf-connected-apps/)** — OAuth apps & ECAs `120 pts` `🔬 Alpha`
-- 🔗 **[sf-integration](sf-integration/)** — Callouts, Events, CDC `120 pts` `🔬 Alpha`
+- **[sf-connected-apps](sf-connected-apps/)** — OAuth apps & ECAs
+- **[sf-integration](sf-integration/)** — Callouts, Events, CDC
 
 ### 🤖 AI & Automation
 
-- 📝 **[sf-ai-agentscript](sf-ai-agentscript/)** — Agent Script DSL, FSM patterns `100 pts` `🔬 Alpha`
-- 📈 **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** — Session tracing (Data Cloud) `233 pts` `✅ GA`
-- 🧪 **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops `100 pts` `🔬 Alpha`
-- ⚠️ **[sf-ai-agentforce-legacy](sf-ai-agentforce-legacy/)** — Legacy patterns (use sf-ai-agentscript) `⚠️ Deprecated`
+- **[sf-ai-agentscript](sf-ai-agentscript/)** — Agent Script DSL, FSM patterns
+- **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** — Session tracing (Data Cloud)
+- **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops
+- **[sf-ai-agentforce-legacy](sf-ai-agentforce-legacy/)** — Legacy patterns (use sf-ai-agentscript)
 
 ### 🛠️ DevOps & Tooling
 
-- 🚀 **[sf-deploy](sf-deploy/)** — CI/CD automation (sf CLI v2) `🔬 Alpha`
-- 📊 **[sf-diagram-mermaid](sf-diagram-mermaid/)** — Mermaid diagrams & ERD `🔬 Alpha`
-- 📸 **[sf-diagram-nanobananapro](sf-diagram-nanobananapro/)** — Visual ERD, LWC mockups `🔬 Alpha`
-- 🛠️ **[skill-builder](skill-builder/)** — Skill creation wizard `✅ Stable`
+- **[sf-deploy](sf-deploy/)** — CI/CD automation (sf CLI v2)
+- **[sf-diagram-mermaid](sf-diagram-mermaid/)** — Mermaid diagrams & ERD
+- **[sf-diagram-nanobananapro](sf-diagram-nanobananapro/)** — Visual ERD, LWC mockups
+- **[skill-builder](skill-builder/)** — Skill creation wizard
 
 ## 🚀 Installation
 
