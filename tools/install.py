@@ -6,12 +6,19 @@ Usage:
     curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
 
     # Or with options:
-    python3 install.py              # Interactive install
-    python3 install.py --update     # Check and apply updates
-    python3 install.py --uninstall  # Remove sf-skills
-    python3 install.py --status     # Show installation status
-    python3 install.py --dry-run    # Preview changes
-    python3 install.py --force      # Skip confirmations
+    python3 install.py                # Interactive install
+    python3 install.py --update       # Check version + content changes
+    python3 install.py --force-update # Force reinstall even if up-to-date
+    python3 install.py --uninstall    # Remove sf-skills
+    python3 install.py --status       # Show installation status
+    python3 install.py --dry-run      # Preview changes
+    python3 install.py --force        # Skip confirmations
+
+Update Detection:
+    The --update command detects both version bumps AND content changes:
+    - Version bump: Remote version > local version
+    - Content change: Same version but different Git commit SHA
+    - Legacy upgrade: Enables content tracking on older installs
 
 Requirements:
     - Python 3.8+ (standard library only)
@@ -252,6 +259,29 @@ def fetch_latest_release() -> Optional[Dict[str, Any]]:
         return None
 
 
+def fetch_latest_commit_sha(ref: str = "main") -> Optional[str]:
+    """
+    Fetch latest commit SHA from GitHub API.
+
+    Uses the special Accept header to get just the SHA string (40 bytes).
+
+    Args:
+        ref: Git ref (branch, tag, or commit). Defaults to "main".
+
+    Returns:
+        40-character SHA string, or None on error.
+    """
+    try:
+        url = f"{GITHUB_API_URL}/commits/{ref}"
+        req = urllib.request.Request(url, headers={
+            "Accept": "application/vnd.github.sha"
+        })
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return response.read().decode().strip()
+    except (urllib.error.URLError, TimeoutError):
+        return None
+
+
 def fetch_registry_version() -> Optional[str]:
     """Fetch version from skills-registry.json on main branch."""
     try:
@@ -261,6 +291,71 @@ def fetch_registry_version() -> Optional[str]:
             return data.get("version")
     except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
         return None
+
+
+# Update reason constants
+UPDATE_REASON_VERSION_BUMP = "version_bump"
+UPDATE_REASON_CONTENT_CHANGED = "content_changed"
+UPDATE_REASON_ENABLE_SHA_TRACKING = "enable_sha_tracking"
+UPDATE_REASON_UP_TO_DATE = "up_to_date"
+UPDATE_REASON_ERROR = "error"
+
+
+def needs_update() -> Tuple[bool, str, Dict[str, Any]]:
+    """
+    Check both version AND commit SHA to determine if update is needed.
+
+    Detection Logic:
+    - IF remote_version > local_version → UPDATE (version bump)
+    - IF remote_version == local_version AND remote_sha != local_sha → UPDATE (content changed)
+    - IF local has no commit_sha (legacy) → UPDATE (enable tracking)
+    - ELSE → "Already up to date!"
+
+    Returns:
+        Tuple of (needs_update, reason, details)
+        - needs_update: True if update should be applied
+        - reason: One of UPDATE_REASON_* constants
+        - details: Dict with version/sha info for display
+    """
+    fingerprint = read_fingerprint()
+    current_version = get_installed_version()
+    local_sha = fingerprint.get("commit_sha") if fingerprint else None
+
+    # Fetch remote info
+    remote_version = fetch_registry_version()
+    remote_sha = fetch_latest_commit_sha()
+
+    details = {
+        "local_version": current_version,
+        "remote_version": remote_version,
+        "local_sha": local_sha,
+        "remote_sha": remote_sha,
+    }
+
+    # Network error
+    if not remote_version:
+        return False, UPDATE_REASON_ERROR, details
+
+    # Compare versions (strip 'v' prefix for comparison)
+    local_v = (current_version or "0.0.0").lstrip('v')
+    remote_v = remote_version.lstrip('v')
+
+    # Case 1: Version bump
+    if remote_v > local_v:
+        return True, UPDATE_REASON_VERSION_BUMP, details
+
+    # Case 2: Same version, check SHA
+    if remote_v == local_v:
+        # Legacy install without SHA tracking
+        if local_sha is None:
+            return True, UPDATE_REASON_ENABLE_SHA_TRACKING, details
+
+        # SHA comparison (only if we could fetch remote SHA)
+        if remote_sha and local_sha != remote_sha:
+            return True, UPDATE_REASON_CONTENT_CHANGED, details
+
+    # Up to date
+    return False, UPDATE_REASON_UP_TO_DATE, details
 
 
 def download_repo_zip(target_dir: Path, ref: str = "main") -> bool:
@@ -781,8 +876,15 @@ def copy_lsp_engine(source_dir: Path, target_dir: Path) -> int:
     return sum(1 for _ in target_dir.rglob("*") if _.is_file())
 
 
-def write_fingerprint(version: str, source: str = "github"):
-    """Write installation fingerprint file."""
+def write_fingerprint(version: str, source: str = "github", commit_sha: Optional[str] = None):
+    """
+    Write installation fingerprint file.
+
+    Args:
+        version: Version string from skills-registry.json
+        source: Installation source (default: "github")
+        commit_sha: Git commit SHA for content-aware update detection
+    """
     fingerprint = {
         "method": "unified",
         "version": version,
@@ -790,6 +892,10 @@ def write_fingerprint(version: str, source: str = "github"):
         "installed_at": datetime.now().isoformat(),
         "installer_version": VERSION
     }
+
+    # Add commit SHA for content-aware update detection
+    if commit_sha:
+        fingerprint["commit_sha"] = commit_sha
 
     fingerprint_file = INSTALL_DIR / ".install-fingerprint"
     fingerprint_file.write_text(json.dumps(fingerprint, indent=2))
@@ -1005,8 +1111,13 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             except (json.JSONDecodeError, IOError):
                 pass
 
+        # Fetch commit SHA for content-aware update detection
+        commit_sha = fetch_latest_commit_sha()
+
         print_step(1, 5, f"Downloaded sf-skills v{version}", "done")
         print_substep("Downloaded from GitHub")
+        if commit_sha:
+            print_substep(f"Commit: {commit_sha[:8]}...")
 
         # Step 2: Detect and cleanup existing installations
         print_step(2, 5, "Detecting existing installations...", "...")
@@ -1058,9 +1169,9 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             tools_target = INSTALL_DIR / "tools"
             copy_tools(tools_source, tools_target)
 
-            # Write VERSION and fingerprint
+            # Write VERSION and fingerprint (with commit SHA for update detection)
             write_version_file(version)
-            write_fingerprint(version)
+            write_fingerprint(version, commit_sha=commit_sha)
 
             # Touch all files
             touch_all_files(INSTALL_DIR)
@@ -1145,9 +1256,19 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
     return 0
 
 
-def cmd_update(dry_run: bool = False, force: bool = False) -> int:
+def cmd_update(dry_run: bool = False, force: bool = False, force_update: bool = False) -> int:
     """
     Check for and apply updates.
+
+    Compares both VERSION and commit SHA to detect updates:
+    - Version bump: remote version > local version
+    - Content change: same version but different commit SHA
+    - Legacy upgrade: local install missing commit SHA tracking
+
+    Args:
+        dry_run: Preview changes without applying
+        force: Skip confirmation prompts
+        force_update: Force reinstall even if up-to-date
 
     Returns:
         Exit code (0 = success, 1 = error, 2 = no update available)
@@ -1161,24 +1282,53 @@ def cmd_update(dry_run: bool = False, force: bool = False) -> int:
         print_info("Run without --update to install")
         return 1
 
+    # Read current fingerprint for SHA info
+    fingerprint = read_fingerprint()
+    local_sha = fingerprint.get("commit_sha") if fingerprint else None
+
+    # Display current state
     print_info(f"Current version: {current_version or 'unknown'}")
+    if local_sha:
+        print_info(f"Current commit:  {local_sha[:8]}...")
     print_info("Checking for updates...")
 
-    # Fetch latest version
-    latest_version = fetch_registry_version()
+    # Use centralized update detection logic
+    update_needed, reason, details = needs_update()
 
-    if not latest_version:
+    # Display remote state
+    if details.get("remote_version"):
+        print_info(f"Latest version:  {details['remote_version']}")
+    if details.get("remote_sha"):
+        print_info(f"Latest commit:   {details['remote_sha'][:8]}...")
+
+    # Handle force-update flag
+    if force_update:
+        print_info("Force update requested")
+        if not force and not dry_run:
+            if not confirm("Reinstall sf-skills?"):
+                print("\nUpdate cancelled.")
+                return 1
+        return cmd_install(dry_run=dry_run, force=True)
+
+    # Handle network error
+    if reason == UPDATE_REASON_ERROR:
         print_warning("Could not check for updates (network error)")
         return 1
 
-    print_info(f"Latest version:  {latest_version}")
-
-    # Compare versions
-    if current_version and current_version.lstrip('v') >= latest_version:
+    # Handle up-to-date
+    if reason == UPDATE_REASON_UP_TO_DATE:
         print_success("Already up to date!")
         return 2
 
-    print_info(f"Update available: {current_version} → {latest_version}")
+    # Display update reason
+    if reason == UPDATE_REASON_VERSION_BUMP:
+        print_info(f"Update available: {current_version} → {details['remote_version']}")
+    elif reason == UPDATE_REASON_CONTENT_CHANGED:
+        print_info(f"Content updated (same version {current_version}, new commit)")
+        if local_sha and details.get("remote_sha"):
+            print_info(f"Commit: {local_sha[:8]}... → {details['remote_sha'][:8]}...")
+    elif reason == UPDATE_REASON_ENABLE_SHA_TRACKING:
+        print_info("Update available: Enable content-aware update tracking")
 
     if not force and not dry_run:
         if not confirm("Apply update?"):
@@ -1290,6 +1440,15 @@ def cmd_status() -> int:
         print(f"Action:      Run installer to repair")
 
     print(f"Version:     {current_version or 'unknown'}")
+
+    # Display commit SHA from fingerprint
+    fingerprint = read_fingerprint()
+    if fingerprint and fingerprint.get("commit_sha"):
+        sha = fingerprint["commit_sha"]
+        print(f"Commit:      {sha[:8]}... (full: {sha})")
+    else:
+        print(f"Commit:      {c('not tracked', Colors.DIM)} (run --update to enable)")
+
     print(f"Location:    {INSTALL_DIR}")
 
     # Count skills
@@ -1330,8 +1489,7 @@ def cmd_status() -> int:
     else:
         print(f"Settings:    {c('⚠️ Not found', Colors.YELLOW)}")
 
-    # Read fingerprint for more details
-    fingerprint = read_fingerprint()
+    # Read fingerprint for more details (use already-read fingerprint)
     if fingerprint:
         installed_at = fingerprint.get("installed_at", "unknown")
         if installed_at != "unknown":
@@ -1345,18 +1503,25 @@ def cmd_status() -> int:
 
     print("════════════════════════════════════════\n")
 
-    # Check for updates
+    # Check for updates using centralized detection
     print_info("Checking for updates...")
-    latest = fetch_registry_version()
-    if latest:
-        current = (current_version or "0.0.0").lstrip('v')
-        if current < latest:
-            print_warning(f"Update available: v{current} → v{latest}")
-            print_info("Run with --update to apply")
-        else:
-            print_success("Up to date!")
-    else:
-        print_warning("Could not check for updates")
+    update_needed, reason, details = needs_update()
+
+    if reason == UPDATE_REASON_ERROR:
+        print_warning("Could not check for updates (network error)")
+    elif reason == UPDATE_REASON_UP_TO_DATE:
+        print_success("Up to date!")
+    elif reason == UPDATE_REASON_VERSION_BUMP:
+        print_warning(f"Update available: v{current_version} → v{details['remote_version']}")
+        print_info("Run with --update to apply")
+    elif reason == UPDATE_REASON_CONTENT_CHANGED:
+        print_warning(f"Content updated (same version, new commit)")
+        if details.get("local_sha") and details.get("remote_sha"):
+            print_info(f"Commit: {details['local_sha'][:8]}... → {details['remote_sha'][:8]}...")
+        print_info("Run with --update to apply")
+    elif reason == UPDATE_REASON_ENABLE_SHA_TRACKING:
+        print_warning("Update available: Enable content-aware update tracking")
+        print_info("Run with --update to apply")
 
     return 0
 
@@ -1371,12 +1536,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 install.py              # Interactive install
-  python3 install.py --update     # Check and apply updates
-  python3 install.py --uninstall  # Remove sf-skills
-  python3 install.py --status     # Show installation status
-  python3 install.py --dry-run    # Preview changes
-  python3 install.py --force      # Skip confirmations
+  python3 install.py               # Interactive install
+  python3 install.py --update      # Check version + content changes
+  python3 install.py --force-update  # Force reinstall even if up-to-date
+  python3 install.py --uninstall   # Remove sf-skills
+  python3 install.py --status      # Show installation status
+  python3 install.py --dry-run     # Preview changes
+  python3 install.py --force       # Skip confirmations
 
 Curl one-liner:
   curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
@@ -1384,7 +1550,9 @@ Curl one-liner:
     )
 
     parser.add_argument("--update", action="store_true",
-                        help="Check and apply updates")
+                        help="Check and apply updates (version + content)")
+    parser.add_argument("--force-update", action="store_true",
+                        help="Force reinstall even if up-to-date")
     parser.add_argument("--uninstall", action="store_true",
                         help="Remove sf-skills installation")
     parser.add_argument("--status", action="store_true",
@@ -1411,8 +1579,12 @@ Curl one-liner:
         sys.exit(cmd_status())
     elif args.uninstall:
         sys.exit(cmd_uninstall(dry_run=args.dry_run, force=args.force))
-    elif args.update:
-        sys.exit(cmd_update(dry_run=args.dry_run, force=args.force))
+    elif args.update or args.force_update:
+        sys.exit(cmd_update(
+            dry_run=args.dry_run,
+            force=args.force,
+            force_update=args.force_update
+        ))
     else:
         sys.exit(cmd_install(
             dry_run=args.dry_run,
