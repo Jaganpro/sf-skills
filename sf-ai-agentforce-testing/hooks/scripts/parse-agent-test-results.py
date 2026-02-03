@@ -29,7 +29,10 @@ def should_process() -> bool:
         'sf agent test run',
         'sf agent test results',
         'sf agent test resume',
-        'sf agent preview'
+        'sf agent preview',
+        'einstein/ai-agent/v1',
+        'ai-agent/v1/agents',
+        'ai-agent/v1/sessions'
     ])
 
 

@@ -64,6 +64,10 @@ Agentic fix loops enable automated test-fix cycles: when agent tests fail, the s
 | `ESCALATION_NOT_TRIGGERED` | Missing escalation action | Add escalation to topic | sf-ai-agentscript |
 | `RESPONSE_QUALITY_ISSUE` | Instructions lack specificity | Add examples to reasoning instructions | sf-ai-agentscript |
 | `ACTION_OUTPUT_INVALID` | Flow returns unexpected data | Fix Flow or data setup | sf-flow / sf-data |
+| `TOPIC_RE_MATCHING_FAILURE` | Agent stays on old topic after user switches intent | Add transition phrases to target topic classificationDescription | sf-ai-agentscript |
+| `CONTEXT_PRESERVATION_FAILURE` | Agent forgets info from prior turns | Add "use context from prior messages" to topic instructions | sf-ai-agentscript |
+| `MULTI_TURN_ESCALATION_FAILURE` | Agent doesn't escalate after sustained frustration | Add frustration detection to escalation trigger instructions | sf-ai-agentscript |
+| `ACTION_CHAIN_FAILURE` | Action output not passed to next action in sequence | Verify action output variable mappings and topic instructions | sf-ai-agentscript |
 
 ---
 
@@ -319,6 +323,147 @@ system_instructions: |
 **Auto-Fix Command:**
 ```bash
 Skill(skill="sf-ai-agentscript", args="Add escalation trigger to agent MyAgent - escalate when user shows frustration")
+```
+
+### 7. TOPIC_RE_MATCHING_FAILURE (Multi-Turn)
+
+**Symptom:** Agent stays on previous topic after user changes intent mid-conversation.
+
+**Example Failure:**
+```
+❌ test_topic_switch_natural (Multi-Turn)
+   Turn 1: "Cancel my appointment" → Topic: cancel ✅
+   Turn 2: "Actually, reschedule instead" → Topic: cancel ❌ (expected: reschedule)
+   Category: TOPIC_RE_MATCHING_FAILURE
+```
+
+**Root Cause Analysis:**
+1. Target topic's classificationDescription lacks transition phrases
+2. Original topic is too "sticky" and matches broadly
+3. No explicit handling for "actually", "instead", "never mind" patterns
+
+**Fix Strategy:**
+```yaml
+# Before (target topic too narrow)
+topic: reschedule
+  classificationDescription: Handles appointment rescheduling requests
+
+# After (includes transition phrases)
+topic: reschedule
+  classificationDescription: |
+    Handles appointment rescheduling requests. Triggers when user says
+    "reschedule", "change the time", "move my appointment", or changes
+    from cancellation to rescheduling ("actually reschedule instead",
+    "never mind canceling, reschedule it").
+```
+
+**Auto-Fix Command:**
+```bash
+Skill(skill="sf-ai-agentscript", args="Fix topic 'reschedule' in agent MyAgent - add transition phrases: 'actually reschedule instead', 'change to reschedule'")
+```
+
+### 8. CONTEXT_PRESERVATION_FAILURE (Multi-Turn)
+
+**Symptom:** Agent forgets information provided in earlier turns and re-asks.
+
+**Example Failure:**
+```
+❌ test_context_user_identity (Multi-Turn)
+   Turn 1: "My name is Sarah" → ✅ Acknowledged
+   Turn 3: "What's my name?" → ❌ "I don't have that information"
+   Category: CONTEXT_PRESERVATION_FAILURE
+```
+
+**Root Cause Analysis:**
+1. Topic instructions don't reference prior conversation context
+2. Agent treating each turn independently
+3. Session state not propagating (rare — usually API-level issue)
+
+**Fix Strategy:**
+```yaml
+# Add to topic instructions
+topic: customer_support
+  instructions: |
+    ...
+    CONTEXT RULES:
+    - Always reference information the user has already provided
+    - If the user gave their name, use it throughout the conversation
+    - If an entity (order, account, case) was identified earlier, use it
+    - NEVER re-ask for information already provided in this conversation
+```
+
+**Auto-Fix Command:**
+```bash
+Skill(skill="sf-ai-agentscript", args="Add context retention instructions to agent MyAgent - 'Always use information from prior messages, never re-ask for data already provided'")
+```
+
+### 9. MULTI_TURN_ESCALATION_FAILURE (Multi-Turn)
+
+**Symptom:** Agent continues troubleshooting after user shows clear frustration signals over multiple turns.
+
+**Example Failure:**
+```
+❌ test_escalation_frustration (Multi-Turn)
+   Turn 1: "I can't log in" → Troubleshooting offered ✅
+   Turn 2: "That didn't work" → Alternative offered ✅
+   Turn 3: "Nothing works! I need a human NOW" → More troubleshooting ❌
+   Category: MULTI_TURN_ESCALATION_FAILURE
+```
+
+**Root Cause Analysis:**
+1. Escalation trigger instructions don't include frustration patterns
+2. No accumulation logic for repeated failures
+3. Explicit human-request keywords not in escalation triggers
+
+**Fix Strategy:**
+```yaml
+# Add to system instructions or escalation topic
+ESCALATION TRIGGERS:
+- User explicitly requests human: "speak to human", "real person", "manager", "agent"
+- User shows frustration: "nothing works", "fed up", "unacceptable", "done trying"
+- Repeated failure: User says "that didn't work" or "already tried that" 2+ times
+- Strong language: "I need help NOW", all-caps phrases, exclamation marks
+
+When ANY trigger is detected, immediately invoke the escalation action.
+```
+
+**Auto-Fix Command:**
+```bash
+Skill(skill="sf-ai-agentscript", args="Add escalation triggers to agent MyAgent - detect 'nothing works', 'need a human', 'already tried that' as escalation signals")
+```
+
+### 10. ACTION_CHAIN_FAILURE (Multi-Turn)
+
+**Symptom:** Action output from one turn is not used as input for the next action.
+
+**Example Failure:**
+```
+❌ test_action_chain (Multi-Turn)
+   Turn 1: "Find account Edge Communications" → IdentifyRecord ✅ (found AccountId)
+   Turn 2: "Show me their cases" → GetCases ❌ asks "Which account?" (should use Turn 1 result)
+   Category: ACTION_CHAIN_FAILURE
+```
+
+**Root Cause Analysis:**
+1. Second action's input not wired to first action's output variable
+2. Topic instructions don't reference using action results from prior turns
+3. Variable mapping mismatch between actions
+
+**Fix Strategy:**
+```yaml
+# Add to topic instructions for the downstream action
+topic: case_management
+  instructions: |
+    ...
+    When the user asks about cases for an account:
+    - If an account was identified in a prior action, use that account's ID
+    - Do NOT re-ask for the account name or ID
+    - Pass the previously identified record ID to the GetCases action
+```
+
+**Auto-Fix Command:**
+```bash
+Skill(skill="sf-ai-agentscript", args="Fix action chaining in agent MyAgent - ensure GetCases uses AccountId from prior IdentifyRecord action output")
 ```
 
 ---

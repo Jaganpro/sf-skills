@@ -1,7 +1,7 @@
 {
   "name": "sf-ai-agentforce-testing",
-  "version": "1.0.0",
-  "description": "Comprehensive Agentforce testing skill with test execution, coverage analysis, and agentic fix loops. Run agent tests via sf CLI, analyze topic/action coverage, generate test specs, and automatically fix failing agents with 100-point scoring.",
+  "version": "2.0.0",
+  "description": "Comprehensive Agentforce testing skill with dual-track workflow: multi-turn API testing (primary) and CLI Testing Center (secondary). Execute multi-turn conversations via Agent Runtime API, run single-utterance tests via sf CLI, analyze topic/action/context coverage, and automatically fix failing agents with 100-point scoring across 7 categories.",
   "author": {
     "name": "Jag Valaiyapathy",
     "url": "https://github.com/Jaganpro"
@@ -15,6 +15,11 @@
     "agent-testing",
     "ai-agents",
     "coverage",
-    "agentic"
+    "agentic",
+    "multi-turn",
+    "agent-api",
+    "agent-runtime-api",
+    "context-preservation",
+    "topic-routing"
   ]
 }

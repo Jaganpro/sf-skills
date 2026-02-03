@@ -15,6 +15,9 @@ Agent test coverage measures how thoroughly your tests validate agent behavior a
 | **Guardrail Coverage** | % of guardrails with security tests |
 | **Escalation Coverage** | % of escalation paths tested |
 | **Edge Case Coverage** | Boundary conditions tested |
+| **Multi-Turn Topic Re-matching** | % of topic pairs with switch tests |
+| **Context Preservation** | % of stateful scenarios with retention tests |
+| **Conversation Completion Rate** | % of multi-turn scenarios that complete all turns |
 
 ---
 
@@ -186,6 +189,101 @@ returns            0           ❌ Add 3+ phrasings
 | Guardrail Coverage | 100% | 100% |
 | Escalation Coverage | 100% | 100% |
 | Phrasings per Topic | 2 | 3+ |
+
+---
+
+## Multi-Turn Coverage Metrics (Agent Runtime API)
+
+Multi-turn testing via the Agent Runtime API adds three additional coverage dimensions that **cannot be measured with single-utterance CLI tests**.
+
+### Topic Re-Matching Rate
+
+Measures how often the agent correctly switches topics when user intent changes mid-conversation.
+
+**Formula:**
+```
+Re-matching Rate = (Correct topic switches / Total topic switch attempts) × 100
+```
+
+**Target:** 90%+ — Most topic switches should be correctly identified
+
+**Example:**
+```
+Multi-turn scenarios with topic switches: 8
+Correct switches: 7
+Incorrect (stayed on old topic): 1
+
+Re-matching Rate = 7/8 = 87.5% ⚠️
+```
+
+### Context Retention Score
+
+Measures whether the agent retains and correctly uses information from prior turns.
+
+**Formula:**
+```
+Context Score = (Turns with correct context usage / Turns requiring context) × 100
+```
+
+**Target:** 95%+ — Agent should almost never re-ask for provided information
+
+**Example:**
+```
+Turns requiring prior context: 12
+Correctly used context: 11
+Re-asked for known info: 1
+
+Context Score = 11/12 = 91.7% ⚠️
+```
+
+### Conversation Completion Rate
+
+Measures how many multi-turn scenarios complete all turns successfully without errors.
+
+**Formula:**
+```
+Completion Rate = (Scenarios completing all turns / Total scenarios) × 100
+```
+
+**Target:** 85%+ — Most conversations should complete without mid-conversation failures
+
+**Example:**
+```
+Total multi-turn scenarios: 6
+Completed all turns: 5
+Failed mid-conversation: 1
+
+Completion Rate = 5/6 = 83.3% ⚠️
+```
+
+### Multi-Turn Coverage Report
+
+```
+📊 MULTI-TURN COVERAGE ANALYSIS
+═══════════════════════════════════════════════════════════════
+
+Agent: Customer_Support_Agent
+Test Mode: Agent Runtime API (multi-turn)
+
+MULTI-TURN METRICS
+───────────────────────────────────────────────────────────────
+Dimension                  Score     Target    Status
+───────────────────────────────────────────────────────────────
+Topic Re-matching Rate     87.5%     90%       ⚠️ Below target
+Context Retention Score    91.7%     95%       ⚠️ Below target
+Conversation Completion    83.3%     85%       ⚠️ Below target
+
+PATTERN COVERAGE
+───────────────────────────────────────────────────────────────
+Pattern                    Tested    Status
+───────────────────────────────────────────────────────────────
+Topic Re-matching          4/4       ✅ All scenarios passed
+Context Preservation       3/4       ⚠️ 1 scenario failed
+Escalation Cascade         4/4       ✅ All scenarios passed
+Guardrail Mid-Conversation 2/4       ❌ 2 scenarios failed
+Action Chaining            2/2       ✅ All scenarios passed
+Variable Injection         0/2       ❌ Not yet tested
+```
 
 ---
 

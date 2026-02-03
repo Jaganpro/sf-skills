@@ -302,11 +302,48 @@ sf project deploy start --metadata ConnectedApp:Agentforce_Preview --target-org 
 
 ---
 
+## Web OAuth vs Client Credentials: Which Do You Need?
+
+There are **two different OAuth approaches** used in agent testing, each requiring a different app type:
+
+### Comparison
+
+| Aspect | Web OAuth (this guide) | Client Credentials (ECA) |
+|--------|----------------------|--------------------------|
+| **Used by** | `sf agent preview --use-live-actions` | Agent Runtime API (multi-turn testing) |
+| **App type** | Connected App | External Client App (ECA) |
+| **Auth flow** | Authorization Code (browser login) | Client Credentials (machine-to-machine) |
+| **User interaction** | Browser redirect required | None — fully automated |
+| **Best for** | Manual interactive testing | Automated multi-turn API testing |
+| **Setup guide** | This document | [ECA Setup Guide](eca-setup-guide.md) |
+
+### Decision Flow
+
+```
+What are you testing?
+    │
+    ├─ Interactive preview (sf agent preview)?
+    │   → Use Connected App (Web OAuth) — this guide
+    │
+    └─ Multi-turn API conversations?
+        → Use External Client App (Client Credentials) — see eca-setup-guide.md
+```
+
+### When You Need Both
+
+If you're doing **comprehensive testing** (both CLI preview and multi-turn API), you'll need:
+1. A **Connected App** for `sf agent preview --use-live-actions` (this guide)
+2. An **External Client App** for Agent Runtime API testing ([ECA Setup Guide](eca-setup-guide.md))
+
+These are separate app types and can coexist in the same org.
+
+---
+
 ## Related Skills
 
 | Skill | Use For |
 |-------|---------|
-| sf-connected-apps | Create and manage Connected Apps |
+| sf-connected-apps | Create and manage Connected Apps and ECAs |
 | sf-flow | Debug failing Flow actions |
 | sf-apex | Debug failing Apex actions |
 | sf-debug | Analyze debug logs |
