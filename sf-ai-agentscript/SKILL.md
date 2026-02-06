@@ -115,6 +115,8 @@ actions:
 
 > **Note**: Some of these may work on `flow://` action targets (not validated). The `@utils.transition` utility action has limited property support.
 
+> **📖 For comprehensive action configuration guidance**, see the modular [resources/actions-INDEX.md](resources/actions-INDEX.md) reference.
+
 ### 🔴 `complex_data_type_name` Mapping Table (Critical for Actions)
 
 > **"#1 source of compile errors"** - Use this table when defining action inputs/outputs in Agentforce Assets.
@@ -223,6 +225,8 @@ reasoning:
          with category=...        # LLM decides based on context
          with limit=10            # Fixed value
 ```
+
+> **📖 For comprehensive input binding patterns**, see [resources/actions-input-bindings.md](resources/actions-input-bindings.md).
 
 #### Post-Action Directives: Only on `@actions.*`
 ```yaml
@@ -410,6 +414,8 @@ run @actions.transform_recommendation
 run @actions.transform_recommendation
    with Reco_Input = @variables.ProductReco
 ```
+
+> **📖 For detailed action callback patterns and best practices**, see [resources/actions-callbacks.md](resources/actions-callbacks.md).
 
 ### Latch Variable Pattern for Topic Re-entry
 
@@ -1055,6 +1061,7 @@ topic refund:
 | Post-action logic doesn't run | Check not at TOP | Move post-action check to first lines |
 | Wrong data retrieved | Missing filter | Wrap retriever in Flow with filter inputs |
 | Variables don't change | Using `@utils.setVariables` with `set` | Post-action `set` only works on `@actions.*`, use Helper Topics |
+| Action syntax errors | Linting errors in action blocks | Consult [resources/actions-troubleshooting.md](resources/actions-troubleshooting.md) for common patterns |
 
 ### Deployment Gotchas (Validated by Testing)
 
@@ -1091,6 +1098,7 @@ Present the results to the user and ask them to select which user to use for `de
 | Need | Document | Description |
 |------|----------|-------------|
 | Syntax reference | [resources/syntax-reference.md](resources/syntax-reference.md) | Complete block & expression syntax |
+| Action configuration | [resources/actions-INDEX.md](resources/actions-INDEX.md) | Action definitions, callbacks, input bindings, descriptions, prompt templates (modular reference) |
 | FSM design | [resources/fsm-architecture.md](resources/fsm-architecture.md) | State machine patterns & examples |
 | Instruction resolution | [resources/instruction-resolution.md](resources/instruction-resolution.md) | Three-phase execution model |
 | Data & multi-agent | [resources/grounding-multiagent.md](resources/grounding-multiagent.md) | Retriever actions & SOMA patterns |
@@ -1221,6 +1229,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.4.0 | 2026-02-06 | **Modular action reference**: Added 8 modular action configuration reference files (52KB total, 1,976 lines) to `resources/` directory addressing user-reported linting/syntax errors: actions-INDEX.md (navigation hub), actions-definitions.md (core structure), actions-callbacks.md (chaining patterns), actions-input-bindings.md (parameter patterns), actions-descriptions.md (context-aware descriptions), actions-instruction-refs.md (LLM guidance), actions-prompt-templates.md (template integration), actions-troubleshooting.md (common errors). Added 5 strategic cross-references in SKILL.md at key decision points (Document Map, @utils.transition section, Action Chaining, Common Issues, Slot-Filling). Content consolidated from official Salesforce Agent Script Recipes. |
 | 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile (label on topics/actions, always_expect_input, action properties on transitions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
 | 1.2.0 | 2026-01-20 | **Gap analysis vs agent-script-recipes**: Expanded Action Target Protocols from 7 to 16 (with validation status indicators), added Variable vs Action I/O Type Matrix, added lifecycle hooks note with TDD validation caveat, added Sources & Acknowledgments section, documented future/planned features notice. TDD validation confirmed `label:` IS reserved (SKILL.md was correct), `before_reasoning:`/`after_reasoning:` syntax from recipes does NOT compile in current release |
 | 1.1.0 | 2026-01-20 | **"Ultimate Guide" tribal knowledge integration**: Added `complex_data_type_name` mapping table, Canvas View corruption bugs, Reserved field names, Preview mode workarounds, Credit consumption table, Supervision vs Handoff clarification, Action output flags for zero-hallucination routing, Latch variable pattern, Loop protection guardrails, Token/size limits, Progress indicators, Connection block escalation patterns, VS Code limitations, Language block quirks. Added 4 new templates: flow-action-lookup, prompt-rag-search, deterministic-routing, escalation-pattern |
