@@ -86,6 +86,20 @@ class InstallState:
     CORRUPTED = "corrupted"      # Exists but missing fingerprint
 
 
+def safe_rmtree(path: Path) -> None:
+    """Remove a directory tree, handling symlinks gracefully.
+
+    Python 3.12+ shutil.rmtree() refuses to operate on symbolic links.
+    This helper detects symlinks and unlinks them instead, preventing
+    OSError("Cannot call rmtree on a symbolic link").
+    """
+    p = Path(path)
+    if p.is_symlink():
+        p.unlink()
+    elif p.exists():
+        shutil.rmtree(p)
+
+
 def read_fingerprint() -> Optional[Dict[str, Any]]:
     """Read .install-fingerprint if it exists."""
     fingerprint_file = INSTALL_DIR / ".install-fingerprint"
@@ -407,7 +421,7 @@ def cleanup_marketplace(dry_run: bool = False) -> bool:
         return True
 
     try:
-        shutil.rmtree(MARKETPLACE_DIR)
+        safe_rmtree(MARKETPLACE_DIR)
         print_substep(f"Removed marketplace install: {MARKETPLACE_DIR}")
         return True
     except (OSError, shutil.Error) as e:
@@ -425,7 +439,7 @@ def cleanup_legacy(dry_run: bool = False) -> bool:
         return True
 
     try:
-        shutil.rmtree(LEGACY_HOOKS_DIR)
+        safe_rmtree(LEGACY_HOOKS_DIR)
         print_substep(f"Removed legacy hooks: {LEGACY_HOOKS_DIR}")
         return True
     except (OSError, shutil.Error) as e:
@@ -715,8 +729,8 @@ def copy_skills(source_dir: Path, target_dir: Path) -> int:
     for skill_dir in source_dir.glob("sf-*"):
         if skill_dir.is_dir():
             target_skill = target_dir / skill_dir.name
-            if target_skill.exists():
-                shutil.rmtree(target_skill)
+            if target_skill.exists() or target_skill.is_symlink():
+                safe_rmtree(target_skill)
             shutil.copytree(skill_dir, target_skill)
             count += 1
 
@@ -814,8 +828,8 @@ def copy_hooks(source_dir: Path, target_dir: Path) -> int:
     Returns:
         Number of hook files copied
     """
-    if target_dir.exists():
-        shutil.rmtree(target_dir)
+    if target_dir.exists() or target_dir.is_symlink():
+        safe_rmtree(target_dir)
 
     shutil.copytree(source_dir, target_dir)
 
@@ -837,8 +851,8 @@ def copy_tools(source_dir: Path, target_dir: Path) -> int:
     if not source_dir.exists():
         return 0
 
-    if target_dir.exists():
-        shutil.rmtree(target_dir)
+    if target_dir.exists() or target_dir.is_symlink():
+        safe_rmtree(target_dir)
 
     shutil.copytree(source_dir, target_dir)
 
@@ -863,8 +877,8 @@ def copy_lsp_engine(source_dir: Path, target_dir: Path) -> int:
     if not source_dir.exists():
         return 0
 
-    if target_dir.exists():
-        shutil.rmtree(target_dir)
+    if target_dir.exists() or target_dir.is_symlink():
+        safe_rmtree(target_dir)
 
     shutil.copytree(source_dir, target_dir)
 
@@ -1130,8 +1144,8 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         if state == InstallState.LEGACY:
             cleanups.append(("Legacy hooks", lambda: cleanup_legacy(dry_run)))
         if state == InstallState.CORRUPTED:
-            if INSTALL_DIR.exists() and not dry_run:
-                shutil.rmtree(INSTALL_DIR)
+            if (INSTALL_DIR.exists() or INSTALL_DIR.is_symlink()) and not dry_run:
+                safe_rmtree(INSTALL_DIR)
             cleanups.append(("Corrupted install", lambda: True))
 
         # Remove old hooks from settings.json
@@ -1379,9 +1393,9 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
         print_success(f"Removed {skills_removed} skill commands from {COMMANDS_DIR}")
 
     # Remove installation directory
-    if INSTALL_DIR.exists():
+    if INSTALL_DIR.exists() or INSTALL_DIR.is_symlink():
         if not dry_run:
-            shutil.rmtree(INSTALL_DIR)
+            safe_rmtree(INSTALL_DIR)
         print_success(f"Removed: {INSTALL_DIR}")
 
     # Clean up legacy if present
