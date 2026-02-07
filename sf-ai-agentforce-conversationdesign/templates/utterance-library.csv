@@ -1,0 +1,11 @@
+topic,intent,utterance,category,notes
+{{TOPIC_1}},{{INTENT_1}},{{UTTERANCE_1}},happy_path,{{NOTES_1}}
+{{TOPIC_1}},{{INTENT_1}},{{UTTERANCE_2}},synonym,{{NOTES_2}}
+{{TOPIC_1}},{{INTENT_1}},{{UTTERANCE_3}},edge_case,{{NOTES_3}}
+{{TOPIC_1}},{{INTENT_2}},{{UTTERANCE_4}},happy_path,{{NOTES_4}}
+{{TOPIC_1}},{{INTENT_2}},{{UTTERANCE_5}},adversarial,{{NOTES_5}}
+{{TOPIC_2}},{{INTENT_3}},{{UTTERANCE_6}},happy_path,{{NOTES_6}}
+{{TOPIC_2}},{{INTENT_3}},{{UTTERANCE_7}},synonym,{{NOTES_7}}
+{{TOPIC_2}},{{INTENT_4}},{{UTTERANCE_8}},edge_case,{{NOTES_8}}
+out_of_scope,none,{{UTTERANCE_9}},out_of_scope,{{NOTES_9}}
+out_of_scope,none,{{UTTERANCE_10}},out_of_scope,{{NOTES_10}}

@@ -185,6 +185,37 @@
       }
     },
 
+    "sf-ai-agentforce-conversationdesign": {
+      "keywords": [
+        "conversation design", "dialog design", "persona", "utterance",
+        "escalation", "topic design", "instruction writing", "guardrails",
+        "agent UX", "conversation quality", "tone", "agentforce design"
+      ],
+      "intentPatterns": [
+        "design.*conversation", "write.*instruction", "create.*persona",
+        "improve.*agent.*quality", "review.*topic", "utterance.*library",
+        "escalation.*matrix", "agent.*tone", "conversation.*flow"
+      ],
+      "filePatterns": [
+        "persona.*\\.md$", "utterance.*\\.csv$", "escalation.*\\.md$",
+        "scorecard.*\\.md$"
+      ],
+      "priority": "high",
+      "description": "Conversation design for Agentforce agents — personas, topics, instructions, utterances, escalation, guardrails",
+      "orchestration": {
+        "prerequisites": [],
+        "next_steps": [
+          { "skill": "sf-ai-agentscript", "condition": "always", "message": "Implement the designed conversations as Agent Script", "confidence": 3 },
+          { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test the conversation design with multi-turn scenarios", "confidence": 3 }
+        ],
+        "commonly_with": [
+          { "skill": "sf-ai-agentscript", "trigger": "topic design", "message": "Translate topic architecture into Agent Script", "confidence": 3 },
+          { "skill": "sf-flow", "trigger": "action design", "message": "Build Flow actions for conversation paths", "confidence": 2 },
+          { "skill": "sf-diagram-mermaid", "trigger": "flow visualization", "message": "Visualize conversation flows as diagrams", "confidence": 2 }
+        ]
+      }
+    },
+
     "sf-ai-agentforce": {
       "keywords": ["agentforce", "agent builder", "agent-builder", "prompt template", "prompt-template", "models api", "models-api", "genai function", "genai plugin", "lightning type"],
       "intentPatterns": [
@@ -631,7 +662,7 @@
     "agentforce": {
       "description": "Agentforce agent development - prerequisites to testing",
       "trigger_phrases": ["build agent", "create agentforce", "agentforce agent", "copilot"],
-      "order": ["sf-metadata", "sf-apex", "sf-flow", "sf-deploy", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
+      "order": ["sf-ai-agentforce-conversationdesign", "sf-metadata", "sf-apex", "sf-flow", "sf-deploy", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
     },
     "agentforce_observability": {
       "description": "Agentforce agent monitoring and debugging - extract, analyze, fix",
