@@ -68,7 +68,7 @@ When building agents with external API integrations:
 │     └── Create agent with flow:// target                                    │
 │                                                                             │
 │  8. sf-deploy                                                               │
-│     └── Publish agent (sf agent publish)                                    │
+│     └── Publish agent (sf agent publish authoring-bundle)                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 

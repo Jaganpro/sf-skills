@@ -936,7 +936,7 @@ When building agents with external API integrations, follow this order:
 │  4. sf-flow            → Create Flow wrapper (HTTP Callout or Apex wrapper) │
 │  5. sf-deploy          → Deploy all metadata to org                         │
 │  6. sf-ai-agentforce   → Create agent with flow:// target                   │
-│  7. sf-deploy          → Publish agent (sf agent publish)                   │
+│  7. sf-deploy          → Publish agent (sf agent publish authoring-bundle)  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 

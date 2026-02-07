@@ -328,7 +328,7 @@ sf agent test run --api-name MyAgentTests --wait 10 --result-format json --targe
 
 ```bash
 # Get results
-sf agent test results --use-most-recent --result-format json --target-org dev > results.json
+sf agent test results --job-id <JOB_ID> --result-format json --target-org dev > results.json
 
 # Extract failures
 cat results.json | jq '.testResults[] | select(.status == "Failed")'

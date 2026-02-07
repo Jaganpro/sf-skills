@@ -92,7 +92,7 @@ When deploying agents with external API integrations:
 │  6. sf-ai-agentscript → Create agent with flow:// target                   │
 │                                                                             │
 │  7. sf-deploy         ◀── SECOND DEPLOYMENT (Agent Publish)                │
-│     └── sf agent publish --api-name [AgentName]                            │
+│     └── sf agent publish authoring-bundle --api-name [AgentName]           │
 │                                                                             │
 │  8. sf-data           → Create test data                                    │
 └─────────────────────────────────────────────────────────────────────────────┘

@@ -117,7 +117,7 @@ IMPORTANT NOTES:
 2. Best practices:
    - Test destructive changes in sandbox first
    - Backup metadata before deletion
-   - Use --check-only to validate before actual deployment
+   - Use --dry-run to validate before actual deployment
    - Delete fields before objects
    - Be careful with dependencies
 
@@ -132,7 +132,7 @@ IMPORTANT NOTES:
      --manifest manifest/package.xml \
      --post-destructive-changes manifest/destructiveChanges.xml \
      --target-org sandbox \
-     --check-only \
+     --dry-run \
      --test-level RunLocalTests \
      --wait 30
 

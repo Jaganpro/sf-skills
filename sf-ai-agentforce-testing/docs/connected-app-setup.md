@@ -132,9 +132,10 @@ When using `--apex-debug`:
 **Cause:** Actions require deployed Flows/Apex.
 
 **Solution:**
-1. Verify Flow is active: `sf flow resume --name [FlowName]`
-2. Verify Apex is deployed: `sf project deploy start --metadata ApexClass:[ClassName]`
-3. Check agent is activated: `sf agent activate --api-name [Agent]`
+1. Verify Flow is active via SOQL: `sf data query --query "SELECT Id, ActiveVersionId, Status FROM FlowDefinitionView WHERE ApiName = '[FlowName]'" --target-org [OrgAlias]`
+2. Deploy/activate Flow via metadata: `sf project deploy start --metadata Flow:[FlowName] --target-org [OrgAlias]`
+3. Verify Apex is deployed: `sf project deploy start --metadata ApexClass:[ClassName]`
+4. Check agent is activated: `sf agent activate --api-name [Agent]`
 
 ### Timeout errors
 

@@ -246,7 +246,6 @@ Resume or retrieve results from an incomplete test.
 
 ```bash
 sf agent test resume --job-id <id> --target-org <alias> [--wait <minutes>]
-sf agent test resume --use-most-recent --target-org <alias>
 ```
 
 **Flags:**
@@ -254,7 +253,6 @@ sf agent test resume --use-most-recent --target-org <alias>
 | Flag | Description |
 |------|-------------|
 | `-i, --job-id` | Job ID to resume |
-| `-r, --use-most-recent` | Resume most recent test run |
 | `-o, --target-org` | Target org alias or username |
 | `-w, --wait` | Minutes to wait for completion |
 | `--result-format` | Output format |
@@ -265,9 +263,6 @@ sf agent test resume --use-most-recent --target-org <alias>
 ```bash
 # Resume specific job
 sf agent test resume --job-id 0Ah7X0000000001 --wait 5 --target-org dev
-
-# Resume most recent test
-sf agent test resume --use-most-recent --wait 10 --target-org dev
 ```
 
 ---

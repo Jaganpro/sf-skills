@@ -369,7 +369,7 @@ sf agent preview --api-name [AgentName] --target-org [alias]
 sf agent preview --api-name [AgentName] --use-live-actions --target-org [alias]
 
 # Validate Agent Script syntax
-sf afdx agent validate --api-name [AgentName] --target-org [alias]
+sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
 ```
 
 #### Full Agent Deployment Workflow
@@ -382,10 +382,10 @@ sf project deploy start --metadata ApexClass --target-org [alias]
 sf project deploy start --metadata Flow --target-org [alias]
 
 # 3. Validate Agent Script
-sf afdx agent validate --api-name [AgentName] --target-org [alias]
+sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
 
 # 4. Publish agent
-sf agent publish --api-name [AgentName] --target-org [alias]
+sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
 
 # 5. Preview (simulated mode)
 sf agent preview --api-name [AgentName] --target-org [alias]
@@ -405,7 +405,7 @@ sf agent deactivate --api-name [AgentName] --target-org [alias]
 # 2. Make changes to Agent Script
 
 # 3. Re-publish
-sf agent publish --api-name [AgentName] --target-org [alias]
+sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
 
 # 4. Re-activate
 sf agent activate --api-name [AgentName] --target-org [alias]
@@ -424,7 +424,7 @@ sf project deploy start --metadata ApexClass,Flow --target-org target-org
 sf project deploy start --metadata Agent:[AgentName] --target-org target-org
 
 # 4. Publish agent in target org
-sf agent publish --api-name [AgentName] --target-org target-org
+sf agent publish authoring-bundle --api-name [AgentName] --target-org target-org
 
 # 5. Activate in target org
 sf agent activate --api-name [AgentName] --target-org target-org
@@ -434,11 +434,11 @@ sf agent activate --api-name [AgentName] --target-org target-org
 
 | Command | Description |
 |---------|-------------|
-| `sf agent publish --api-name X` | Publish authoring bundle |
+| `sf agent publish authoring-bundle --api-name X` | Publish authoring bundle |
 | `sf agent activate --api-name X` | Activate published agent |
 | `sf agent deactivate --api-name X` | Deactivate agent for changes |
 | `sf agent preview --api-name X` | Preview agent behavior |
-| `sf afdx agent validate --api-name X` | Validate Agent Script syntax |
+| `sf agent validate authoring-bundle --api-name X` | Validate Agent Script syntax |
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
 | `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |

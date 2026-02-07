@@ -127,7 +127,7 @@ This checklist ensures that Salesforce Flows meet enterprise governance standard
 
 - [ ] **Deployment plan documented** (sandbox → UAT → production)
 - [ ] **Change set or package created** (includes all dependencies)
-- [ ] **Validation deployment successful** (--check-only passed)
+- [ ] **Validation deployment successful** (--dry-run passed)
 - [ ] **Activation strategy defined** (deploy as Draft, activate after monitoring)
 - [ ] **Monitoring plan in place** (how to track errors post-deployment)
 

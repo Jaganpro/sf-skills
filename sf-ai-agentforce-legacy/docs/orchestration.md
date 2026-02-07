@@ -29,7 +29,7 @@ sf-ai-agentforce requires an **extended orchestration** because agents depend on
 │     └── Create agent with flow:// targets                                   │
 │                                                                             │
 │  6. sf-deploy (SECOND DEPLOYMENT - Agent Publish)                           │
-│     └── sf agent publish --api-name [AgentName]                            │
+│     └── sf agent publish authoring-bundle --api-name [AgentName]           │
 │     └── sf agent activate --api-name [AgentName]                           │
 │                                                                             │
 │  7. sf-ai-agentforce-testing (NEW)                                          │
@@ -195,7 +195,7 @@ After agent deployment, use **sf-ai-agentforce-testing** for comprehensive valid
 │  AGENTIC TEST-FIX LOOP                                                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Generate test spec from agent metadata                                   │
-│     └── sf agent generate test-spec --api-name [AgentName]                  │
+│     └── sf agent generate test-spec  (interactive wizard)                   │
 │                                                                             │
 │  2. Create and run tests                                                     │
 │     └── sf agent test run --api-name [AgentName]_Tests --wait 10            │

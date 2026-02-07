@@ -462,7 +462,7 @@ Score: 108/110 ⭐⭐⭐⭐⭐ Excellent
 
 **Step 1: Check-Only Validation**
 ```
-Deploying flow with --check-only flag...
+Deploying flow with --dry-run flag...
 ✓ Validation successful
 ✓ No org-specific errors
 ✓ Ready for actual deployment

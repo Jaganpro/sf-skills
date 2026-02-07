@@ -96,7 +96,7 @@ Phrasing Diversity = 3 ✅
 sf agent test run --api-name MyAgentTests --wait 10 --verbose --result-format json --target-org dev
 
 # Get detailed results
-sf agent test results --use-most-recent --verbose --result-format json --target-org dev
+sf agent test results --job-id <JOB_ID> --verbose --result-format json --target-org dev
 ```
 
 ### Report Format

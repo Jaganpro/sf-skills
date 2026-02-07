@@ -204,7 +204,7 @@
           { "skill": "sf-metadata", "condition": "custom_fields", "message": "Deploy custom fields before agent queries them", "confidence": 2 }
         ],
         "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish", "confidence": 3 },
+          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish authoring-bundle", "confidence": 3 },
           { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test agent topic routing and actions", "confidence": 2 }
         ],
         "commonly_with": []
@@ -548,7 +548,7 @@
           { "skill": "sf-metadata", "condition": "custom_fields", "message": "Deploy custom fields before agent queries them", "confidence": 2 }
         ],
         "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish", "confidence": 3 },
+          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish authoring-bundle", "confidence": 3 },
           { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test agent topic routing and actions", "confidence": 2 }
         ],
         "commonly_with": [

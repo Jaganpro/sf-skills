@@ -112,6 +112,6 @@ done
 
 | Issue | Cause | Resolution |
 |-------|-------|------------|
-| `Nonexistent flag: --source-dir` | CLI version change | Use `sf agent publish --api-name` instead |
+| `Nonexistent flag: --source-dir` | CLI version change | Use `sf agent publish authoring-bundle --api-name` instead |
 | `Unknown error` on publish | Usually successful | Check full JSON output for actual status |
 | `Default agent user not found` | Wrong org or user inactive | Query target org for Einstein Agent User |

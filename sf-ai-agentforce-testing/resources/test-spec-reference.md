@@ -500,9 +500,9 @@ sf agent test results \
   --output-dir ./results \
   --target-org dev
 
-# Get most recent results
+# Get results by most recent job
 sf agent test results \
-  --use-most-recent \
+  --job-id <JOB_ID> \
   --verbose \
   --result-format json \
   --target-org dev

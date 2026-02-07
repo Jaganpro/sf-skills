@@ -183,8 +183,8 @@ Skill(skill="sf-ai-agentforce-testing", args="Test agent My_Agent and fix any fa
 ### Test Workflow (Automated)
 
 ```bash
-# 1. Generate test specification
-sf agent generate test-spec --api-name My_Agent --output-dir ./tests
+# 1. Generate test specification (interactive wizard — no CLI flags available)
+sf agent generate test-spec
 
 # 2. Create test definition in org
 sf agent test create --spec ./tests/test-spec.yaml --target-org MyOrg
@@ -192,8 +192,8 @@ sf agent test create --spec ./tests/test-spec.yaml --target-org MyOrg
 # 3. Run tests
 sf agent test run --api-name My_Agent_Tests --wait 10 --target-org MyOrg
 
-# 4. View results
-sf agent test results --api-name My_Agent_Tests --target-org MyOrg
+# 4. View results (requires --job-id from step 3)
+sf agent test results --job-id <JOB_ID> --result-format json --target-org MyOrg
 ```
 
 ---

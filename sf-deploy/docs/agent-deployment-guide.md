@@ -133,7 +133,7 @@ sf agent activate --api-name [AgentName] --target-org [alias]
 ```
 
 **Requirements:**
-- Agent must be published first (`sf agent publish`)
+- Agent must be published first (`sf agent publish authoring-bundle`)
 - All Apex classes and Flows must be deployed
 - `default_agent_user` must be a valid org user with Agentforce permissions
 
@@ -165,7 +165,7 @@ sf agent deactivate --api-name Customer_Support_Agent --target-org myorg
 # 2. Make changes to Agent Script
 
 # 3. Re-publish
-sf agent publish --api-name Customer_Support_Agent --target-org myorg
+sf agent publish authoring-bundle --api-name Customer_Support_Agent --target-org myorg
 
 # 4. Re-activate
 sf agent activate --api-name Customer_Support_Agent --target-org myorg
@@ -229,10 +229,10 @@ sf project deploy start --metadata ApexClass --target-org myorg
 sf project deploy start --metadata Flow --target-org myorg
 
 # 3. Validate Agent Script
-sf afdx agent validate --api-name Customer_Support_Agent --target-org myorg
+sf agent validate authoring-bundle --api-name Customer_Support_Agent --target-org myorg
 
 # 4. Publish agent
-sf agent publish --api-name Customer_Support_Agent --target-org myorg
+sf agent publish authoring-bundle --api-name Customer_Support_Agent --target-org myorg
 
 # 5. Preview (simulated mode)
 sf agent preview --api-name Customer_Support_Agent --target-org myorg
@@ -254,10 +254,10 @@ sf agent deactivate --api-name Customer_Support_Agent --target-org myorg
 sf project deploy start --metadata ApexClass,Flow --target-org myorg
 
 # 3. Validate
-sf afdx agent validate --api-name Customer_Support_Agent --target-org myorg
+sf agent validate authoring-bundle --api-name Customer_Support_Agent --target-org myorg
 
 # 4. Re-publish
-sf agent publish --api-name Customer_Support_Agent --target-org myorg
+sf agent publish authoring-bundle --api-name Customer_Support_Agent --target-org myorg
 
 # 5. Preview
 sf agent preview --api-name Customer_Support_Agent --target-org myorg
@@ -280,7 +280,7 @@ sf project deploy start --source-dir force-app/main/default/flows --target-org t
 sf project deploy start --metadata Agent:Customer_Support_Agent --target-org target-org
 
 # 4. Publish agent in target org
-sf agent publish --api-name Customer_Support_Agent --target-org target-org
+sf agent publish authoring-bundle --api-name Customer_Support_Agent --target-org target-org
 
 # 5. Activate in target org
 sf agent activate --api-name Customer_Support_Agent --target-org target-org
@@ -310,7 +310,7 @@ sf project deploy start --metadata Flow --target-org $ORG_ALIAS --wait 10
 
 # Step 2: Validate agent script
 echo "✅ Validating Agent Script..."
-sf afdx agent validate --api-name $AGENT_NAME --target-org $ORG_ALIAS
+sf agent validate authoring-bundle --api-name $AGENT_NAME --target-org $ORG_ALIAS
 
 # Step 3: Check if agent exists (deactivate if needed)
 echo "🔍 Checking agent status..."
@@ -320,7 +320,7 @@ fi
 
 # Step 4: Publish agent
 echo "📤 Publishing agent..."
-sf agent publish --api-name $AGENT_NAME --target-org $ORG_ALIAS --wait 10
+sf agent publish authoring-bundle --api-name $AGENT_NAME --target-org $ORG_ALIAS --wait 10
 
 # Step 5: Activate agent
 echo "▶️ Activating agent..."
@@ -370,7 +370,7 @@ sf project deploy start --metadata Flow --target-org myorg
 sf project deploy start --metadata NamedCredential --target-org myorg
 
 # 5. Publish agent
-sf agent publish --api-name My_Agent --target-org myorg
+sf agent publish authoring-bundle --api-name My_Agent --target-org myorg
 
 # 6. Activate
 sf agent activate --api-name My_Agent --target-org myorg
@@ -413,7 +413,7 @@ sf agent activate --api-name My_Agent --target-org myorg
 ```bash
 sf agent deactivate --api-name My_Agent --target-org myorg
 # Make changes
-sf agent publish --api-name My_Agent --target-org myorg
+sf agent publish authoring-bundle --api-name My_Agent --target-org myorg
 sf agent activate --api-name My_Agent --target-org myorg
 ```
 
@@ -451,11 +451,11 @@ sf agent activate --api-name My_Agent --target-org myorg
 
 | Command | Description |
 |---------|-------------|
-| `sf agent publish --api-name X` | Publish authoring bundle |
+| `sf agent publish authoring-bundle --api-name X` | Publish authoring bundle |
 | `sf agent activate --api-name X` | Activate published agent |
 | `sf agent deactivate --api-name X` | Deactivate agent for changes |
 | `sf agent preview --api-name X` | Preview agent behavior |
-| `sf afdx agent validate --api-name X` | Validate Agent Script syntax |
+| `sf agent validate authoring-bundle --api-name X` | Validate Agent Script syntax |
 
 ### Metadata Commands with Agent Pseudo Type
 

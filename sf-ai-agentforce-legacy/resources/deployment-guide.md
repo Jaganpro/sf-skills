@@ -312,7 +312,7 @@ sf agent preview --api-name [AgentName] --use-live-actions --target-org [alias]
 
 **IMPORTANT**:
 - Always run `sf agent validate authoring-bundle` BEFORE deployment to catch errors early (~3 seconds vs minutes for failed deploys)
-- If `sf agent publish` fails with HTTP 404, use `sf project deploy start --source-dir` instead - both work for AiAuthoringBundles
+- If `sf agent publish authoring-bundle` fails with HTTP 404, use `sf project deploy start --source-dir` instead - both work for AiAuthoringBundles
 
 ---
 

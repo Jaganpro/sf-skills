@@ -508,7 +508,7 @@ language:
 |-----------|---------|----------|
 | **Before Agent Script** | `/sf-flow` - Create Flows for `flow://` action targets | ⚠️ REQUIRED |
 | **After Agent Script** | `/sf-ai-agentforce-testing` - Test topic routing and actions | ✅ RECOMMENDED |
-| **For Deployment** | `/sf-deploy` - Publish agent with `sf agent publish` | ⚠️ REQUIRED |
+| **For Deployment** | `/sf-deploy` - Publish agent with `sf agent publish authoring-bundle` | ⚠️ REQUIRED |
 
 ---
 

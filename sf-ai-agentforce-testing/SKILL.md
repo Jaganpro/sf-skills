@@ -720,7 +720,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | `sf agent test create` | Deploy test to org | `sf agent test create --spec ./tests/spec.yaml --target-org alias` |
 | `sf agent test run` | Execute tests | `sf agent test run --api-name Test --wait 10 --target-org alias` |
 | `sf agent test results` | Get results | `sf agent test results --job-id ID --result-format json` |
-| `sf agent test resume` | Resume async test | `sf agent test resume --use-most-recent --target-org alias` |
+| `sf agent test resume` | Resume async test | `sf agent test resume --job-id <JOB_ID> --target-org alias` |
 | `sf agent test list` | List test runs | `sf agent test list --target-org alias` |
 
 ### Preview Commands
@@ -963,11 +963,10 @@ sf agent test results --job-id [JOB_ID] --verbose --result-format json --target-
 **Root Cause**: CLI generates XML from YAML but omits the required `<name>` element.
 
 **Workarounds**:
-1. ✅ Use `sf agent generate test-spec --from-definition` (correct format)
-2. ✅ Use interactive `sf agent generate test-spec` wizard
-3. ✅ Create tests via Salesforce Testing Center UI
-4. ✅ Deploy XML metadata directly
-5. ✅ **Use Phase A (Agent Runtime API) instead** — bypasses CLI entirely
+1. ✅ Use interactive `sf agent generate test-spec` wizard (interactive-only, no CLI flags)
+2. ✅ Create tests via Salesforce Testing Center UI
+3. ✅ Deploy XML metadata directly
+4. ✅ **Use Phase A (Agent Runtime API) instead** — bypasses CLI entirely
 
 ### MEDIUM: Interactive Mode Not Scriptable
 

@@ -14,7 +14,7 @@ This file contains practical examples of common Salesforce deployment scenarios 
 1. **Pre-deployment checks**
    ```bash
    sf org display --target-org production
-   sf project deploy start --check-only --test-level RunLocalTests --target-org production --wait 30
+   sf project deploy start --dry-run --test-level RunLocalTests --target-org production --wait 30
    ```
 
 2. **Validation output**
@@ -139,7 +139,7 @@ This file contains practical examples of common Salesforce deployment scenarios 
    sf project deploy start \
      --manifest manifest/package-v2.3.xml \
      --target-org production \
-     --check-only \
+     --dry-run \
      --test-level RunLocalTests \
      --wait 30
    ```
@@ -287,7 +287,7 @@ This file contains practical examples of common Salesforce deployment scenarios 
 
 3. **Validate Production**
    ```bash
-   sf project deploy start --target-org production --check-only --test-level RunLocalTests --wait 30
+   sf project deploy start --target-org production --dry-run --test-level RunLocalTests --wait 30
    ```
 
 4. **Deploy to Production** (after manual approval)
@@ -378,7 +378,7 @@ This file contains practical examples of common Salesforce deployment scenarios 
 
 ## Tips for Successful Deployments
 
-1. **Always validate first** - Use `--check-only` for production
+1. **Always validate first** - Use `--dry-run` for production
 2. **Monitor test execution** - Watch for test failures early
 3. **Check code coverage** - Ensure >75% minimum
 4. **Deploy incrementally** - Smaller deployments are easier to troubleshoot

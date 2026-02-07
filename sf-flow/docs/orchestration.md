@@ -98,7 +98,7 @@ When building agents with Flow actions:
 │     └── Create agent with flow:// target                                    │
 │                                                                             │
 │  8. sf-deploy                                                               │
-│     └── Publish agent (sf agent publish)                                    │
+│     └── Publish agent (sf agent publish authoring-bundle)                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
