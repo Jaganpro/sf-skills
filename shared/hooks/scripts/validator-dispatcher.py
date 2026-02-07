@@ -170,12 +170,6 @@ VALIDATOR_REGISTRY: List[tuple] = [
         "skill-builder/hooks/scripts/validate_skill.py"
     ),
 
-    # Legacy Agentforce (agent files in sf-ai-agentforce-legacy)
-    (
-        r"sf-ai-agentforce-legacy.*\.agent$",
-        "sf-ai-agentforce-legacy",
-        "sf-ai-agentforce-legacy/hooks/scripts/agentscript-lsp-validate.py"
-    ),
 ]
 
 

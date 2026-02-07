@@ -149,7 +149,7 @@ MCP server which bridges Agent Skills to Cursor.
             'sf-lwc': '["**/lwc/**/*.js", "**/lwc/**/*.html", "**/lwc/**/*.css"]',
             'sf-metadata': '["**/*-meta.xml"]',
             'sf-data': '["**/*.soql", "**/*.apex"]',
-            'sf-ai-agentforce-legacy': '["**/*.agent", "**/*.genAiFunction-meta.xml"]',
+            'sf-ai-agentforce': '["**/*.genAiFunction-meta.xml", "**/*.genAiPlugin-meta.xml", "**/*.promptTemplate-meta.xml", "**/*.lightningTypeBundle-meta.xml"]',
             'sf-connected-apps': '["**/*.connectedApp-meta.xml"]',
             'sf-integration': '["**/*.namedCredential-meta.xml", "**/*.externalService-meta.xml"]',
             'sf-deploy': '["**/sfdx-project.json", "**/package.xml"]',

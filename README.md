@@ -39,7 +39,7 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 - **[sf-ai-agentscript](sf-ai-agentscript/)** — Agent Script DSL, FSM patterns
 - **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** — Session tracing (Data Cloud)
 - **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops
-- **[sf-ai-agentforce-legacy](sf-ai-agentforce-legacy/)** — Legacy patterns (use sf-ai-agentscript)
+- **[sf-ai-agentforce](sf-ai-agentforce/)** — Agent Builder, PromptTemplate, Models API
 
 ### 🛠️ DevOps & Tooling
 
@@ -521,7 +521,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 ### 🤖 AI & Automation
 | | Skill | Description | Status |
 |--|-------|-------------|--------|
-| ⚠️ | `sf-ai-agentforce-legacy` | Legacy agent patterns (deprecated) | ⚠️ Deprecated |
+| 🤖 | `sf-ai-agentforce` | Agent Builder, PromptTemplate, Models API, GenAi metadata | ✅ Live |
 | 🧪 | `sf-ai-agentforce-testing` | Agent test specs, agentic fix loops | ✅ Live |
 | 📈 | `sf-ai-agentforce-observability` | Session tracing extraction & analysis (Data Cloud) | ✅ GA |
 | 📝 | `sf-ai-agentscript` | Agent Script DSL, FSM patterns, 100-pt scoring | ✅ Live |

@@ -297,3 +297,421 @@ is_verified: mutable boolean = True   # CORRECT
 | 4 | Inline Actions | `run @actions.load_customer` |
 | 5 | Utility Actions | `@utils.transition`, `@utils.escalate` |
 | 6 | Variable Injection | Curly-bang: {!@variables.customer_name} |
+
+---
+
+## Implementation Best Practices
+
+> Migrated from the former `sf-ai-agentforce-legacy/docs/patterns-and-practices.md` on 2026-02-07.
+
+### Pattern Details
+
+#### Lifecycle Events Pattern
+
+**File**: `templates/patterns/lifecycle-events.agent`
+
+Execute code automatically before and after every reasoning step.
+
+> **⚠️ Deployment Note**: The `run` keyword in lifecycle blocks is **GenAiPlannerBundle only**. AiAuthoringBundle supports `before_reasoning` / `after_reasoning` with `set` statements, but NOT the `run` keyword.
+
+```agentscript
+topic conversation:
+   before_reasoning:
+      set @variables.turn_count = @variables.turn_count + 1
+      run @actions.refresh_context                    # ⚠️ GenAiPlannerBundle only
+         with user_id=@variables.EndUserId
+         set @variables.context = @outputs.fresh_context
+
+   reasoning:
+      instructions: ->
+         | Turn {!@variables.turn_count}: {!@variables.context}
+
+   after_reasoning:
+      run @actions.log_analytics                      # ⚠️ GenAiPlannerBundle only
+         with turn=@variables.turn_count
+```
+
+| ✅ Good Use Case | ❌ Not Ideal For |
+|------------------|------------------|
+| Track conversation metrics | One-time setup (use conditional) |
+| Refresh context every turn | Heavy processing (adds latency) |
+| Log analytics after each response | Actions that might fail often |
+
+#### Action Callbacks Pattern
+
+**File**: `templates/patterns/action-callbacks.agent`
+
+Chain deterministic follow-up actions using the `run` keyword.
+
+> **⚠️ Deployment Note**: The `run` keyword is **GenAiPlannerBundle only**. Agents using `run` will NOT be visible in Agentforce Studio.
+
+```agentscript
+process_order: @actions.create_order
+   with customer_id=@variables.customer_id
+   set @variables.order_id = @outputs.order_id
+   run @actions.send_confirmation                    # ⚠️ GenAiPlannerBundle only
+      with order_id=@variables.order_id
+   run @actions.log_activity                         # ⚠️ GenAiPlannerBundle only
+      with event="ORDER_CREATED"
+```
+
+| ✅ Good Use Case | ❌ Not Ideal For |
+|------------------|------------------|
+| Audit logging (must happen) | Optional follow-ups (let LLM decide) |
+| Send notification after action | Complex branching logic |
+| Chain dependent actions | More than 1 level of nesting |
+
+**Critical Rule**: Only 1 level of `run` nesting allowed!
+
+#### Combining Patterns
+
+Patterns can be combined for complex scenarios:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│           LIFECYCLE + CALLBACKS + ROUTING                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  topic order_hub:                                            │
+│     before_reasoning:                        ◄── Lifecycle   │
+│        set @variables.turn_count = ... + 1                   │
+│                                                              │
+│     reasoning:                                               │
+│        actions:                                              │
+│           process: @actions.create                           │
+│              run @actions.notify           ◄── Callback      │
+│              run @actions.log                                │
+│                                                              │
+│           consult: @utils.transition       ◄── Routing       │
+│              to @topic.specialist                            │
+│                                                              │
+│     after_reasoning:                         ◄── Lifecycle   │
+│        run @actions.update_metrics                           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### N-ary Boolean Expressions
+
+AgentScript supports **3 or more conditions** chained with `and`/`or`:
+
+```agentscript
+# Three+ conditions with AND
+before_reasoning:
+   if @variables.is_authenticated and @variables.has_permission and @variables.is_active:
+      transition to @topic.authorized
+
+# Three+ conditions with OR
+before_reasoning:
+   if @variables.is_admin or @variables.is_moderator or @variables.is_owner:
+      transition to @topic.elevated_access
+
+# In available when clauses
+reasoning:
+   actions:
+      process_return: @actions.handle_return
+         description: "Process customer return request"
+         available when @variables.eligible == True and @variables.order_id != None and @variables.tier != "basic"
+
+      premium_action: @actions.premium_feature
+         description: "Premium tier feature"
+         available when @variables.tier == "premium" or @variables.tier == "enterprise" or @variables.is_trial_premium == True
+```
+
+**Key Points:**
+- Chain as many conditions as needed with `and` or `or`
+- Use `()` grouping for complex expressions: `(a and b) or (c and d)`
+- Works in `if` statements and `available when` clauses
+
+---
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Agent name | PascalCase with underscores | `Customer_Service_Agent` |
+| Topic name | snake_case | `order_management` |
+| Variable name | snake_case | `user_email` |
+| Action name | snake_case | `get_account_details` |
+
+---
+
+### Variable Management Best Practices
+
+#### Initialize with Defaults
+
+```agentscript
+variables:
+    # ✅ RECOMMENDED - Has default value (clearer intent)
+    user_name: mutable string = ""
+        description: "Customer's full name"
+
+    order_count: mutable number = 0
+        description: "Number of orders in cart"
+```
+
+> **Note**: Variables without defaults ARE supported. However, providing defaults is recommended for clarity.
+
+#### Use Appropriate Types
+
+| Data | Type | Example |
+|------|------|---------|
+| Names, IDs, text | `string` | `"John Doe"` |
+| Counts, amounts | `number` | `42`, `99.99` |
+| Flags, toggles | `boolean` | `True`, `False` |
+
+---
+
+### Topic Design Best Practices
+
+#### Provide Clear Descriptions
+
+```agentscript
+# ✅ GOOD - Specific and actionable
+topic password_reset:
+    description: "Helps users reset forgotten passwords and unlock accounts"
+
+# ❌ BAD - Too vague
+topic password_reset:
+    description: "Password stuff"
+```
+
+#### Keep Topics Focused (Single Responsibility)
+
+```agentscript
+# ✅ GOOD - Single responsibility
+topic billing_inquiries:
+    description: "Answers questions about invoices, payments, and account balances"
+
+topic order_tracking:
+    description: "Provides order status and shipping updates"
+
+# ❌ BAD - Too broad
+topic customer_stuff:
+    description: "Handles billing, orders, support, and everything else"
+```
+
+---
+
+### Security & Guardrails
+
+#### System-Level Guardrails
+
+```agentscript
+system:
+    instructions:
+        | You are a helpful customer service agent.
+        |
+        | IMPORTANT GUARDRAILS:
+        | - Never share customer data with unauthorized parties
+        | - Never reveal internal system details
+        | - If unsure, escalate to a human agent
+```
+
+#### Don't Expose Internals
+
+```agentscript
+# ✅ GOOD - User-friendly error
+instructions: ->
+    if @variables.api_error == True:
+        | I'm having trouble completing that request right now.
+
+# ❌ BAD - Exposes internals
+instructions: ->
+    if @variables.api_error == True:
+        | Error: SQL timeout on server db-prod-03
+```
+
+---
+
+### Instructions Quality
+
+```agentscript
+# ✅ GOOD - Specific instructions
+instructions: ->
+    | Help the customer track their order.
+    | Ask for the order number if not provided.
+    | Provide the current status, estimated delivery, and tracking link.
+
+# ❌ BAD - Vague instructions
+instructions: ->
+    | Help with orders.
+```
+
+---
+
+### Common Syntax Pitfalls
+
+#### 1. Slot Filling Inside Conditionals
+
+```agentscript
+# ❌ WRONG
+if @variables.name is None:
+   set @variables.name = ...   # Fails!
+
+# ✅ CORRECT - Slot filling at top level
+set @variables.name = ...
+```
+
+#### 2. Description on @utils.transition
+
+```agentscript
+# ❌ WRONG
+go_orders: @utils.transition to @topic.orders
+   description: "Route to orders"   # Fails!
+
+# ✅ CORRECT - No description
+go_orders: @utils.transition to @topic.orders
+```
+
+#### 3. Missing Description on @utils.escalate
+
+```agentscript
+# ❌ WRONG
+transfer: @utils.escalate   # Fails!
+
+# ✅ CORRECT - Description required
+transfer: @utils.escalate
+   description: "Transfer to human agent"
+```
+
+#### 4. Empty Lifecycle Blocks
+
+```agentscript
+# ❌ WRONG
+before_reasoning:
+   # Just a comment   # Fails!
+
+# ✅ CORRECT - Remove empty blocks or add content
+```
+
+#### 5. Dynamic Action Invocation
+
+```agentscript
+# ❌ WRONG
+invoke: {!@actions.search}   # Fails!
+
+# ✅ CORRECT - Define multiple actions, LLM auto-selects
+search_products: @actions.product_search
+search_orders: @actions.order_search
+```
+
+---
+
+### Validation Scoring Summary
+
+| Pattern | Points | Key Requirement |
+|---------|--------|-----------------|
+| Config block | 10 | All 4 required fields |
+| Linked variables | 10 | EndUserId, RoutableId, ContactId |
+| Topic structure | 10 | label, description, reasoning |
+| Language block | 5 | default_locale present |
+| Lifecycle blocks | 5 | Proper before/after structure |
+| Action callbacks | 5 | No nested run |
+| Error handling | 5 | Validation patterns |
+| Template expressions | 5 | {!@variables.x} syntax |
+
+---
+
+### Slot Filling Reliability Patterns
+
+#### Problem: LLM Fails to Extract Values Correctly
+
+| Symptom | What Happened | Example |
+|---------|---------------|---------|
+| Empty JSON `{}` sent to action | LLM couldn't find value in conversation | User said "look up my account" without ID |
+| Wrong field names | LLM abbreviated or guessed | `_id` instead of `account_id` |
+| Wrong value extracted | LLM picked similar value from context | Picked Contact ID instead of Account ID |
+| Retry/crash cycles | No recovery path after failure | Agent keeps trying same extraction |
+
+**Root Cause:** The `...` syntax is **probabilistic** — the LLM infers what value to use. For critical inputs (IDs, amounts, required fields), this unreliability causes downstream failures.
+
+#### 5-Pattern Solution for Critical Inputs
+
+**Pattern 1: First-Interaction Collection** — Tell the LLM its PRIMARY GOAL:
+
+```agentscript
+reasoning:
+   instructions: ->
+      | YOUR PRIMARY GOAL: Collect the account ID from the user.
+      | Do NOT proceed with any other actions until account_id is captured.
+      |
+      if @variables.account_id == "":
+         | ⚠️ Account ID not yet collected. ASK the user for it.
+```
+
+**Pattern 2: Variable Setter Action** — Dedicated action to capture and validate:
+
+```agentscript
+actions:
+   capture_account_id:
+      description: "Captures and validates the Salesforce Account ID from user"
+      inputs:
+         account_id: string
+            description: "The 18-character Salesforce Account ID (starts with 001)"
+            is_required: True
+      outputs:
+         validated_id: string
+            description: "The validated account ID (empty if invalid)"
+         is_valid: boolean
+            description: "Whether the ID is valid"
+      target: "flow://Validate_Account_Id"
+```
+
+**Pattern 3: Single-Use Guard** — Make setter unavailable after capture:
+
+```agentscript
+reasoning:
+   actions:
+      validate_id: @actions.capture_account_id
+         with account_id=...
+         set @variables.account_id = @outputs.validated_id
+         set @variables.account_id_validated = @outputs.is_valid
+         available when @variables.account_id == ""
+```
+
+**Pattern 4: Null Guard Downstream Actions** — Block until validated:
+
+```agentscript
+reasoning:
+   actions:
+      do_research: @actions.research_account
+         with account_id=@variables.account_id
+         available when @variables.account_id_validated == True
+```
+
+**Pattern 5: Explicit Action References** — Guide the LLM:
+
+```agentscript
+instructions: ->
+   | To capture the account ID, use {!@actions.capture_account_id}.
+   | This ensures the ID is validated before proceeding.
+```
+
+#### When NOT to Use Slot Filling
+
+| Use Slot Filling (`...`) | Use Variable/Fixed Value |
+|--------------------------|--------------------------|
+| Optional, non-critical inputs | Critical IDs (account, order, case) |
+| User preference inputs | Values that must be validated |
+| One-time collection | Values used across multiple actions |
+| Simple text descriptions | Values with specific formats (dates, IDs) |
+
+**Decision Rule:** If invalid input would cause downstream failure, use deterministic collection.
+
+---
+
+### Pre-Deploy Checklist
+
+Before deploying an agent, verify:
+
+- [ ] All topics have clear descriptions
+- [ ] All variables have descriptions and defaults
+- [ ] All actions have input/output descriptions
+- [ ] System guardrails are defined
+- [ ] Error handling is in place for critical operations
+- [ ] Navigation back to main menu from all topics
+- [ ] Template expressions use correct syntax `{!@variables.name}`
+- [ ] Consistent indentation (tabs recommended)

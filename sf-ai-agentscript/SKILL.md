@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -1103,12 +1103,23 @@ Present the results to the user and ask them to select which user to use for `de
 | Testing | [resources/testing-guide.md](resources/testing-guide.md) | Batch testing & quality metrics |
 | Prompt template actions | [resources/action-prompt-templates.md](resources/action-prompt-templates.md) | `generatePromptResponse://` input binding, grounded data, `run` limitation |
 | Advanced action patterns | [resources/action-patterns.md](resources/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` instruction refs, binding matrix |
+| Actions reference | [resources/actions-reference.md](resources/actions-reference.md) | Complete action types, GenAiFunction metadata, escalation routing, Flow/Apex/API patterns |
 
 ### Tier 3: Quick References (Docs)
 | Need | Document | Description |
 |------|----------|-------------|
 | CLI commands | [docs/cli-guide.md](docs/cli-guide.md) | sf agent retrieve/validate/deploy |
 | Patterns | [docs/patterns-quick-ref.md](docs/patterns-quick-ref.md) | Decision tree for pattern selection |
+
+### Tier 4: Templates
+| Category | Directory | Contents |
+|----------|-----------|----------|
+| Root templates | [templates/](templates/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
+| Complete agents | [templates/agents/](templates/agents/) | 4 full agent examples (hello-world, simple-qa, multi-topic, production-faq) |
+| Components | [templates/components/](templates/components/) | 6 component fragments (apex-action, error-handling, escalation, flow-action, n-ary-conditions, topic-with-actions) |
+| Advanced patterns | [templates/patterns/](templates/patterns/) | 11 pattern templates (action-callbacks, bidirectional-routing, delegation, lifecycle-events, etc.) |
+| Metadata XML | [templates/metadata/](templates/metadata/) | 6 XML templates (GenAiFunction, GenAiPlugin, PromptTemplate, Flow) |
+| Apex | [templates/apex/](templates/apex/) | Models API queueable class |
 
 ---
 
@@ -1229,6 +1240,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |
 | 1.5.0 | 2026-02-06 | **Action patterns & prompt template docs** (from @kunello PR #20): Added `resources/action-prompt-templates.md` documenting `generatePromptResponse://` input binding syntax (`"Input:fieldName"`), grounded data integration, output handling, and `run` keyword limitation workaround. Added `resources/action-patterns.md` covering context-aware action description overrides (beginner/advanced mode), `{!@actions.X}` instruction references for guided LLM action selection, input binding decision matrix, callback success-only behavior, and additional error patterns. Updated Common Issues table with 3 new error entries (wrong protocol, unquoted Input: params, missing type annotations). Added Document Map entries and cross-reference after Action Chaining section. Content consolidated from @kunello's 8-file contribution against Agent Script Recipes. |
 | 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile (label on topics/actions, always_expect_input, action properties on transitions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
 | 1.2.0 | 2026-01-20 | **Gap analysis vs agent-script-recipes**: Expanded Action Target Protocols from 7 to 16 (with validation status indicators), added Variable vs Action I/O Type Matrix, added lifecycle hooks note with TDD validation caveat, added Sources & Acknowledgments section, documented future/planned features notice. TDD validation confirmed `label:` IS reserved (SKILL.md was correct), `before_reasoning:`/`after_reasoning:` syntax from recipes does NOT compile in current release |

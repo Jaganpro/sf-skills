@@ -21,7 +21,7 @@
         "./sf-data",
         "./sf-deploy",
         "./skill-builder",
-        "./sf-ai-agentforce-legacy",
+        "./sf-ai-agentforce",
         "./sf-diagram-mermaid",
         "./sf-integration",
         "./sf-connected-apps",
@@ -114,17 +114,17 @@
       "keywords": ["skill", "generator", "template", "wizard"]
     },
     {
-      "name": "sf-ai-agentforce-legacy",
-      "description": "[DEPRECATED] Agentforce agent creation using Agent Script syntax. For new agents, use sf-ai-agentscript instead.",
-      "source": "./sf-ai-agentforce-legacy",
-      "version": "1.0.1",
+      "name": "sf-ai-agentforce",
+      "description": "Standard Agentforce platform skill for Setup UI agent building, PromptTemplate metadata, Einstein Models API, GenAiFunction/GenAiPlugin setup, and custom Lightning types.",
+      "source": "./sf-ai-agentforce",
+      "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
         "url": "https://github.com/Jaganpro"
       },
       "category": "ai",
-      "tags": ["salesforce", "agentforce", "ai-agents", "legacy", "deprecated"],
-      "keywords": ["agentforce", "agent", "topic", "action", "legacy"]
+      "tags": ["salesforce", "agentforce", "ai-agents", "agent-builder", "prompt-template"],
+      "keywords": ["agentforce", "agent-builder", "prompt-template", "models-api", "genai"]
     },
     {
       "name": "sf-diagram-mermaid",

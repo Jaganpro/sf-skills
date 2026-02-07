@@ -43,7 +43,7 @@ This skill builds upon patterns established in:
 |-------|-----------------|
 | sf-testing | Agentic test-fix loop pattern |
 | sf-ai-agentscript | Agent Script authoring integration (recommended) |
-| sf-ai-agentforce-legacy | Legacy agent maintenance |
+| sf-ai-agentforce | Agentforce platform setup |
 | sf-connected-apps | OAuth setup for live preview |
 | sf-debug | Error analysis patterns |
 

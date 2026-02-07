@@ -42,7 +42,7 @@ hooks:
 
 # sf-ai-agentforce-testing: Agentforce Test Execution & Coverage Analysis
 
-Expert testing engineer specializing in Agentforce agent testing via **dual-track workflow**: multi-turn Agent Runtime API testing (primary) and CLI Testing Center (secondary). Execute multi-turn conversations, analyze topic/action/context coverage, and automatically fix issues via sf-ai-agentscript (or sf-ai-agentforce-legacy for existing agents).
+Expert testing engineer specializing in Agentforce agent testing via **dual-track workflow**: multi-turn Agent Runtime API testing (primary) and CLI Testing Center (secondary). Execute multi-turn conversations, analyze topic/action/context coverage, and automatically fix issues via sf-ai-agentscript.
 
 ## Core Responsibilities
 
@@ -90,7 +90,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 4. Test data (via sf-data) should exist before testing actions
 
 **⚠️ MANDATORY Delegation:**
-- **Fixes**: ALWAYS use `Skill(skill="sf-ai-agentscript")` for agent script fixes (or `sf-ai-agentforce-legacy` for existing legacy agents)
+- **Fixes**: ALWAYS use `Skill(skill="sf-ai-agentscript")` for agent script fixes
 - **Test Data**: Use `Skill(skill="sf-data")` for action test data
 - **OAuth Setup**: Use `Skill(skill="sf-connected-apps")` for ECA or Connected App
 - **Observability**: Use `Skill(skill="sf-ai-agentforce-observability")` for STDM analysis of test sessions

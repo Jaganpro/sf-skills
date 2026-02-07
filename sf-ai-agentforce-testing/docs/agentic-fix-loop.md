@@ -9,7 +9,7 @@ Automated workflow for detecting, diagnosing, and fixing agent test failures.
 The agentic fix loop automatically:
 1. Detects test failures
 2. Categorizes the root cause
-3. Generates fixes via sf-ai-agentscript (or sf-ai-agentforce-legacy for existing agents)
+3. Generates fixes via sf-ai-agentscript
 4. Re-tests until passing (max 3 iterations)
 
 ```
@@ -425,7 +425,7 @@ If still failing after 3 attempts, escalate to human review.
 
 | Failure Type | Delegate To |
 |--------------|-------------|
-| Agent script issues | sf-ai-agentscript (or sf-ai-agentforce-legacy for existing agents) |
+| Agent script issues | sf-ai-agentscript |
 | Flow execution errors | sf-flow |
 | Apex exceptions | sf-apex |
 | Debug log analysis | sf-debug |

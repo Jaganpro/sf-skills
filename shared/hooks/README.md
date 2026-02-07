@@ -231,7 +231,7 @@ All skills have been migrated from `hooks/hooks.json` to frontmatter:
 | sf-diagram-mermaid | 1.2.0 | (standard) |
 | sf-diagram-nanobananapro | 1.5.0 | (Bash matcher) |
 | sf-ai-agentscript | 1.4.0 | agentscript-syntax-validator.py |
-| sf-ai-agentforce-legacy | 1.1.0 | agentscript-lsp-validate.py |
+| sf-ai-agentforce | 2.0.0 | (standard) |
 | sf-ai-agentforce-testing | 1.1.0 | parse-agent-test-results.py (Bash) |
 | sf-permissions | 1.1.0 | (standard) |
 | skill-builder | 2.1.0 | post-write-validate.py |

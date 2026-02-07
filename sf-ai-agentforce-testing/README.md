@@ -93,7 +93,7 @@ sf agent preview --api-name AgentName --use-live-actions --target-org [alias]
 | Related Skill | When to Use |
 |---------------|-------------|
 | sf-ai-agentscript | Create/fix agent scripts (recommended) |
-| sf-ai-agentforce-legacy | Maintain existing legacy agents |
+| sf-ai-agentforce | Agentforce platform setup (Agent Builder, GenAi metadata) |
 | sf-connected-apps | OAuth setup for live preview |
 | sf-data | Generate test data for actions |
 | sf-flow | Fix failing Flow actions |

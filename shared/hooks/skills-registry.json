@@ -185,18 +185,18 @@
       }
     },
 
-    "sf-ai-agentforce-legacy": {
-      "keywords": ["legacy agent", "legacy agentforce", "maintain agent", "existing agent"],
+    "sf-ai-agentforce": {
+      "keywords": ["agentforce", "agent builder", "agent-builder", "prompt template", "prompt-template", "models api", "models-api", "genai function", "genai plugin", "lightning type"],
       "intentPatterns": [
-        "maintain.*agent", "update.*existing.*agent", "fix.*legacy.*agent"
+        "create.*agent", "build.*agent", "setup.*agent", "prompt.*template", "models.*api", "genai.*function"
       ],
-      "filePatterns": ["\\.agent$", "\\.agentDefinition-meta\\.xml$", "GenAi.*\\.xml$"],
+      "filePatterns": ["\\.genAiFunction-meta\\.xml$", "\\.genAiPlugin-meta\\.xml$", "\\.promptTemplate-meta\\.xml$", "\\.lightningTypeBundle-meta\\.xml$"],
       "contentTriggers": {
         "flow://": { "suggests": "sf-flow", "message": "Create Flow for this action target" },
         "apex://": { "suggests": "sf-apex", "message": "Create Apex (wrapped in Flow) for this action" }
       },
-      "priority": "low",
-      "description": "[DEPRECATED] Legacy Agentforce skill - use sf-ai-agentscript for new agents",
+      "priority": "medium",
+      "description": "Standard Agentforce platform skill for Setup UI agent building, PromptTemplate, Models API, and GenAi metadata",
       "orchestration": {
         "prerequisites": [
           { "skill": "sf-flow", "condition": "always", "message": "Create and deploy Flows before agent uses flow:// targets", "confidence": 3 },

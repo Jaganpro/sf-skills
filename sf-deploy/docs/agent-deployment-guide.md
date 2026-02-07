@@ -12,7 +12,7 @@ This guide covers the complete deployment lifecycle for Agentforce agents, inclu
 
 **Related Skills:**
 - `sf-ai-agentscript` - Agent Script authoring and publishing (recommended for new agents)
-- `sf-ai-agentforce-legacy` - Legacy agent patterns (deprecated)
+- `sf-ai-agentforce` - Agentforce platform setup (Agent Builder, PromptTemplate, Models API)
 - `sf-deploy` - This skill - deployment orchestration
 
 ---
@@ -481,6 +481,5 @@ sf agent activate --api-name My_Agent --target-org myorg
 
 ## Related Documentation
 
-- [Agent CLI Reference](../../sf-ai-agentforce-legacy/docs/agent-cli-reference.md)
-- [Agent Preview Guide](../../sf-ai-agentforce-legacy/docs/agent-preview-guide.md)
-- [Agent Script Syntax](../../sf-ai-agentforce-legacy/docs/agent-script-syntax.md)
+- [Agent Script DSL Reference](../../sf-ai-agentscript/SKILL.md)
+- [Agent Testing Guide](../../sf-ai-agentforce-testing/SKILL.md)

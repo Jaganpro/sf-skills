@@ -8,7 +8,7 @@ echo "🔄 Validating plugin.json ↔ SKILL.md sync..."
 
 mismatches=0
 
-for skill in sf-apex sf-flow sf-diagram-mermaid sf-diagram-nanobananapro sf-metadata sf-data sf-deploy sf-ai-agentforce-legacy sf-ai-agentforce-testing sf-ai-agentscript sf-connected-apps sf-integration sf-lwc sf-debug sf-soql sf-testing skill-builder; do
+for skill in sf-apex sf-flow sf-diagram-mermaid sf-diagram-nanobananapro sf-metadata sf-data sf-deploy sf-ai-agentforce sf-ai-agentforce-testing sf-ai-agentscript sf-connected-apps sf-integration sf-lwc sf-debug sf-soql sf-testing skill-builder; do
   plugin_file="./$skill/.claude-plugin/plugin.json"
   skill_file="./$skill/SKILL.md"
 

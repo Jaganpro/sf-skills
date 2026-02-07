@@ -32,7 +32,7 @@ This skill was developed from comprehensive documentation screenshots covering 8
 
 This skill integrates with other sf-skills:
 
-- **sf-ai-agentforce-legacy** - Legacy Agentforce development patterns (deprecated, use sf-ai-agentscript for new agents)
+- **sf-ai-agentforce** - Standard Agentforce platform skill (Agent Builder, PromptTemplate, Models API)
 - **sf-ai-agentforce-testing** - Agent testing with CLI
 - **sf-flow** - Flow development for `flow://` action targets
 - **sf-deploy** - Deployment validation and execution
