@@ -303,8 +303,6 @@ AskUserQuestion:
   options:
     - label: "2 workers by category (Recommended)"
       description: "Group test patterns into 2 balanced buckets — best balance of parallelism and readability"
-    - label: "3 workers by category"
-      description: "Group test patterns into 3 buckets — maximum parallelism (never exceed 3 workers)"
     - label: "Sequential"
       description: "Run all scenarios in a single process — no team needed, simpler but slower"
   multiSelect: false
@@ -417,8 +415,8 @@ RULE: Present unified beautiful report aggregating all worker results
 RULE: Offer fix loop if any failures detected
 RULE: Shutdown all workers via SendMessage(type="shutdown_request")
 RULE: Clean up via TeamDelete when done
-RULE: NEVER spawn more than 3 workers. Prefer 2 workers for readability.
-RULE: When categories > 3, group into 2-3 balanced buckets.
+RULE: NEVER spawn more than 2 workers.
+RULE: When categories > 2, group into 2 balanced buckets.
 RULE: Queue remaining work to existing workers after they complete first batch.
 ```
 
@@ -1011,7 +1009,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | Skip session cleanup | Resource leaks and rate limits | Always DELETE sessions after tests |
 | Use `curl` for OAuth token requests | Domains with `--` cause shell failures | Use `credential_manager.py validate` |
 | Ask permission to run skill scripts | Breaks flow, unnecessary delay | All `hooks/scripts/` are pre-approved — run automatically |
-| Spawn more than 3 swarm workers | Context overload, diminishing returns | Max 3 workers, prefer 2 for readability |
+| Spawn more than 2 swarm workers | Context overload, screen space, diminishing returns | Max 2 workers — side-by-side monitoring |
 
 ---
 
