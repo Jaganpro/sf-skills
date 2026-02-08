@@ -11,6 +11,7 @@ skills:
   - sf-ai-agentforce-conversationdesign
   - sf-ai-agentforce
   - sf-lwc
+  - sf-diagram-nanobananapro
 memory: user
 maxTurns: 25
 ---

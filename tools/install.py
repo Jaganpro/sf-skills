@@ -65,7 +65,8 @@ SKILLS_GLOB = "sf-*"  # All skill directories
 HOOKS_DIR = "shared/hooks"
 LSP_ENGINE_DIR = "shared/lsp-engine"
 SKILLS_REGISTRY = "shared/hooks/skills-registry.json"
-AGENTS_DIR = "agents"  # FDE agent definitions
+AGENTS_DIR = "agents"  # FDE + PS agent definitions
+AGENT_PREFIXES = ("fde-", "ps-")  # Agent file prefixes managed by installer
 
 # Temp file patterns to clean
 TEMP_FILE_PATTERNS = [
@@ -740,10 +741,10 @@ def copy_skills(source_dir: Path, target_dir: Path) -> int:
 
 def copy_agents(source_dir: Path, target_dir: Path) -> int:
     """
-    Copy FDE agent .md files from agents/ to target directory.
+    Copy agent .md files from agents/ to target directory.
 
-    Only copies files matching fde-*.md to avoid overwriting
-    user's custom agents.
+    Only copies files matching known prefixes (fde-*, ps-*) to avoid
+    overwriting user's custom agents.
 
     Args:
         source_dir: Root source directory containing agents/ subfolder
@@ -759,19 +760,21 @@ def copy_agents(source_dir: Path, target_dir: Path) -> int:
     target_dir.mkdir(parents=True, exist_ok=True)
 
     count = 0
-    for agent_file in agents_source.glob("fde-*.md"):
-        if agent_file.is_file():
-            shutil.copy2(agent_file, target_dir / agent_file.name)
-            count += 1
+    for prefix in AGENT_PREFIXES:
+        for agent_file in agents_source.glob(f"{prefix}*.md"):
+            if agent_file.is_file():
+                shutil.copy2(agent_file, target_dir / agent_file.name)
+                count += 1
 
     return count
 
 
 def cleanup_agents(target_dir: Path, dry_run: bool = False) -> int:
     """
-    Remove FDE agent files from target directory during uninstall.
+    Remove managed agent files from target directory during uninstall.
 
-    Only removes fde-*.md files to preserve user's custom agents.
+    Only removes files matching known prefixes (fde-*, ps-*) to preserve
+    user's custom agents.
 
     Args:
         target_dir: Directory containing agent files (e.g., ~/.claude/agents/)
@@ -784,11 +787,12 @@ def cleanup_agents(target_dir: Path, dry_run: bool = False) -> int:
         return 0
 
     count = 0
-    for agent_file in target_dir.glob("fde-*.md"):
-        if agent_file.is_file():
-            if not dry_run:
-                agent_file.unlink()
-            count += 1
+    for prefix in AGENT_PREFIXES:
+        for agent_file in target_dir.glob(f"{prefix}*.md"):
+            if agent_file.is_file():
+                if not dry_run:
+                    agent_file.unlink()
+                count += 1
 
     return count
 
@@ -1241,7 +1245,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             tools_target = INSTALL_DIR / "tools"
             copy_tools(tools_source, tools_target)
 
-            # Copy FDE agents to ~/.claude/agents/
+            # Copy FDE + PS agents to ~/.claude/agents/
             agents_target = CLAUDE_DIR / "agents"
             agent_count = copy_agents(source_dir, agents_target)
 
@@ -1261,7 +1265,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             print_substep(f"{hook_count} hook scripts installed")
             print_substep(f"{lsp_count} LSP engine files installed")
             if agent_count > 0:
-                print_substep(f"{agent_count} FDE agents installed")
+                print_substep(f"{agent_count} agents installed (FDE + PS)")
         else:
             print_step(3, 5, "Would install skills, hooks, and LSP engine", "skip")
 
@@ -1440,7 +1444,7 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
     print(f"     • {INSTALL_DIR}")
     print(f"     • sf-skills hooks from {SETTINGS_FILE}")
     print(f"     • sf-skills commands from {COMMANDS_DIR}")
-    print(f"     • FDE agents from {CLAUDE_DIR / 'agents'}")
+    print(f"     • FDE + PS agents from {CLAUDE_DIR / 'agents'}")
 
     if not force and not dry_run:
         if not confirm("\nProceed with uninstallation?", default=False):
@@ -1459,10 +1463,10 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
     if skills_removed > 0:
         print_success(f"Removed {skills_removed} skill commands from {COMMANDS_DIR}")
 
-    # Remove FDE agent files from ~/.claude/agents/ (preserves user's custom agents)
+    # Remove FDE + PS agent files from ~/.claude/agents/ (preserves user's custom agents)
     agents_removed = cleanup_agents(CLAUDE_DIR / "agents", dry_run)
     if agents_removed > 0:
-        print_success(f"Removed {agents_removed} FDE agents from {CLAUDE_DIR / 'agents'}")
+        print_success(f"Removed {agents_removed} agents from {CLAUDE_DIR / 'agents'}")
 
     # Remove installation directory
     if INSTALL_DIR.exists() or INSTALL_DIR.is_symlink():
