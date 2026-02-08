@@ -89,10 +89,11 @@ def get_available_skills() -> List[str]:
     """
     skills = []
     for item in REPO_ROOT.iterdir():
-        if item.is_dir() and item.name.startswith("sf-"):
-            # Verify it has a SKILL.md
-            if (item / "SKILL.md").exists():
-                skills.append(item.name)
+        if not item.is_dir():
+            continue
+        # Any top-level directory with SKILL.md is a skill
+        if (item / "SKILL.md").exists():
+            skills.append(item.name)
     return sorted(skills)
 
 
@@ -216,7 +217,10 @@ def install_skills(
             continue
 
         if target_dir.exists() and force:
-            shutil.rmtree(target_dir)
+            try:
+                shutil.rmtree(target_dir)
+            except Exception as e:
+                print_warning(f"Could not remove {target_dir} ({e}); overwriting files in place")
 
         if install_skill(adapter, skill, target_base):
             success_count += 1
