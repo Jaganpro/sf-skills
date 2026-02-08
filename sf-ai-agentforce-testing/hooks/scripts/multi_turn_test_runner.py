@@ -59,6 +59,7 @@ import os
 import re
 import shutil
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -114,6 +115,175 @@ def _detect_width(override: int = None) -> int:
     except Exception:
         pass
     return 80
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Streaming Console (Rich-powered verbose output to stderr)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class StreamingConsole:
+    """Rich-powered streaming output to stderr during test execution.
+
+    Provides styled, thread-safe progress output while scenarios run.
+    Falls back to plain print() when Rich is unavailable or --no-rich is set.
+    """
+
+    def __init__(self, enabled: bool = True, width: int = None):
+        self._enabled = enabled
+        self._lock = threading.Lock()
+        if enabled and HAS_RICH:
+            self._console = Console(
+                stderr=True, force_terminal=True,
+                width=_detect_width(width), highlight=False,
+            )
+            self._rich = True
+        else:
+            self._console = None
+            self._rich = False
+
+    # ── Run-level ──────────────────────────────────────────────────────
+
+    def run_header(self, total: int, file: str, mode: str):
+        """Print a header at the start of the entire test run."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.rule(
+                    f"[bold]Running {total} scenario{'s' if total != 1 else ''} [{mode}][/bold]",
+                    style="bright_blue",
+                )
+                self._console.print(f"  [dim]File: {file}[/dim]")
+            else:
+                print(f"\nRunning {total} scenario(s) from {file} [{mode}]...", file=sys.stderr)
+
+    def auth_success(self):
+        """Print authentication success indicator."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print("  [bold green]✅ Authenticated[/bold green]")
+            else:
+                print("✅ Authentication successful", file=sys.stderr)
+
+    # ── Scenario-level ────────────────────────────────────────────────
+
+    def scenario_start(self, name: str, idx: int, total: int, variables: list = None):
+        """Print scenario separator with name and progress counter."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print()
+                self._console.rule(
+                    f"[bold]Scenario {idx}/{total}: {name}[/bold]",
+                    style="cyan",
+                )
+                if variables:
+                    var_names = ", ".join(v["name"] for v in variables)
+                    self._console.print(f"  [dim]Variables: {var_names}[/dim]")
+            else:
+                print(f"\n  ▶ Scenario: {name}", file=sys.stderr)
+                if variables:
+                    print(f"    Variables: {[v['name'] for v in variables]}", file=sys.stderr)
+
+    # ── Turn-level ────────────────────────────────────────────────────
+
+    def turn_start(self, num: int, total: int, message: str):
+        """Print the user message being sent for this turn."""
+        if not self._enabled:
+            return
+        truncated = message[:50] + "..." if len(message) > 50 else message
+        with self._lock:
+            if self._rich:
+                self._console.print(
+                    f"\n  Turn {num}/{total}  "
+                    f"[bright_green]👤 \"{truncated}\"[/bright_green]"
+                )
+            else:
+                print(f"    Turn {num}: \"{truncated}\"", file=sys.stderr)
+
+    def turn_result(self, evaluation: dict):
+        """Print check results for a completed turn."""
+        if not self._enabled:
+            return
+        checks = evaluation.get("checks", [])
+        pass_count = evaluation.get("pass_count", 0)
+        total_checks = evaluation.get("total_checks", 0)
+        all_passed = evaluation.get("passed", False)
+
+        with self._lock:
+            if self._rich:
+                if all_passed:
+                    self._console.print(
+                        f"    [green]✅ {pass_count}/{total_checks} checks passed[/green]"
+                    )
+                else:
+                    failed = [c for c in checks if not c["passed"]]
+                    for fc in failed:
+                        detail = fc.get("detail", "")
+                        self._console.print(
+                            f"    [red]❌ {fc['name']}[/red] [dim]— {detail}[/dim]"
+                        )
+                    self._console.print(
+                        f"    [dim]{pass_count}/{total_checks} checks passed[/dim]"
+                    )
+            else:
+                if all_passed:
+                    print(f"      ✅ {pass_count}/{total_checks} checks passed", file=sys.stderr)
+                else:
+                    failed = [c for c in checks if not c["passed"]]
+                    for fc in failed:
+                        print(f"      ❌ {fc['name']}: {fc['detail']}", file=sys.stderr)
+
+    def turn_retry(self, attempt: int, max_retries: int, reason: str):
+        """Print a retry indicator for a failed turn attempt."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print(
+                    f"    [dim yellow]⟳ Retry {attempt}/{max_retries}: {reason}[/dim yellow]"
+                )
+            else:
+                print(f"      ⟳ Retry {attempt}/{max_retries}: {reason}", file=sys.stderr)
+
+    # ── Error-level ───────────────────────────────────────────────────
+
+    def scenario_error(self, error_type: str, message: str):
+        """Print an error that terminated a scenario."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print(
+                    f"    [bold red]❌ {error_type}:[/bold red] [red]{message}[/red]"
+                )
+            else:
+                print(f"    ❌ {error_type}: {message}", file=sys.stderr)
+
+    # ── Utility ───────────────────────────────────────────────────────
+
+    def api_log(self, msg: str):
+        """Print a dim API debug log line."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print(f"  [dim]api: {msg}[/dim]")
+            else:
+                print(f"  [api] {msg}", file=sys.stderr)
+
+    def file_written(self, label: str, path: str):
+        """Print a dim file-written indicator."""
+        if not self._enabled:
+            return
+        with self._lock:
+            if self._rich:
+                self._console.print(f"  [dim]📄 {label}: {path}[/dim]")
+            else:
+                print(f"\n📄 {label}: {path}", file=sys.stderr)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -541,6 +711,7 @@ def execute_scenario(
     global_variables: List[Dict] = None,
     verbose: bool = False,
     turn_retry: int = 0,
+    stream: StreamingConsole = None,
 ) -> Dict[str, Any]:
     """
     Execute a single multi-turn test scenario.
@@ -550,8 +721,9 @@ def execute_scenario(
         agent_id: BotDefinition ID.
         scenario: Scenario dict from YAML template.
         global_variables: CLI-level variables to merge with scenario variables.
-        verbose: Print progress to stderr.
+        verbose: Print progress to stderr (legacy; prefer stream).
         turn_retry: Number of retries per turn on transient failures (default 0).
+        stream: StreamingConsole for Rich-styled verbose output.
 
     Returns:
         Scenario result dict with turn results and evaluation.
@@ -561,6 +733,10 @@ def execute_scenario(
     turns_spec = scenario.get("turns", [])
     scenario_vars = scenario.get("session_variables", [])
 
+    # Run index/total injected by main() for progress display
+    run_idx = scenario.get("_run_index", 0)
+    run_total = scenario.get("_run_total", 0)
+
     # Merge variables: scenario-specific + global CLI variables
     all_variables = list(scenario_vars)
     if global_variables:
@@ -569,7 +745,9 @@ def execute_scenario(
         all_variables = [v for v in all_variables if v["name"] not in global_names]
         all_variables.extend(global_variables)
 
-    if verbose:
+    if stream:
+        stream.scenario_start(name, run_idx, run_total, all_variables if all_variables else None)
+    elif verbose:
         print(f"\n  ▶ Scenario: {name}", file=sys.stderr)
         if all_variables:
             print(f"    Variables: {[v['name'] for v in all_variables]}", file=sys.stderr)
@@ -599,7 +777,9 @@ def execute_scenario(
                 expectations = turn_spec.get("expect", {})
                 turn_variables = turn_spec.get("variables", None)
 
-                if verbose:
+                if stream:
+                    stream.turn_start(i, len(turns_spec), user_message)
+                elif verbose:
                     print(f"    Turn {i}: \"{user_message[:50]}{'...' if len(user_message) > 50 else ''}\"", file=sys.stderr)
 
                 # Send message with optional per-turn retry
@@ -611,13 +791,17 @@ def execute_scenario(
                             break
                     except Exception as send_err:
                         if attempt < turn_retry:
-                            if verbose:
+                            if stream:
+                                stream.turn_retry(attempt + 1, turn_retry, str(send_err))
+                            elif verbose:
                                 print(f"      ⟳ Retry {attempt + 1}/{turn_retry}: {send_err}", file=sys.stderr)
                             time.sleep(1 * (attempt + 1))
                         else:
                             raise
                     if attempt < turn_retry and turn_result and turn_result.is_error:
-                        if verbose:
+                        if stream:
+                            stream.turn_retry(attempt + 1, turn_retry, "turn error")
+                        elif verbose:
                             print(f"      ⟳ Retry {attempt + 1}/{turn_retry}: turn error", file=sys.stderr)
                         time.sleep(1 * (attempt + 1))
 
@@ -639,7 +823,13 @@ def execute_scenario(
 
                 result["turns"].append(turn_data)
 
-                if evaluation["passed"]:
+                if stream:
+                    stream.turn_result(evaluation)
+                    if evaluation["passed"]:
+                        result["pass_count"] += 1
+                    else:
+                        result["fail_count"] += 1
+                elif evaluation["passed"]:
                     result["pass_count"] += 1
                     if verbose:
                         print(f"      ✅ {evaluation['pass_count']}/{evaluation['total_checks']} checks passed", file=sys.stderr)
@@ -655,13 +845,17 @@ def execute_scenario(
     except AgentAPIError as e:
         result["error"] = str(e)
         result["status"] = "error"
-        if verbose:
+        if stream:
+            stream.scenario_error("API Error", str(e))
+        elif verbose:
             print(f"    ❌ API Error: {e}", file=sys.stderr)
         return result
     except Exception as e:
         result["error"] = f"Unexpected error: {type(e).__name__}: {e}"
         result["status"] = "error"
-        if verbose:
+        if stream:
+            stream.scenario_error("Unexpected Error", f"{type(e).__name__}: {e}")
+        elif verbose:
             print(f"    ❌ Unexpected Error: {type(e).__name__}: {e}", file=sys.stderr)
         return result
 
@@ -1265,6 +1459,12 @@ Environment Variables:
         print(f"ERROR: Scenario file not found: {args.scenarios}", file=sys.stderr)
         sys.exit(2)
 
+    # Create streaming console for verbose output
+    stream = StreamingConsole(
+        enabled=args.verbose and not args.json_only,
+        width=args.width,
+    )
+
     # Parse global variables
     global_variables = parse_variables(args.var) if args.var else None
 
@@ -1288,28 +1488,32 @@ Environment Variables:
             print(f"ERROR: No scenarios match filter '{args.scenario_filter}'", file=sys.stderr)
             sys.exit(2)
 
-    # Create client
+    # Create client (route API logs through StreamingConsole)
     client = AgentAPIClient(
         my_domain=args.my_domain,
         consumer_key=args.consumer_key,
         consumer_secret=args.consumer_secret,
         verbose=args.verbose,
+        log_callback=stream.api_log if stream._enabled else None,
     )
 
     # Authenticate
     try:
         client.authenticate()
-        if args.verbose:
-            print("✅ Authentication successful", file=sys.stderr)
+        stream.auth_success()
     except AgentAPIError as e:
         print(f"❌ Authentication failed: {e.message}", file=sys.stderr)
         sys.exit(2)
 
+    # Inject run index/total into each scenario for progress display
+    for idx, s in enumerate(scenarios, 1):
+        s["_run_index"] = idx
+        s["_run_total"] = len(scenarios)
+
     # Execute scenarios
     parallel = getattr(args, 'parallel', 0)
-    if args.verbose:
-        mode = f"parallel ({parallel} workers)" if parallel else "sequential"
-        print(f"\nRunning {len(scenarios)} scenario(s) from {args.scenarios} [{mode}]...", file=sys.stderr)
+    mode = f"parallel ({parallel} workers)" if parallel else "sequential"
+    stream.run_header(len(scenarios), args.scenarios, mode)
 
     start_time = time.time()
     scenario_results = []
@@ -1322,6 +1526,7 @@ Environment Variables:
             global_variables=global_variables,
             verbose=args.verbose,
             turn_retry=args.turn_retry,
+            stream=stream,
         )
 
     if parallel and parallel > 0 and len(scenarios) > 1:
@@ -1376,8 +1581,7 @@ Environment Variables:
     if args.output:
         with open(args.output, "w") as f:
             json.dump(results, f, indent=2)
-        if args.verbose:
-            print(f"\n📄 JSON results written to: {args.output}", file=sys.stderr)
+        stream.file_written("JSON results written to", args.output)
 
     if args.report_file:
         # Write the Rich report (with ANSI codes) to a file for later viewing
@@ -1390,8 +1594,7 @@ Environment Variables:
             report_content = format_results(results)
         with open(args.report_file, "w") as f:
             f.write(report_content)
-        if args.verbose:
-            print(f"\n📊 Rich report written to: {args.report_file}", file=sys.stderr)
+        stream.file_written("Rich report written to", args.report_file)
 
     if args.json_only:
         print(json.dumps(results, indent=2))

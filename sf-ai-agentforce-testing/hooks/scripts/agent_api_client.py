@@ -334,6 +334,7 @@ class AgentAPIClient:
         timeout: int = 120,
         retry_count: int = 1,
         verbose: bool = False,
+        log_callback=None,
     ):
         """
         Initialize the Agent API client.
@@ -346,6 +347,8 @@ class AgentAPIClient:
             timeout: Request timeout in seconds (API max is 120).
             retry_count: Number of retries on transient failures (429, 500+).
             verbose: Print debug info to stderr.
+            log_callback: Optional callable(msg: str) to route log messages through
+                          (e.g., StreamingConsole.api_log). If None, prints to stderr.
         """
         self.my_domain = (my_domain or os.environ.get("SF_MY_DOMAIN", "")).strip().rstrip("/")
         self._consumer_key = consumer_key or os.environ.get("SF_CONSUMER_KEY", "")
@@ -353,6 +356,7 @@ class AgentAPIClient:
         self._timeout = min(timeout, 120)  # API max is 120s
         self._retry_count = retry_count
         self._verbose = verbose
+        self._log_callback = log_callback
         self._access_token: Optional[str] = None
         self._token_issued_at: float = 0
 
@@ -363,7 +367,10 @@ class AgentAPIClient:
     def _log(self, msg: str):
         """Print debug message to stderr if verbose."""
         if self._verbose:
-            print(f"  [api] {msg}", file=sys.stderr)
+            if self._log_callback:
+                self._log_callback(msg)
+            else:
+                print(f"  [api] {msg}", file=sys.stderr)
 
     # ─── Authentication ────────────────────────────────────────────────
 
