@@ -184,13 +184,16 @@ See [examples/deployment-report-template.md](examples/deployment-report-template
 
 **Deployment Variants**: Production (full + RunAllTests), Hotfix (targeted + RunLocalTests), CI/CD (scripted + gates), Scratch (push source).
 
+> **[Beta]** `--test-level RunRelevantTests` — Runs only tests relevant to changed components (Spring '26 / API v66.0 only). Not GA; use `RunLocalTests` for production deploys.
+
 ## CLI Reference
 
 **Deploy**: `sf project deploy start [--dry-run] [--source-dir <path>] [--manifest <xml>] [--test-level <level>]`
 **Quick**: `sf project deploy quick --job-id <id>` | **Status**: `sf project deploy report`
 **Test**: `sf apex test run --test-level RunLocalTests` | **Coverage**: `sf apex get test --code-coverage`
-**Org**: `sf org list` | `sf org display` | `sf org create scratch` | `sf org open`
+**Org**: `sf org list` | `sf org display` | `sf org create scratch [--snapshot <name>]` | `sf org open`
 **Metadata**: `sf project retrieve start` | `sf org list metadata --metadata-type <type>`
+**Debug**: `sf project deploy start --dev-debug` — Show which files are ignored during deploy/retrieve (v2.117.7+)
 
 ## Error Handling
 
@@ -441,10 +444,23 @@ sf agent activate --api-name [AgentName] --target-org target-org
 | `sf agent validate authoring-bundle --api-name X` | Validate Agent Script syntax |
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
+| `sf agent generate authoring-bundle --api-name X` | Generate authoring bundle scaffolding |
+| `sf agent generate authoring-bundle --api-name X --skip-retrieve` | Generate without retrieving from org |
 | `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |
 | `sf project deploy start --metadata Agent:X` | Deploy agent metadata |
 
 ---
+
+#### Package Management (2GP)
+
+| Command | Description |
+|---------|-------------|
+| `sf package convert --package <1GP-id>` | Convert 1GP to 2GP package (GA, v2.92.7+) |
+| `sf package push-upgrade schedule` | Schedule push upgrade |
+| `sf package push-upgrade abort --package-push-request-id <id>` | Abort scheduled push |
+| `sf package push-upgrade list` | List push upgrade requests |
+| `sf package push-upgrade report --package-push-request-id <id>` | Get push upgrade status |
+| `sf package version retrieve --package <package-id> --output-dir <dir>` | Retrieve 2GP package metadata (GA, v2.111.7+) |
 
 ## Deployment Script Template
 

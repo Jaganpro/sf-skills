@@ -464,6 +464,24 @@ sf org list metadata --metadata-type CustomObject --target-org {{alias}} | grep 
 sf project deploy start --metadata CustomObject:{{EventName}}__e --target-org {{alias}}
 ```
 
+### API Requests (Beta)
+
+Execute REST and GraphQL API calls directly via `sf` CLI, without `curl`:
+
+```bash
+# REST API request
+sf api request rest /services/data/v62.0/sobjects/Account/describe --target-org {{alias}}
+
+# REST with POST body
+sf api request rest /services/data/v62.0/sobjects/Account --method POST \
+  --body '{"Name":"Test Account"}' --target-org {{alias}}
+
+# GraphQL query
+sf api request graphql --body '{"query":"{ uiapi { query { Account { edges { node { Name { value } } } } } } }"}' --target-org {{alias}}
+```
+
+> **[Beta]** These commands simplify API exploration. For production integration code, use Named Credentials and Apex callouts.
+
 ---
 
 ## 🔧 Helper Scripts

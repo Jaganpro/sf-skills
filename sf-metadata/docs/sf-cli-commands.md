@@ -238,11 +238,11 @@ sf data query \
   --target-org myorg \
   --result-format csv > accounts.csv
 
-# Bulk query (large data)
-sf data query \
+# Bulk export (large data, > 2,000 records)
+sf data export bulk \
   --query "SELECT Id, Name FROM Account" \
   --target-org myorg \
-  --bulk
+  --output-file accounts.csv
 ```
 
 ### Import/Export Records

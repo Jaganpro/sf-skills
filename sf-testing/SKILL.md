@@ -83,6 +83,11 @@ sf apex run test --tests MyClassTest.testMethod1 --tests MyClassTest.testMethod2
 sf apex run test --suite-names MySuite --code-coverage --result-format json --target-org [alias]
 ```
 
+**Run All Tests (Concise — Failures Only)**:
+```bash
+sf apex run test --test-level RunLocalTests --code-coverage --result-format json --concise --target-org [alias]
+```
+
 ### Phase 3: Results Analysis
 
 **Parse test-results JSON**:
@@ -172,6 +177,25 @@ Lines 78-82: Null check branch
 ```
 Skill(skill="sf-apex", args="Fix failing test [TestClassName].[methodName] - Error: [error message]")
 ```
+
+### Cross-Skill: Flow Testing
+
+For Flow-specific tests (not Apex), use `sf flow run test`:
+```bash
+sf flow run test --test-names FlowTest1,FlowTest2 --target-org [alias]
+sf flow get test --test-run-id <id> --target-org [alias]
+```
+
+> See `/sf-flow` for full Flow testing documentation.
+
+### Unified Test Runner [Beta]
+
+`sf logic run test` runs both Apex and Flow tests in a single command (Beta, v2.107.6+):
+```bash
+sf logic run test --test-level RunLocalTests --code-coverage --target-org [alias]
+```
+
+> **⚠️ Beta**: This command may change. For production use, prefer `sf apex run test` and `sf flow run test` separately.
 
 ### Phase 5: Coverage Improvement
 

@@ -491,13 +491,16 @@ sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --json
 
 # CSV output
 sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --result-format csv
+
+# Direct to file
+sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --result-format csv --output-file accounts.csv
 ```
 
-### Bulk Query
+### Bulk Data Export
 
 ```bash
-# For large datasets
-sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --bulk
+# For large datasets (> 2,000 records)
+sf data export bulk --query "SELECT Id, Name FROM Account" --target-org my-org --output-file accounts.csv
 ```
 
 ### Query Plan
@@ -508,6 +511,15 @@ sf data query \
   --target-org my-org \
   --use-tooling-api \
   --plan
+```
+
+---
+
+### SOSL Search
+
+```bash
+# For full-text search across objects, use SOSL:
+sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name)"  --target-org my-org
 ```
 
 ---

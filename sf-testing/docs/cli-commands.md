@@ -192,6 +192,8 @@ sf apex get log \
 | `--wait` | Max minutes to wait |
 | `--async` | Return immediately with run ID |
 | `--verbose` | Show additional details |
+| `--concise` | Suppress passing test details (show only failures) |
+| `--poll-interval <seconds>` | Customize polling interval (v2.116.6+) |
 
 ## Common Patterns
 

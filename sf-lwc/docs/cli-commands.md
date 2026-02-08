@@ -388,28 +388,29 @@ diff -r force-app/main/default/lwc/myComponent temp-retrieve/force-app/.../myCom
 
 ---
 
-## Static Analysis (SLDS & ESLint)
+## Static Analysis (Code Analyzer v5)
 
 ### Salesforce Code Analyzer
 
-The Code Analyzer validates LWC files for SLDS 2 compliance, accessibility, and security.
+Code Analyzer v5 (`@salesforce/plugin-code-analyzer`) validates LWC files for SLDS 2 compliance, accessibility, and security.
 
 ```bash
-# Install Code Analyzer plugin
-sf plugins install @salesforce/sfdx-scanner
+# Install Code Analyzer v5 plugin
+sf plugins install @salesforce/plugin-code-analyzer
 
-# Run full scan on LWC components
+# Run scan on LWC components
 sf code-analyzer run \
-  --target force-app/main/default/lwc \
-  --format html \
-  --outfile lwc-scan-results.html
+  --workspace force-app/main/default/lwc \
+  --output-format html \
+  --output-file lwc-scan-results.html
 
-# Run specific rule categories
+# Run with specific rules
 sf code-analyzer run \
-  --target force-app/main/default/lwc \
-  --engine eslint-lwc,pmd \
-  --category "Best Practices,Security"
+  --workspace force-app/main/default/lwc \
+  --rule-selector "Category:Best Practices,Security"
 ```
+
+> **Migration from sfdx-scanner**: v5 uses `--workspace` instead of `--target`, `--output-format` instead of `--format`, `--output-file` instead of `--outfile`, and `--rule-selector` instead of `--engine`/`--category`.
 
 ### SLDS 2 Compliance Checks
 

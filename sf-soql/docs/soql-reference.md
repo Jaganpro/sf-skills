@@ -218,8 +218,8 @@ sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --json
 # CSV output
 sf data query --query "SELECT Id, Name FROM Account" --result-format csv --target-org my-org
 
-# Bulk query (for large results)
-sf data query --query "SELECT Id, Name FROM Account" --bulk --target-org my-org
+# Bulk export (for large results, > 2,000 records)
+sf data export bulk --query "SELECT Id, Name FROM Account" --target-org my-org --output-file accounts.csv
 
 # Query plan
 sf data query --query "SELECT Id FROM Account WHERE Name = 'Test'" --use-tooling-api --plan --target-org my-org

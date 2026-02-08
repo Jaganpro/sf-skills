@@ -510,6 +510,8 @@ language:
 | **After Agent Script** | `/sf-ai-agentforce-testing` - Test topic routing and actions | ✅ RECOMMENDED |
 | **For Deployment** | `/sf-deploy` - Publish agent with `sf agent publish authoring-bundle` | ⚠️ REQUIRED |
 
+> **Tip**: Open Agentforce Studio list view with `sf org open authoring-bundle -o TARGET_ORG` (v2.121.7+). Open a specific agent with `sf org open agent --api-name MyAgent -o TARGET_ORG`.
+
 ---
 
 ## 📋 QUICK REFERENCE: Agent Script Syntax
@@ -815,6 +817,12 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
 
 # Publish to org (NOT sf project deploy!)
 sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
+
+# Generate authoring bundle scaffolding
+sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG
+
+# Generate without retrieving from org (useful for CI/CD)
+sf agent generate authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG
 ```
 
 ### Bundle Structure (CRITICAL)

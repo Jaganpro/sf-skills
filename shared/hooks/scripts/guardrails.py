@@ -159,9 +159,9 @@ MEDIUM_PATTERNS = [
     },
     # Deprecated sf commands
     {
-        "pattern": r"sfdx\s+force:",
-        "message": "Deprecated SFDX command syntax detected",
-        "suggestion": "Use 'sf' commands instead of 'sfdx force:' (e.g., sf org display)",
+        "pattern": r"\bsfdx\b",
+        "message": "Deprecated SFDX command detected",
+        "suggestion": "Use 'sf' commands instead of 'sfdx' (e.g., sf org display, sf project deploy start)",
         "context": "cli"
     },
     # Old API versions

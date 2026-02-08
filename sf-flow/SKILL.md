@@ -545,6 +545,38 @@ Flow Created  →  Deployed to Org  →  Action Definition Created  →  Agent C
 | sf-flow → sf-data | "Create 200 test Accounts" (test data after deploy) |
 | sf-ai-agentscript → sf-flow | "Create Autolaunched Flow for agent action" - **sf-flow is MANDATORY** |
 
+## Flow Testing
+
+Run Flow tests from the CLI:
+
+### Run Flow Tests
+
+```bash
+# Run specific flow tests
+sf flow run test --test-names FlowTest1,FlowTest2 --target-org my-sandbox
+
+# Run all flow tests
+sf flow run test --test-level RunAllFlowTests --target-org my-sandbox
+```
+
+### Get Test Results
+
+```bash
+# Get results by test run ID
+sf flow get test --test-run-id <id> --target-org my-sandbox
+```
+
+| Flag | Description |
+|------|-------------|
+| `--test-names` | Comma-separated list of flow test names |
+| `--test-level` | `RunAllFlowTests` or `RunSpecificFlowTests` |
+| `--wait` | Minutes to wait for completion |
+| `--result-format` | Output format (human, json, junit) |
+
+> **GA since v2.86.9**. For Apex tests, see `/sf-testing`. For a unified runner (Beta), use `sf logic run test`.
+
+---
+
 ## Notes
 
 **Dependencies** (optional): sf-deploy, sf-metadata, sf-data | **API**: 65.0 | **Mode**: Strict (warnings block) | Python validators recommended

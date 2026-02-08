@@ -7,7 +7,7 @@
 | Run query | `sf data query --query "SELECT..."` |
 | JSON output | `sf data query --query "..." --json` |
 | CSV output | `sf data query --query "..." --result-format csv` |
-| Bulk query | `sf data query --query "..." --bulk` |
+| Bulk export | `sf data export bulk --query "SELECT..." --target-org alias` |
 | Query plan | `sf data query --query "..." --use-tooling-api --plan` |
 
 ---
@@ -74,28 +74,38 @@ sf data query \
   --result-format csv > accounts.csv
 ```
 
+### Direct to File
+
+```bash
+sf data query \
+  --query "SELECT Id, Name, Industry FROM Account" \
+  --target-org my-sandbox \
+  --result-format csv \
+  --output-file accounts.csv
+```
+
 ---
 
-## Bulk Queries
+## Bulk Data Export
 
-For large result sets (> 2000 records):
-
-```bash
-sf data query \
-  --query "SELECT Id, Name FROM Account" \
-  --target-org my-sandbox \
-  --bulk
-```
-
-Bulk query with wait time:
+For large result sets (> 2,000 records), use the dedicated bulk export command:
 
 ```bash
-sf data query \
+# Export to CSV (default)
+sf data export bulk \
   --query "SELECT Id, Name FROM Account" \
   --target-org my-sandbox \
-  --bulk \
-  --wait 10
+  --output-file accounts.csv
+
+# Export as JSON
+sf data export bulk \
+  --query "SELECT Id, Name FROM Account" \
+  --target-org my-sandbox \
+  --output-file accounts.json \
+  --result-format json
 ```
+
+> **Note**: `--bulk` and `--wait` flags on `sf data query` were removed in v2.87.7. Use `sf data export bulk` instead.
 
 ---
 
@@ -252,14 +262,13 @@ sf data query \
 
 ### Query Timeout
 
-For long-running queries, use bulk API:
+For long-running queries, export via bulk API:
 
 ```bash
-sf data query \
+sf data export bulk \
   --query "SELECT Id, Name FROM Account" \
   --target-org my-sandbox \
-  --bulk \
-  --wait 30
+  --output-file results.csv
 ```
 
 ### Too Many Results
