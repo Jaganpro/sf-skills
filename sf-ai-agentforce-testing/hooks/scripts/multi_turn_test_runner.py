@@ -128,10 +128,10 @@ class StreamingConsole:
     Falls back to plain print() when Rich is unavailable or --no-rich is set.
     """
 
-    def __init__(self, enabled: bool = True, width: int = None):
+    def __init__(self, enabled: bool = True, width: int = None, use_rich: bool = True):
         self._enabled = enabled
         self._lock = threading.Lock()
-        if enabled and HAS_RICH:
+        if enabled and HAS_RICH and use_rich:
             self._console = Console(
                 stderr=True, force_terminal=True,
                 width=_detect_width(width), highlight=False,
@@ -1463,6 +1463,7 @@ Environment Variables:
     stream = StreamingConsole(
         enabled=args.verbose and not args.json_only,
         width=args.width,
+        use_rich=not args.no_rich,
     )
 
     # Parse global variables
@@ -1489,11 +1490,14 @@ Environment Variables:
             sys.exit(2)
 
     # Create client (route API logs through StreamingConsole)
+    # When streaming is active, API logs go through the callback.
+    # When --json-only, suppress API verbose entirely to keep stderr clean.
+    client_verbose = args.verbose and not args.json_only
     client = AgentAPIClient(
         my_domain=args.my_domain,
         consumer_key=args.consumer_key,
         consumer_secret=args.consumer_secret,
-        verbose=args.verbose,
+        verbose=client_verbose,
         log_callback=stream.api_log if stream._enabled else None,
     )
 
