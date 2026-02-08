@@ -204,6 +204,49 @@ class StreamingConsole:
             else:
                 print(f"    Turn {num}: \"{truncated}\"", file=sys.stderr)
 
+    def agent_response(self, turn_result):
+        """Print the agent's response with metadata badges."""
+        if not self._enabled:
+            return
+
+        text = turn_result.agent_text
+        elapsed_s = turn_result.elapsed_ms / 1000
+        types = turn_result.message_types
+        is_failure = "Failure" in types
+
+        with self._lock:
+            if self._rich:
+                if is_failure:
+                    self._console.print(
+                        f"            [bold yellow]⚠️  [Failure] (no response)[/bold yellow]"
+                        f"  [dim]({elapsed_s:.1f}s)[/dim]"
+                    )
+                else:
+                    display = text.replace("\n", " ")
+                    display = display[:80] + "..." if len(display) > 80 else display
+                    # Build suffix badges
+                    badges = ""
+                    if turn_result.has_escalation:
+                        badges += "  [yellow]↗ escalation[/yellow]"
+                    if turn_result.has_action_result:
+                        badges += "  [cyan]⚡ action[/cyan]"
+                    self._console.print(
+                        f"            [bright_magenta]🤖 \"{display}\"[/bright_magenta]"
+                        f"  [dim]({elapsed_s:.1f}s)[/dim]{badges}"
+                    )
+            else:
+                if is_failure:
+                    print(f"      ⚠️  [Failure] (no response)  ({elapsed_s:.1f}s)", file=sys.stderr)
+                else:
+                    display = text.replace("\n", " ")
+                    display = display[:80] + "..." if len(display) > 80 else display
+                    badges = ""
+                    if turn_result.has_escalation:
+                        badges += "  ↗ escalation"
+                    if turn_result.has_action_result:
+                        badges += "  ⚡ action"
+                    print(f"      🤖 \"{display}\"  ({elapsed_s:.1f}s){badges}", file=sys.stderr)
+
     def turn_result(self, evaluation: dict):
         """Print check results for a completed turn."""
         if not self._enabled:
@@ -804,6 +847,10 @@ def execute_scenario(
                         elif verbose:
                             print(f"      ⟳ Retry {attempt + 1}/{turn_retry}: turn error", file=sys.stderr)
                         time.sleep(1 * (attempt + 1))
+
+                # Show agent response in streaming output
+                if stream and turn_result:
+                    stream.agent_response(turn_result)
 
                 # Evaluate against expectations
                 evaluation = evaluate_turn(turn_result, expectations, prior_turn_results)
