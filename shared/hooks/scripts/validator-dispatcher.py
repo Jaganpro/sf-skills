@@ -56,7 +56,8 @@ def read_stdin_safe(timeout_seconds: float = 0.1) -> dict:
 # Get the base directory (shared/hooks/scripts/)
 SCRIPT_DIR = Path(__file__).parent
 SHARED_HOOKS_DIR = SCRIPT_DIR.parent  # shared/hooks/
-PROJECT_ROOT = SHARED_HOOKS_DIR.parent.parent  # project root
+# Skills are at ~/.claude/skills/ in the native layout
+SKILLS_ROOT = Path.home() / ".claude" / "skills"
 
 # State file for tracking active skill (used by FIX 3)
 ACTIVE_SKILL_FILE = Path("/tmp/sf-skills-active-skill.json")
@@ -191,7 +192,7 @@ def find_validators_for_file(file_path: str) -> List[Dict]:
 
     for pattern, skill_name, validator_path in VALIDATOR_REGISTRY:
         if re.search(pattern, file_path, re.IGNORECASE):
-            full_validator_path = PROJECT_ROOT / validator_path
+            full_validator_path = SKILLS_ROOT / validator_path
             if full_validator_path.exists():
                 validators.append({
                     "skill": skill_name,
@@ -212,7 +213,7 @@ def run_validator(validator_path: str, hook_input: dict, timeout: int = 8) -> Op
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=str(PROJECT_ROOT)
+            cwd=str(SKILLS_ROOT)
         )
 
         # Combine stdout and stderr

@@ -84,7 +84,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 
 ## Script Location (MANDATORY)
 
-**SKILL_PATH:** `~/.claude/sf-skills/skills/sf-ai-agentforce-testing`
+**SKILL_PATH:** `~/.claude/skills/sf-ai-agentforce-testing`
 
 All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. **NEVER recreate these scripts. They already exist. Use them as-is.**
 
@@ -103,7 +103,7 @@ All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. *
 | `parse-agent-test-results.py` | `{SKILL_PATH}/hooks/scripts/parse-agent-test-results.py` |
 | `rich_test_report.py` | `{SKILL_PATH}/hooks/scripts/rich_test_report.py` |
 
-> **Variable resolution:** At runtime, resolve `SKILL_PATH` from the `${SKILL_HOOKS}` environment variable (strip `/hooks` suffix). Hardcoded fallback: `~/.claude/sf-skills/skills/sf-ai-agentforce-testing`.
+> **Variable resolution:** At runtime, resolve `SKILL_PATH` from the `${SKILL_HOOKS}` environment variable (strip `/hooks` suffix). Hardcoded fallback: `~/.claude/skills/sf-ai-agentforce-testing`.
 
 ---
 
@@ -260,7 +260,7 @@ When the testing skill is invoked, follow these interview steps **in order**. Ea
 
 | Step | Rule | Fallback |
 |------|------|----------|
-| **I-0: Skill Path** | Resolve `SKILL_PATH` from `${SKILL_HOOKS}` env var (strip `/hooks` suffix). If unset → hardcoded `~/.claude/sf-skills/skills/sf-ai-agentforce-testing`. Verify directory exists. All subsequent script references use `{SKILL_PATH}/hooks/scripts/`. | Hardcoded path |
+| **I-0: Skill Path** | Resolve `SKILL_PATH` from `${SKILL_HOOKS}` env var (strip `/hooks` suffix). If unset → hardcoded `~/.claude/skills/sf-ai-agentforce-testing`. Verify directory exists. All subsequent script references use `{SKILL_PATH}/hooks/scripts/`. | Hardcoded path |
 | **I-1: Agent Name** | User provided → use it. Else walk up from CWD looking for `sfdx-project.json` → run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py local --project-dir .`. Multiple agents → present numbered list via AskUserQuestion. None found → ask user. | AskUserQuestion |
 | **I-2: Org Alias** | User provided → use it. Else parse `sfdx-project.json` → read `sfdx-config.json` for `target-org`. Else ask user. Note: org aliases are **case-sensitive** (e.g., `Vivint-DevInt` ≠ `vivint-devint`). | AskUserQuestion |
 | **I-3: Metadata** | **ALWAYS** run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py live --target-org {org} --agent-name {agent}`. Extract topics, actions, type, agent_id. This step is mandatory — never skip. | Required (fail if no agent found) |

@@ -62,7 +62,7 @@ That's it! The newbie-friendly installer will:
 - **Check your system** (macOS, Python version, terminal type)
 - **Install missing dependencies** (offers to install Homebrew, Python 3.12+ if needed)
 - **Detect optional tools** (Salesforce CLI, Java, Node.js)
-- **Install sf-skills** to `~/.claude/sf-skills/` (18 skills + 16 hook scripts)
+- **Install sf-skills** to `~/.claude/skills/` (18 skills + 16 hook scripts)
 - **Configure Claude Code** automatically (updates `~/.claude/settings.json`)
 - **Show next steps** with a helpful checklist
 
@@ -72,33 +72,33 @@ That's it! The newbie-friendly installer will:
 
 ```bash
 # Check installation status
-python3 ~/.claude/sf-skills/tools/install.py --status
+python3 ~/.claude/sf-skills-install.py --status
 
 # Update to latest version
-python3 ~/.claude/sf-skills/tools/install.py --update
+python3 ~/.claude/sf-skills-install.py --update
 
 # Uninstall completely
-python3 ~/.claude/sf-skills/tools/install.py --uninstall
+python3 ~/.claude/sf-skills-install.py --uninstall
 
 # Preview changes without applying (dry run)
-python3 ~/.claude/sf-skills/tools/install.py --dry-run
+python3 ~/.claude/sf-skills-install.py --dry-run
 ```
 
 #### What Gets Installed
 
 ```
-~/.claude/sf-skills/
-├── VERSION                    # Current version (e.g., "4.1.0")
-├── skills/                    # 18 Salesforce skills
-│   ├── sf-apex/
-│   ├── sf-flow/
+~/.claude/
+├── skills/                    # 18 Salesforce skills (native Claude Code discovery)
+│   ├── sf-apex/SKILL.md
+│   ├── sf-flow/SKILL.md
 │   └── ... (16 more)
 ├── hooks/                     # 16 hook scripts
 │   ├── scripts/
 │   ├── skill-activation-prompt.py
 │   └── skills-registry.json
-└── tools/                     # Installer for updates
-    └── install.py
+├── lsp-engine/                # LSP wrappers (Apex, LWC, AgentScript)
+├── .sf-skills.json            # Version + metadata
+└── sf-skills-install.py       # Installer for updates
 ```
 
 **What hooks provide:**

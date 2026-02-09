@@ -45,12 +45,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 VERSION = "1.0.0"  # Installer version
 
-# Installation paths
+# Installation paths (Claude Code native layout)
 CLAUDE_DIR = Path.home() / ".claude"
-INSTALL_DIR = CLAUDE_DIR / "sf-skills"
+SKILLS_DIR = CLAUDE_DIR / "skills"
+HOOKS_DIR = CLAUDE_DIR / "hooks"
+LSP_DIR = CLAUDE_DIR / "lsp-engine"
+META_FILE = CLAUDE_DIR / ".sf-skills.json"
+INSTALLER_FILE = CLAUDE_DIR / "sf-skills-install.py"
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
 
-# Legacy paths to clean up
+# Legacy paths (for migration cleanup only)
+LEGACY_INSTALL_DIR = CLAUDE_DIR / "sf-skills"
 LEGACY_HOOKS_DIR = CLAUDE_DIR / "sf-skills-hooks"
 MARKETPLACE_DIR = CLAUDE_DIR / "plugins" / "marketplaces" / "sf-skills"
 
@@ -60,10 +65,10 @@ GITHUB_REPO = "sf-skills"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}"
 GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main"
 
-# Files to install
+# Files to install (source layout paths)
 SKILLS_GLOB = "sf-*"  # All skill directories
-HOOKS_DIR = "shared/hooks"
-LSP_ENGINE_DIR = "shared/lsp-engine"
+HOOKS_SRC_DIR = "shared/hooks"
+LSP_ENGINE_SRC_DIR = "shared/lsp-engine"
 SKILLS_REGISTRY = "shared/hooks/skills-registry.json"
 AGENTS_DIR = "agents"  # FDE + PS agent definitions
 AGENT_PREFIXES = ("fde-", "ps-")  # Agent file prefixes managed by installer
@@ -102,25 +107,37 @@ def safe_rmtree(path: Path) -> None:
         shutil.rmtree(p)
 
 
-def read_fingerprint() -> Optional[Dict[str, Any]]:
-    """Read .install-fingerprint if it exists."""
-    fingerprint_file = INSTALL_DIR / ".install-fingerprint"
-    if fingerprint_file.exists():
+def write_metadata(version: str, commit_sha: Optional[str] = None):
+    """Write install metadata to ~/.claude/.sf-skills.json."""
+    META_FILE.write_text(json.dumps({
+        "method": "unified",
+        "version": version,
+        "commit_sha": commit_sha,
+        "installed_at": datetime.now().isoformat(),
+        "installer_version": VERSION
+    }, indent=2))
+
+
+def read_metadata() -> Optional[Dict[str, Any]]:
+    """Read ~/.claude/.sf-skills.json."""
+    if META_FILE.exists():
         try:
-            return json.loads(fingerprint_file.read_text())
+            return json.loads(META_FILE.read_text())
         except (json.JSONDecodeError, IOError):
             return None
     return None
 
 
+def read_fingerprint() -> Optional[Dict[str, Any]]:
+    """Read install metadata (compatibility alias for read_metadata)."""
+    return read_metadata()
+
+
 def get_installed_version() -> Optional[str]:
-    """Read VERSION file from installation directory."""
-    version_file = INSTALL_DIR / "VERSION"
-    if version_file.exists():
-        try:
-            return version_file.read_text().strip()
-        except IOError:
-            return None
+    """Read version from metadata file."""
+    metadata = read_metadata()
+    if metadata:
+        return metadata.get("version")
     return None
 
 
@@ -149,14 +166,26 @@ def detect_state() -> Tuple[str, Optional[str]]:
                 pass
         return InstallState.LEGACY, legacy_version
 
-    # Check for unified installation
-    if INSTALL_DIR.exists():
-        fingerprint = read_fingerprint()
-        if fingerprint and fingerprint.get("method") == "unified":
-            version = get_installed_version()
-            return InstallState.UNIFIED, version
+    # Check for new unified installation (native layout)
+    metadata = read_metadata()
+    if metadata and metadata.get("method") == "unified":
+        version = metadata.get("version")
+        return InstallState.UNIFIED, version
+
+    # Check for old unified installation (legacy bundle dir)
+    if LEGACY_INSTALL_DIR.exists():
+        fp_file = LEGACY_INSTALL_DIR / ".install-fingerprint"
+        if fp_file.exists():
+            try:
+                fp = json.loads(fp_file.read_text())
+                if fp.get("method") == "unified":
+                    version_file = LEGACY_INSTALL_DIR / "VERSION"
+                    version = version_file.read_text().strip() if version_file.exists() else None
+                    return InstallState.UNIFIED, version
+            except (json.JSONDecodeError, IOError):
+                pass
         # Directory exists but no fingerprint - corrupted
-        if (INSTALL_DIR / "VERSION").exists() or (INSTALL_DIR / "skills").exists():
+        if (LEGACY_INSTALL_DIR / "VERSION").exists() or (LEGACY_INSTALL_DIR / "skills").exists():
             return InstallState.CORRUPTED, None
 
     # No installation found
@@ -523,7 +552,7 @@ def is_sf_skills_hook(hook: Dict[str, Any]) -> bool:
 
     # Check command path contains sf-skills indicators
     command = hook.get("command", "")
-    if "sf-skills" in command or "shared/hooks" in command:
+    if "sf-skills" in command or "shared/hooks" in command or ".claude/hooks" in command:
         return True
 
     # Check nested hooks
@@ -544,7 +573,7 @@ def get_hooks_config() -> Dict[str, Any]:
 
     Returns hooks configuration for settings.json.
     """
-    hooks_path = str(INSTALL_DIR / "hooks")
+    hooks_path = str(HOOKS_DIR)
     scripts_path = f"{hooks_path}/scripts"
 
     return {
@@ -797,6 +826,29 @@ def cleanup_agents(target_dir: Path, dry_run: bool = False) -> int:
     return count
 
 
+def cleanup_installed_files(dry_run: bool = False):
+    """Remove all sf-skills installed files from ~/.claude/ native layout."""
+    # Remove sf-* dirs from ~/.claude/skills/ (preserves user's custom skills)
+    if SKILLS_DIR.exists():
+        for d in SKILLS_DIR.iterdir():
+            if d.is_dir() and d.name.startswith("sf-"):
+                if not dry_run:
+                    safe_rmtree(d)
+
+    # Remove hooks directory entirely (all sf-skills content)
+    if HOOKS_DIR.exists() and not dry_run:
+        safe_rmtree(HOOKS_DIR)
+
+    # Remove LSP engine
+    if LSP_DIR.exists() and not dry_run:
+        safe_rmtree(LSP_DIR)
+
+    # Remove metadata and installer
+    for f in [META_FILE, INSTALLER_FILE]:
+        if f.exists() and not dry_run:
+            f.unlink()
+
+
 # Commands directory for skill registration
 COMMANDS_DIR = CLAUDE_DIR / "commands"
 
@@ -950,37 +1002,6 @@ def copy_lsp_engine(source_dir: Path, target_dir: Path) -> int:
     return sum(1 for _ in target_dir.rglob("*") if _.is_file())
 
 
-def write_fingerprint(version: str, source: str = "github", commit_sha: Optional[str] = None):
-    """
-    Write installation fingerprint file.
-
-    Args:
-        version: Version string from skills-registry.json
-        source: Installation source (default: "github")
-        commit_sha: Git commit SHA for content-aware update detection
-    """
-    fingerprint = {
-        "method": "unified",
-        "version": version,
-        "source": source,
-        "installed_at": datetime.now().isoformat(),
-        "installer_version": VERSION
-    }
-
-    # Add commit SHA for content-aware update detection
-    if commit_sha:
-        fingerprint["commit_sha"] = commit_sha
-
-    fingerprint_file = INSTALL_DIR / ".install-fingerprint"
-    fingerprint_file.write_text(json.dumps(fingerprint, indent=2))
-
-
-def write_version_file(version: str):
-    """Write VERSION file."""
-    version_file = INSTALL_DIR / "VERSION"
-    version_file.write_text(f"{version}\n")
-
-
 def touch_all_files(directory: Path):
     """Update mtime on all files to force cache refresh."""
     now = time.time()
@@ -1027,26 +1048,20 @@ def verify_installation() -> Tuple[bool, List[str]]:
     """
     issues = []
 
-    # Check VERSION file
-    if not (INSTALL_DIR / "VERSION").exists():
-        issues.append("Missing VERSION file")
-
-    # Check fingerprint
-    if not (INSTALL_DIR / ".install-fingerprint").exists():
-        issues.append("Missing .install-fingerprint")
+    # Check metadata file
+    if not META_FILE.exists():
+        issues.append("Missing .sf-skills.json metadata")
 
     # Check skills directory
-    skills_dir = INSTALL_DIR / "skills"
-    if not skills_dir.exists():
+    if not SKILLS_DIR.exists():
         issues.append("Missing skills directory")
     else:
-        skill_count = sum(1 for d in skills_dir.iterdir() if d.is_dir() and d.name.startswith("sf-"))
+        skill_count = sum(1 for d in SKILLS_DIR.iterdir() if d.is_dir() and d.name.startswith("sf-"))
         if skill_count == 0:
             issues.append("No skills found")
 
     # Check hooks directory
-    hooks_dir = INSTALL_DIR / "hooks"
-    if not hooks_dir.exists():
+    if not HOOKS_DIR.exists():
         issues.append("Missing hooks directory")
     else:
         # Check key hook scripts
@@ -1057,12 +1072,11 @@ def verify_installation() -> Tuple[bool, List[str]]:
             "skills-registry.json"
         ]
         for script in required_scripts:
-            if not (hooks_dir / script).exists():
+            if not (HOOKS_DIR / script).exists():
                 issues.append(f"Missing: hooks/{script}")
 
     # Check lsp-engine directory
-    lsp_dir = INSTALL_DIR / "lsp-engine"
-    if not lsp_dir.exists():
+    if not LSP_DIR.exists():
         issues.append("Missing lsp-engine directory")
     else:
         # Check key wrapper scripts
@@ -1072,7 +1086,7 @@ def verify_installation() -> Tuple[bool, List[str]]:
             "agentscript_wrapper.sh"
         ]
         for wrapper in required_wrappers:
-            if not (lsp_dir / wrapper).exists():
+            if not (LSP_DIR / wrapper).exists():
                 issues.append(f"Missing: lsp-engine/{wrapper}")
 
     # Check settings.json has hooks
@@ -1127,8 +1141,11 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
      • LSP engine (Apex, LWC, AgentScript language servers)
      • Automatic skill suggestions and workflow orchestration
 
-  📍 INSTALL LOCATION:
-     ~/.claude/sf-skills/
+  📍 INSTALL LOCATIONS:
+     ~/.claude/skills/sf-*/     (skills — native Claude Code discovery)
+     ~/.claude/hooks/           (hook scripts)
+     ~/.claude/lsp-engine/      (LSP wrappers)
+     ~/.claude/.sf-skills.json  (metadata)
 
   ⚙️  SETTINGS CHANGES:
      ~/.claude/settings.json - hooks will be registered
@@ -1204,8 +1221,8 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         if state == InstallState.LEGACY:
             cleanups.append(("Legacy hooks", lambda: cleanup_legacy(dry_run)))
         if state == InstallState.CORRUPTED:
-            if (INSTALL_DIR.exists() or INSTALL_DIR.is_symlink()) and not dry_run:
-                safe_rmtree(INSTALL_DIR)
+            if (LEGACY_INSTALL_DIR.exists() or LEGACY_INSTALL_DIR.is_symlink()) and not dry_run:
+                safe_rmtree(LEGACY_INSTALL_DIR)
             cleanups.append(("Corrupted install", lambda: True))
 
         # Remove old hooks from settings.json
@@ -1224,41 +1241,33 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         print_step(3, 5, "Installing skills, hooks, and LSP engine...", "...")
 
         if not dry_run:
-            INSTALL_DIR.mkdir(parents=True, exist_ok=True)
-
-            # Copy skills
-            skills_target = INSTALL_DIR / "skills"
-            skill_count = copy_skills(source_dir, skills_target)
+            # Copy skills to native discovery path
+            skill_count = copy_skills(source_dir, SKILLS_DIR)
 
             # Copy hooks
             hooks_source = source_dir / "shared" / "hooks"
-            hooks_target = INSTALL_DIR / "hooks"
-            hook_count = copy_hooks(hooks_source, hooks_target)
+            hook_count = copy_hooks(hooks_source, HOOKS_DIR)
 
             # Copy LSP engine (wrapper scripts for Apex, LWC, AgentScript LSPs)
             lsp_source = source_dir / "shared" / "lsp-engine"
-            lsp_target = INSTALL_DIR / "lsp-engine"
-            lsp_count = copy_lsp_engine(lsp_source, lsp_target)
-
-            # Copy tools (includes install.py for local updates)
-            tools_source = source_dir / "tools"
-            tools_target = INSTALL_DIR / "tools"
-            copy_tools(tools_source, tools_target)
+            lsp_count = copy_lsp_engine(lsp_source, LSP_DIR)
 
             # Copy FDE + PS agents to ~/.claude/agents/
             agents_target = CLAUDE_DIR / "agents"
             agent_count = copy_agents(source_dir, agents_target)
 
-            # Also keep a copy in sf-skills for reference
-            agents_backup = INSTALL_DIR / "agents"
-            copy_agents(source_dir, agents_backup)
+            # Copy installer for self-updates
+            installer_source = source_dir / "tools" / "install.py"
+            if installer_source.exists():
+                shutil.copy2(installer_source, INSTALLER_FILE)
 
-            # Write VERSION and fingerprint (with commit SHA for update detection)
-            write_version_file(version)
-            write_fingerprint(version, commit_sha=commit_sha)
+            # Write metadata (version + commit SHA for update detection)
+            write_metadata(version, commit_sha=commit_sha)
 
-            # Touch all files
-            touch_all_files(INSTALL_DIR)
+            # Touch all files for cache refresh
+            for d in [SKILLS_DIR, HOOKS_DIR, LSP_DIR]:
+                if d.exists():
+                    touch_all_files(d)
 
             print_step(3, 5, "Skills, hooks, and LSP engine installed", "done")
             print_substep(f"{skill_count} skills installed")
@@ -1278,16 +1287,21 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             added = sum(1 for s in status.values() if s == "added")
             updated = sum(1 for s in status.values() if s == "updated")
 
-            # Register skills as commands (symlinks in ~/.claude/commands/)
-            skills_dir = INSTALL_DIR / "skills"
-            skills_registered = register_skills_as_commands(skills_dir)
+            # Migrate: Remove legacy ~/.claude/sf-skills/ if present
+            if LEGACY_INSTALL_DIR.exists():
+                safe_rmtree(LEGACY_INSTALL_DIR)
+                print_substep("Migrated: removed legacy ~/.claude/sf-skills/")
+
+            # Migrate: Remove legacy command symlinks
+            old_cmds = unregister_skills_from_commands()
+            if old_cmds > 0:
+                print_substep(f"Migrated: removed {old_cmds} legacy command symlinks")
 
             print_step(4, 5, "Claude Code configured", "done")
             if added > 0:
                 print_substep(f"{added} hook events added")
             if updated > 0:
                 print_substep(f"{updated} hook events updated")
-            print_substep(f"{skills_registered} skills registered as commands")
         else:
             print_step(4, 5, "Would configure settings.json", "skip")
 
@@ -1315,7 +1329,8 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             print(f"""
 {c('✅ sf-skills installed successfully!', Colors.GREEN)}
    Version:  {version}
-   Location: ~/.claude/sf-skills/
+   Skills:   ~/.claude/skills/sf-*/
+   Hooks:    ~/.claude/hooks/
 """)
         else:
             # Full message when run directly
@@ -1324,16 +1339,18 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
 {c('✅ Installation complete!', Colors.GREEN)}
 
    Version:  {version}
-   Location: ~/.claude/sf-skills/
+   Skills:   ~/.claude/skills/sf-*/
+   Hooks:    ~/.claude/hooks/
+   LSP:      ~/.claude/lsp-engine/
 
    🚀 Next steps:
    1. Restart Claude Code (or start new session)
    2. Try: /sf-apex to start building!
 
    📖 Commands:
-   • Update:    python3 ~/.claude/sf-skills/tools/install.py --update
-   • Uninstall: python3 ~/.claude/sf-skills/tools/install.py --uninstall
-   • Status:    python3 ~/.claude/sf-skills/tools/install.py --status
+   • Update:    python3 ~/.claude/sf-skills-install.py --update
+   • Uninstall: python3 ~/.claude/sf-skills-install.py --uninstall
+   • Status:    python3 ~/.claude/sf-skills-install.py --status
 ═══════════════════════════════════════════════════════════════════
 """)
     else:
@@ -1441,10 +1458,13 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
         return 0
 
     print_warning("This will remove:")
-    print(f"     • {INSTALL_DIR}")
+    print(f"     • sf-* skills from {SKILLS_DIR}")
+    print(f"     • {HOOKS_DIR}")
+    print(f"     • {LSP_DIR}")
     print(f"     • sf-skills hooks from {SETTINGS_FILE}")
-    print(f"     • sf-skills commands from {COMMANDS_DIR}")
     print(f"     • FDE + PS agents from {CLAUDE_DIR / 'agents'}")
+    print(f"     • {META_FILE}")
+    print(f"     • {INSTALLER_FILE}")
 
     if not force and not dry_run:
         if not confirm("\nProceed with uninstallation?", default=False):
@@ -1458,21 +1478,26 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
     if hooks_removed > 0:
         print_success(f"Removed {hooks_removed} hooks from settings.json")
 
-    # Remove skill symlinks from ~/.claude/commands/
+    # Remove all installed files (skills, hooks, lsp, metadata, installer)
+    if not dry_run:
+        cleanup_installed_files()
+        print_success("Removed sf-skills files from native layout")
+
+    # Remove legacy command symlinks
     skills_removed = unregister_skills_from_commands(dry_run)
     if skills_removed > 0:
-        print_success(f"Removed {skills_removed} skill commands from {COMMANDS_DIR}")
+        print_success(f"Removed {skills_removed} legacy command symlinks")
 
     # Remove FDE + PS agent files from ~/.claude/agents/ (preserves user's custom agents)
     agents_removed = cleanup_agents(CLAUDE_DIR / "agents", dry_run)
     if agents_removed > 0:
         print_success(f"Removed {agents_removed} agents from {CLAUDE_DIR / 'agents'}")
 
-    # Remove installation directory
-    if INSTALL_DIR.exists() or INSTALL_DIR.is_symlink():
+    # Remove legacy installation directory if present
+    if LEGACY_INSTALL_DIR.exists() or LEGACY_INSTALL_DIR.is_symlink():
         if not dry_run:
-            safe_rmtree(INSTALL_DIR)
-        print_success(f"Removed: {INSTALL_DIR}")
+            safe_rmtree(LEGACY_INSTALL_DIR)
+        print_success(f"Removed legacy: {LEGACY_INSTALL_DIR}")
 
     # Clean up legacy if present
     cleanup_legacy(dry_run)
@@ -1520,7 +1545,7 @@ def cmd_status() -> int:
 
     if state == InstallState.UNIFIED:
         print(f"Status:      {c('✅ INSTALLED', Colors.GREEN)}")
-        print(f"Method:      Unified installer")
+        print(f"Method:      Unified installer (native layout)")
     elif state == InstallState.LEGACY:
         print(f"Status:      {c('⚠️ LEGACY INSTALL', Colors.YELLOW)}")
         print(f"Method:      Old hooks-only install")
@@ -1533,35 +1558,36 @@ def cmd_status() -> int:
 
     print(f"Version:     {current_version or 'unknown'}")
 
-    # Display commit SHA from fingerprint
-    fingerprint = read_fingerprint()
-    if fingerprint and fingerprint.get("commit_sha"):
-        sha = fingerprint["commit_sha"]
+    # Display commit SHA from metadata
+    metadata = read_metadata()
+    if metadata and metadata.get("commit_sha"):
+        sha = metadata["commit_sha"]
         print(f"Commit:      {sha[:8]}... (full: {sha})")
     else:
         print(f"Commit:      {c('not tracked', Colors.DIM)} (run --update to enable)")
 
-    print(f"Location:    {INSTALL_DIR}")
+    # Show locations
+    print(f"Skills:      {SKILLS_DIR}")
+    print(f"Hooks:       {HOOKS_DIR}")
+    print(f"LSP Engine:  {LSP_DIR}")
+    print(f"Metadata:    {META_FILE}")
 
     # Count skills
-    skills_dir = INSTALL_DIR / "skills"
-    if skills_dir.exists():
-        skill_count = sum(1 for d in skills_dir.iterdir() if d.is_dir() and d.name.startswith("sf-"))
-        print(f"Skills:      {skill_count} installed")
+    if SKILLS_DIR.exists():
+        skill_count = sum(1 for d in SKILLS_DIR.iterdir() if d.is_dir() and d.name.startswith("sf-"))
+        print(f"Skill count: {skill_count} installed")
 
     # Count hooks
-    hooks_dir = INSTALL_DIR / "hooks"
-    if hooks_dir.exists():
-        hook_count = sum(1 for _ in hooks_dir.rglob("*.py"))
-        print(f"Hooks:       {hook_count} scripts")
+    if HOOKS_DIR.exists():
+        hook_count = sum(1 for _ in HOOKS_DIR.rglob("*.py"))
+        print(f"Hook count:  {hook_count} scripts")
 
     # Check LSP engine
-    lsp_dir = INSTALL_DIR / "lsp-engine"
-    if lsp_dir.exists():
-        wrapper_count = sum(1 for _ in lsp_dir.glob("*_wrapper.sh"))
-        print(f"LSP Engine:  {wrapper_count} wrappers (Apex, LWC, AgentScript)")
+    if LSP_DIR.exists():
+        wrapper_count = sum(1 for _ in LSP_DIR.glob("*_wrapper.sh"))
+        print(f"LSP count:   {wrapper_count} wrappers (Apex, LWC, AgentScript)")
     else:
-        print(f"LSP Engine:  {c('⚠️ Not installed', Colors.YELLOW)}")
+        print(f"LSP count:   {c('⚠️ Not installed', Colors.YELLOW)}")
 
     # Check settings.json
     if SETTINGS_FILE.exists():
@@ -1581,9 +1607,9 @@ def cmd_status() -> int:
     else:
         print(f"Settings:    {c('⚠️ Not found', Colors.YELLOW)}")
 
-    # Read fingerprint for more details (use already-read fingerprint)
-    if fingerprint:
-        installed_at = fingerprint.get("installed_at", "unknown")
+    # Read metadata for timestamps
+    if metadata:
+        installed_at = metadata.get("installed_at", "unknown")
         if installed_at != "unknown":
             # Parse and format date
             try:

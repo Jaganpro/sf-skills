@@ -40,7 +40,7 @@ The Agent Runtime API requires an **OAuth 2.0 access token** obtained via **Clie
 
 ```bash
 # Verify credentials work (credential_manager.py handles OAuth internally)
-python3 ~/.claude/sf-skills/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
+python3 ~/.claude/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
   validate --org-alias {org} --eca-name {eca}
 
 # The agent_api_client.py and multi_turn_test_runner.py handle token acquisition
@@ -351,7 +351,7 @@ CONSUMER_SECRET="your_secret"
 AGENT_ID="0XxRM0000004ABC"
 
 # 1. Get access token (use credential_manager.py to validate first)
-# python3 ~/.claude/sf-skills/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
+# python3 ~/.claude/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
 #   validate --org-alias {org} --eca-name {eca}
 # The agent_api_client.py handles token acquisition automatically.
 # For manual scripting, source credentials from ~/.sfagent/{org}/{eca}/credentials.env

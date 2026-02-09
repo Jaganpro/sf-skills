@@ -126,7 +126,7 @@ The execution user's permissions determine what the API can access:
 
 ```bash
 # Validate credentials via credential_manager.py (handles OAuth internally)
-python3 ~/.claude/sf-skills/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
+python3 ~/.claude/skills/sf-ai-agentforce-testing/hooks/scripts/credential_manager.py \
   validate --org-alias {org} --eca-name {eca}
 ```
 
