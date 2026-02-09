@@ -62,8 +62,117 @@ testCases:
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | Variable name (e.g., `$Context.RoutableId`) |
-| `value` | Yes | string | Variable value |
+| `name` | Yes | string | Variable name — use bare name (e.g., `RoutableId`), NOT `$Context.RoutableId` |
+| `value` | Yes | string | Variable value (e.g., a MessagingSession ID) |
+
+**Context Variable Details:**
+
+- `name` uses the **bare variable name** (e.g., `RoutableId`), NOT the `$Context.RoutableId` prefix. The CLI framework adds the prefix automatically.
+- Maps to `<contextVariable><variableName>` / `<variableValue>` in the XML metadata.
+- Common variables:
+  - `RoutableId` — MessagingSession ID. Without it, action flows receive the topic's internal name as `recordId`. With it, they receive a real MessagingSession ID.
+  - `EndUserId` — End user contact/person ID
+  - `ContactId` — Contact record ID
+  - `CaseId` — Case record ID
+
+**Discovery:** Find valid IDs for testing:
+```bash
+# Find an active MessagingSession ID for RoutableId
+sf data query --query "SELECT Id FROM MessagingSession WHERE Status='Active' LIMIT 1" --target-org [alias]
+
+# Find a recent Case ID for CaseId
+sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --target-org [alias]
+```
+
+**Example:**
+```yaml
+contextVariables:
+  - name: RoutableId            # NOT $Context.RoutableId — no prefix needed
+    value: "0Mwbb000007MGoTCAW"
+  - name: CaseId
+    value: "500XX0000000001"
+```
+
+### Custom Evaluation Fields
+
+Custom evaluations allow JSONPath-based assertions on action inputs and outputs.
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `label` | Yes | string | Human-readable description of what's being checked |
+| `name` | Yes | string | Evaluation type: `string_comparison` or `numeric_comparison` |
+| `parameters` | Yes | array | List of parameter objects (operator, actual, expected) |
+
+**Parameter Fields:**
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `name` | Yes | string | Parameter name: `operator`, `actual`, or `expected` |
+| `value` | Yes | string | Parameter value (literal or JSONPath expression) |
+| `isReference` | Yes | boolean | `true` if `value` is a JSONPath expression to resolve against `generatedData` |
+
+**String Comparison Operators:** `equals`, `contains`, `startswith`, `endswith`
+
+**Numeric Comparison Operators:** `equals`, `greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal`
+
+> **⚠️ SPRING '26 PLATFORM BUG:** Custom evaluations with `isReference: true` (JSONPath) cause the server to return "RETRY" status. The results API then crashes with `INTERNAL_SERVER_ERROR: The specified enum type has no constant with the specified name: RETRY`. This is a **server-side bug** (confirmed via direct `curl`), not a CLI issue. See [Known Issues](#known-issues).
+
+**Example:**
+```yaml
+customEvaluations:
+  - label: "supportPath is Field Support"
+    name: string_comparison
+    parameters:
+      - name: operator
+        value: equals
+        isReference: false
+      - name: actual
+        value: "$.generatedData.invokedActions[0][0].function.input.supportPath"
+        isReference: true       # JSONPath reference resolved against generatedData
+      - name: expected
+        value: "Field Support"
+        isReference: false
+```
+
+**Building JSONPath Expressions:**
+1. Run tests with `--verbose` flag to see `generatedData` JSON
+2. Note: `invokedActions` is **stringified JSON** — `"[[{...}]]"` not a parsed array
+3. Common paths:
+   - `$.generatedData.invokedActions[0][0].function.input.[fieldName]` — action input value
+   - `$.generatedData.invokedActions[0][0].function.output.[fieldName]` — action output value
+   - `$.generatedData.invokedActions[0][0].function.name` — action name
+   - `$.generatedData.invokedActions[0][0].executionLatency` — action latency in ms
+
+### Metrics Fields
+
+Metrics add platform quality scoring to test cases. Specify as a flat list of metric names.
+
+| Metric | Score Range | Description |
+|--------|-------------|-------------|
+| `coherence` | 1-5 | Response clarity, grammar, and logical flow. Works well — typically scores 4-5 for clear responses. |
+| `completeness` | 1-5 | How fully the response addresses the query. **⚠️ Penalizes triage/routing agents** that transfer instead of "solving" the problem — unsuitable for routing agents. |
+| `conciseness` | 1-5 | **⚠️ BROKEN** — Returns score=0 with empty `metricExplainability` on most tests. Platform bug. |
+| `instruction_following` | 0-1 | Whether the agent follows its instructions. **⚠️ Labels "FAILURE" even at score=1** when explanation says "follows perfectly" — threshold mismatch. |
+| `output_latency_milliseconds` | Raw ms | Reports raw latency in milliseconds. No pass/fail grading — useful for performance baselining only. |
+
+**Recommended Metrics:**
+- Use `coherence` + `output_latency_milliseconds` for baseline quality scoring
+- Skip `conciseness` (broken) and `completeness` (misleading for routing agents)
+- Use `instruction_following` with caution — check the score value, ignore the PASS/FAILURE label
+
+**Example:**
+```yaml
+testCases:
+  - utterance: "I need help with my doorbell camera"
+    expectedTopic: Field_Support_Routing
+    expectedOutcome: "Agent should offer troubleshooting assistance"
+    metrics:
+      - coherence
+      - instruction_following
+      - output_latency_milliseconds
+    # NOTE: Skip 'conciseness' — returns score=0 (Spring '26 bug)
+    # NOTE: Skip 'completeness' — penalizes routing/triage agents
+```
 
 ### Conversation History Fields
 
@@ -197,15 +306,38 @@ See [topic-name-resolution.md](../docs/topic-name-resolution.md) for the complet
 
 ## CLI Assertions
 
-The CLI evaluates three assertions per test case:
+The CLI evaluates assertions per test case based on which fields are specified:
 
-| Assertion | Field | Logic |
-|-----------|-------|-------|
+### Core Assertions (per test case fields)
+
+| Assertion | YAML Field | Logic |
+|-----------|------------|-------|
 | `topic_assertion` | `expectedTopic` | Exact match (with resolution for standard topics) |
 | `actions_assertion` | `expectedActions` | Superset — passes if actual contains all expected |
 | `output_validation` | `expectedOutcome` | LLM-as-judge semantic evaluation |
 
+### Custom Evaluations (via `customEvaluations`)
+
+| Assertion | Type | Logic |
+|-----------|------|-------|
+| `string_comparison` | `customEvaluations` | JSONPath string assertion (`equals`, `contains`, `startswith`, `endswith`) |
+| `numeric_comparison` | `customEvaluations` | JSONPath numeric assertion (`equals`, `greater_than`, `less_than`, etc.) |
+
+> **⚠️ Spring '26 Bug:** Custom evaluations cause server RETRY → HTTP 500. See [Known Issues](#known-issues).
+
+### Metrics (via `metrics`)
+
+| Metric | Source | Scoring |
+|--------|--------|---------|
+| `coherence` | `metrics` | LLM quality score (1-5) |
+| `completeness` | `metrics` | LLM completeness score (1-5) |
+| `conciseness` | `metrics` | **⚠️ BROKEN** — returns score=0 in Spring '26 |
+| `instruction_following` | `metrics` | LLM instruction score (0-1) |
+| `output_latency_milliseconds` | `metrics` | Raw latency in ms (no grading) |
+
 ### Result JSON Structure
+
+**Standard output** (without `--verbose`):
 
 ```json
 {
@@ -254,6 +386,26 @@ The CLI evaluates three assertions per test case:
 
 > Note: `output_validation` shows `FAILURE` when `expectedOutcome` is omitted — this is **harmless**.
 
+**Verbose output** (with `--verbose` flag):
+
+When `--verbose` is used, `generatedData` includes additional fields — notably `invokedActions` and `generatedResponse`:
+
+```json
+"generatedData": {
+  "topic": "p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa",
+  "actionsSequence": "['Field_Support_Updating_Messaging_Session_179c7c824b693d7']",
+  "generatedResponse": "Looks like you're wanting assistance...",
+  "invokedActions": "[[{\"function\":{\"name\":\"Field_Support_Updating_Messaging_Session_179c7c824b693d7\",\"input\":{\"deviceType\":\"Unknown\",\"recordId\":\"0Mwbb000007MGoTCAW\",\"supportPath\":\"Field Support\"},\"output\":{\"caseId\":null}},\"executionLatency\":3553}]]",
+  "outcome": "Looks like you're wanting assistance...",
+  "sessionId": "019c435a-be34-7ed5-bb1e-081a6e3be446"
+}
+```
+
+> **Important:** `invokedActions` is a **stringified JSON** — the value is `"[[{...}]]"` (a string), not a parsed array. Parse it with `JSON.parse()` or `jq 'fromjson'` before traversing.
+>
+> **Use `--verbose` output to build JSONPath expressions** for custom evaluations. The path structure is:
+> `$.generatedData.invokedActions[0][0].function.input.[fieldName]`
+
 ---
 
 ## Test Spec Templates
@@ -262,7 +414,9 @@ The CLI evaluates three assertions per test case:
 |----------|---------|----------------|
 | `standard-test-spec.yaml` | Reference format with all field types | **Yes** |
 | `basic-test-spec.yaml` | Quick start (5 tests) | **Yes** |
-| `comprehensive-test-spec.yaml` | Full coverage (20+ tests) | **Yes** |
+| `comprehensive-test-spec.yaml` | Full coverage (20+ tests) with context vars, metrics, custom evals | **Yes** |
+| `context-vars-test-spec.yaml` | Context variable patterns (RoutableId, EndUserId) | **Yes** |
+| `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | **Yes** (bug blocks results) |
 | `escalation-tests.yaml` | Escalation scenarios | **No** — Phase A (API) only |
 | `guardrail-tests.yaml` | Guardrail scenarios | **No** — Phase A (API) only |
 | `multi-turn-*.yaml` | Multi-turn API scenarios | **No** — Phase A (API) only |
@@ -311,9 +465,54 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 | Empty `expectedActions: []` | Means "not testing" — passes even when actions are invoked |
 | Missing `expectedOutcome` | `output_validation` reports ERROR — this is harmless |
 | `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
-| No MessagingSession context | CLI tests have no session — flows needing `recordId` error at runtime |
+| No MessagingSession context | CLI tests have no session — flows needing `recordId` error at runtime. Use `contextVariables` with `RoutableId` to inject a real session ID. |
 | Promoted topic names | Must use full runtime `developerName` with hash suffix |
-| YAML→XML field mapping | `expectedTopic` → `topic_sequence_match`, `expectedActions` → `action_sequence_match` |
+| contextVariables `name` has no prefix | Use `RoutableId` NOT `$Context.RoutableId` — the framework adds the prefix |
+| customEvaluations → RETRY bug | **⚠️ Spring '26:** Server returns RETRY status → REST API 500 error. See [Known Issues](#known-issues). |
+| `conciseness` metric broken | Returns score=0 with empty explanation on most tests — platform bug |
+| `instruction_following` threshold | Labels FAILURE even at score=1 with "follows perfectly" explanation — threshold mismatch |
+| `completeness` unsuitable for routing | Penalizes triage agents that transfer instead of "solving" the user's problem |
+
+---
+
+## Known Issues
+
+### CRITICAL: Custom Evaluations RETRY Bug (Spring '26)
+
+**Status**: 🔴 PLATFORM BUG — Blocks all `string_comparison` / `numeric_comparison` evaluations with JSONPath
+
+**Error**: `INTERNAL_SERVER_ERROR: The specified enum type has no constant with the specified name: RETRY`
+
+**Scope**:
+- Server returns "RETRY" status for test cases with custom evaluations using `isReference: true`
+- Results API endpoint crashes with HTTP 500 when fetching results
+- Both filter expressions `[?(@.field == 'value')]` AND direct indexing `[0][0]` trigger the bug
+- Tests WITHOUT custom evaluations on the same run complete normally
+
+**Confirmed**: Direct `curl` to REST endpoint returns same 500 — NOT a CLI parsing issue
+
+**Workaround**:
+1. Use Testing Center UI (Setup → Agent Testing) — may display results
+2. Skip custom evaluations until platform patch
+3. Use `expectedOutcome` (LLM-as-judge) for response validation instead
+
+**Tracking**: Discovered 2026-02-09 on DevInt sandbox (Spring '26). TODO: Retest after platform patch.
+
+### MEDIUM: `conciseness` Metric Returns Score=0
+
+**Status**: 🟡 Platform bug — metric evaluation appears non-functional
+
+**Issue**: The `conciseness` metric consistently returns `score: 0` with an empty `metricExplainability` field across all test cases.
+
+**Workaround**: Skip `conciseness` in metrics lists until platform patch.
+
+### LOW: `instruction_following` FAILURE at Score=1
+
+**Status**: 🟡 Threshold mismatch — score and label disagree
+
+**Issue**: The `instruction_following` metric labels results as "FAILURE" even when `score: 1` and the explanation text says the agent "follows instructions perfectly." This appears to be a pass/fail threshold configuration error.
+
+**Workaround**: Use the numeric `score` value (0 or 1) for evaluation. Ignore the PASS/FAILURE label.
 
 ---
 

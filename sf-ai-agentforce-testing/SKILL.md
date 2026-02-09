@@ -971,6 +971,101 @@ See [topic-name-resolution.md](docs/topic-name-resolution.md) for the complete g
 | Missing `expectedOutcome` | `output_validation` reports ERROR — harmless |
 | No MessagingSession context | Flows needing `recordId` error (agent handles gracefully) |
 | `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
+| contextVariables `name` prefix | Use `RoutableId` NOT `$Context.RoutableId` — framework adds prefix |
+| customEvaluations RETRY bug | **⚠️ Spring '26:** Server returns RETRY → REST API 500. See [Known Issues](#critical-custom-evaluations-retry-bug-spring-26). |
+| `conciseness` metric broken | Returns score=0, empty explanation — platform bug |
+| `instruction_following` threshold | Labels FAILURE even at score=1 — use score value, ignore label |
+
+### B1.7: Context Variables
+
+Context variables inject session-level data (record IDs, user info) into CLI test cases. Without them, action flows receive the topic's internal name as `recordId`. With them, they receive a real record ID.
+
+**When to use:** Any test case where action flows need real record IDs (e.g., updating a MessagingSession, creating a Case).
+
+**YAML syntax:**
+```yaml
+contextVariables:
+  - name: RoutableId            # Bare name — NOT $Context.RoutableId
+    value: "0Mwbb000007MGoTCAW"
+  - name: CaseId
+    value: "500XX0000000001"
+```
+
+**Key rules:**
+- `name` uses **bare variable name** (e.g., `RoutableId`), NOT `$Context.RoutableId` — the CLI adds the prefix
+- Maps to `<contextVariable><variableName>` / `<variableValue>` in XML metadata
+
+**Discovery — find valid IDs:**
+```bash
+sf data query --query "SELECT Id FROM MessagingSession WHERE Status='Active' LIMIT 1" --target-org [alias]
+sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --target-org [alias]
+```
+
+**Verified effect (IRIS testing, 2026-02-09):**
+- Without `RoutableId`: action receives `recordId: "p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa"` (topic name)
+- With `RoutableId`: action receives `recordId: "0Mwbb000007MGoTCAW"` (real MessagingSession ID)
+
+> **Note:** Context variables do NOT unlock authentication-gated topics. Injecting `RoutableId` + `CaseId` does not satisfy `User_Authentication` flows.
+
+See [context-vars-test-spec.yaml](templates/context-vars-test-spec.yaml) for a dedicated template.
+
+### B1.8: Metrics
+
+Metrics add platform quality scoring to test cases. Specify as a flat list of metric names in the YAML.
+
+**YAML syntax:**
+```yaml
+metrics:
+  - coherence
+  - instruction_following
+  - output_latency_milliseconds
+```
+
+**Available metrics (observed behavior from IRIS testing, 2026-02-09):**
+
+| Metric | Score Range | Status | Notes |
+|--------|-------------|--------|-------|
+| `coherence` | 1-5 | ✅ Works | Scores 4-5 for clear responses. Recommended. |
+| `completeness` | 1-5 | ⚠️ Misleading | Penalizes triage/routing agents for "not solving" — skip for routing agents. |
+| `conciseness` | 1-5 | 🔴 Broken | Returns score=0, empty explanation. Platform bug. |
+| `instruction_following` | 0-1 | ⚠️ Threshold bug | Labels "FAILURE" at score=1 when explanation says "follows perfectly." |
+| `output_latency_milliseconds` | Raw ms | ✅ Works | No pass/fail — useful for performance baselining. |
+
+**Recommendation:** Use `coherence` + `output_latency_milliseconds` for baseline quality. Skip `conciseness` (broken) and `completeness` (misleading for routing agents).
+
+### B1.9: Custom Evaluations (⚠️ Spring '26 Bug)
+
+Custom evaluations allow JSONPath-based assertions on action inputs and outputs — e.g., "verify the action received `supportPath = 'Field Support'`."
+
+**YAML syntax:**
+```yaml
+customEvaluations:
+  - label: "supportPath is Field Support"
+    name: string_comparison
+    parameters:
+      - name: operator
+        value: equals
+        isReference: false
+      - name: actual
+        value: "$.generatedData.invokedActions[0][0].function.input.supportPath"
+        isReference: true       # JSONPath resolved against generatedData
+      - name: expected
+        value: "Field Support"
+        isReference: false
+```
+
+**Evaluation types:**
+- `string_comparison`: `equals`, `contains`, `startswith`, `endswith`
+- `numeric_comparison`: `equals`, `greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal`
+
+**Building JSONPath expressions:**
+1. Run tests with `--verbose` to see `generatedData.invokedActions`
+2. Parse the stringified JSON (it's `"[[{...}]]"`, not a parsed array)
+3. Common paths: `$.generatedData.invokedActions[0][0].function.input.[field]`
+
+> **⚠️ BLOCKED — Spring '26 Platform Bug:** Custom evaluations with `isReference: true` cause the server to return "RETRY" status. The results API crashes with `INTERNAL_SERVER_ERROR`. This is server-side (confirmed via direct `curl`). **Workaround:** Use `expectedOutcome` (LLM-as-judge) or the Testing Center UI until patched.
+
+See [custom-eval-test-spec.yaml](templates/custom-eval-test-spec.yaml) for a dedicated template.
 
 ### B2: Test Execution
 
@@ -1217,7 +1312,9 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | Template | Purpose | Location |
 |----------|---------|----------|
 | `basic-test-spec.yaml` | Quick start (3-5 tests) | `templates/` |
-| `comprehensive-test-spec.yaml` | Full coverage (20+ tests) | `templates/` |
+| `comprehensive-test-spec.yaml` | Full coverage (20+ tests) with context vars, metrics, custom evals | `templates/` |
+| `context-vars-test-spec.yaml` | Context variable patterns (RoutableId, EndUserId, CaseId) | `templates/` |
+| `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | `templates/` |
 | `guardrail-tests.yaml` | Security/safety scenarios | `templates/` |
 | `escalation-tests.yaml` | Human handoff scenarios | `templates/` |
 | `standard-test-spec.yaml` | Reference format | `templates/` |
@@ -1422,7 +1519,7 @@ sf agent test results --job-id [JOB_ID] --verbose --result-format json --target-
 
 ## 🐛 Known Issues & CLI Bugs
 
-> **Last Updated**: 2026-02-02 | **Tested With**: sf CLI v2.118.16+
+> **Last Updated**: 2026-02-09 | **Tested With**: sf CLI v2.118.16+
 
 ### RESOLVED: `sf agent test create` MasterLabel Error
 
@@ -1456,11 +1553,14 @@ subjectName: My_Agent
 ### MEDIUM: YAML vs XML Format Discrepancy
 
 **Key Mappings**:
-| YAML Field | XML Element |
-|------------|-------------|
-| `expectedTopic` | `topic_sequence_match` |
-| `expectedActions` | `action_sequence_match` |
-| `expectedOutcome` | `bot_response_rating` |
+| YAML Field | XML Element / Assertion Type |
+|------------|------------------------------|
+| `expectedTopic` | `topic_assertion` |
+| `expectedActions` | `actions_assertion` |
+| `expectedOutcome` | `output_validation` |
+| `contextVariables` | `contextVariable` (`variableName` / `variableValue`) |
+| `customEvaluations` | `string_comparison` / `numeric_comparison` (`parameter`) |
+| `metrics` | `expectation` (name only, no expectedValue) |
 
 ### LOW: BotDefinition Not Always in Tooling API
 
@@ -1473,6 +1573,43 @@ subjectName: My_Agent
 ### LOW: `--use-most-recent` Not Implemented
 
 **Status**: Flag documented but NOT functional. Always use `--job-id` explicitly.
+
+### CRITICAL: Custom Evaluations RETRY Bug (Spring '26)
+
+**Status**: 🔴 PLATFORM BUG — Blocks all `string_comparison` / `numeric_comparison` evaluations with JSONPath
+
+**Error**: `INTERNAL_SERVER_ERROR: The specified enum type has no constant with the specified name: RETRY`
+
+**Scope**:
+- Server returns "RETRY" status for test cases with custom evaluations using `isReference: true`
+- Results API endpoint crashes with HTTP 500 when fetching results
+- Both filter expressions `[?(@.field == 'value')]` AND direct indexing `[0][0]` trigger the bug
+- Tests WITHOUT custom evaluations on the same run complete normally
+
+**Confirmed**: Direct `curl` to REST endpoint returns same 500 — NOT a CLI parsing issue
+
+**Workaround**:
+1. Use Testing Center UI (Setup → Agent Testing) — may display results
+2. Skip custom evaluations until platform patch
+3. Use `expectedOutcome` (LLM-as-judge) for response validation instead
+
+**Tracking**: Discovered 2026-02-09 on DevInt sandbox (Spring '26). TODO: Retest after platform patch.
+
+### MEDIUM: `conciseness` Metric Returns Score=0
+
+**Status**: 🟡 Platform bug — metric evaluation appears non-functional
+
+**Issue**: The `conciseness` metric consistently returns `score: 0` with an empty `metricExplainability` field across all test cases tested on DevInt (Spring '26).
+
+**Workaround**: Skip `conciseness` in metrics lists until platform patch.
+
+### LOW: `instruction_following` FAILURE at Score=1
+
+**Status**: 🟡 Threshold mismatch — score and label disagree
+
+**Issue**: The `instruction_following` metric labels results as "FAILURE" even when `score: 1` and the explanation text says the agent "follows instructions perfectly." This appears to be a pass/fail threshold configuration error on the platform side.
+
+**Workaround**: Use the numeric `score` value (0 or 1) for evaluation. Ignore the PASS/FAILURE label.
 
 ---
 

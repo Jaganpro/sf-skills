@@ -180,6 +180,39 @@ sf agent test run --api-name MyAgentTest --wait 15 --result-format json --output
 sf agent test run --api-name MyAgentTest --wait 10 --verbose --target-org dev
 ```
 
+### Verbose Output (`--verbose`)
+
+The `--verbose` flag adds detailed `generatedData` to test results, including action invocations with inputs/outputs, raw agent response text, and test session IDs.
+
+**Additional fields in `generatedData` with `--verbose`:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `invokedActions` | stringified JSON | All action invocations per turn — inputs, outputs, latency |
+| `generatedResponse` | string | Raw agent response text (pre-formatting) |
+| `sessionId` | string | Test session UUID |
+
+**Example `generatedData` with `--verbose`:**
+
+```json
+"generatedData": {
+  "topic": "p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa",
+  "actionsSequence": "['Field_Support_Updating_Messaging_Session_179c7c824b693d7']",
+  "generatedResponse": "Looks like you're wanting assistance...",
+  "invokedActions": "[[{\"function\":{\"name\":\"Field_Support_Updating_Messaging_Session_179c7c824b693d7\",\"input\":{\"deviceType\":\"Unknown\",\"recordId\":\"0Mwbb000007MGoTCAW\",\"supportPath\":\"Field Support\"},\"output\":{\"caseId\":null}},\"executionLatency\":3553}]]",
+  "outcome": "Looks like you're wanting assistance...",
+  "sessionId": "019c435a-be34-7ed5-bb1e-081a6e3be446"
+}
+```
+
+> **Important:** `invokedActions` is a **stringified JSON** — the value is `"[[{...}]]"` (a string), NOT a parsed array. Parse it with `JSON.parse()` or `jq 'fromjson'` before traversing.
+
+**Using `--verbose` to build JSONPath for custom evaluations:**
+
+1. Run: `sf agent test run --api-name Test --wait 10 --verbose --result-format json --json --target-org dev`
+2. Extract action data: `jq '.result.testCases[0].generatedData.invokedActions | fromjson'`
+3. Build JSONPath: `$.generatedData.invokedActions[0][0].function.input.[fieldName]`
+
 **Async Behavior:**
 
 Without `--wait`, the command:
@@ -264,6 +297,142 @@ sf agent test resume --job-id <id> --target-org <alias> [--wait <minutes>]
 # Resume specific job
 sf agent test resume --job-id 0Ah7X0000000001 --wait 5 --target-org dev
 ```
+
+---
+
+## Context Variables
+
+Context variables inject session-level data (record IDs, user info) into CLI test cases, enabling action flows to receive real record IDs instead of the topic's internal name.
+
+### YAML Syntax
+
+```yaml
+testCases:
+  - utterance: "I need help with my device"
+    expectedTopic: Field_Support_Routing
+    expectedActions:
+      - Field_Support_Updating_Messaging_Session_179c7c824b693d7
+    contextVariables:
+      - name: RoutableId            # NOT $Context.RoutableId — bare name only
+        value: "0Mwbb000007MGoTCAW"
+      - name: CaseId
+        value: "500XX0000000001"
+```
+
+**Key Rules:**
+- `name` uses the **bare variable name** (e.g., `RoutableId`), NOT `$Context.RoutableId`
+- The CLI framework adds the `$Context.` prefix automatically during XML generation
+- Maps to `<contextVariable><variableName>` / `<variableValue>` in metadata XML
+
+**Common Variables:**
+
+| Variable | Purpose | Discovery Query |
+|----------|---------|-----------------|
+| `RoutableId` | MessagingSession ID for action flows | `SELECT Id FROM MessagingSession WHERE Status='Active' LIMIT 1` |
+| `CaseId` | Case record ID | `SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1` |
+| `EndUserId` | End user contact/person ID | `SELECT Id FROM Contact LIMIT 1` |
+| `ContactId` | Contact record ID | `SELECT Id FROM Contact LIMIT 1` |
+
+**Effect of `RoutableId`:**
+- **Without RoutableId:** Action flows receive the topic's internal name (e.g., `p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa`) as `recordId`
+- **With RoutableId:** Action flows receive a real MessagingSession ID (e.g., `0Mwbb000007MGoTCAW`) as `recordId`
+
+> **Note:** Context variables do NOT unlock authentication-gated topics. Injecting `RoutableId` + `CaseId` does not satisfy `User_Authentication` flows — the agent still routes based on available data.
+
+---
+
+## Custom Evaluations
+
+Custom evaluations allow JSONPath-based assertions on action inputs and outputs, enabling precise validation of what data an action received or returned.
+
+> **⚠️ SPRING '26 PLATFORM BUG:** Custom evaluations with `isReference: true` (JSONPath) are currently **BLOCKED** by a server-side bug. See [Known Issues](#critical-custom-evaluations-retry-bug-spring-26) below.
+
+### YAML Syntax
+
+```yaml
+testCases:
+  - utterance: "My doorbell camera isn't working"
+    expectedTopic: p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa
+    expectedActions:
+      - Field_Support_Updating_Messaging_Session_179c7c824b693d7
+    contextVariables:
+      - name: RoutableId
+        value: "0Mwbb000007MGoTCAW"
+    customEvaluations:
+      - label: "supportPath is Field Support"
+        name: string_comparison
+        parameters:
+          - name: operator
+            value: equals
+            isReference: false
+          - name: actual
+            value: "$.generatedData.invokedActions[0][0].function.input.supportPath"
+            isReference: true       # JSONPath resolved against generatedData
+          - name: expected
+            value: "Field Support"
+            isReference: false
+```
+
+### Evaluation Types
+
+**`string_comparison`** operators: `equals`, `contains`, `startswith`, `endswith`
+
+**`numeric_comparison`** operators: `equals`, `greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal`
+
+### JSONPath Patterns
+
+Common JSONPath expressions for `invokedActions` (use `--verbose` to discover structure):
+
+| Path | What It Returns |
+|------|-----------------|
+| `$.generatedData.invokedActions[0][0].function.name` | Action name |
+| `$.generatedData.invokedActions[0][0].function.input.[field]` | Action input field value |
+| `$.generatedData.invokedActions[0][0].function.output.[field]` | Action output field value |
+| `$.generatedData.invokedActions[0][0].executionLatency` | Action execution latency (ms) |
+
+### Workflow
+
+1. **Run with `--verbose`** to see `generatedData.invokedActions` structure
+2. **Parse the stringified JSON** to identify field names and values
+3. **Build JSONPath expressions** targeting specific input/output fields
+4. **Add `customEvaluations`** to your YAML test spec
+5. **Deploy and run** — ⚠️ results may only be viewable in Testing Center UI due to Spring '26 bug
+
+---
+
+## Metrics
+
+Metrics add platform quality scoring to test cases. They evaluate the agent's response quality using LLM-based grading or raw performance measurements.
+
+### YAML Syntax
+
+```yaml
+testCases:
+  - utterance: "I need help troubleshooting my thermostat"
+    expectedTopic: Field_Support_Routing
+    expectedOutcome: "Agent should offer troubleshooting assistance"
+    metrics:
+      - coherence
+      - instruction_following
+      - output_latency_milliseconds
+    # Skip: conciseness (broken), completeness (misleading for routing agents)
+```
+
+### Available Metrics
+
+| Metric | Score Range | Status | Description |
+|--------|-------------|--------|-------------|
+| `coherence` | 1-5 | ✅ Works | Response clarity, grammar, and logical flow. Typically scores 4-5 for clear responses. |
+| `completeness` | 1-5 | ⚠️ Misleading | How fully the response addresses the query. **Penalizes triage/routing agents** for transferring instead of "solving." |
+| `conciseness` | 1-5 | 🔴 Broken | **Returns score=0** with empty `metricExplainability` on most tests. Platform bug. |
+| `instruction_following` | 0-1 | ⚠️ Threshold bug | Whether agent follows instructions. **Labels "FAILURE" even at score=1** — check score value, ignore label. |
+| `output_latency_milliseconds` | Raw ms | ✅ Works | Raw response latency. No pass/fail grading — useful for performance baselining. |
+
+### Recommendations
+
+- **Use:** `coherence` + `output_latency_milliseconds` for baseline quality scoring
+- **Skip:** `conciseness` (broken) and `completeness` (misleading for routing agents)
+- **Caution:** `instruction_following` — rely on the numeric score, not the PASS/FAILURE label
 
 ---
 
@@ -542,6 +711,8 @@ cat ./debug/apex-debug.log | grep ERROR
 | **Topic assertion fails** | Expected topic doesn't match actual | Standard copilots use `MigrationDefaultTopic` - update test expectations |
 | **"No matching records"** | Test data doesn't exist | Verify utterances reference actual org data |
 | **Test exists confirmation hangs** | Interactive prompt in script | Use `echo "y" \| sf agent test create...` |
+| **"RETRY" / "INTERNAL_SERVER_ERROR"** | Custom eval platform bug (Spring '26) | Skip custom evaluations or use Testing Center UI. See [Known Issues](#critical-custom-evaluations-retry-bug-spring-26) |
+| **Metric score=0 on conciseness** | `conciseness` metric broken | Skip `conciseness` metric until platform patch |
 
 ---
 
@@ -695,6 +866,43 @@ These fields are NOT part of the CLI YAML schema and will be silently ignored or
 - `metadata.name`, `metadata.agent` — use top-level `name:` and `subjectName:` instead
 - `settings.timeout`, `settings.retryCount` — not recognized
 - `category`, `description`, `expectedBehavior`, `expectedResponse` — not recognized by CLI
+
+---
+
+## Known Issues
+
+### CRITICAL: Custom Evaluations RETRY Bug (Spring '26)
+
+**Status**: 🔴 PLATFORM BUG — Blocks all `string_comparison` / `numeric_comparison` evaluations with JSONPath
+
+**Error**: `INTERNAL_SERVER_ERROR: The specified enum type has no constant with the specified name: RETRY`
+
+**Scope**:
+- Server returns "RETRY" status for test cases with custom evaluations using `isReference: true`
+- Results API endpoint crashes with HTTP 500 when fetching results
+- Both filter expressions `[?(@.field == 'value')]` AND direct indexing `[0][0]` trigger the bug
+- Tests WITHOUT custom evaluations on the same run complete normally
+
+**Confirmed**: Direct `curl` to REST endpoint returns same 500 — NOT a CLI parsing issue
+
+**Workaround**:
+1. Use Testing Center UI (Setup → Agent Testing) — may display results
+2. Skip custom evaluations until platform patch
+3. Use `expectedOutcome` (LLM-as-judge) for response validation instead
+
+**Tracking**: Discovered 2026-02-09 on DevInt sandbox (Spring '26). TODO: Retest after platform patch.
+
+### MEDIUM: `conciseness` Metric Returns Score=0
+
+**Status**: 🟡 Platform bug — metric evaluation appears non-functional
+
+**Workaround**: Skip `conciseness` in metrics lists until platform patch.
+
+### LOW: `instruction_following` FAILURE at Score=1
+
+**Status**: 🟡 Threshold mismatch — score and label disagree
+
+**Workaround**: Use the numeric `score` value (0 or 1) for evaluation. Ignore the PASS/FAILURE label.
 
 ---
 
