@@ -1,100 +1,82 @@
 # Standard Agent Test Specification Template
-# Compatible with sf agent test create CLI command
+# Compatible with: sf agent test create --spec <file> --api-name <name>
 #
 # Usage:
-#   1. Replace <Agent_Name> with your agent's API name
-#   2. Replace topic names and actions with your agent's values
-#   3. Create test: sf agent test create --spec standard-test-spec.yaml --api-name <Test_Name> --target-org <alias>
-#   4. Run test: sf agent test run --api-name <Test_Name> --wait 10 --result-format json --target-org <alias>
+#   1. Replace <placeholders> with actual values
+#   2. Create: sf agent test create --spec this-file.yaml --api-name <Test_Name> --target-org <alias>
+#   3. Run:    sf agent test run --api-name <Test_Name> --wait 10 --result-format json --target-org <alias>
 #
-# Generate automatically:
-#   python3 generate-test-spec.py --agent-file <Agent.agent> --output spec.yaml
+# IMPORTANT: This YAML is parsed by @salesforce/agents — NOT a generic AiEvaluationDefinition format.
+# Only use the fields documented below.
 
-# Required: Type of subject being tested (must be AGENT)
+# Required: Display name for the test (MasterLabel)
+name: "<Agent_Name> Standard Tests"
+
+# Required: Must be AGENT
 subjectType: AGENT
 
-# Required: API name of the agent to test
+# Required: Agent BotDefinition DeveloperName (API name)
 subjectName: <Agent_Name>
 
-# Test cases - each tests a specific utterance
 testCases:
-  # ═══════════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════════
   # TOPIC ROUTING TESTS
-  # Verify that user messages route to the correct topic
-  # ═══════════════════════════════════════════════════════════════════════
+  # Verify utterances route to the correct topic
+  # ═══════════════════════════════════════════════════════════════════
 
-  # FAQ Topic - Menu question
-  - utterance: "What's on your menu?"
-    expectation:
-      topic: coffee_faq
-      actionSequence: []
+  - utterance: "User message that should trigger topic 1"
+    expectedTopic: <topic_name>
 
-  # FAQ Topic - Price question
-  - utterance: "How much is a latte?"
-    expectation:
-      topic: coffee_faq
-      actionSequence: []
+  - utterance: "Alternative phrasing for topic 1"
+    expectedTopic: <topic_name>
 
-  # FAQ Topic - Hours question
-  - utterance: "When do you open on Saturday?"
-    expectation:
-      topic: coffee_faq
-      actionSequence: []
+  - utterance: "User message that should trigger topic 2"
+    expectedTopic: <another_topic>
 
-  # ═══════════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════════
   # ACTION INVOCATION TESTS
-  # Verify that actions are invoked when expected
-  # ═══════════════════════════════════════════════════════════════════════
+  # Verify actions are invoked (flat list of action name strings)
+  # ═══════════════════════════════════════════════════════════════════
 
-  # Book Search - Title search
-  - utterance: "Can you search for Harry Potter?"
-    expectation:
-      topic: book_search
-      actionSequence:
-        - search_book_catalog
+  - utterance: "Message that should trigger an action"
+    expectedTopic: <topic_name>
+    expectedActions:
+      - <action_name>
 
-  # Book Search - Author search
-  - utterance: "Find books by Stephen King"
-    expectation:
-      topic: book_search
-      actionSequence:
-        - search_book_catalog
+  # ═══════════════════════════════════════════════════════════════════
+  # OUTCOME VALIDATION TESTS
+  # Verify agent response meets expectations
+  # ═══════════════════════════════════════════════════════════════════
 
-  # ═══════════════════════════════════════════════════════════════════════
-  # EDGE CASE TESTS
-  # Verify handling of off-topic and edge case requests
-  # ═══════════════════════════════════════════════════════════════════════
+  - utterance: "Message with expected response"
+    expectedTopic: <topic_name>
+    expectedOutcome: "Agent should confirm the action and provide details"
 
-  # Off-topic - Weather (should stay in router)
-  - utterance: "What's the weather today?"
-    expectation:
-      topic: topic_selector
-      actionSequence: []
+  # ═══════════════════════════════════════════════════════════════════
+  # ESCALATION TESTS
+  # ═══════════════════════════════════════════════════════════════════
 
-  # Off-topic - Joke (should stay in router)
-  - utterance: "Tell me a joke"
-    expectation:
-      topic: topic_selector
-      actionSequence: []
+  - utterance: "I want to talk to a real person"
+    expectedTopic: Escalation
 
-# ═══════════════════════════════════════════════════════════════════════════
-# NOTES:
+# ═══════════════════════════════════════════════════════════════════════
+# NOTES — TOPIC NAME RESOLUTION
 #
-# Test Expectations:
-#   - topic: The topic the agent should route to
-#   - actionSequence: List of action names that should be invoked (in order)
-#     - Use [] for tests where no actions should be invoked
+# The expectedTopic value depends on the topic type:
 #
-# Common Test Categories:
-#   1. Topic Routing: Test that utterances route to correct topics
-#   2. Action Invocation: Test that actions are called when expected
-#   3. Edge Cases: Off-topic handling, graceful declines
-#   4. Guardrails: Harmful request blocking (add specific tests as needed)
-#   5. Escalation: Human handoff triggers (add specific tests as needed)
+# Standard topics (Escalation, Off_Topic, etc.):
+#   Use localDeveloperName: "Escalation"
+#   The CLI framework resolves this to the full hash-suffixed name.
 #
-# Best Practices:
-#   - Include at least one test per topic
-#   - Include at least one test per action
-#   - Include off-topic tests to verify routing fallback
-#   - Use realistic user utterances (not technical language)
-# ═══════════════════════════════════════════════════════════════════════════
+# Promoted topics (created in Setup UI, prefixed with p_16j...):
+#   MUST use the full runtime developerName with hash suffix:
+#     "p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa"
+#   The localDeveloperName (without hash) does NOT resolve.
+#
+# To discover actual topic names:
+#   1. Run one test with a guess
+#   2. Check results JSON: .testCases[].generatedData.topic
+#   3. Update expectedTopic with the actual value
+#
+# See docs/topic-name-resolution.md for complete reference.
+# ═══════════════════════════════════════════════════════════════════════

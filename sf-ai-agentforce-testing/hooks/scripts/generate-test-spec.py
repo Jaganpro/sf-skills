@@ -257,10 +257,7 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
 
         test_case = {
             'utterance': utterance,
-            'expectation': {
-                'topic': topic.name,
-                'actionSequence': []
-            }
+            'expectedTopic': topic.name,
         }
         test_cases.append(test_case)
 
@@ -272,10 +269,8 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
 
                 test_case = {
                     'utterance': utterance,
-                    'expectation': {
-                        'topic': topic.name,
-                        'actionSequence': [action.name]
-                    }
+                    'expectedTopic': topic.name,
+                    'expectedActions': [action.name]
                 }
                 test_cases.append(test_case)
 
@@ -353,17 +348,11 @@ def generate_edge_case_tests(router_name: str) -> List[Dict]:
     return [
         {
             'utterance': "What's the weather today?",
-            'expectation': {
-                'topic': router_name,
-                'actionSequence': []
-            }
+            'expectedTopic': router_name,
         },
         {
             'utterance': "Tell me a joke",
-            'expectation': {
-                'topic': router_name,
-                'actionSequence': []
-            }
+            'expectedTopic': router_name,
         }
     ]
 
@@ -377,6 +366,7 @@ def generate_test_spec(structure: AgentStructure, output_path: str) -> str:
     test_cases = generate_test_cases(structure)
 
     spec = {
+        'name': f"{structure.agent_name} Tests",
         'subjectType': 'AGENT',
         'subjectName': structure.agent_name,
         'testCases': test_cases
@@ -402,6 +392,7 @@ def manual_yaml_output(spec: Dict) -> str:
     """Generate YAML output without pyyaml library."""
     lines = []
 
+    lines.append(f"name: \"{spec['name']}\"")
     lines.append(f"subjectType: {spec['subjectType']}")
     lines.append(f"subjectName: {spec['subjectName']}")
     lines.append("")
@@ -409,15 +400,12 @@ def manual_yaml_output(spec: Dict) -> str:
 
     for tc in spec['testCases']:
         lines.append(f"  - utterance: \"{tc['utterance']}\"")
-        lines.append("    expectation:")
-        lines.append(f"      topic: {tc['expectation']['topic']}")
-        actions = tc['expectation']['actionSequence']
+        lines.append(f"    expectedTopic: {tc['expectedTopic']}")
+        actions = tc.get('expectedActions', [])
         if actions:
-            lines.append("      actionSequence:")
+            lines.append("    expectedActions:")
             for action in actions:
-                lines.append(f"        - {action}")
-        else:
-            lines.append("      actionSequence: []")
+                lines.append(f"      - {action}")
         lines.append("")
 
     return "\n".join(lines)
@@ -452,8 +440,8 @@ def print_summary(structure: AgentStructure, test_cases: List[Dict]) -> None:
     print("-" * 65)
 
     # Group by category
-    topic_tests = [tc for tc in test_cases if not tc['expectation']['actionSequence']]
-    action_tests = [tc for tc in test_cases if tc['expectation']['actionSequence']]
+    topic_tests = [tc for tc in test_cases if not tc.get('expectedActions')]
+    action_tests = [tc for tc in test_cases if tc.get('expectedActions')]
 
     print(f"  Topic Routing Tests: {len(topic_tests)}")
     print(f"  Action Invocation Tests: {len(action_tests)}")
@@ -464,8 +452,8 @@ def print_summary(structure: AgentStructure, test_cases: List[Dict]) -> None:
     print("-" * 65)
     for i, tc in enumerate(test_cases, 1):
         utterance = tc['utterance'][:50] + "..." if len(tc['utterance']) > 50 else tc['utterance']
-        topic = tc['expectation']['topic']
-        actions = tc['expectation']['actionSequence']
+        topic = tc['expectedTopic']
+        actions = tc.get('expectedActions', [])
         action_str = f" -> {actions}" if actions else ""
         print(f"  {i}. \"{utterance}\"")
         print(f"     Expected: {topic}{action_str}")

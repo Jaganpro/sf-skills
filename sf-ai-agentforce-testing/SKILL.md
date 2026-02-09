@@ -887,6 +887,36 @@ TOTAL: 73/85 (86%) + Fix Loop pending
 
 ### B1: Test Spec Creation
 
+**⚠️ CRITICAL: YAML Schema**
+
+The CLI YAML spec uses a **FLAT structure** parsed by `@salesforce/agents` — NOT the fabricated `apiVersion`/`kind`/`metadata` format.
+See [test-spec-guide.md](docs/test-spec-guide.md) for the correct schema.
+
+Required top-level fields:
+- `name:` — Display name (MasterLabel). **Deploy FAILS without this.**
+- `subjectType: AGENT`
+- `subjectName:` — Agent BotDefinition DeveloperName
+
+Test case fields (flat, NOT nested):
+- `utterance:` — User message
+- `expectedTopic:` — NOT `expectation.topic`
+- `expectedActions:` — Flat list of strings, NOT objects with `name`/`invoked`/`outputs`
+- `expectedOutcome:` — Optional natural language description
+
+```yaml
+# ✅ Correct CLI YAML format
+name: "My Agent Tests"
+subjectType: AGENT
+subjectName: My_Agent
+
+testCases:
+  - utterance: "Where is my order?"
+    expectedTopic: order_lookup
+    expectedActions:
+      - get_order_status
+    expectedOutcome: "Agent should provide order status information"
+```
+
 **Option A: Interactive Generation** (no automation)
 ```bash
 # Interactive test spec generation
@@ -908,6 +938,39 @@ sf agent test create --spec ./tests/agent-spec.yaml --api-name MyAgentTest --tar
 ```
 
 See [Test Spec Reference](resources/test-spec-reference.md) for complete YAML format guide.
+
+### B1.5: Topic Name Resolution
+
+Topic name format in `expectedTopic` depends on the topic type:
+
+| Topic Type | YAML Value | Resolution |
+|------------|-----------|------------|
+| **Standard** (Escalation, Off_Topic) | `localDeveloperName` (e.g., `Escalation`) | Framework resolves automatically |
+| **Promoted** (p_16j... prefix) | Full runtime `developerName` with hash | Must be exact match |
+
+**Standard topics** like `Escalation` can use the short name — the CLI framework resolves to the hash-suffixed runtime name.
+
+**Promoted topics** (custom topics created in Setup UI) MUST use the full runtime `developerName` including hash suffix. The short `localDeveloperName` does NOT resolve.
+
+**Discovery workflow:**
+1. Write spec with best guesses for topic names
+2. Deploy and run: `sf agent test run --api-name X --wait 10 --result-format json --json`
+3. Extract actual names: `jq '.result.testCases[].generatedData.topic'`
+4. Update spec with actual runtime names
+5. Re-deploy with `--force-overwrite` and re-run
+
+See [topic-name-resolution.md](docs/topic-name-resolution.md) for the complete guide.
+
+### B1.6: Known CLI Gotchas
+
+| Gotcha | Detail |
+|--------|--------|
+| `name:` mandatory | Deploy fails: "Required fields are missing: [MasterLabel]" |
+| `expectedActions` is flat strings | `- action_name` NOT `- name: action_name, invoked: true` |
+| Empty `expectedActions: []` | Means "not testing" — PASS even when actions invoked |
+| Missing `expectedOutcome` | `output_validation` reports ERROR — harmless |
+| No MessagingSession context | Flows needing `recordId` error (agent handles gracefully) |
+| `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
 
 ### B2: Test Execution
 
@@ -1289,7 +1352,7 @@ CLAUDE CODE:
 
 | Problem | Symptom | Solution |
 |---------|---------|----------|
-| **`sf agent test create` fails** | "Required fields are missing: [MasterLabel]" | Use `sf agent generate test-spec` (interactive) or UI instead |
+| **`sf agent test create` fails** | "Required fields are missing: [MasterLabel]" | Add `name:` field to top of YAML spec (see Phase B1) |
 | Tests fail silently | No results returned | Agent not published - run `sf agent publish authoring-bundle` |
 | Topic not matched | Wrong topic selected | Add keywords to topic description |
 | Action not invoked | Action never called | Improve action description |
@@ -1361,15 +1424,22 @@ sf agent test results --job-id [JOB_ID] --verbose --result-format json --target-
 
 > **Last Updated**: 2026-02-02 | **Tested With**: sf CLI v2.118.16+
 
-### CRITICAL: `sf agent test create` MasterLabel Bug
+### RESOLVED: `sf agent test create` MasterLabel Error
 
-**Status**: 🔴 BLOCKING - Prevents YAML-based test creation
+**Status**: 🟢 RESOLVED — Add `name:` field to YAML spec
 
 **Error**: `Required fields are missing: [MasterLabel]`
 
-**Root Cause**: CLI generates XML from YAML but omits the required `<name>` element.
+**Root Cause**: The YAML spec must include a `name:` field at the top level, which maps to `MasterLabel` in the `AiEvaluationDefinition` XML. Our templates previously omitted this field.
 
-**Workarounds**:
+**Fix**: Add `name:` to the top of your YAML spec:
+```yaml
+name: "My Agent Tests"    # ← This was the missing field
+subjectType: AGENT
+subjectName: My_Agent
+```
+
+**If you still encounter issues**:
 1. ✅ Use interactive `sf agent generate test-spec` wizard (interactive-only, no CLI flags)
 2. ✅ Create tests via Salesforce Testing Center UI
 3. ✅ Deploy XML metadata directly

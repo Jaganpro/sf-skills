@@ -575,22 +575,20 @@ python3 hooks/scripts/generate-test-spec.py \
 
 **Example Output:**
 ```yaml
+name: "Coffee_Shop_FAQ_Agent Tests"
 subjectType: AGENT
 subjectName: Coffee_Shop_FAQ_Agent
 
 testCases:
   # Auto-generated topic routing test
   - utterance: "What's on your menu?"
-    expectation:
-      topic: coffee_faq
-      actionSequence: []
+    expectedTopic: coffee_faq
 
   # Auto-generated action test
   - utterance: "Can you search for Harry Potter?"
-    expectation:
-      topic: book_search
-      actionSequence:
-        - search_book_catalog
+    expectedTopic: book_search
+    expectedActions:
+      - search_book_catalog
 ```
 
 #### 2. run-automated-tests.py

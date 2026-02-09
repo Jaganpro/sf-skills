@@ -390,32 +390,54 @@ Machine-parseable for CI/CD pipelines.
 sf agent test run --api-name Test --result-format json --target-org dev
 ```
 
-**JSON Structure:**
+**JSON Structure (actual format from `--result-format json --json`):**
 
 ```json
 {
-  "status": "Completed",
-  "summary": {
-    "passed": 18,
-    "failed": 2,
-    "total": 20
-  },
-  "testResults": [
-    {
-      "name": "route_to_order_lookup",
-      "status": "Passed",
-      "expectedTopic": "order_lookup",
-      "actualTopic": "order_lookup",
-      "expectedActions": ["get_order_status"],
-      "actualActions": ["get_order_status"]
-    }
-  ],
-  "metrics": {
-    "topicSelectionAccuracy": 95.0,
-    "actionInvocationRate": 90.0,
-    "duration": 45200
+  "result": {
+    "runId": "4KBbb...",
+    "testCases": [
+      {
+        "testNumber": 1,
+        "inputs": {
+          "utterance": "Where is my order?"
+        },
+        "generatedData": {
+          "topic": "p_16jPl000000GwEX_Order_Lookup_16j8eeef13560aa",
+          "actionsSequence": "['get_order_status']",
+          "outcome": "I can help you track your order...",
+          "sessionId": "uuid-string"
+        },
+        "testResults": [
+          {
+            "name": "topic_assertion",
+            "expectedValue": "order_lookup",
+            "actualValue": "p_16jPl000000GwEX_Order_Lookup_16j8eeef13560aa",
+            "result": "PASS",
+            "score": 1
+          },
+          {
+            "name": "actions_assertion",
+            "expectedValue": "['get_order_status']",
+            "actualValue": "['get_order_status', 'summarize_record']",
+            "result": "PASS",
+            "score": 1
+          },
+          {
+            "name": "output_validation",
+            "expectedValue": "",
+            "actualValue": "I can help you track your order...",
+            "result": "FAILURE",
+            "errorMessage": "Skip metric result due to missing expected input"
+          }
+        ]
+      }
+    ]
   }
 }
+```
+
+> **Note:** `output_validation` shows `FAILURE` when `expectedOutcome` is omitted — this is **harmless**. The `topic_assertion` and `actions_assertion` results are the primary pass/fail indicators.
 ```
 
 ### JUnit
@@ -561,6 +583,118 @@ sf data query --query "SELECT Name FROM Account LIMIT 5" --target-org dev
 |------------|--------------|
 | Custom Agent (you control) | Fix agent via sf-ai-agentforce |
 | Managed/Standard Agent | Fix test expectations in YAML |
+
+---
+
+## Topic Name Resolution in CLI Tests
+
+When writing `expectedTopic` in YAML specs, the format depends on the topic type:
+
+| Topic Type | YAML Value | Example |
+|------------|-----------|---------|
+| **Standard** (Escalation, Off_Topic, etc.) | `localDeveloperName` | `Escalation` |
+| **Promoted** (p_16j... prefix) | Full runtime `developerName` with hash | `p_16jPl000000GwEX_Topic_16j8eeef13560aa` |
+
+### Standard Topics
+
+Standard topics like `Escalation`, `Off_Topic`, and `Inappropriate_Content` can use their short `localDeveloperName`. The CLI framework resolves these to the full hash-suffixed runtime name automatically.
+
+```yaml
+# ✅ Works — framework resolves to Escalation_16j9d687a53f890
+- utterance: "I want to talk to a human"
+  expectedTopic: Escalation
+```
+
+### Promoted Topics
+
+Promoted topics (custom topics created in Setup UI) have an org-specific `p_16j...` prefix and a hash suffix. You MUST use the full runtime `developerName`:
+
+```yaml
+# ✅ Works — exact runtime developerName
+- utterance: "My doorbell camera is offline"
+  expectedTopic: p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa
+
+# ❌ FAILS — localDeveloperName doesn't resolve for promoted topics
+- utterance: "My doorbell camera is offline"
+  expectedTopic: Field_Support_Routing
+```
+
+### Discovery Workflow
+
+To discover actual runtime topic names:
+
+1. Run a test with best-guess topic names
+2. Get results: `sf agent test results --job-id <ID> --result-format json --json`
+3. Extract actual names: `jq '.result.testCases[].generatedData.topic'`
+4. Update YAML spec with actual runtime names
+5. Re-deploy with `--force-overwrite` and re-run
+
+See [topic-name-resolution.md](topic-name-resolution.md) for the complete guide.
+
+---
+
+## YAML Spec Gotchas
+
+### `name:` Field is MANDATORY
+
+The `name:` field (becomes MasterLabel in metadata) is **required**. Without it, deploy fails:
+
+```
+Error: Required fields are missing: [MasterLabel]
+```
+
+```yaml
+# ✅ Correct
+name: "My Agent Tests"
+subjectType: AGENT
+subjectName: My_Agent
+
+# ❌ Wrong — missing name: field
+subjectType: AGENT
+subjectName: My_Agent
+```
+
+### `expectedActions` is a Flat String List
+
+Action names are simple strings, NOT objects with `name`/`invoked`/`outputs`:
+
+```yaml
+# ✅ Correct — flat string list
+expectedActions:
+  - get_order_status
+  - create_support_case
+
+# ❌ Wrong — object format is NOT recognized
+expectedActions:
+  - name: get_order_status
+    invoked: true
+    outputs:
+      - field: out_Status
+        notNull: true
+```
+
+### Empty `expectedActions: []` Means "Not Testing"
+
+An empty list or omitted `expectedActions` means "I'm not testing action invocation for this test case" — it will PASS even if the agent invokes actions.
+
+### Missing `expectedOutcome` Causes Harmless ERROR
+
+Omitting `expectedOutcome` causes `output_validation` to report `ERROR` status with:
+> "Skip metric result due to missing expected input"
+
+This is **harmless** — `topic_assertion` and `actions_assertion` still run and report correctly.
+
+### CLI Tests Have No MessagingSession Context
+
+The CLI test framework runs without a MessagingSession. Flows that need `recordId` (e.g., from `$Context.RoutableId`) will error at runtime. The agent typically handles this gracefully by asking for the information instead.
+
+### Do NOT Add Fabricated Fields
+
+These fields are NOT part of the CLI YAML schema and will be silently ignored or cause errors:
+- `apiVersion`, `kind` — not recognized
+- `metadata.name`, `metadata.agent` — use top-level `name:` and `subjectName:` instead
+- `settings.timeout`, `settings.retryCount` — not recognized
+- `category`, `description`, `expectedBehavior`, `expectedResponse` — not recognized by CLI
 
 ---
 

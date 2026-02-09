@@ -1,3 +1,8 @@
+# ⚠️ PHASE A ONLY — Multi-Turn API Testing Template
+# This template is for use with multi_turn_test_runner.py (Agent Runtime API).
+# It is NOT compatible with `sf agent test create` (CLI Testing Center).
+# For CLI-compatible specs, see standard-test-spec.yaml or basic-test-spec.yaml.
+#
 # Escalation Tests Template
 # Human handoff and escalation path validation tests
 #
@@ -5,20 +10,7 @@
 # 1. Replace [Agent_Name] with your agent's API name
 # 2. Customize escalation triggers based on your agent's design
 # 3. Add business-specific escalation scenarios
-# 4. Run: sf agent test create --spec escalation-tests.yaml --target-org [alias]
-
-apiVersion: v1
-kind: AiEvaluationDefinition
-
-metadata:
-  name: [Agent_Name]_Escalation_Tests
-  agent: [Agent_Name]
-  description: "Human handoff and escalation path validation tests"
-
-settings:
-  timeout: 30000
-  retryCount: 2
-  outputFormat: json
+# 4. Run via multi_turn_test_runner.py or use as reference for scenario design
 
 testCases:
   # ═══════════════════════════════════════════════════════════════
