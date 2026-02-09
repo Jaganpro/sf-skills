@@ -37,6 +37,7 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 ### 🤖 AI & Automation
 
 - **[sf-ai-agentscript](sf-ai-agentscript/)** — Agent Script DSL, FSM patterns
+- **[sf-ai-agentforce-conversationdesign](sf-ai-agentforce-conversationdesign/)** — Persona docs, utterance libraries, guardrails
 - **[sf-ai-agentforce-observability](sf-ai-agentforce-observability/)** — Session tracing (Data Cloud)
 - **[sf-ai-agentforce-testing](sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops
 - **[sf-ai-agentforce](sf-ai-agentforce/)** — Agent Builder, PromptTemplate, Models API
@@ -47,6 +48,43 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 - **[sf-diagram-mermaid](sf-diagram-mermaid/)** — Mermaid diagrams & ERD
 - **[sf-diagram-nanobananapro](sf-diagram-nanobananapro/)** — Visual ERD, LWC mockups
 - **[skill-builder](skill-builder/)** — Skill creation wizard
+
+## 🤖 Agent Team
+
+Seven specialized Claude Code agents for Salesforce implementations, installed to `~/.claude/agents/`.
+
+### FDE Team (Agent-Focused)
+
+| Agent | Role | Mode | Key Skills |
+|-------|------|------|------------|
+| **fde-strategist** | Orchestrator — plans, researches, delegates | `plan` | sf-ai-agentforce, sf-diagram-mermaid |
+| **fde-engineer** | Agent config, metadata, Apex, Agent Scripts | `acceptEdits` | sf-ai-agentforce, sf-ai-agentscript |
+| **fde-experience-specialist** | Conversation design, persona, UX, LWC | `acceptEdits` | sf-ai-agentforce-conversationdesign, sf-lwc |
+
+### Cross-Cutting (Serve Both Teams)
+
+| Agent | Role | Mode | Key Skills |
+|-------|------|------|------------|
+| **fde-qa-engineer** | Testing (agent + platform), debug, observability | `acceptEdits` | sf-testing, sf-ai-agentforce-testing |
+| **fde-release-engineer** | Deployment, Connected Apps, CI/CD | `acceptEdits` | sf-deploy, sf-connected-apps |
+
+### PS Team (Platform Infrastructure)
+
+| Agent | Role | Mode | Key Skills |
+|-------|------|------|------------|
+| **ps-technical-architect** | Apex, integrations, data, LWC, performance | `acceptEdits` | sf-apex, sf-integration, sf-lwc + 5 more |
+| **ps-solution-architect** | Metadata, Flows, permissions, diagrams | `acceptEdits` | sf-metadata, sf-flow, sf-permissions + 2 more |
+
+### Hierarchy
+
+```
+fde-strategist (orchestrator — plans, researches, delegates)
+├── FDE: fde-engineer, fde-experience-specialist
+├── QA/Release: fde-qa-engineer, fde-release-engineer
+└── PS: ps-technical-architect, ps-solution-architect
+```
+
+The strategist spawns up to 4 concurrent workers via `Task()`. PS agents have `WebSearch` and `WebFetch` for self-directed Salesforce docs lookup.
 
 ## 🚀 Installation
 
@@ -62,7 +100,7 @@ That's it! The newbie-friendly installer will:
 - **Check your system** (macOS, Python version, terminal type)
 - **Install missing dependencies** (offers to install Homebrew, Python 3.12+ if needed)
 - **Detect optional tools** (Salesforce CLI, Java, Node.js)
-- **Install sf-skills** to `~/.claude/skills/` (18 skills + 16 hook scripts)
+- **Install sf-skills** to `~/.claude/` (20 skills + 7 agents + hook scripts)
 - **Configure Claude Code** automatically (updates `~/.claude/settings.json`)
 - **Show next steps** with a helpful checklist
 
@@ -88,11 +126,15 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 
 ```
 ~/.claude/
-├── skills/                    # 18 Salesforce skills (native Claude Code discovery)
+├── skills/                    # 20 Salesforce skills (native Claude Code discovery)
 │   ├── sf-apex/SKILL.md
 │   ├── sf-flow/SKILL.md
-│   └── ... (16 more)
-├── hooks/                     # 16 hook scripts
+│   └── ... (18 more)
+├── agents/                    # 7 FDE + PS agents
+│   ├── fde-strategist.md
+│   ├── fde-engineer.md
+│   └── ... (5 more)
+├── hooks/                     # Hook scripts
 │   ├── scripts/
 │   ├── skill-activation-prompt.py
 │   └── skills-registry.json
@@ -123,7 +165,8 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 
 ![Skill Architecture Diagram](https://github.com/user-attachments/assets/dc5ada83-6555-4b40-8b46-5dce5f8851ad)
 
-### 🚀 Deployment
+<details>
+<summary><b>🚀 Deployment Note</b></summary>
 
 **Use the sf-deploy skill for all Salesforce deployments:**
 
@@ -131,11 +174,13 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 Skill(skill="sf-deploy", args="Deploy to [org]")
 ```
 
+</details>
+
 ## 🔌 Plugin Features
 
-### 💡 Auto-Activation (NEW)
+### 💡 Auto-Activation
 
-Skills now **automatically suggest themselves** based on your prompts! No need to remember skill names.
+Skills **automatically suggest themselves** based on your prompts — no need to remember skill names. All 20 skills have auto-activation triggers.
 
 **How It Works:**
 ```
@@ -156,11 +201,6 @@ You can invoke the suggested skill or let Claude help directly
 | Keyword match | +2 per keyword | "apex", "trigger", "batch" |
 | Intent pattern | +3 | "create.*apex", "build.*flow" |
 | File pattern | +2 | Working on `*.cls` files |
-
-**Supported Triggers (all 16 skills):**
-- **High Priority**: sf-apex, sf-flow, sf-lwc, sf-ai-agentforce
-- **Medium Priority**: sf-metadata, sf-deploy, sf-testing, sf-soql, sf-data, sf-integration
-- **Low Priority**: sf-connected-apps, sf-debug, sf-diagram-mermaid, sf-diagram-nanobananapro, sf-ai-agentforce-testing, skill-builder
 
 **Configuration:** Auto-activation is powered by `shared/hooks/skills-registry.json` and `shared/hooks/skill-activation-prompt.py`.
 
@@ -188,14 +228,10 @@ Each skill includes validation hooks that run automatically on **Write** and **E
 | 📸 | sf-diagram-nanobananapro | Generated images | Prerequisites check |
 | 🛠️ | skill-builder | `SKILL.md` | YAML frontmatter validation |
 
-#### 🔀 Validator Dispatcher Architecture
+<details>
+<summary><b>Validator Dispatcher Architecture</b></summary>
 
-All PostToolUse validations are routed through a central dispatcher (`shared/hooks/scripts/validator-dispatcher.py`) that:
-
-1. Receives file path from Write/Edit hook context
-2. Matches file patterns to determine which validators to run
-3. Executes skill-specific validators in sequence
-4. Returns combined validation output
+All PostToolUse validations are routed through a central dispatcher (`shared/hooks/scripts/validator-dispatcher.py`) that receives file paths from Write/Edit hook context, matches file patterns to determine which validators to run, and returns combined validation output.
 
 **Routing Table:**
 
@@ -213,7 +249,10 @@ All PostToolUse validations are routed through a central dispatcher (`shared/hoo
 | `*.soql` | sf-soql | post-tool-validate.py |
 | `SKILL.md` | skill-builder | validate_skill.py |
 
-#### 🔬 Code Analyzer V5 Integration
+</details>
+
+<details>
+<summary><b>Code Analyzer V5 Integration</b></summary>
 
 Hooks integrate [Salesforce Code Analyzer V5](https://developer.salesforce.com/docs/platform/salesforce-code-analyzer) for OOTB linting alongside custom scoring:
 
@@ -234,22 +273,12 @@ Hooks integrate [Salesforce Code Analyzer V5](https://developer.salesforce.com/d
 
 **Graceful Degradation:** If dependencies are missing, hooks run custom validation only and show which engines were skipped.
 
-#### 🌐 Live SOQL Query Plan Analysis
+</details>
 
-Skills integrate with Salesforce's **REST API explain endpoint** to provide real-time query plan analysis:
+<details>
+<summary><b>Live SOQL Query Plan Analysis</b></summary>
 
-| Metric | Description | Threshold |
-|--------|-------------|-----------|
-| **relativeCost** | Query selectivity score | ≤1.0 = selective ✅, >1.0 = non-selective ⚠️ |
-| **leadingOperationType** | How Salesforce executes the query | Index, TableScan, Sharing |
-| **cardinality** | Estimated rows returned | vs. total records in object |
-| **notes[]** | WHY optimizations aren't being used | Index suggestions, filter issues |
-
-**How It Works:**
-1. When you write a `.soql`, `.cls`, or `.trigger` file, the hook extracts SOQL queries
-2. Calls `sf data query --plan` to invoke the Salesforce explain API
-3. Returns actual query execution plan from your connected org
-4. Provides optimization suggestions based on plan notes
+Skills integrate with Salesforce's **REST API explain endpoint** to provide real-time query plan analysis.
 
 **Sample Output:**
 ```
@@ -259,12 +288,18 @@ Skills integrate with Salesforce's **REST API explain endpoint** to provide real
       📝 Field Status__c is not indexed
 ```
 
-**Skills with Live Query Plan:**
-- **sf-soql** — `.soql` files (entire file analyzed)
-- **sf-apex** — `.cls`, `.trigger` files (extracts inline `[SELECT...]` and `Database.query()`)
-- **sf-data** — `.soql` files for data operations
+| Metric | Description | Threshold |
+|--------|-------------|-----------|
+| **relativeCost** | Query selectivity score | ≤1.0 = selective ✅, >1.0 = non-selective ⚠️ |
+| **leadingOperationType** | How Salesforce executes the query | Index, TableScan, Sharing |
+| **cardinality** | Estimated rows returned | vs. total records in object |
+| **notes[]** | WHY optimizations aren't being used | Index suggestions, filter issues |
+
+**Skills with Live Query Plan:** sf-soql (`.soql` files), sf-apex (`.cls`, `.trigger` — inline SOQL), sf-data (`.soql` for data operations).
 
 **Prerequisites:** Connected Salesforce org (`sf org login web`). Falls back to static analysis if no org connected.
+
+</details>
 
 #### 🔤 Language Server Protocol (LSP) Integration
 
@@ -283,42 +318,6 @@ Skills leverage official Salesforce LSP servers for real-time syntax validation 
 4. Repeat up to 3 attempts
 
 **Prerequisites:** See LSP table in Prerequisites section. LWC uses standalone npm package; Apex and Agent Script require VS Code extensions.
-
-**Weekly Environment Health Check:**
-
-The LSP engine includes automated environment monitoring via SessionStart hook:
-- Checks VS Code extension versions against Marketplace
-- Validates Java (11+) and Node.js (18+) versions
-- Checks Salesforce CLI (`@salesforce/cli`) for updates
-- Caches results for 7 days to avoid API spam
-- Silent when current, warns only when updates available
-
-```bash
-# Manual check
-./shared/lsp-engine/check_lsp_versions.sh --force
-```
-
-**Sample Output:**
-```
-🔍 Apex Validation: AccountService.cls
-════════════════════════════════════════════════════════════════════════════════
-📊 Score: 138/150 ⭐⭐⭐⭐ Very Good
-   (Custom: 145, CA deductions: -7)
-
-📋 Category Breakdown:
-   ✅ Security: 25/25
-   ✅ Bulkification: 25/25
-   ⚠️ Testing: 20/25 (-5)
-   ✅ Architecture: 20/20
-
-🔬 Code Analyzer: pmd, regex (2847ms)
-
-❗ Issues Found (3):
-   🟠 HIGH [CA:pmd] L30: Validate CRUD permission before DML
-   🟠 HIGH [CA:pmd] L45: Avoid empty catch blocks
-   🔵 INFO [CA:regex] L12: Trailing whitespace
-════════════════════════════════════════════════════════════════════════════════
-```
 
 Hooks provide **advisory feedback** — they inform but don't block operations.
 
@@ -523,8 +522,9 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 |--|-------|-------------|--------|
 | 🤖 | `sf-ai-agentforce` | Agent Builder, PromptTemplate, Models API, GenAi metadata | ✅ Live |
 | 🧪 | `sf-ai-agentforce-testing` | Agent test specs, agentic fix loops | ✅ Live |
-| 📈 | `sf-ai-agentforce-observability` | Session tracing extraction & analysis (Data Cloud) | ✅ GA |
+| 📈 | `sf-ai-agentforce-observability` | Session tracing extraction & analysis (Data Cloud) | ✅ Live |
 | 📝 | `sf-ai-agentscript` | Agent Script DSL, FSM patterns, 100-pt scoring | ✅ Live |
+| 💬 | `sf-ai-agentforce-conversationdesign` | Persona docs, utterance libraries, guardrails | ✅ Live |
 | 🧠 | `sf-ai-copilot` | Einstein Copilot, Prompts | 📋 Planned |
 | 🔮 | `sf-ai-einstein` | Prediction Builder, NBA | 📋 Planned |
 
@@ -548,7 +548,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Total: 29 skills** (19 skills ✅ live, 10 planned 📋)
+**Total: 30 skills** (20 skills ✅ live, 10 planned 📋)
 
 </details>
 
@@ -596,7 +596,7 @@ See [tools/README.md](tools/README.md) for detailed installer documentation.
 
 | Tool | Status | Install Path | |
 |------|--------|--------------|--|
-| **Claude Code CLI** | ✅ Full Support | `.claude-plugin/` | ![Claude](https://img.shields.io/badge/Anthropic-Claude_Code-191919?logo=anthropic&logoColor=white) |
+| **Claude Code CLI** | ✅ Full Support | `~/.claude/skills/` | ![Claude](https://img.shields.io/badge/Anthropic-Claude_Code-191919?logo=anthropic&logoColor=white) |
 | **OpenCode CLI** | ✅ Installer | `.opencode/skill/` | ![OpenCode](https://img.shields.io/badge/Open-Code-4B32C3?logo=github&logoColor=white) |
 | **Codex CLI** | ✅ Installer | `.codex/skills/` | ![OpenAI](https://img.shields.io/badge/OpenAI-Codex-412991?logo=openai&logoColor=white) |
 | **Gemini CLI** | ✅ Installer | `~/.gemini/skills/` | ![Google](https://img.shields.io/badge/Google-Gemini_CLI-4285F4?logo=google&logoColor=white) |
@@ -607,68 +607,48 @@ See [tools/README.md](tools/README.md) for detailed installer documentation.
 
 > **Agent Skills Open Standard:** These skills follow the [Agent Skills specification](https://agentskills.io) for cross-CLI compatibility.
 
-### CLI Compatibility Notes
+### CLI Details
 
 > 🤝 **Call for Volunteers!** This repo is community-driven, sharing knowledge to strengthen the Salesforce ecosystem. We need volunteers to test skills on different CLIs (OpenCode, Codex, Gemini, Cursor, etc.). You'll learn a ton about agentic workflows while helping the community! [Open an issue](https://github.com/Jaganpro/sf-skills/issues) to get started.
 
 <details>
 <summary><b>Claude Code</b> (Anthropic) — Full Native Support</summary>
 
-Claude Code is the **recommended** platform for sf-skills with full native support for all features.
-
 ```bash
-# Install via marketplace
-/plugin marketplace add Jaganpro/sf-skills
+curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-- **Install Path:** `.claude-plugin/` (per-skill plugin structure)
+- **Install Path:** `~/.claude/skills/` (native skill discovery)
 - **Format:** Native SKILL.md with hooks, templates, and examples
 - **Hooks:** ✅ Automatic validation on Write/Edit operations
 - **LSP:** ✅ Real-time syntax validation with auto-fix loops
 - **Templates:** ✅ Referenced dynamically (no duplication)
-- **Tool Execution:** Local tools (Read, Write, Edit, Bash, Grep, Glob) — no MCP overhead
 - **Docs:** [claude.ai/code](https://claude.ai/code)
-
-**Why Claude Code for sf-skills:**
-- **Zero-latency tools** — Local execution vs. MCP JSON-RPC roundtrips
-- **Automatic hooks** — Validation runs on every file save without manual invocation
-- **Context efficiency** — Skills load on-demand, saving ~2000 tokens per conversation
-- **LSP integration** — Apex, Agent Script, and LWC syntax errors caught in real-time
 
 </details>
 
 <details>
-<summary><b>OpenCode CLI</b> — Open-Source Claude Code Alternative</summary>
-
-[OpenCode](https://github.com/opencode-ai/opencode) is an open-source alternative to Claude Code with skill support.
+<summary><b>OpenCode CLI</b> — Open-Source Alternative</summary>
 
 ```bash
-# Install all skills for OpenCode
 python tools/installer.py --cli opencode --all
 ```
 
 - **Install Path:** `.opencode/skill/` (project) or `~/.opencode/skill/` (global)
-- **Format:** SKILL.md with scripts and templates
 - **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Claude Compatibility:** Also reads `.claude/skills/` directory
 - **Docs:** [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode)
 
 </details>
 
 <details>
-<summary><b>Codex CLI</b> (OpenAI) — GPT-Powered Coding Agent</summary>
-
-[Codex CLI](https://github.com/openai/codex) is OpenAI's terminal-based coding agent.
+<summary><b>Codex CLI</b> (OpenAI) — GPT-Powered Agent</summary>
 
 ```bash
-# Install all skills for Codex
 python tools/installer.py --cli codex --all
 ```
 
 - **Install Path:** `.codex/skills/` (project) or `~/.codex/skills/` (global)
-- **Format:** SKILL.md with `assets/` (templates) and `references/` (docs)
-- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Enable Skills:** `codex --enable skills`
+- **Hooks:** ⚠️ Manual execution — enable with `codex --enable skills`
 - **Docs:** [github.com/openai/codex](https://github.com/openai/codex)
 
 </details>
@@ -676,18 +656,12 @@ python tools/installer.py --cli codex --all
 <details>
 <summary><b>Gemini CLI</b> (Google) — 1M+ Token Context</summary>
 
-[Gemini CLI](https://github.com/google-gemini/gemini-cli) is Google's Gemini-powered terminal agent with massive context window.
-
 ```bash
-# Install all skills for Gemini
 python tools/installer.py --cli gemini --all
 ```
 
-- **Install Path:** `~/.gemini/skills/` (user scope by default)
-- **Format:** SKILL.md with scripts and templates
-- **Hooks:** ⚠️ Manual execution (run `scripts/validate_*.py`)
-- **Context:** 1M+ tokens — can load entire codebases
-- **Symlink:** `ln -s ~/.gemini/skills/sf-apex ~/.claude/skills/sf-apex`
+- **Install Path:** `~/.gemini/skills/` (user scope)
+- **Hooks:** ⚠️ Manual execution
 - **Docs:** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
 
 </details>
@@ -695,17 +669,9 @@ python tools/installer.py --cli gemini --all
 <details>
 <summary><b>Amp CLI</b> (Sourcegraph) — Claude Code Compatible</summary>
 
-[Amp](https://sourcegraph.com/amp) is Sourcegraph's agentic coding tool, fully compatible with Claude Code skills.
+No installer needed — Amp reads Claude Code skills directly from `.claude/skills/`.
 
-```bash
-# No installer needed — Amp reads Claude Code skills directly
-# Place skills in .claude/skills/ directory
-```
-
-- **Install Path:** `.claude/skills/` (same as Claude Code)
-- **Format:** Native Claude Code format (SKILL.md + hooks + templates)
 - **Hooks:** ✅ Compatible with Claude Code hooks
-- **Codebase Search:** Powered by Sourcegraph's code intelligence
 - **Docs:** [sourcegraph.com/amp](https://sourcegraph.com/amp)
 
 </details>
@@ -713,67 +679,39 @@ python tools/installer.py --cli gemini --all
 <details>
 <summary><b>Droid CLI</b> (Factory.ai) — Claude Code Compatible</summary>
 
-Droid CLI (v0.26.0+) natively supports Claude Code skills format. Use the installer or import directly:
-
 ```bash
-# Install via installer
 python tools/installer.py --cli droid --all
-
-# Or Droid auto-discovers skills from .claude/skills/ directory
-# Use the /skills command within Droid to manage skills
 ```
 
 - **Install Path:** `.factory/skills/` or `~/.factory/skills/`
-- **Format:** Claude Code compatible (SKILL.md + scripts/)
 - **Prerequisite:** Enable Custom Droids in `/settings → Experimental`
 - **Docs:** [docs.factory.ai/cli/configuration/skills](https://docs.factory.ai/cli/configuration/skills)
 
 </details>
 
 <details>
-<summary><b>Cursor CLI</b> — Installer with MDC Transformation</summary>
-
-Cursor CLI uses its own rules system (`.cursor/rules/` with MDC format). The installer transforms skills to Cursor's native format:
+<summary><b>Cursor CLI</b> — MDC Transformation</summary>
 
 ```bash
-# Install skills transformed to MDC format
 python tools/installer.py --cli cursor --all
 ```
 
-- **Install Path:** `.cursor/rules/{name}.mdc`
-- **Format:** MDC (Markdown with YAML frontmatter: description, globs, alwaysApply)
-- **Templates:** Copied to `assets/`, docs to `references/`
-- **Alternative:** [SkillPort](https://github.com/gotalab/skillport) MCP bridge for runtime skill access
+- **Install Path:** `.cursor/rules/{name}.mdc` (MDC format with YAML frontmatter)
+- **Alternative:** [SkillPort](https://github.com/gotalab/skillport) MCP bridge
 - **Docs:** [docs.cursor.com/context/rules-for-ai](https://docs.cursor.com/context/rules-for-ai)
 
 </details>
 
 <details>
-<summary><b>Agentforce Vibes</b> (Salesforce) — Enterprise Vibe-Coding Tool</summary>
-
-[Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html) is Salesforce's enterprise vibe-coding tool with strong Model Context Protocol (MCP) support.
+<summary><b>Agentforce Vibes</b> (Salesforce) — Enterprise Vibe-Coding</summary>
 
 ```bash
-# Install all skills for Agentforce Vibes
 python tools/installer.py --cli agentforce-vibes --all
 ```
 
-- **Install Path:** `.clinerules/` (project directory)
-- **Format:** Pure markdown files with numeric prefixes (`01-sf-apex.md`, `02-sf-flow.md`, etc.)
+- **Install Path:** `.clinerules/` (project directory, numbered markdown: `01-sf-apex.md`, etc.)
 - **Templates:** Inlined directly into markdown rules (self-contained)
-- **Includes:** `/newrule` command references, Salesforce DX MCP Server tips
 - **Docs:** [Agentforce Vibes Blog](https://developer.salesforce.com/blogs/2025/10/unleash-your-innovation-with-agentforce-vibes-vibe-coding-for-the-enterprise)
-
-**Output Structure:**
-```
-.clinerules/
-├── 01-sf-apex.md
-├── 02-sf-flow.md
-├── 03-sf-lwc.md
-└── ... (16 skills total)
-```
-
-**Why Agentforce Vibes:** Strong MCP support enables integration with Salesforce DX MCP Server (20+ tools) for org connectivity, metadata operations, and deployment.
 
 </details>
 
@@ -788,7 +726,7 @@ python tools/installer.py --cli agentforce-vibes --all
 | **Tool Execution** | ✅ Local tools (zero latency) | ⚡ MCP-based (JSON-RPC overhead) |
 | **Salesforce Tools** | `sf` CLI + pre-templated skill scripts | Salesforce DX MCP (20+ tools) |
 | **Templates** | ✅ Dynamic references (50+ templates) | 📄 Inlined in markdown |
-| **Models** | Claude Sonnet 4, Opus 4.5 | GPT-4.1, SFR (Salesforce Research) |
+| **Models** | Claude Sonnet 4.5, Opus 4.6 | GPT-4.1, SFR (Salesforce Research) |
 | **Context Window** | 200K (Sonnet) or 1M (extended) | Varies by model |
 | **Enterprise Features** | Community-driven | Trust Layer, audit logging |
 
@@ -801,7 +739,7 @@ python tools/installer.py --cli agentforce-vibes --all
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test with `/plugin install ./your-skill`
+4. Test locally: `python3 tools/install.py --dry-run`
 5. Open a Pull Request
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
