@@ -113,20 +113,14 @@ jobs:
 
           ## Installation
 
-          ### For Claude Code Plugin Marketplace Users
-          Run the migration script to update to the latest version:
+          ### Install or Update
           \`\`\`bash
-          python3 ~/.claude/plugins/marketplaces/sf-skills/scripts/migrate-to-global-hooks.py
+          curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/tools/install.sh | bash
           \`\`\`
 
-          Auto-updates will be enabled after running the migration.
-
-          ### For Manual Installation
-          Clone or update the repository:
+          ### Already Installed?
           \`\`\`bash
-          git clone https://github.com/${{ github.repository }}.git
-          cd claude-code-sfskills
-          python3 scripts/install-hooks.py
+          python3 ~/.claude/sf-skills-install.py --update
           \`\`\`
           "
 

@@ -22,7 +22,7 @@ Input: JSON via stdin (SessionStart event data)
 Output: JSON with message showing prewarm status
 
 Installation:
-  Add to SessionStart hooks in install-hooks.py
+  Registered automatically by tools/install.py (SessionStart, async)
 
 Prerequisites:
 - VS Code Salesforce Extension Pack (for Apex/LWC LSPs)

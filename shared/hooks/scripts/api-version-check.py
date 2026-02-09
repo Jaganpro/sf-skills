@@ -22,7 +22,7 @@ Input: JSON via stdin with tool_name, tool_input (command for Bash)
 Output: JSON with decision (allow/warn/block) and message
 
 Installation:
-  Add to PreToolUse hooks with matcher: "Bash" in install-hooks.py
+  Registered automatically by tools/install.py (PreToolUse, matcher: Bash)
 """
 
 import json

@@ -370,7 +370,7 @@ SessionStart → org-preflight.py → Writes ~/.claude/.sf-org-state.json
 
 - [Orchestration Architecture](./ORCHESTRATION-ARCHITECTURE.md) - How skill recommendations work
 - [Hooks Frontmatter Schema](./hooks-frontmatter-schema.md) - Hook configuration format
-- [install-hooks.py](../../../tools/install-hooks.py) - Hook installation script
+- [install.py](../../../tools/install.py) - Unified installer (skills, hooks, LSP, agents)
 
 ---
 

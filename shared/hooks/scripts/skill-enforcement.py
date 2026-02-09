@@ -21,7 +21,7 @@ Input: JSON via stdin with tool_name, tool_input (file_path for Write/Edit)
 Output: JSON with decision (allow/block) and message
 
 Installation:
-  Add to PreToolUse hooks in install-hooks.py
+  Registered automatically by tools/install.py (PreToolUse, matcher: Write|Edit|Skill)
 """
 
 import json

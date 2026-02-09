@@ -22,7 +22,7 @@ Input: JSON via stdin (SessionStart event data)
 Output: Silent (no stdout to avoid JSON validation issues)
 
 Installation:
-  Add to SessionStart hooks in install-hooks.py (BEFORE async hooks)
+  Registered automatically by tools/install.py (SessionStart, sync — runs before async hooks)
 """
 
 import json
