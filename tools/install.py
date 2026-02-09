@@ -119,12 +119,28 @@ def write_metadata(version: str, commit_sha: Optional[str] = None):
 
 
 def read_metadata() -> Optional[Dict[str, Any]]:
-    """Read ~/.claude/.sf-skills.json."""
+    """Read install metadata from .sf-skills.json, falling back to legacy fingerprint."""
+    # Check new location first
     if META_FILE.exists():
         try:
             return json.loads(META_FILE.read_text())
         except (json.JSONDecodeError, IOError):
             return None
+
+    # Fallback: check legacy .install-fingerprint
+    legacy_fp = LEGACY_INSTALL_DIR / ".install-fingerprint"
+    if legacy_fp.exists():
+        try:
+            fp = json.loads(legacy_fp.read_text())
+            # Enrich with version from legacy VERSION file
+            if "version" not in fp:
+                version_file = LEGACY_INSTALL_DIR / "VERSION"
+                if version_file.exists():
+                    fp["version"] = version_file.read_text().strip()
+            return fp
+        except (json.JSONDecodeError, IOError):
+            return None
+
     return None
 
 
@@ -847,6 +863,94 @@ def cleanup_installed_files(dry_run: bool = False):
     for f in [META_FILE, INSTALLER_FILE]:
         if f.exists() and not dry_run:
             f.unlink()
+
+
+def migrate_legacy_layout(dry_run: bool = False) -> bool:
+    """
+    Migrate from legacy ~/.claude/sf-skills/ to native ~/.claude/ layout.
+
+    Copies files from old locations to new, writes metadata, updates
+    settings.json hooks, and removes legacy directory. No network required.
+
+    Args:
+        dry_run: If True, preview changes without applying
+
+    Returns:
+        True if migration was performed (or would be), False if not needed
+    """
+    if not LEGACY_INSTALL_DIR.exists():
+        return False
+
+    print_banner()
+    print_info("Legacy layout detected — migrating to native ~/.claude/ layout...")
+
+    if dry_run:
+        print_info("(dry run — no changes will be made)")
+
+    old_skills = LEGACY_INSTALL_DIR / "skills"
+    old_hooks = LEGACY_INSTALL_DIR / "hooks"
+    old_lsp = LEGACY_INSTALL_DIR / "lsp-engine"
+
+    # Copy skills: ~/.claude/sf-skills/skills/sf-*/ → ~/.claude/skills/sf-*/
+    if old_skills.exists() and not dry_run:
+        skill_count = copy_skills(old_skills, SKILLS_DIR)
+        print_substep(f"{skill_count} skills migrated")
+
+    # Copy hooks: ~/.claude/sf-skills/hooks/ → ~/.claude/hooks/
+    if old_hooks.exists() and not dry_run:
+        hook_count = copy_hooks(old_hooks, HOOKS_DIR)
+        print_substep(f"{hook_count} hook scripts migrated")
+
+    # Copy LSP: ~/.claude/sf-skills/lsp-engine/ → ~/.claude/lsp-engine/
+    if old_lsp.exists() and not dry_run:
+        lsp_count = copy_lsp_engine(old_lsp, LSP_DIR)
+        print_substep(f"{lsp_count} LSP engine files migrated")
+
+    # Copy agents if present
+    old_agents = LEGACY_INSTALL_DIR / "agents"
+    if old_agents.exists() and not dry_run:
+        agents_target = CLAUDE_DIR / "agents"
+        agent_count = copy_agents(LEGACY_INSTALL_DIR, agents_target)
+        if agent_count > 0:
+            print_substep(f"{agent_count} agents migrated (FDE + PS)")
+
+    # Copy installer to new location
+    this_file = Path(__file__).resolve()
+    if not dry_run:
+        shutil.copy2(this_file, INSTALLER_FILE)
+        print_substep(f"Installer → {INSTALLER_FILE}")
+
+    # Write metadata from old fingerprint
+    if not dry_run:
+        old_fp_file = LEGACY_INSTALL_DIR / ".install-fingerprint"
+        old_version_file = LEGACY_INSTALL_DIR / "VERSION"
+        version = old_version_file.read_text().strip() if old_version_file.exists() else "unknown"
+        commit_sha = None
+        if old_fp_file.exists():
+            try:
+                fp = json.loads(old_fp_file.read_text())
+                commit_sha = fp.get("commit_sha")
+            except (json.JSONDecodeError, IOError):
+                pass
+        write_metadata(version, commit_sha=commit_sha)
+        print_substep(f"Metadata → {META_FILE}")
+
+    # Update settings.json hook paths (old → new)
+    if not dry_run:
+        update_settings_json()
+        print_substep("settings.json hooks updated")
+
+    # Remove legacy directory and symlinks
+    if not dry_run:
+        safe_rmtree(LEGACY_INSTALL_DIR)
+        old_cmds = unregister_skills_from_commands()
+        print_substep("Removed legacy ~/.claude/sf-skills/")
+        if old_cmds > 0:
+            print_substep(f"Removed {old_cmds} legacy command symlinks")
+
+    print_success("Migration complete!")
+    print_info(f"Future updates: python3 {INSTALLER_FILE} --update")
+    return True
 
 
 # Commands directory for skill registration
@@ -1691,6 +1795,25 @@ Curl one-liner:
         print_error("Claude Code not found (~/.claude/ does not exist)")
         print_info("Please install Claude Code first: https://claude.ai/code")
         sys.exit(1)
+
+    # Auto-migration: if running from legacy location, migrate to native layout
+    if not args.uninstall:
+        try:
+            this_file = Path(__file__).resolve()
+            if (LEGACY_INSTALL_DIR.exists()
+                    and not META_FILE.exists()
+                    and this_file.is_relative_to(LEGACY_INSTALL_DIR.resolve())):
+                result = migrate_legacy_layout(dry_run=args.dry_run)
+                if result and not args.dry_run:
+                    # Re-exec from new location if user passed --update/--status
+                    if args.update or args.force_update or args.status:
+                        print_info(f"Re-running from {INSTALLER_FILE}...")
+                        os.execv(sys.executable, [
+                            sys.executable, str(INSTALLER_FILE)
+                        ] + sys.argv[1:])
+                    sys.exit(0)
+        except (ValueError, OSError):
+            pass  # is_relative_to may fail on some platforms
 
     # Route to appropriate command
     if args.status:
