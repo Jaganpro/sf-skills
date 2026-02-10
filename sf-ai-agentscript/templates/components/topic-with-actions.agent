@@ -2,20 +2,17 @@
 # A topic that integrates with external systems via Flow or Apex actions
 # This is a PARTIAL template - use within a complete agent file
 #
-# ⚠️ DEPLOYMENT METHOD MATTERS:
-#    - AiAuthoringBundle: `with`/`set` clauses in reasoning.actions NOT supported
-#    - GenAiPlannerBundle: Full syntax including `with`/`set` supported
-#
-# For AiAuthoringBundle: Define actions in topics, let LLM auto-invoke based on description
+# Two-Level Action System:
+#   Level 1: topic.actions block DEFINES actions (with target:, inputs:, outputs:)
+#   Level 2: reasoning.actions block INVOKES them (with @actions.name, with/set)
 #
 # Usage: Replace {{placeholders}} with your values
 # Note: Actions defined inside topic are local to that topic
 
 topic {{topic_name}}:
-	label: "{{TopicLabel}}"
 	description: "{{TopicDescription}}"
 
-	# Define actions available to this topic
+	# Level 1: DEFINE actions available to this topic
 	actions:
 		{{action_name}}:
 			description: "{{ActionDescription}}"
@@ -25,21 +22,19 @@ topic {{topic_name}}:
 			outputs:
 				{{output_name}}: {{output_type}}
 					description: "{{OutputDescription}}"
-			target: "{{ActionTarget}}"  # flow://FlowName or apex://ClassName.methodName
+			target: "{{ActionTarget}}"  # flow://FlowName or apex://ClassName
 
 	reasoning:
 		instructions: ->
 			| {{TopicInstructions}}
 			| Use the available actions to help the user.
 			| Capture and communicate results clearly.
+
+		# Level 2: INVOKE the actions defined above
 		actions:
-			# ═══════════════════════════════════════════════════════════════════════
-			# ⚠️ GenAiPlannerBundle ONLY - `with`/`set` syntax below does NOT work
-			#    in AiAuthoringBundle (causes "Internal Error" at publish time)
-			# ═══════════════════════════════════════════════════════════════════════
 			invoke_action: @actions.{{action_name}}
 				with {{input_name}}=...
 				set @variables.{{result_variable}} = @outputs.{{output_name}}
 
-			# ✅ For AiAuthoringBundle: Just use transitions (LLM auto-invokes actions)
 			back_to_menu: @utils.transition to @topic.topic_selector
+				description: "Return to main menu"

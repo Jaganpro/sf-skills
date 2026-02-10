@@ -1,9 +1,13 @@
 # Apex-Based Action Template
-# Define an action that calls a Salesforce Apex method
+# Define an action that calls a Salesforce Apex @InvocableMethod
 # This is a PARTIAL template - define actions inside a topic block
 #
 # Usage: Replace {{placeholders}} with your values
 # Place this inside a topic's actions: block
+#
+# ⚠️ The target format is apex://ClassName (NOT ClassName.MethodName)
+#    The runtime auto-discovers the @InvocableMethod on the class.
+# ⚠️ NO GenAiFunction metadata needed for AiAuthoringBundle (Agent Script).
 
 # Action Definition (place inside topic's actions: block)
 {{action_name}}:
@@ -20,7 +24,7 @@
 			description: "Whether the operation succeeded"
 		error_message: string
 			description: "Error message if operation failed"
-	target: "apex://{{ApexClassName}}.{{ApexMethodName}}"
+	target: "apex://{{ApexClassName}}"
 
 # Usage in reasoning block:
 #
@@ -33,18 +37,16 @@
 #          with {{input_2_name}}=@variables.some_var  # From variable
 #          set @variables.result = @outputs.{{output_1_name}}
 #          set @variables.success = @outputs.success
-#          run @actions.handle_result  # Callback action (optional)
-#             with result=@variables.result
 
 # Common Apex Target Patterns:
-# - apex://AccountService.getAccountDetails
-# - apex://CaseService.createCase
-# - apex://OrderService.processOrder
-# - apex://IntegrationService.callExternalApi
-# - apex://CalculationService.calculatePrice
+# - apex://AccountService
+# - apex://CaseService
+# - apex://OrderService
+# - apex://IntegrationService
+# - apex://CalculationService
 
 # Apex Class Requirements:
-# - Must be global or public
-# - Method must be @InvocableMethod or @AuraEnabled
-# - Parameters must match input definitions
-# - Return type must match output definitions
+# - Must be global or public with sharing
+# - Must have exactly ONE @InvocableMethod annotation
+# - Use @InvocableVariable annotations on input/output wrapper class fields
+# - No GenAiFunction metadata needed for AiAuthoringBundle (Agent Script)

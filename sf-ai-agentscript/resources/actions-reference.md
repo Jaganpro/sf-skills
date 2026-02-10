@@ -238,7 +238,7 @@ For an action to work with agents, the Flow must:
 
 ---
 
-## Action Type 2: Apex Actions (via GenAiFunction)
+## Action Type 2: Apex Actions
 
 ### When to Use
 
@@ -248,7 +248,16 @@ For an action to work with agents, the Flow must:
 - Bulk data processing
 - When you need full control over execution
 
-### Implementation Steps
+### Two Deployment Paths (CRITICAL DISTINCTION)
+
+| Deployment Method | How Apex Actions Work | GenAiFunction Required? |
+|-------------------|----------------------|------------------------|
+| **AiAuthoringBundle** (.agent file) | `apex://ClassName` target in topic actions block | **NO** |
+| **Agent Builder UI** (GenAiPlannerBundle) | GenAiFunction metadata wraps the Apex class | **YES** |
+
+> ⚠️ **The official [agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) repo uses `apex://ClassName` directly with ZERO GenAiFunction metadata.** GenAiFunction is only needed when configuring agents through the Agent Builder UI or deploying via GenAiPlannerBundle.
+
+### Path A: AiAuthoringBundle (Agent Script — RECOMMENDED)
 
 #### Step 1: Create Apex Class with @InvocableMethod
 
@@ -261,42 +270,26 @@ public with sharing class CalculateDiscountAction {
 
         @InvocableVariable(label='Customer Tier' required=true)
         public String customerTier;
-
-        @InvocableVariable(label='Promo Code')
-        public String promoCode;
     }
 
     public class DiscountResult {
         @InvocableVariable(label='Discount Percentage')
         public Decimal discountPercentage;
 
-        @InvocableVariable(label='Discount Amount')
-        public Decimal discountAmount;
-
         @InvocableVariable(label='Final Amount')
         public Decimal finalAmount;
-
-        @InvocableVariable(label='Applied Rules')
-        public String appliedRules;
     }
 
     @InvocableMethod(
         label='Calculate Discount'
-        description='Calculates discount based on order amount, customer tier, and promo code'
+        description='Calculates discount based on order amount and customer tier'
     )
     public static List<DiscountResult> calculateDiscount(List<DiscountRequest> requests) {
         List<DiscountResult> results = new List<DiscountResult>();
-
         for (DiscountRequest req : requests) {
             DiscountResult result = new DiscountResult();
-            Decimal tierDiscount = getTierDiscount(req.customerTier);
-            Decimal promoDiscount = getPromoDiscount(req.promoCode);
-
-            result.discountPercentage = Math.max(tierDiscount, promoDiscount);
-            result.discountAmount = req.orderAmount * (result.discountPercentage / 100);
-            result.finalAmount = req.orderAmount - result.discountAmount;
-            result.appliedRules = buildAppliedRules(tierDiscount, promoDiscount);
-
+            result.discountPercentage = getTierDiscount(req.customerTier);
+            result.finalAmount = req.orderAmount * (1 - result.discountPercentage / 100);
             results.add(result);
         }
         return results;
@@ -308,99 +301,49 @@ public with sharing class CalculateDiscountAction {
         };
         return tierDiscounts.containsKey(tier) ? tierDiscounts.get(tier) : 0;
     }
-
-    private static Decimal getPromoDiscount(String promoCode) {
-        if (String.isBlank(promoCode)) return 0;
-        return promoCode == 'SAVE20' ? 20 : 0;
-    }
-
-    private static String buildAppliedRules(Decimal tierDiscount, Decimal promoDiscount) {
-        List<String> rules = new List<String>();
-        if (tierDiscount > 0) rules.add('Tier discount: ' + tierDiscount + '%');
-        if (promoDiscount > 0) rules.add('Promo discount: ' + promoDiscount + '%');
-        return String.join(rules, '; ');
-    }
 }
 ```
 
-#### Step 2: Create GenAiFunction Metadata
+#### Step 2: Reference DIRECTLY in Agent Script via `apex://`
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Calculate Discount</masterLabel>
-    <description>Calculates customer discount based on tier and promo codes</description>
-    <developerName>Calculate_Discount_Action</developerName>
-
-    <invocationTarget>CalculateDiscountAction</invocationTarget>
-    <invocationTargetType>apex</invocationTargetType>
-
-    <isConfirmationRequired>false</isConfirmationRequired>
-
-    <capability>
-        Calculate customer discounts considering their membership tier and any
-        promotional codes. Returns the discount percentage, discount amount,
-        and final order amount.
-    </capability>
-
-    <genAiFunctionInputs>
-        <developerName>orderAmount</developerName>
-        <description>The total order amount before discount</description>
-        <dataType>Number</dataType>
-        <isRequired>true</isRequired>
-    </genAiFunctionInputs>
-
-    <genAiFunctionInputs>
-        <developerName>customerTier</developerName>
-        <description>Customer membership tier: Bronze, Silver, Gold, or Platinum</description>
-        <dataType>Text</dataType>
-        <isRequired>true</isRequired>
-    </genAiFunctionInputs>
-
-    <genAiFunctionInputs>
-        <developerName>promoCode</developerName>
-        <description>Optional promotional code</description>
-        <dataType>Text</dataType>
-        <isRequired>false</isRequired>
-    </genAiFunctionInputs>
-
-    <genAiFunctionOutputs>
-        <developerName>discountPercentage</developerName>
-        <description>Applied discount percentage</description>
-        <dataType>Number</dataType>
-    </genAiFunctionOutputs>
-
-    <genAiFunctionOutputs>
-        <developerName>discountAmount</developerName>
-        <description>Dollar amount of discount</description>
-        <dataType>Number</dataType>
-    </genAiFunctionOutputs>
-
-    <genAiFunctionOutputs>
-        <developerName>finalAmount</developerName>
-        <description>Final order amount after discount</description>
-        <dataType>Number</dataType>
-    </genAiFunctionOutputs>
-</GenAiFunction>
-```
-
-#### Step 3: Reference in Agent Topic
-
-After deploying the GenAiFunction, it appears in Agent Builder under available actions.
-
-### Important: Agent Script apex:// Limitation
-
-> **Known Issue**: The `apex://ClassName` syntax in Agent Script does not work reliably. Always use GenAiFunction metadata for Apex actions.
-
-**❌ Does NOT Work:**
 ```yaml
-actions:
-  calculate_discount:
-    target: "apex://CalculateDiscountAction"  # BROKEN
+topic discount_calculator:
+   description: "Calculates discount for customer order"
+
+   # Level 1: Action DEFINITION with target
+   actions:
+      calculate_discount:
+         description: "Calculates discount based on order amount and customer tier"
+         inputs:
+            orderAmount: number
+               description: "The total order amount before discount"
+            customerTier: string
+               description: "Customer membership tier"
+         outputs:
+            discountPercentage: number
+               description: "Applied discount percentage"
+            finalAmount: number
+               description: "Final order amount after discount"
+         target: "apex://CalculateDiscountAction"   # Direct Apex — NO GenAiFunction needed!
+
+   reasoning:
+      instructions: |
+         Help the customer calculate their discount.
+      # Level 2: Action INVOCATION referencing the Level 1 definition
+      actions:
+         calc: @actions.calculate_discount
+            with orderAmount=...
+            with customerTier=@variables.tier
+            set @variables.final_amount = @outputs.finalAmount
 ```
 
-**✅ Works:**
-Deploy GenAiFunction metadata and add to topic via Agent Builder UI.
+> ✅ **No GenAiFunction, no GenAiPlugin, no metadata deployment beyond the Apex class itself.** The `apex://ClassName` target auto-discovers the `@InvocableMethod` on the class.
+
+### Path B: Agent Builder UI (GenAiPlannerBundle — Legacy)
+
+If you're NOT using Agent Script and are building agents through the Agent Builder UI, you need GenAiFunction metadata to wrap the Apex class. See the `templates/metadata/genai-function-apex.xml` template for the XML format.
+
+> **Note**: GenAiFunction XML (API v65.0) only supports these elements: `masterLabel`, `description`, `invocationTarget`, `invocationTargetType`, `isConfirmationRequired`. Input/output schemas are defined via `input/schema.json` and `output/schema.json` bundle files, NOT inline XML elements.
 
 ---
 
@@ -518,19 +461,24 @@ actions:
 
 ---
 
-## GenAiFunction Metadata Summary
+## GenAiFunction Metadata Summary (Agent Builder UI / GenAiPlannerBundle ONLY)
 
-`GenAiFunction` wraps Apex, Flows, or Prompts as Agent Actions.
+> ⚠️ **NOT needed for AiAuthoringBundle (Agent Script)**. If you're writing `.agent` files, use `target: "apex://ClassName"` or `target: "flow://FlowName"` directly. See Action Type 2 above.
+
+`GenAiFunction` wraps Apex, Flows, or Prompts as Agent Actions **for the Agent Builder UI path**.
 
 ```xml
+<!-- Minimal valid GenAiFunction XML (API v65.0) -->
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Display Name</masterLabel>
-    <developerName>API_Name</developerName>
     <description>What this action does</description>
     <invocationTarget>FlowOrApexName</invocationTarget>
     <invocationTargetType>flow|apex|prompt</invocationTargetType>
+    <isConfirmationRequired>false</isConfirmationRequired>
+    <masterLabel>Display Name</masterLabel>
 </GenAiFunction>
 ```
+
+**Input/Output Schemas**: Use `input/schema.json` and `output/schema.json` files in the GenAiFunction bundle directory. Do NOT use inline XML elements like `<genAiFunctionInputs>`, `<genAiFunctionOutputs>`, `<genAiFunctionParameters>`, or `<capability>` — these are NOT valid in the Metadata API XML schema (API v65.0).
 
 ### Prompt Template Types
 
@@ -579,11 +527,12 @@ When building agents with external API integrations, follow this order:
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Action not appearing | GenAiFunction not deployed | Deploy metadata with sf-deploy |
-| `apex://` not working | Known limitation | Use GenAiFunction metadata instead |
-| Flow action fails | Flow not active | Activate the Flow |
+| `Tool target 'X' is not an action definition` | Action not defined in topic `actions:` block, or target doesn't exist in org | Define action with `target:` in topic-level `actions:` block; ensure Apex class/Flow is deployed |
+| `apex://` target not found | Apex class not deployed or missing `@InvocableMethod` | Deploy class first, ensure it has `@InvocableMethod` annotation |
+| Flow action fails | Flow not active or not Autolaunched | Activate the Flow; ensure it's Autolaunched (not Screen) |
 | API action timeout | External system slow | Increase timeout, add retry logic |
 | Permission denied | Missing Named Principal access | Grant Permission Set |
+| Action not appearing in Agent Builder UI | GenAiFunction not deployed (UI path only) | Deploy GenAiFunction metadata (only needed for Agent Builder UI, not Agent Script) |
 
 ### Debugging Tips
 

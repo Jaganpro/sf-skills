@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -671,29 +671,57 @@ case_id: mutable string = ""
 
 > **Legend**: ✅ TDD = Validated via deployment testing | 📋 Spec = Documented in AGENT_SCRIPT.md spec (requires specific org setup to test)
 
-### Registering Flow Actions (REQUIRED for `flow://` targets)
+### Using Flow and Apex Actions in Agent Script
 
-> **Note on `flow://` targets**: The Flow must be registered as an **Action Definition** (GenAiFunction) before it can be referenced in Agent Script. Simply creating a Flow is not sufficient.
+> **For AiAuthoringBundle (Agent Script)**: `flow://` and `apex://` targets work **directly** — no GenAiFunction registration needed. The target just needs to exist in the org (active Flow or deployed Apex class with `@InvocableMethod`).
 
-**Workflow to use a Flow in Agent Script:**
-1. Create Flow with proper output variables (`/sf-flow`)
-2. In Setup > Agentforce > Action Definitions, click "New Action"
-3. Select "Flow" as target type, choose your Flow
-4. Define input/output schemas (map Flow variables to action I/O)
-5. Set planner flags: `is_displayable`, `is_used_by_planner`
-6. Reference in Agent Script via `@actions.YourActionDefinitionName`
+**Two-Level Action System (CRITICAL to understand):**
 
-```yaml
-# After registering "Get_Case_Details" action definition:
-reasoning:
-   actions:
-      lookup_case: @actions.Get_Case_Details
-         description: "Fetch case information"
-         with case_id = @variables.case_id
-         set @variables.case_subject = @outputs.subject
+```
+Level 1: ACTION DEFINITION (in topic's `actions:` block)
+   → Has `target:`, `inputs:`, `outputs:`, `description:`
+   → Specifies WHAT to call (e.g., "apex://OrderService")
+
+Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
+   → References Level 1 via `@actions.name`
+   → Specifies HOW to call it (with/set clauses)
 ```
 
-> ⚠️ **Common Error**: Referencing `flow://MyFlowName` without first creating the Action Definition → results in `ValidationError: Tool target 'MyFlowName' is not an action definition`
+**Complete Example:**
+```yaml
+topic order_status:
+   description: "Look up order details"
+
+   # Level 1: DEFINE the action with a target
+   actions:
+      get_case_details:
+         description: "Fetch case information by ID"
+         inputs:
+            case_id: string
+               description: "The Case record ID"
+         outputs:
+            subject: string
+               description: "Case subject line"
+         target: "flow://Get_Case_Details"   # Flow must exist and be active
+
+   reasoning:
+      instructions: |
+         Help the customer check their case status.
+      # Level 2: INVOKE the action defined above
+      actions:
+         lookup_case: @actions.get_case_details
+            with case_id = @variables.case_id
+            set @variables.case_subject = @outputs.subject
+```
+
+> ⚠️ **Common Error**: `ValidationError: Tool target 'X' is not an action definition` — This means either:
+> 1. The action is referenced in `reasoning.actions:` via `@actions.X` but `X` is not defined in the topic's `actions:` block, OR
+> 2. The `target:` value points to a Flow/Apex class that doesn't exist in the org
+>
+> **Fix**: Ensure you have BOTH levels: action definition (with `target:`) AND action invocation (with `@actions.name`).
+
+**Agent Builder UI Path (GenAiPlannerBundle — different workflow):**
+If building agents through the Agent Builder UI (not Agent Script), you DO need GenAiFunction metadata. See `resources/actions-reference.md` for details.
 
 ### Connection Block (Full Escalation Pattern)
 
@@ -1060,7 +1088,7 @@ topic refund:
 | `Variables cannot be both mutable AND linked` | Conflicting modifiers | Choose one: mutable for state, linked for external |
 | `Required fields missing: [BundleType]` | Using wrong deploy command | Use `sf agent publish authoring-bundle`, NOT `sf project deploy start` |
 | `Cannot find a bundle-meta.xml file` | Wrong file naming | Rename to `AgentName.bundle-meta.xml`, NOT `.aiAuthoringBundle-meta.xml` |
-| `ValidationError: Tool target 'X' is not an action definition` | Action references non-existent Flow/Apex | Create the action definition first, or use Helper Topic Pattern |
+| `ValidationError: Tool target 'X' is not an action definition` | Action not defined in topic `actions:` block with `target:`, OR target doesn't exist in org | Define action in topic-level `actions:` block with valid `target:` (e.g., `apex://ClassName`), then reference via `@actions.name` in `reasoning.actions:` |
 | LLM bypasses security check | Using prompts for security | Use `available when` guards instead |
 | Post-action logic doesn't run | Check not at TOP | Move post-action check to first lines |
 | Wrong data retrieved | Missing filter | Wrap retriever in Flow with filter inputs |
@@ -1144,7 +1172,7 @@ Present the results to the user and ask them to select which user to use for `de
 | From | To | Pattern |
 |------|-----|---------|
 | `/sf-ai-agentscript` | `/sf-flow` | Create Flow, then reference in agent |
-| `/sf-ai-agentscript` | `/sf-apex` | Create Apex class, then use `apex://` protocol |
+| `/sf-ai-agentscript` | `/sf-apex` | Create Apex class with `@InvocableMethod`, then use `apex://ClassName` target directly (NO GenAiFunction needed) |
 | `/sf-ai-agentscript` | `/sf-integration` | Set up Named Credentials for `externalService://` |
 
 ---
@@ -1248,6 +1276,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |
 | 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |
 | 1.5.0 | 2026-02-06 | **Action patterns & prompt template docs** (from @kunello PR #20): Added `resources/action-prompt-templates.md` documenting `generatePromptResponse://` input binding syntax (`"Input:fieldName"`), grounded data integration, output handling, and `run` keyword limitation workaround. Added `resources/action-patterns.md` covering context-aware action description overrides (beginner/advanced mode), `{!@actions.X}` instruction references for guided LLM action selection, input binding decision matrix, callback success-only behavior, and additional error patterns. Updated Common Issues table with 3 new error entries (wrong protocol, unquoted Input: params, missing type annotations). Added Document Map entries and cross-reference after Action Chaining section. Content consolidated from @kunello's 8-file contribution against Agent Script Recipes. |
 | 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile (label on topics/actions, always_expect_input, action properties on transitions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
