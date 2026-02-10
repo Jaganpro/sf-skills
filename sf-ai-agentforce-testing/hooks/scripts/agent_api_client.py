@@ -72,6 +72,7 @@ class AgentMessage:
     plan_id: str = ""
     is_content_safe: bool = True
     result: list = field(default_factory=list)
+    planner_surfaces: list = field(default_factory=list)
     cited_references: list = field(default_factory=list)
     raw: dict = field(default_factory=dict)
 
@@ -617,6 +618,7 @@ def _parse_messages(messages_data: list) -> List[AgentMessage]:
             plan_id=msg.get("planId", ""),
             is_content_safe=msg.get("isContentSafe", True),
             result=msg.get("result", []),
+            planner_surfaces=msg.get("plannerSurfaces", []),
             cited_references=msg.get("citedReferences", []),
             raw=msg,
         ))

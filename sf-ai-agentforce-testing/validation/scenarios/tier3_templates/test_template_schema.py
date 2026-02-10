@@ -19,6 +19,7 @@ MULTI_TURN_TEMPLATES = [
     "multi-turn-topic-routing.yaml",
     "multi-turn-context-preservation.yaml",
     "multi-turn-escalation-flows.yaml",
+    "multi-turn-agentscript-comprehensive.yaml",
 ]
 
 VALID_CHECK_TYPES = {

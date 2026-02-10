@@ -151,6 +151,36 @@ curl -X POST https://login.salesforce.com/services/oauth2/token \
   -d "client_secret=<CONSUMER_SECRET>"
 ```
 
+### Agent Runtime API — Required Scopes
+
+When creating an ECA for Agentforce Agent Runtime API testing (`/einstein/ai-agent/v1`), the following OAuth scopes are **required**:
+
+| Scope | Purpose |
+|-------|---------|
+| `api` | Base REST API access |
+| `chatbot_api` | Agent Runtime API conversation endpoints |
+| `sfap_api` | Einstein platform services |
+
+**ECA Configuration for Agent API Testing:**
+```xml
+<!-- In ecaOauth-meta.xml -->
+<ExtlClntAppOauthSettings>
+    <oauthScopes>Api</oauthScopes>
+    <oauthScopes>ChatbotApi</oauthScopes>
+    <oauthScopes>SfapApi</oauthScopes>
+    <isClientCredentialsEnabled>true</isClientCredentialsEnabled>
+    <!-- ... -->
+</ExtlClntAppOauthSettings>
+```
+
+**Post-Deploy Steps:**
+1. In Setup, navigate to the ECA → **Manage** → **Edit Policies**
+2. Set **"Run As"** to an active Einstein Agent User
+3. Verify the agent's `GenAiPlannerBundle` has `plannerSurfaces` with `EinsteinAgentApiChannel`
+4. Verify the agent's `BotVersion` has `surfacesEnabled=true`
+
+> See `/sf-ai-agentforce-testing` and `/sf-ai-agentscript` for full Agent Runtime API testing workflow.
+
 ---
 
 ## Device Authorization Flow

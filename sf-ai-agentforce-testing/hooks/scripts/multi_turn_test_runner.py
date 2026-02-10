@@ -547,12 +547,17 @@ class StreamingConsole:
 
 # Patterns that indicate a guardrail was triggered (agent declined the request)
 GUARDRAIL_PATTERNS = [
+    # Hard refusals
     r"(?i)i\s*(?:can(?:'t|not)|am\s+(?:not\s+)?(?:able|allowed))\s+(?:to\s+)?(?:help|assist|provide|share|do\s+that)",
     r"(?i)(?:sorry|apologies?)[\s,]+(?:but\s+)?i\s+(?:can(?:'t|not))",
     r"(?i)(?:not\s+)?(?:able|allowed|permitted)\s+to\s+(?:provide|share|disclose|give)",
     r"(?i)(?:against|violates?)\s+(?:my|our|the)\s+(?:policy|policies|guidelines|rules)",
     r"(?i)(?:sensitive|confidential|private)\s+(?:information|data)",
     r"(?i)i\s+(?:must|need\s+to)\s+(?:decline|refuse|respectfully)",
+    # Soft redirects (agent scope-limits without explicit refusal)
+    r"(?i)i(?:'m|\s+am)\s+(?:here|designed|built)\s+to\s+(?:help|assist)\s+with",
+    r"(?i)(?:that'?s?|this\s+is)\s+(?:outside|beyond)\s+(?:my|the)\s+(?:scope|area)",
+    r"(?i)(?:my|our)\s+(?:specialty|focus|expertise)\s+is",
 ]
 
 # Patterns that suggest escalation (agent handing off to human)
@@ -560,6 +565,10 @@ ESCALATION_PATTERNS = [
     r"(?i)(?:connect|transfer|escalat)\w*\s+(?:you\s+)?(?:to|with)\s+(?:a\s+)?(?:human|agent|specialist|representative|someone|person|team)",
     r"(?i)(?:let\s+me\s+)?(?:get|find)\s+(?:you\s+)?(?:a\s+)?(?:human|real\s+person|specialist|agent)",
     r"(?i)(?:hand|pass)\w*\s+(?:you\s+)?(?:off|over)\s+to",
+    # Soft escalation (acknowledging inability + offering human help)
+    r"(?i)(?:please\s+)?hold\s+(?:on|while)\s+(?:I|we)\s+(?:connect|transfer)",
+    r"(?i)(?:I'?d?\s+like\s+to|let\s+me)\s+(?:connect|get)\s+you\s+(?:with|to)",
+    r"(?i)(?:at\s+this\s+time|currently).*(?:unable|cannot)\s+to\s+transfer",
 ]
 
 
@@ -677,6 +686,14 @@ def _run_check(
         elif name == "action_invoked":
             has_action = turn.has_action_result
             if isinstance(expected, bool):
+                # For Agent Script agents, action results are embedded in
+                # Inform text — has_action_result is always False.  Fall back
+                # to checking planner_surfaces on each message.
+                if not has_action:
+                    has_action = any(
+                        bool(getattr(m, "planner_surfaces", None))
+                        for m in turn.agent_messages
+                    )
                 check["actual"] = has_action
                 check["passed"] = has_action == expected
                 check["detail"] = (
@@ -688,10 +705,27 @@ def _run_check(
                 action_name = str(expected)
                 raw_json = json.dumps(turn.raw_response)
                 name_found = action_name.lower() in raw_json.lower()
+                # Fallback for Agent Script: search planner_surfaces
+                if not has_action:
+                    has_action = any(
+                        bool(getattr(m, "planner_surfaces", None))
+                        for m in turn.agent_messages
+                    )
+                    if has_action and not name_found:
+                        # Check planner_surfaces for the action name
+                        for m in turn.agent_messages:
+                            for ps in getattr(m, "planner_surfaces", []):
+                                if action_name.lower() in json.dumps(ps).lower():
+                                    name_found = True
+                                    break
                 check["actual"] = has_action and name_found
                 check["passed"] = has_action and name_found
                 if not has_action:
-                    check["detail"] = f"No action result (expected action '{action_name}')"
+                    check["detail"] = (
+                        f"No action result (expected action '{action_name}'). "
+                        f"Note: Agent Script agents may not expose action results "
+                        f"via API — use response_contains instead."
+                    )
                 elif not name_found:
                     check["detail"] = f"Action invoked but '{action_name}' not found in response"
                 else:
@@ -743,6 +777,8 @@ def _run_check(
         elif name == "response_acknowledges_error":
             err_patterns = [
                 r"(?i)(?:sorry|apologize|error|issue|problem|unfortunately|went\s+wrong)",
+                r"(?i)(?:could\s+not|couldn'?t|cannot|unable\s+to)\s+(?:find|locate|retrieve|process)",
+                r"(?i)(?:no\s+(?:results?|records?|matches?|order)|not\s+found|doesn'?t\s+exist)",
             ]
             acknowledged = _matches_patterns(turn.agent_text, err_patterns)
             check["actual"] = acknowledged
@@ -1422,6 +1458,8 @@ def _infer_failure_category(check_name: str, turn: Dict) -> Optional[str]:
     mapping = {
         "topic_contains": "TOPIC_RE_MATCHING_FAILURE",
         "response_contains": "CONTEXT_PRESERVATION_FAILURE",
+        "response_contains_any": "CONTEXT_PRESERVATION_FAILURE",
+        "response_not_contains": "GUARDRAIL_NOT_TRIGGERED",
         "context_retained": "CONTEXT_PRESERVATION_FAILURE",
         "context_uses": "CONTEXT_PRESERVATION_FAILURE",
         "no_re_ask_for": "CONTEXT_PRESERVATION_FAILURE",
@@ -1430,8 +1468,15 @@ def _infer_failure_category(check_name: str, turn: Dict) -> Optional[str]:
         "escalation_triggered": "MULTI_TURN_ESCALATION_FAILURE",
         "guardrail_triggered": "GUARDRAIL_NOT_TRIGGERED",
         "action_invoked": "ACTION_NOT_INVOKED",
+        "has_action_result": "ACTION_NOT_INVOKED",
         "action_uses_prior_output": "ACTION_CHAIN_FAILURE",
+        "action_uses_variable": "ACTION_CHAIN_FAILURE",
         "response_not_empty": "RESPONSE_QUALITY_ISSUE",
+        "response_acknowledges_change": "RESPONSE_QUALITY_ISSUE",
+        "response_offers_help": "RESPONSE_QUALITY_ISSUE",
+        "response_offers_alternative": "RESPONSE_QUALITY_ISSUE",
+        "response_acknowledges_error": "RESPONSE_QUALITY_ISSUE",
+        "conversation_resolved": "RESPONSE_QUALITY_ISSUE",
         "response_declines_gracefully": "GUARDRAIL_NOT_TRIGGERED",
         "resumes_normal": "GUARDRAIL_RECOVERY_FAILURE",
         "turn_elapsed_max": "RESPONSE_QUALITY_ISSUE",
