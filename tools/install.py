@@ -694,6 +694,15 @@ def get_hooks_config() -> Dict[str, Any]:
                     "timeout": 5000
                 }],
                 "_sf_skills": True
+            },
+            {
+                "matcher": "Read",
+                "hooks": [{
+                    "type": "command",
+                    "command": f"python3 {scripts_path}/auto-approve.py",
+                    "timeout": 5000
+                }],
+                "_sf_skills": True
             }
         ],
         "SubagentStop": [

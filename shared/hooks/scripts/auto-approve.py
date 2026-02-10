@@ -7,16 +7,18 @@ This reduces user friction for common safe operations while maintaining
 security for dangerous ones.
 
 Auto-Approval Matrix:
-┌────────────────────────────┬────────────┬─────────────────┐
-│ Operation                  │ Org Type   │ Decision        │
-├────────────────────────────┼────────────┼─────────────────┤
-│ Read operations            │ Any        │ AUTO-APPROVE    │
-│ Deploy/test                │ Scratch    │ AUTO-APPROVE    │
-│ Deploy with --dry-run      │ Sandbox    │ AUTO-APPROVE    │
-│ Deploy to production       │ Production │ REQUIRE CONFIRM │
-│ DELETE, org delete         │ Any        │ REQUIRE CONFIRM │
-│ Force push, reset --hard   │ Any        │ REQUIRE CONFIRM │
-└────────────────────────────┴────────────┴─────────────────┘
+┌────────────────────────────────────┬────────────┬─────────────────┐
+│ Operation                          │ Org Type   │ Decision        │
+├────────────────────────────────────┼────────────┼─────────────────┤
+│ Read ~/.claude/**                  │ Any        │ AUTO-APPROVE    │
+│ Read (other paths)                 │ Any        │ DEFER           │
+│ SF read operations (Bash)          │ Any        │ AUTO-APPROVE    │
+│ Deploy/test                        │ Scratch    │ AUTO-APPROVE    │
+│ Deploy with --dry-run              │ Sandbox    │ AUTO-APPROVE    │
+│ Deploy to production               │ Production │ REQUIRE CONFIRM │
+│ DELETE, org delete                 │ Any        │ REQUIRE CONFIRM │
+│ Force push, reset --hard           │ Any        │ REQUIRE CONFIRM │
+└────────────────────────────────────┴────────────┴─────────────────┘
 
 Output Format (PermissionRequest):
 {
@@ -352,6 +354,26 @@ def main():
     # Get tool info
     tool_name = input_data.get("tool_name", "")
     tool_input = input_data.get("tool_input", {})
+
+    # Handle Read tool — auto-approve reads to ~/.claude/
+    if tool_name == "Read":
+        file_path = tool_input.get("file_path", "")
+        claude_dir = os.path.expanduser("~/.claude/")
+        if file_path.startswith(claude_dir):
+            auto_approve = True
+            reason = "✅ Safe read of ~/.claude/ configuration"
+        else:
+            auto_approve = False
+            reason = "Read outside ~/.claude/ — deferring to default permission handling"
+        output = {
+            "hookSpecificOutput": {
+                "hookEventName": "PermissionRequest",
+                "autoApprove": auto_approve,
+                "reason": reason
+            }
+        }
+        print(json.dumps(output))
+        sys.exit(0)
 
     # Only process Bash commands
     if tool_name != "Bash":
