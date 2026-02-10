@@ -378,6 +378,61 @@ sf agent activate --api-name My_Agent --target-org myorg
 
 ---
 
+## Post-Deployment Validation for API Access
+
+After deploying and activating an agent, verify it is accessible via the Agent Runtime API. Missing metadata causes silent 500 errors.
+
+### Validation Checklist
+
+```bash
+# 1. Verify GenAiPlannerBundle has plannerSurfaces
+sf project retrieve start --metadata GenAiPlannerBundle --target-org myorg --output-dir ./check
+grep -l "plannerSurfaces" ./check/**/*.xml
+# If no results → add plannerSurfaces block (see below)
+
+# 2. Verify BotVersion has surfacesEnabled=true
+sf project retrieve start --metadata BotVersion --target-org myorg --output-dir ./check
+grep "surfacesEnabled" ./check/**/*.xml
+# Should show: <surfacesEnabled>true</surfacesEnabled>
+
+# 3. Test API connectivity
+curl -s -X POST "https://DOMAIN.my.salesforce.com/services/oauth2/token" \
+  -d "grant_type=client_credentials&client_id=KEY&client_secret=SECRET" | jq .access_token
+```
+
+### Fix: Add Missing plannerSurfaces
+
+If the GenAiPlannerBundle XML is missing the `plannerSurfaces` block:
+
+```xml
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- existing elements -->
+    <plannerSurfaces>
+        <plannerSurface>
+            <surfaceType>EinsteinAgentApiChannel</surfaceType>
+        </plannerSurface>
+    </plannerSurfaces>
+</GenAiPlannerBundle>
+```
+
+### Fix: Enable surfacesEnabled on BotVersion
+
+```xml
+<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- existing elements -->
+    <surfacesEnabled>true</surfacesEnabled>
+</BotVersion>
+```
+
+Then redeploy:
+```bash
+sf project deploy start --metadata GenAiPlannerBundle,BotVersion --target-org myorg
+```
+
+> **Why this matters**: Without `plannerSurfaces` and `surfacesEnabled=true`, the Agent Runtime API returns `500 UNKNOWN_EXCEPTION` on session creation. The agent works fine in the UI but is unreachable programmatically.
+
+---
+
 ## Troubleshooting
 
 ### "Internal Error, try again later"

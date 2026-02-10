@@ -835,6 +835,64 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
 3. **Publish**: `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG`
 4. **Monitor** - Use trace debugging for production issues
 
+### Phase 5.5: API Channel Enablement (For Agent Runtime API Testing)
+
+> ⚠️ **Without these steps, Agent Runtime API calls return `500 Internal Server Error`.**
+
+After publishing an Agent Script agent, the following metadata must be configured for API access:
+
+**1. GenAiPlannerBundle — Add `plannerSurfaces` block:**
+
+When deploying via the `Agent` pseudo metadata type, retrieve and verify the `GenAiPlannerBundle` XML includes:
+```xml
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- ... existing elements ... -->
+    <plannerSurfaces>
+        <plannerSurface>
+            <surfaceType>EinsteinAgentApiChannel</surfaceType>
+        </plannerSurface>
+    </plannerSurfaces>
+</GenAiPlannerBundle>
+```
+
+If missing, add it and redeploy:
+```bash
+sf project deploy start --metadata GenAiPlannerBundle:AgentName_Planner -o TARGET_ORG
+```
+
+**2. BotVersion — Set `surfacesEnabled` to `true`:**
+
+The `BotVersion` metadata defaults `surfacesEnabled` to `false`. Update:
+```xml
+<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- ... existing elements ... -->
+    <surfacesEnabled>true</surfacesEnabled>
+</BotVersion>
+```
+
+```bash
+sf project deploy start --metadata BotVersion:AgentName.v1 -o TARGET_ORG
+```
+
+**3. External Client App (ECA) — Required for Client Credentials flow:**
+
+The Agent Runtime API requires OAuth with `chatbot_api`, `sfap_api`, and `api` scopes. See `/sf-connected-apps` for ECA creation.
+
+**Validation — Confirm API access works:**
+```bash
+# Acquire token
+curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/services/oauth2/token" \
+  -d "grant_type=client_credentials&client_id=KEY&client_secret=SECRET"
+
+# Create agent session
+curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/einstein/ai-agent/v1" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"agentDefinitionId":"0XxXXXXXXXXXXXXXXX"}'
+```
+
+> **Symptom**: 500 error with `"errorCode": "UNKNOWN_EXCEPTION"` → Missing `plannerSurfaces` or `surfacesEnabled=false`.
+
 ### Phase 6: CLI Operations
 ```bash
 # Retrieve from org

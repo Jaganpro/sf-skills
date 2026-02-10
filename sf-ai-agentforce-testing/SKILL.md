@@ -927,8 +927,20 @@ testCases:
 - Agents with `WITH USER_MODE` Apex require the Einstein Agent User to have object permissions — missing permissions cause **silent failures** (0 rows, no error)
 - `subjectName` in the YAML spec maps to `config.developer_name` in the `.agent` file
 
+**⚠️ Agent Script API Testing Caveat:**
+
+Agent Script agents embed action results differently via the Agent Runtime API:
+- **Agent Builder agents**: Return separate `ActionResult` message types with structured data
+- **Agent Script agents**: Embed action outputs within `Inform` text messages — no separate `ActionResult` type
+
+This means:
+- `action_invoked: true` (boolean) may fail even when the action runs — use `response_contains` to verify action output instead
+- `action_invoked: "action_name"` uses `plannerSurfaces` fallback parsing but is less reliable
+- For robust testing, prefer `response_contains` / `response_contains_any` checks over `action_invoked`
+
 **Agent Script Templates & Docs:**
-- Template: [agentscript-test-spec.yaml](templates/agentscript-test-spec.yaml) — 5 test patterns
+- Template: [agentscript-test-spec.yaml](templates/agentscript-test-spec.yaml) — 5 test patterns (CLI)
+- Template: [multi-turn-agentscript-comprehensive.yaml](templates/multi-turn-agentscript-comprehensive.yaml) — 6 multi-turn API scenarios
 - Guide: [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) — detailed patterns with worked examples
 
 **Automated Test Spec Generation:**
