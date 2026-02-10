@@ -347,14 +347,70 @@ python3 -c "import json; d = json.load(open('$HOME/.claude/settings.json')); pri
 
 | Command | Description |
 |---------|-------------|
-| `--diagnose` | Run 6-point diagnostic check on installation health |
+| `--diagnose` | Run 7-point diagnostic check on installation health |
 | `--restore-settings` | Interactively restore settings.json from latest backup |
+| `--profile [action] [name]` | Profile management (see below) |
 | `--status` | Show installation status and check for updates |
 | `--update` | Check and apply updates (version + content) |
 | `--force-update` | Force reinstall even if up-to-date |
 | `--uninstall` | Remove sf-skills installation |
 | `--dry-run` | Preview changes without applying |
 | `--force` | Skip confirmation prompts |
+
+## Enterprise Claude Code (Bedrock Gateway)
+
+Salesforce provides Claude Code to internal engineers via a custom API gateway (LLM Gateway Express → AWS Bedrock). These "enterprise" installs differ structurally from personal Anthropic subscriptions.
+
+### Detection Signals
+
+| Signal | Personal | Enterprise |
+|--------|----------|------------|
+| `forceLoginMethod` | `"claudeai"` | `"console"` |
+| `CLAUDE_CODE_USE_BEDROCK` | `"0"` | `"1"` |
+| `ANTHROPIC_BEDROCK_BASE_URL` | absent | gateway URL |
+| `ANTHROPIC_AUTH_TOKEN` | absent | gateway API key |
+| Model ID format | `claude-opus-4-5-*` | `us.anthropic.claude-*` |
+| Telemetry | enabled | disabled |
+
+The installer auto-detects enterprise vs personal environments and adapts diagnostics accordingly.
+
+### Profile Management
+
+Profiles let you safely switch between personal and enterprise `settings.json` configurations without losing your hooks, permissions, or other preferences.
+
+```bash
+# Save your current config as a named profile
+python3 ~/.claude/sf-skills-install.py --profile save personal
+python3 ~/.claude/sf-skills-install.py --profile save enterprise
+
+# List all saved profiles
+python3 ~/.claude/sf-skills-install.py --profile list
+
+# Switch to a different profile (hooks/permissions preserved)
+python3 ~/.claude/sf-skills-install.py --profile use enterprise
+
+# Preview a switch without making changes
+python3 ~/.claude/sf-skills-install.py --profile use enterprise --dry-run
+
+# View profile contents (auth tokens redacted)
+python3 ~/.claude/sf-skills-install.py --profile show enterprise
+
+# Delete a profile
+python3 ~/.claude/sf-skills-install.py --profile delete old-config
+```
+
+### What Gets Preserved During Profile Switches
+
+| Category | Behavior | Examples |
+|----------|----------|---------|
+| **Auth layer** | Replaced from profile | `forceLoginMethod`, `env`, `model`, `forceLoginOrgUUID` |
+| **User preferences** | Preserved from current | `hooks`, `permissions`, `statusLine`, `outputStyle` |
+| **sf-skills config** | Preserved from current | `hooks` (always), `enabledPlugins`, `attribution` |
+
+### Enterprise Limitations
+
+- **LLM-based evaluation**: Disabled for enterprise. The `llm-eval.py` hook uses the Anthropic SDK directly, which doesn't route through the Bedrock gateway. Pattern-based guardrails still provide equivalent protection.
+- **Telemetry**: Disabled by enterprise configuration.
 
 ## Contributing
 

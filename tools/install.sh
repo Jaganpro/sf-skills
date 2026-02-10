@@ -348,19 +348,66 @@ check_ssl_certs() {
     return 0  # Don't block installation — let the Python installer handle it
 }
 
+detect_enterprise_claude() {
+    # Detect enterprise (Bedrock gateway) vs personal Claude Code
+    # Returns: "enterprise", "personal", or "unknown"
+    local settings="$HOME/.claude/settings.json"
+    if [[ ! -f "$settings" ]]; then
+        echo "unknown"
+        return
+    fi
+
+    local result
+    result=$(python3 -c "
+import json, sys
+try:
+    s = json.load(open('$settings'))
+    env = s.get('env', {})
+    if env.get('CLAUDE_CODE_USE_BEDROCK') == '1':
+        print('enterprise')
+    elif env.get('ANTHROPIC_BEDROCK_BASE_URL'):
+        print('enterprise')
+    elif s.get('forceLoginMethod') == 'claudeai':
+        print('personal')
+    elif s.get('forceLoginOrgUUID'):
+        print('personal')
+    else:
+        print('unknown')
+except Exception:
+    print('unknown')
+" 2>/dev/null)
+    echo "${result:-unknown}"
+}
+
 check_claude_code() {
     print_step "Checking for Claude Code..."
     explain "Claude Code is Anthropic's AI coding assistant CLI tool."
 
     if [[ -d "$HOME/.claude" ]]; then
         print_success "Claude Code directory found: ~/.claude/"
+
+        # Detect enterprise vs personal
+        local env_type
+        env_type=$(detect_enterprise_claude)
+        if [[ "$env_type" == "enterprise" ]]; then
+            print_info "🏢 Enterprise environment detected (Bedrock gateway)"
+        elif [[ "$env_type" == "personal" ]]; then
+            print_info "👤 Personal environment detected"
+        fi
+
         return 0
     else
         print_error "Claude Code not installed (~/.claude/ not found)"
         echo ""
         print_info "Install Claude Code first:"
-        print_info "  npm install -g @anthropic-ai/claude-code"
-        print_info "  Then run: claude"
+        print_info ""
+        print_info "  Personal (Anthropic subscription):"
+        print_info "    npm install -g @anthropic-ai/claude-code"
+        print_info "    Then run: claude"
+        print_info ""
+        print_info "  Enterprise (Bedrock gateway):"
+        print_info "    Install via your org's DX CLI toolchain"
+        print_info "    Then configure: ~/.claude/settings.json"
         print_info ""
         print_info "Learn more: https://claude.ai/code"
         return 1
@@ -534,6 +581,9 @@ run_health_check() {
 }
 
 show_next_steps() {
+    local env_type
+    env_type=$(detect_enterprise_claude)
+
     echo ""
     echo -e "${BOLD}${GREEN}✅ Installation Complete!${NC}"
     echo ""
@@ -545,9 +595,20 @@ show_next_steps() {
     echo -e "  2. ${BOLD}Try your first skill${NC}"
     echo "     In Claude Code, type: /sf-apex"
     echo ""
-    echo -e "  3. ${BOLD}Connect a Salesforce org${NC} (if not already)"
-    echo "     Run: sf org login web"
-    echo ""
+
+    if [[ "$env_type" == "enterprise" ]]; then
+        echo -e "  3. ${BOLD}Save your enterprise profile${NC}"
+        echo "     python3 ~/.claude/sf-skills-install.py --profile save enterprise"
+        echo ""
+        echo -e "  ${DIM}ℹ️  Enterprise note: LLM-based evaluation is disabled for Bedrock"
+        echo -e "     gateway configs. Pattern-based guardrails still active.${NC}"
+        echo ""
+    else
+        echo -e "  3. ${BOLD}Connect a Salesforce org${NC} (if not already)"
+        echo "     Run: sf org login web"
+        echo ""
+    fi
+
     echo -e "  📖 Documentation: ${CYAN}${DOCS_URL}${NC}"
     echo ""
 }

@@ -16,6 +16,13 @@ Usage:
     python3 install.py --dry-run      # Preview changes
     python3 install.py --force        # Skip confirmations
 
+    # Profile management (personal/enterprise config switching):
+    python3 install.py --profile list             # List saved profiles
+    python3 install.py --profile save personal    # Save current config as profile
+    python3 install.py --profile use enterprise   # Switch to enterprise config
+    python3 install.py --profile show enterprise  # View profile (tokens redacted)
+    python3 install.py --profile delete old       # Delete a profile
+
 Update Detection:
     The --update command detects both version bumps AND content changes:
     - Version bump: Remote version > local version
@@ -30,6 +37,7 @@ Requirements:
 import argparse
 import json
 import os
+import re
 import shutil
 import ssl
 import sys
@@ -46,7 +54,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # CONFIGURATION
 # ============================================================================
 
-VERSION = "1.1.0"  # Installer version
+VERSION = "1.2.0"  # Installer version
 
 # Installation paths (Claude Code native layout)
 CLAUDE_DIR = Path.home() / ".claude"
@@ -58,6 +66,16 @@ INSTALLER_FILE = CLAUDE_DIR / "sf-skills-install.py"
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
 SETTINGS_BACKUP_DIR = CLAUDE_DIR / ".settings-backups"
 MAX_SETTINGS_BACKUPS = 5
+
+# Profile management
+PROFILE_PREFIX = "settings."
+PROFILE_SUFFIX = ".json"
+
+# Keys preserved across profile switches (user preferences + sf-skills config)
+PERSISTENT_KEYS = frozenset({
+    "hooks", "permissions", "statusLine", "attribution",
+    "cleanupPeriodDays", "outputStyle", "enabledPlugins",
+})
 
 # Legacy paths (for migration cleanup only)
 LEGACY_INSTALL_DIR = CLAUDE_DIR / "sf-skills"
@@ -96,6 +114,63 @@ class InstallState:
     MARKETPLACE = "marketplace"  # Old marketplace install
     LEGACY = "legacy"            # Old sf-skills-hooks install
     CORRUPTED = "corrupted"      # Exists but missing fingerprint
+
+
+# ============================================================================
+# ENTERPRISE DETECTION
+# ============================================================================
+
+class Environment:
+    """Claude Code environment types."""
+    PERSONAL = "personal"
+    ENTERPRISE = "enterprise"
+    UNKNOWN = "unknown"
+
+
+def _detect_env_from_dict(settings: Dict[str, Any]) -> str:
+    """Detect environment type from a settings dict.
+
+    Detection priority:
+    1. CLAUDE_CODE_USE_BEDROCK=1 → enterprise (strongest signal)
+    2. ANTHROPIC_BEDROCK_BASE_URL present → enterprise
+    3. forceLoginMethod=console + ANTHROPIC_AUTH_TOKEN → enterprise
+    4. forceLoginMethod=claudeai → personal
+    5. forceLoginOrgUUID present → personal
+    6. Otherwise → unknown
+    """
+    env = settings.get("env", {})
+    if env.get("CLAUDE_CODE_USE_BEDROCK") == "1":
+        return Environment.ENTERPRISE
+    if env.get("ANTHROPIC_BEDROCK_BASE_URL"):
+        return Environment.ENTERPRISE
+    if settings.get("forceLoginMethod") == "console" and env.get("ANTHROPIC_AUTH_TOKEN"):
+        return Environment.ENTERPRISE
+    if settings.get("forceLoginMethod") == "claudeai":
+        return Environment.PERSONAL
+    if settings.get("forceLoginOrgUUID"):
+        return Environment.PERSONAL
+    return Environment.UNKNOWN
+
+
+def detect_environment() -> Tuple[str, Dict[str, Any]]:
+    """Auto-detect personal vs enterprise from settings.json.
+
+    Returns:
+        Tuple of (environment_type, details_dict)
+    """
+    if not SETTINGS_FILE.exists():
+        return Environment.UNKNOWN, {}
+    try:
+        settings = json.loads(SETTINGS_FILE.read_text())
+    except (json.JSONDecodeError, IOError):
+        return Environment.UNKNOWN, {}
+    env_type = _detect_env_from_dict(settings)
+    details = {
+        "login_method": settings.get("forceLoginMethod", "unknown"),
+        "model": settings.get("model", "unknown"),
+        "bedrock": settings.get("env", {}).get("CLAUDE_CODE_USE_BEDROCK", "0"),
+    }
+    return env_type, details
 
 
 def safe_rmtree(path: Path) -> None:
@@ -775,6 +850,209 @@ def restore_settings_from_backup(backup_path: Optional[Path] = None) -> bool:
 
     # Write to settings.json
     SETTINGS_FILE.write_text(content)
+    return True
+
+
+# ============================================================================
+# SETTINGS PROFILE MANAGEMENT
+# ============================================================================
+
+def _validate_profile_name(name: str) -> bool:
+    """Validate a profile name.
+
+    Rules: 1-30 chars, alphanumeric + hyphens, must start with letter/digit.
+    Reserved names are rejected.
+    """
+    if not name or len(name) > 30:
+        return False
+    if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9-]*$', name):
+        return False
+    reserved = {"json", "backup", "backups", "settings"}
+    if name.lower() in reserved:
+        return False
+    return True
+
+
+def _redact_auth_token(env_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a copy of env dict with auth tokens redacted for display."""
+    sensitive_keys = {"ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY"}
+    result = {}
+    for k, v in env_dict.items():
+        if k in sensitive_keys and isinstance(v, str) and len(v) > 6:
+            result[k] = v[:6] + "..."
+        else:
+            result[k] = v
+    return result
+
+
+def list_profiles() -> List[Dict[str, Any]]:
+    """List all saved settings profiles.
+
+    Scans ~/.claude/settings.*.json (excludes main settings.json).
+
+    Returns:
+        List of {name, path, environment, model} dicts, sorted by name.
+    """
+    profiles = []
+    for p in sorted(CLAUDE_DIR.glob(f"{PROFILE_PREFIX}*{PROFILE_SUFFIX}")):
+        # Skip the main settings.json
+        if p.name == "settings.json":
+            continue
+        # Extract profile name from settings.{name}.json
+        name = p.name[len(PROFILE_PREFIX):-len(PROFILE_SUFFIX)]
+        if not name:
+            continue
+        try:
+            data = json.loads(p.read_text())
+            env_type = _detect_env_from_dict(data)
+            model = data.get("model", "default")
+            profiles.append({
+                "name": name,
+                "path": p,
+                "environment": env_type,
+                "model": model,
+            })
+        except (json.JSONDecodeError, IOError):
+            profiles.append({
+                "name": name,
+                "path": p,
+                "environment": "invalid",
+                "model": "?",
+            })
+    return profiles
+
+
+def load_profile(name: str) -> Optional[Dict[str, Any]]:
+    """Load a named profile from disk.
+
+    Args:
+        name: Profile name (e.g., "personal", "enterprise")
+
+    Returns:
+        Parsed settings dict, or None if not found/invalid.
+    """
+    profile_path = CLAUDE_DIR / f"{PROFILE_PREFIX}{name}{PROFILE_SUFFIX}"
+    if not profile_path.exists():
+        return None
+    try:
+        return json.loads(profile_path.read_text())
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
+def save_profile(name: str, force: bool = False) -> bool:
+    """Save current auth-layer settings as a named profile.
+
+    Strips PERSISTENT_KEYS (hooks, permissions, etc.) so the profile
+    contains only the auth/environment layer.
+
+    Args:
+        name: Profile name
+        force: Overwrite existing profile
+
+    Returns:
+        True on success
+    """
+    if not _validate_profile_name(name):
+        print_error(f"Invalid profile name: '{name}'")
+        print_info("Use 1-30 alphanumeric chars and hyphens (e.g., 'personal', 'enterprise')")
+        return False
+
+    profile_path = CLAUDE_DIR / f"{PROFILE_PREFIX}{name}{PROFILE_SUFFIX}"
+    if profile_path.exists() and not force:
+        print_error(f"Profile '{name}' already exists (use --force to overwrite)")
+        return False
+
+    if not SETTINGS_FILE.exists():
+        print_error("settings.json not found — nothing to save")
+        return False
+
+    try:
+        settings = json.loads(SETTINGS_FILE.read_text())
+    except (json.JSONDecodeError, IOError) as e:
+        print_error(f"Cannot read settings.json: {e}")
+        return False
+
+    # Strip persistent keys — profile should only contain auth layer
+    profile_data = {k: v for k, v in settings.items() if k not in PERSISTENT_KEYS}
+
+    profile_path.write_text(json.dumps(profile_data, indent=2))
+    return True
+
+
+def apply_profile(name: str, dry_run: bool = False) -> bool:
+    """Switch to a named profile, preserving user preferences.
+
+    Merge strategy: profile provides auth layer, current settings
+    provide user preferences (hooks, permissions, statusLine, etc.).
+
+    Args:
+        name: Profile name to switch to
+        dry_run: Preview changes without applying
+
+    Returns:
+        True on success
+    """
+    profile_data = load_profile(name)
+    if profile_data is None:
+        print_error(f"Profile '{name}' not found or invalid")
+        available = list_profiles()
+        if available:
+            print_info(f"Available profiles: {', '.join(p['name'] for p in available)}")
+        return False
+
+    # Load current settings for persistent keys
+    current = {}
+    if SETTINGS_FILE.exists():
+        try:
+            current = json.loads(SETTINGS_FILE.read_text())
+        except (json.JSONDecodeError, IOError):
+            print_warning("Current settings.json unreadable — proceeding with profile only")
+
+    # Build merged settings: start with profile (auth layer only)
+    merged = {k: v for k, v in profile_data.items() if k not in PERSISTENT_KEYS}
+
+    # Overlay persistent keys from current settings
+    for key in PERSISTENT_KEYS:
+        if key in current:
+            merged[key] = current[key]
+
+    if dry_run:
+        env_type = _detect_env_from_dict(merged)
+        print_info(f"Would switch to profile '{name}' ({env_type})")
+        print_info(f"Auth layer: {', '.join(k for k in merged if k not in PERSISTENT_KEYS)}")
+        preserved = [k for k in PERSISTENT_KEYS if k in merged]
+        if preserved:
+            print_info(f"Preserved from current: {', '.join(preserved)}")
+        return True
+
+    # Backup current settings before switching
+    backup_settings(reason="pre-profile-switch")
+
+    # Write merged settings
+    SETTINGS_FILE.write_text(json.dumps(merged, indent=2))
+
+    # Validate the write
+    original_keys = set(current.keys()) if current else set()
+    _validate_settings_write(original_keys)
+
+    return True
+
+
+def delete_profile(name: str) -> bool:
+    """Delete a saved profile.
+
+    Args:
+        name: Profile name to delete
+
+    Returns:
+        True if deleted, False if not found
+    """
+    profile_path = CLAUDE_DIR / f"{PROFILE_PREFIX}{name}{PROFILE_SUFFIX}"
+    if not profile_path.exists():
+        print_error(f"Profile '{name}' not found")
+        return False
+    profile_path.unlink()
     return True
 
 
@@ -2046,16 +2324,49 @@ def cmd_diagnose() -> int:
             key_count = len(settings)
             print(f"   {c('✅', Colors.GREEN)} Valid JSON ({key_count} top-level keys)")
 
-            # Check auth-related fields
-            auth_fields = ["forceLoginMethod", "env", "permissions", "model"]
-            present = [f for f in auth_fields if f in settings]
-            missing = [f for f in auth_fields if f not in settings]
+            # Detect environment type
+            env_type = _detect_env_from_dict(settings)
+            env_icon = "🏢" if env_type == Environment.ENTERPRISE else "👤" if env_type == Environment.PERSONAL else "❓"
+            print(f"   {c('ℹ️', Colors.BLUE)} Environment: {env_icon} {env_type}")
 
-            if present:
-                print(f"   {c('✅', Colors.GREEN)} Auth fields present: {', '.join(present)}")
-            if missing:
-                print(f"   {c('⚠️', Colors.YELLOW)} Auth fields missing: {', '.join(missing)}")
-                print(f"      (Not all are required — depends on your Claude Code setup)")
+            if env_type == Environment.ENTERPRISE:
+                # Enterprise auth checks
+                env_vars = settings.get("env", {})
+                enterprise_fields = {
+                    "ANTHROPIC_AUTH_TOKEN": env_vars.get("ANTHROPIC_AUTH_TOKEN"),
+                    "ANTHROPIC_BEDROCK_BASE_URL": env_vars.get("ANTHROPIC_BEDROCK_BASE_URL"),
+                    "CLAUDE_CODE_USE_BEDROCK": env_vars.get("CLAUDE_CODE_USE_BEDROCK"),
+                }
+                for field, value in enterprise_fields.items():
+                    if value:
+                        display = value[:6] + "..." if "TOKEN" in field or "KEY" in field else value
+                        print(f"   {c('✅', Colors.GREEN)} {field}: {display}")
+                    else:
+                        print(f"   {c('❌', Colors.RED)} {field}: missing (required for enterprise)")
+                        issues += 1
+                login = settings.get("forceLoginMethod")
+                if login == "console":
+                    print(f"   {c('✅', Colors.GREEN)} forceLoginMethod: console")
+                else:
+                    print(f"   {c('⚠️', Colors.YELLOW)} forceLoginMethod: {login or 'unset'} (expected 'console' for enterprise)")
+            elif env_type == Environment.PERSONAL:
+                # Personal auth checks
+                auth_fields = ["forceLoginMethod", "env", "permissions", "model"]
+                present = [f for f in auth_fields if f in settings]
+                missing = [f for f in auth_fields if f not in settings]
+                if present:
+                    print(f"   {c('✅', Colors.GREEN)} Auth fields present: {', '.join(present)}")
+                if missing:
+                    print(f"   {c('⚠️', Colors.YELLOW)} Auth fields missing: {', '.join(missing)}")
+                    print(f"      (Not all are required — depends on your Claude Code setup)")
+            else:
+                # Unknown environment — generic check
+                auth_fields = ["forceLoginMethod", "env", "model"]
+                present = [f for f in auth_fields if f in settings]
+                if present:
+                    print(f"   {c('✅', Colors.GREEN)} Config fields present: {', '.join(present)}")
+                else:
+                    print(f"   {c('⚠️', Colors.YELLOW)} No auth fields detected — run --profile save to create a profile")
 
             if "hooks" in settings:
                 sf_count = sum(
@@ -2193,6 +2504,18 @@ def cmd_diagnose() -> int:
     else:
         print(f"   {c('⚠️', Colors.YELLOW)} session-init.py not found (hooks not installed?)")
 
+    # ── Check 7: Settings Profiles ──
+    print(f"\n{c('7. Settings Profiles', Colors.BOLD)}")
+    profiles = list_profiles()
+    if profiles:
+        print(f"   {c('✅', Colors.GREEN)} {len(profiles)} profile(s) saved:")
+        for p in profiles:
+            p_icon = "🏢" if p["environment"] == Environment.ENTERPRISE else "👤" if p["environment"] == Environment.PERSONAL else "❓"
+            print(f"      {p_icon} {p['name']} ({p['environment']}, model: {p['model']})")
+    else:
+        print(f"   {c('ℹ️', Colors.BLUE)} No profiles saved")
+        print(f"      Tip: python3 {INSTALLER_FILE} --profile save personal")
+
     # ── Summary ──
     print("\n════════════════════════════════════════")
     if issues == 0:
@@ -2294,6 +2617,167 @@ def cmd_restore_settings() -> int:
         return 1
 
 
+def cmd_profile(args_list: List[str], dry_run: bool = False, force: bool = False) -> int:
+    """Route --profile subcommands.
+
+    Subcommands:
+        list (default)  - List all profiles
+        save <name>     - Save current auth-layer as profile
+        use <name>      - Switch to profile (preserving hooks/permissions)
+        show <name>     - Display profile contents (tokens redacted)
+        delete <name>   - Delete a profile
+    """
+    if not args_list:
+        args_list = ["list"]
+
+    subcmd = args_list[0]
+    subcmd_args = args_list[1:]
+
+    handlers = {
+        "list": _cmd_profile_list,
+        "save": _cmd_profile_save,
+        "use": _cmd_profile_use,
+        "show": _cmd_profile_show,
+        "delete": _cmd_profile_delete,
+    }
+
+    handler = handlers.get(subcmd)
+    if handler is None:
+        print_error(f"Unknown profile subcommand: '{subcmd}'")
+        print_info("Usage: --profile [list|save|use|show|delete] [name]")
+        return 1
+
+    return handler(subcmd_args, dry_run=dry_run, force=force)
+
+
+def _cmd_profile_list(args: List[str], **kwargs) -> int:
+    """List all saved profiles."""
+    profiles = list_profiles()
+
+    # Detect current environment
+    env_type, details = detect_environment()
+    env_icon = "🏢" if env_type == Environment.ENTERPRISE else "👤" if env_type == Environment.PERSONAL else "❓"
+
+    print(f"\n{c('Settings Profiles', Colors.BOLD)}")
+    print("════════════════════════════════════════\n")
+    print(f"  Current: {env_icon} {env_type} (model: {details.get('model', 'unknown')})")
+    print()
+
+    if not profiles:
+        print(f"  {c('No saved profiles', Colors.DIM)}")
+        print()
+        print("  Save your current config:")
+        print(f"    python3 {INSTALLER_FILE} --profile save personal")
+        print(f"    python3 {INSTALLER_FILE} --profile save enterprise")
+        return 0
+
+    print(f"  {'Name':<20} {'Environment':<15} {'Model':<25}")
+    print(f"  {'─' * 20} {'─' * 15} {'─' * 25}")
+
+    for p in profiles:
+        p_icon = "🏢" if p["environment"] == Environment.ENTERPRISE else "👤" if p["environment"] == Environment.PERSONAL else "❓"
+        print(f"  {p['name']:<20} {p_icon} {p['environment']:<12} {p['model']:<25}")
+
+    print(f"\n  Switch: python3 {INSTALLER_FILE} --profile use <name>")
+    print()
+    return 0
+
+
+def _cmd_profile_save(args: List[str], dry_run: bool = False, force: bool = False, **kwargs) -> int:
+    """Save current settings as a named profile."""
+    if not args:
+        print_error("Profile name required")
+        print_info("Usage: --profile save <name>")
+        return 1
+
+    name = args[0]
+
+    if dry_run:
+        print_info(f"Would save current auth-layer as profile '{name}'")
+        return 0
+
+    if save_profile(name, force=force):
+        try:
+            settings = json.loads(SETTINGS_FILE.read_text())
+            env_type = _detect_env_from_dict(settings)
+        except (json.JSONDecodeError, IOError):
+            env_type = Environment.UNKNOWN
+        env_icon = "🏢" if env_type == Environment.ENTERPRISE else "👤" if env_type == Environment.PERSONAL else "❓"
+        print_success(f"Profile '{name}' saved ({env_icon} {env_type})")
+        profile_path = CLAUDE_DIR / f"{PROFILE_PREFIX}{name}{PROFILE_SUFFIX}"
+        print_info(f"File: {profile_path}")
+        return 0
+    return 1
+
+
+def _cmd_profile_use(args: List[str], dry_run: bool = False, **kwargs) -> int:
+    """Switch to a named profile."""
+    if not args:
+        print_error("Profile name required")
+        print_info("Usage: --profile use <name>")
+        return 1
+
+    name = args[0]
+
+    if apply_profile(name, dry_run=dry_run):
+        if not dry_run:
+            env_type, _ = detect_environment()
+            env_icon = "🏢" if env_type == Environment.ENTERPRISE else "👤" if env_type == Environment.PERSONAL else "❓"
+            print_success(f"Switched to profile '{name}' ({env_icon} {env_type})")
+            print_info("Restart Claude Code to apply changes")
+        return 0
+    return 1
+
+
+def _cmd_profile_show(args: List[str], **kwargs) -> int:
+    """Display profile contents with tokens redacted."""
+    if not args:
+        print_error("Profile name required")
+        print_info("Usage: --profile show <name>")
+        return 1
+
+    name = args[0]
+    data = load_profile(name)
+    if data is None:
+        print_error(f"Profile '{name}' not found or invalid")
+        return 1
+
+    env_type = _detect_env_from_dict(data)
+    env_icon = "🏢" if env_type == Environment.ENTERPRISE else "👤" if env_type == Environment.PERSONAL else "❓"
+
+    print(f"\n{c(f'Profile: {name}', Colors.BOLD)} ({env_icon} {env_type})")
+    print("════════════════════════════════════════\n")
+
+    # Redact tokens in env vars
+    display_data = data.copy()
+    if "env" in display_data and isinstance(display_data["env"], dict):
+        display_data["env"] = _redact_auth_token(display_data["env"])
+
+    print(json.dumps(display_data, indent=2))
+    print()
+    return 0
+
+
+def _cmd_profile_delete(args: List[str], force: bool = False, **kwargs) -> int:
+    """Delete a saved profile."""
+    if not args:
+        print_error("Profile name required")
+        print_info("Usage: --profile delete <name>")
+        return 1
+
+    name = args[0]
+
+    if not force:
+        if not confirm(f"Delete profile '{name}'?", default=False):
+            print("Cancelled.")
+            return 1
+
+    if delete_profile(name):
+        print_success(f"Profile '{name}' deleted")
+        return 0
+    return 1
+
+
 # ============================================================================
 # CLI ENTRY POINT
 # ============================================================================
@@ -2314,6 +2798,15 @@ Examples:
   python3 install.py --dry-run     # Preview changes
   python3 install.py --force       # Skip confirmations
 
+Profile management:
+  python3 install.py --profile                    # List saved profiles
+  python3 install.py --profile list               # Same as above
+  python3 install.py --profile save personal      # Save current config
+  python3 install.py --profile use enterprise     # Switch profiles
+  python3 install.py --profile show enterprise    # View profile (redacted)
+  python3 install.py --profile delete old         # Delete a profile
+  python3 install.py --profile use ent --dry-run  # Preview switch
+
 Curl one-liner:
   curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
         """
@@ -2331,6 +2824,8 @@ Curl one-liner:
                         help="Run diagnostic checks on installation health")
     parser.add_argument("--restore-settings", action="store_true",
                         help="Restore settings.json from latest backup")
+    parser.add_argument("--profile", nargs='*', metavar="ACTION",
+                        help="Profile management: list|save|use|show|delete [name]")
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview changes without applying")
     parser.add_argument("--force", "-f", action="store_true",
@@ -2368,7 +2863,9 @@ Curl one-liner:
             pass  # is_relative_to may fail on some platforms
 
     # Route to appropriate command
-    if args.diagnose:
+    if args.profile is not None:
+        sys.exit(cmd_profile(args.profile, dry_run=args.dry_run, force=args.force))
+    elif args.diagnose:
         sys.exit(cmd_diagnose())
     elif args.restore_settings:
         sys.exit(cmd_restore_settings())
