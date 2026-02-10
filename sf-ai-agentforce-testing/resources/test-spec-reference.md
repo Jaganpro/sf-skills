@@ -412,6 +412,7 @@ When `--verbose` is used, `generatedData` includes additional fields — notably
 
 | Template | Purpose | CLI Compatible |
 |----------|---------|----------------|
+| `agentscript-test-spec.yaml` | Agent Script agents with conversationHistory pattern | **Yes** |
 | `standard-test-spec.yaml` | Reference format with all field types | **Yes** |
 | `basic-test-spec.yaml` | Quick start (5 tests) | **Yes** |
 | `comprehensive-test-spec.yaml` | Full coverage (20+ tests) with context vars, metrics, custom evals | **Yes** |
@@ -472,6 +473,9 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 | `conciseness` metric broken | Returns score=0 with empty explanation on most tests — platform bug |
 | `instruction_following` threshold | Labels FAILURE even at score=1 with "follows perfectly" explanation — threshold mismatch |
 | `completeness` unsuitable for routing | Penalizes triage agents that transfer instead of "solving" the user's problem |
+| Agent Script single-utterance limit | Multi-topic agents consume first reasoning cycle on topic transition (`go_<topic>`). Use `conversationHistory` to test business actions |
+| Agent Script action names | Use Level 1 definition name (`get_order_status`), NOT Level 2 invocation name (`check_status`) in `expectedActions` |
+| Agent Script permissions | `WITH USER_MODE` Apex silently returns 0 rows if Einstein Agent User lacks object permissions |
 
 ---
 
@@ -524,3 +528,5 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 - [docs/cli-commands.md](../docs/cli-commands.md) - Complete CLI reference
 - [resources/agentic-fix-loops.md](./agentic-fix-loops.md) - Auto-fix workflow
 - [docs/coverage-analysis.md](../docs/coverage-analysis.md) - Coverage metrics
+- [docs/agentscript-testing-patterns.md](../docs/agentscript-testing-patterns.md) - Agent Script test patterns
+- [templates/agentscript-test-spec.yaml](../templates/agentscript-test-spec.yaml) - Agent Script test template

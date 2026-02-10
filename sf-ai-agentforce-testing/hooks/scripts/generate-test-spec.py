@@ -86,6 +86,8 @@ def parse_agent_file(file_path: str) -> AgentStructure:
     current_action: Optional[AgentAction] = None
     current_indent = 0
     block_indent = 0
+    in_inputs_outputs = False  # Track if inside inputs:/outputs: sub-block
+    io_indent = 0
 
     for line_num, line in enumerate(lines, 1):
         # Skip empty lines and comments
@@ -107,12 +109,19 @@ def parse_agent_file(file_path: str) -> AgentStructure:
             continue
 
         if current_block == 'config' and indent_level > block_indent:
-            if stripped.startswith('agent_name:'):
+            if stripped.startswith('developer_name:'):
                 structure.agent_name = extract_value(stripped)
+            elif stripped.startswith('agent_name:'):
+                # Legacy/alternative field name
+                if not structure.agent_name:
+                    structure.agent_name = extract_value(stripped)
             elif stripped.startswith('agent_label:'):
                 structure.agent_label = extract_value(stripped)
-            elif stripped.startswith('description:'):
+            elif stripped.startswith('agent_description:'):
                 structure.description = extract_value(stripped)
+            elif stripped.startswith('description:'):
+                if not structure.description:
+                    structure.description = extract_value(stripped)
 
         # Parse start_agent topic
         if stripped.startswith('start_agent '):
@@ -153,12 +162,32 @@ def parse_agent_file(file_path: str) -> AgentStructure:
                 current_block = 'reasoning'
                 continue
 
-        # Inside topic actions block (where flow actions are defined)
+        # Inside topic actions block (where flow/apex actions are defined)
         if current_block == 'topic_actions' and current_topic:
-            # Check for action name definition (word followed by colon, possibly @ reference)
-            # Skip keywords that are not action names
-            skip_keywords = ('description:', 'inputs:', 'outputs:', 'target:', 'inp_', 'out_',
-                           'reasoning:', 'instructions:', 'actions:', 'label:')
+            # Check if we've exited the actions block (hit reasoning: at same or lower indent)
+            if stripped.startswith('reasoning:'):
+                current_block = 'reasoning'
+                current_action = None
+                in_inputs_outputs = False
+                continue
+
+            # Track inputs:/outputs: sub-blocks to skip field definitions
+            # (e.g., "orderId: string", "orderNumber: string" are NOT action names)
+            if stripped.startswith('inputs:') or stripped.startswith('outputs:'):
+                in_inputs_outputs = True
+                io_indent = indent_level
+                continue
+
+            # If inside inputs/outputs, skip deeper-indented lines (field defs)
+            if in_inputs_outputs:
+                if indent_level > io_indent:
+                    continue
+                else:
+                    in_inputs_outputs = False
+
+            # Check for action name definition (word followed by colon)
+            skip_keywords = ('description:', 'target:', 'inp_', 'out_',
+                           'instructions:', 'actions:', 'label:')
             if ':' in stripped and not stripped.startswith(skip_keywords):
                 action_match = re.match(r'^(\w+):', stripped)
                 if action_match:
@@ -170,23 +199,13 @@ def parse_agent_file(file_path: str) -> AgentStructure:
                     current_topic.actions.append(current_action)
                     continue
 
-            # Check if we've exited the actions block (hit reasoning: at same or lower indent)
-            if stripped.startswith('reasoning:'):
-                current_block = 'reasoning'
-                current_action = None
-                continue
-
             if current_action:
                 if stripped.startswith('description:'):
                     current_action.description = extract_value(stripped)
                 elif stripped.startswith('target:'):
                     current_action.target = extract_value(stripped)
-                elif stripped.startswith('inputs:'):
-                    continue  # Will parse input fields
-                elif stripped.startswith('outputs:'):
-                    continue  # Will parse output fields
                 elif stripped.startswith('inp_') or stripped.startswith('out_'):
-                    # Input/output field
+                    # Legacy input/output field format (inp_fieldName, out_fieldName)
                     field_match = re.match(r'^(inp_\w+|out_\w+):', stripped)
                     if field_match:
                         field_name = field_match.group(1)
@@ -232,9 +251,16 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
     Generate test cases from the parsed agent structure.
 
     Creates test cases for:
-    1. Topic routing - one case per topic
-    2. Action invocation - one case per action with flow:// target
-    3. Edge cases - off-topic handling
+    1. Topic routing - one case per non-start_agent topic
+    2. Transition action tests - verify start_agent routes correctly (Agent Script)
+    3. Action invocation - for flow:// targets (single-utterance) AND
+       apex:// targets (with conversationHistory to bypass routing)
+    4. Edge cases - off-topic handling
+
+    For Agent Script agents with start_agent routing:
+    - Single-utterance tests capture the TRANSITION action (go_<topic>)
+    - Business actions (apex://) require conversationHistory to pre-position
+      the agent in the target topic, bypassing the start_agent routing cycle.
     """
     test_cases = []
 
@@ -246,8 +272,9 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
             break
 
     router_name = router_topic.name if router_topic else 'topic_selector'
+    has_router = router_topic is not None
 
-    # Generate topic routing tests
+    # Generate topic routing tests (with transition actions for Agent Script)
     for topic in structure.topics:
         if topic.is_start_agent:
             continue  # Don't test the router itself
@@ -259,18 +286,57 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
             'utterance': utterance,
             'expectedTopic': topic.name,
         }
+
+        # For Agent Script with start_agent: include the transition action
+        if has_router and router_topic.transitions:
+            transition_action = f"go_{topic.name}"
+            # Only add if this topic is in the router's transition targets
+            if topic.name in router_topic.transitions:
+                test_case['expectedActions'] = [transition_action]
+
         test_cases.append(test_case)
 
     # Generate action invocation tests
     for topic in structure.topics:
-        for action in topic.actions:
-            if action.target and action.target.startswith('flow://'):
-                utterance = generate_utterance_for_action(action, topic)
+        if topic.is_start_agent:
+            continue
 
+        for action in topic.actions:
+            if not action.target:
+                continue
+
+            if action.target.startswith('flow://'):
+                # Flow actions can work in single-utterance tests
+                utterance = generate_utterance_for_action(action, topic)
                 test_case = {
                     'utterance': utterance,
                     'expectedTopic': topic.name,
                     'expectedActions': [action.name]
+                }
+                test_cases.append(test_case)
+
+            elif action.target.startswith('apex://'):
+                # Apex actions in Agent Script need conversationHistory
+                # to bypass start_agent routing (which consumes the first
+                # reasoning cycle on the transition action)
+                utterance = generate_utterance_for_action(action, topic)
+                topic_utterance = generate_utterance_for_topic(topic)
+
+                test_case = {
+                    'utterance': utterance,
+                    'expectedTopic': topic.name,
+                    'expectedActions': [action.name],
+                    'conversationHistory': [
+                        {
+                            'role': 'user',
+                            'message': topic_utterance,
+                        },
+                        {
+                            'role': 'agent',
+                            'topic': topic.name,
+                            'message': _generate_agent_prompt(action, topic),
+                        },
+                    ],
                 }
                 test_cases.append(test_case)
 
@@ -279,6 +345,27 @@ def generate_test_cases(structure: AgentStructure) -> List[Dict]:
     test_cases.extend(edge_cases)
 
     return test_cases
+
+
+def _generate_agent_prompt(action: AgentAction, topic: AgentTopic) -> str:
+    """Generate a plausible agent prompt message for conversationHistory.
+
+    This creates the agent's response that would appear before the user
+    provides input for the action — establishing the topic context.
+    """
+    desc = action.description.lower() if action.description else action.name
+    topic_label = topic.label or topic.name.replace('_', ' ')
+
+    if 'order' in desc or 'status' in desc:
+        return f"I'd be happy to help you with {topic_label.lower()}. Could you please provide the Order ID?"
+    if 'account' in desc or 'lookup' in desc:
+        return f"Sure, I can help with that. Could you please provide your account information?"
+    if 'case' in desc or 'ticket' in desc:
+        return f"I can help you create a support case. Could you describe the issue?"
+    if 'search' in desc or 'find' in desc:
+        return f"I can help you search. What are you looking for?"
+
+    return f"I can help you with {topic_label.lower()}. Could you please provide the required information?"
 
 
 def generate_utterance_for_topic(topic: AgentTopic) -> str:
@@ -400,12 +487,28 @@ def manual_yaml_output(spec: Dict) -> str:
 
     for tc in spec['testCases']:
         lines.append(f"  - utterance: \"{tc['utterance']}\"")
+
+        # Conversation history (for Agent Script apex:// action tests)
+        history = tc.get('conversationHistory', [])
+        if history:
+            lines.append("    conversationHistory:")
+            for entry in history:
+                lines.append(f"      - role: \"{entry['role']}\"")
+                lines.append(f"        message: \"{entry['message']}\"")
+                if 'topic' in entry:
+                    lines.append(f"        topic: \"{entry['topic']}\"")
+
         lines.append(f"    expectedTopic: {tc['expectedTopic']}")
         actions = tc.get('expectedActions', [])
         if actions:
             lines.append("    expectedActions:")
             for action in actions:
                 lines.append(f"      - {action}")
+
+        outcome = tc.get('expectedOutcome')
+        if outcome:
+            lines.append(f"    expectedOutcome: \"{outcome}\"")
+
         lines.append("")
 
     return "\n".join(lines)

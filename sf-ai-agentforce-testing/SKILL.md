@@ -69,6 +69,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 | **Auth guide** | [connected-app-setup.md](docs/connected-app-setup.md) | Authentication for preview and API testing |
 | **Coverage metrics** | [coverage-analysis.md](docs/coverage-analysis.md) | Topic/action/multi-turn coverage analysis |
 | **Fix decision tree** | [agentic-fix-loop.md](docs/agentic-fix-loop.md) | Detailed fix strategies |
+| **Agent Script testing** | [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) | 5 patterns for testing Agent Script agents |
 
 **⚡ Quick Links:**
 - [Deterministic Interview Flow](#deterministic-multi-turn-interview-flow) - Rule-based setup (7 steps)
@@ -77,6 +78,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 - [Test Plan Format](#test-plan-file-format) - Reusable YAML plans
 - [Phase A: Multi-Turn API Testing](#phase-a-multi-turn-api-testing-primary) - Primary workflow
 - [Phase B: CLI Testing Center](#phase-b-cli-testing-center-secondary) - Secondary workflow
+- [Agent Script Testing](#-agent-script-agents-aiauthoringbundle) - Agent Script-specific patterns
 - [Scoring System](#scoring-system-100-points) - 7-category validation
 - [Agentic Fix Loop](#phase-c-agentic-fix-loop) - Auto-fix workflow
 
@@ -885,6 +887,68 @@ TOTAL: 73/85 (86%) + Fix Loop pending
 > **Availability:** Requires Agent Testing Center feature enabled in org.
 > If unavailable, use Phase A exclusively.
 
+### ⚡ Agent Script Agents (AiAuthoringBundle)
+
+Agent Script agents (`.agent` files in `aiAuthoringBundles/`) deploy as `BotDefinition` and use the same `sf agent test` CLI commands. However, they have unique testing challenges:
+
+**Two-Level Action System:**
+- **Level 1 (Definition):** `topic.actions:` block — defines actions with `target: "apex://ClassName"`
+- **Level 2 (Invocation):** `reasoning.actions:` block — invokes via `@actions.<name>` with variable bindings
+
+**Single-Utterance Limitation:**
+Multi-topic Agent Script agents with `start_agent` routing have a "1 action per reasoning cycle" budget in CLI tests. The first cycle is consumed by the **transition action** (`go_<topic>`). The actual business action (e.g., `get_order_status`) fires in a second cycle that single-utterance tests don't reach.
+
+**Solution — Use `conversationHistory`:**
+```yaml
+testCases:
+  # ROUTING TEST — captures transition action only
+  - utterance: "I want to check my order status"
+    expectedTopic: order_status
+    expectedActions:
+      - go_order_status          # Transition action from start_agent
+
+  # ACTION TEST — use conversationHistory to skip routing
+  - utterance: "The order ID is 801ak00001g59JlAAI"
+    conversationHistory:
+      - role: "user"
+        message: "I want to check my order status"
+      - role: "agent"
+        topic: "order_status"    # Pre-positions agent in target topic
+        message: "I'd be happy to help! Could you provide the Order ID?"
+    expectedTopic: order_status
+    expectedActions:
+      - get_order_status         # Level 1 DEFINITION name (NOT invocation name)
+    expectedOutcome: "Agent retrieves and displays order details"
+```
+
+**Key Rules for Agent Script CLI Tests:**
+- `expectedActions` uses the **Level 1 definition name** (e.g., `get_order_status`), NOT the Level 2 invocation name (e.g., `check_status`)
+- Agent Script topic names may differ in org — use the [topic name discovery workflow](#b15-topic-name-resolution)
+- Agents with `WITH USER_MODE` Apex require the Einstein Agent User to have object permissions — missing permissions cause **silent failures** (0 rows, no error)
+- `subjectName` in the YAML spec maps to `config.developer_name` in the `.agent` file
+
+**Agent Script Templates & Docs:**
+- Template: [agentscript-test-spec.yaml](templates/agentscript-test-spec.yaml) — 5 test patterns
+- Guide: [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) — detailed patterns with worked examples
+
+**Automated Test Spec Generation:**
+```bash
+python3 {SKILL_PATH}/hooks/scripts/generate-test-spec.py \
+  --agent-file /path/to/Agent.agent \
+  --output tests/agent-spec.yaml --verbose
+
+# Generates both routing tests (with transition actions) and
+# action tests (with conversationHistory for apex:// targets)
+```
+
+**Agent Discovery:**
+```bash
+# Discover Agent Script agents alongside XML-based agents
+python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py local \
+  --project-dir /path/to/project --agent-name MyAgent
+# Returns type: "AiAuthoringBundle" for .agent files
+```
+
 ### B1: Test Spec Creation
 
 **⚠️ CRITICAL: YAML Schema**
@@ -1317,6 +1381,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | `templates/` |
 | `guardrail-tests.yaml` | Security/safety scenarios | `templates/` |
 | `escalation-tests.yaml` | Human handoff scenarios | `templates/` |
+| `agentscript-test-spec.yaml` | Agent Script agents with conversationHistory pattern | `templates/` |
 | `standard-test-spec.yaml` | Reference format | `templates/` |
 
 ---
@@ -1328,6 +1393,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | Scenario | Skill to Call | Command |
 |----------|---------------|---------|
 | Fix agent script | sf-ai-agentscript | `Skill(skill="sf-ai-agentscript", args="Fix...")` |
+| Agent Script agents | sf-ai-agentscript | Parse `.agent` for topic/action discovery; use `conversationHistory` pattern for action tests |
 | Create test data | sf-data | `Skill(skill="sf-data", args="Create...")` |
 | Fix failing Flow | sf-flow | `Skill(skill="sf-flow", args="Fix...")` |
 | Setup ECA or OAuth | sf-connected-apps | `Skill(skill="sf-connected-apps", args="Create...")` |

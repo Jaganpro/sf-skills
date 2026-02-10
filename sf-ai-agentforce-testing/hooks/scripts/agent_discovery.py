@@ -3,17 +3,19 @@
 Agent Discovery — Salesforce Agentforce Metadata Introspection
 
 Discovers and introspects Agentforce agent metadata from either local SFDX
-project files (XML parsing) or a live Salesforce org (Tooling API queries).
-Works for ANY Salesforce agent — no customer-specific data baked in.
+project files (XML parsing + Agent Script DSL parsing) or a live Salesforce
+org (Tooling API queries). Works for ANY Salesforce agent — no
+customer-specific data baked in.
 
 Two modes:
-  local — Parse BotDefinition, GenAiPlanner, and GenAiFunction XML files
-          from a local sfdx-project directory.
+  local — Parse BotDefinition, GenAiPlanner, GenAiFunction XML files AND
+          Agent Script .agent files (AiAuthoringBundle) from a local
+          sfdx-project directory.
   live  — Query the Tooling API via `sf data query --use-tooling-api`
           for the same metadata types in a running org.
 
 Usage:
-    # Local mode — scan an entire project
+    # Local mode — scan an entire project (finds both XML and .agent files)
     python3 agent_discovery.py local --project-dir /path/to/project
 
     # Local mode — filter to a specific agent
@@ -31,7 +33,7 @@ Output (JSON to stdout):
       "agents": [
         {
           "name": "MyAgent",
-          "type": "BotDefinition|GenAiPlanner|GenAiFunction",
+          "type": "BotDefinition|GenAiPlanner|GenAiFunction|AiAuthoringBundle",
           "id": null,
           "description": "...",
           "label": "...",
@@ -42,7 +44,7 @@ Output (JSON to stdout):
     }
 
 Dependencies:
-    - Python 3.8+ standard library only (xml.etree, subprocess, json, argparse)
+    - Python 3.8+ standard library only (xml.etree, subprocess, json, argparse, re)
     - For live mode: sf CLI v2 installed and authenticated
 
 Author: Jag Valaiyapathy
@@ -53,6 +55,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -393,12 +396,319 @@ def _parse_planner_bundle_xml(xml_path: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def discover_local(project_dir: str, agent_name: Optional[str] = None) -> Dict[str, Any]:
-    """Discover agents from local SFDX project metadata (XML files).
+def _parse_agent_script(agent_path: str) -> Optional[Dict[str, Any]]:
+    """Parse an Agent Script (.agent) file from an aiAuthoringBundle.
 
-    Scans for BotDefinition, GenAiPlanner, and GenAiFunction XML files
-    under the project directory. Uses recursive glob patterns to handle
-    various source directory layouts (force-app/, src/, etc.).
+    Agent Script is an indentation-based DSL (NOT YAML). This parser
+    extracts the agent structure including:
+      - config block: developer_name, agent_label, description, default_agent_user
+      - topic blocks: name, description, actions (with target), transitions
+      - reasoning.actions blocks: invocation names and transition targets
+
+    The two-level action system is mapped as follows:
+      - Level 1 (topic.actions): definition actions with targets → topic["actions"]
+      - Level 2 (reasoning.actions): invocations and transitions → topic["invocations"]
+
+    Args:
+        agent_path: Path to the .agent file.
+
+    Returns:
+        Agent dict matching the standard discovery format, or None on error.
+    """
+    try:
+        with open(agent_path, "r") as f:
+            content = f.read()
+    except (OSError, IOError) as e:
+        print(f"WARNING: Failed to read {agent_path}: {e}", file=sys.stderr)
+        return None
+
+    lines = content.split("\n")
+
+    # Extracted metadata
+    agent_name_val = ""
+    agent_label = ""
+    agent_description = ""
+    default_agent_user = ""
+    topics: List[Dict[str, Any]] = []
+    all_actions: List[Dict[str, Any]] = []
+
+    # Parser state
+    current_block = None  # 'config', 'topic', 'topic_actions', 'reasoning', 'reasoning_actions'
+    current_topic: Optional[Dict[str, Any]] = None
+    current_action: Optional[Dict[str, Any]] = None
+    block_indent = 0
+    in_inputs_outputs = False  # Track if we're inside inputs:/outputs: sub-block
+    io_indent = 0  # Indentation level of inputs:/outputs: keyword
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        raw_indent = len(line) - len(line.lstrip())
+        if "\t" in line[:raw_indent]:
+            indent_level = line[:raw_indent].count("\t")
+        else:
+            indent_level = raw_indent // 2
+
+        # --- config block ---
+        if stripped.startswith("config:"):
+            current_block = "config"
+            block_indent = indent_level
+            continue
+
+        if current_block == "config" and indent_level > block_indent:
+            if stripped.startswith("developer_name:"):
+                agent_name_val = _extract_dsl_value(stripped)
+            elif stripped.startswith("agent_label:"):
+                agent_label = _extract_dsl_value(stripped)
+            elif stripped.startswith("agent_description:") or (
+                stripped.startswith("description:") and not current_topic
+            ):
+                agent_description = _extract_dsl_value(stripped)
+            elif stripped.startswith("default_agent_user:"):
+                default_agent_user = _extract_dsl_value(stripped)
+            continue
+
+        # --- variables block (skip) ---
+        if stripped.startswith("variables:"):
+            current_block = "variables"
+            block_indent = indent_level
+            continue
+
+        if current_block == "variables" and indent_level > block_indent:
+            continue
+
+        # --- start_agent topic ---
+        if stripped.startswith("start_agent "):
+            match = re.match(r"start_agent\s+(\w+):", stripped)
+            if match:
+                topic_name = match.group(1)
+                current_topic = {
+                    "name": topic_name,
+                    "is_start_agent": True,
+                    "description": "",
+                    "actions": [],
+                    "invocations": [],
+                    "transitions": [],
+                }
+                topics.append(current_topic)
+                current_block = "topic"
+                block_indent = indent_level
+                current_action = None
+            continue
+
+        # --- regular topic ---
+        if stripped.startswith("topic ") and ":" in stripped:
+            match = re.match(r"topic\s+(\w+):", stripped)
+            if match:
+                topic_name = match.group(1)
+                current_topic = {
+                    "name": topic_name,
+                    "is_start_agent": False,
+                    "description": "",
+                    "actions": [],
+                    "invocations": [],
+                    "transitions": [],
+                }
+                topics.append(current_topic)
+                current_block = "topic"
+                block_indent = indent_level
+                current_action = None
+            continue
+
+        # --- inside a topic ---
+        if current_block == "topic" and current_topic:
+            if stripped.startswith("description:") and not current_action:
+                current_topic["description"] = _extract_dsl_value(stripped)
+            elif stripped.startswith("actions:") and indent_level <= block_indent + 2:
+                current_block = "topic_actions"
+                current_action = None
+                continue
+            elif stripped.startswith("reasoning:"):
+                current_block = "reasoning"
+                current_action = None
+                continue
+
+        # --- topic actions block (Level 1 definitions) ---
+        if current_block == "topic_actions" and current_topic:
+            skip_keywords = (
+                "description:", "inputs:", "outputs:", "target:",
+                "reasoning:", "instructions:", "actions:", "label:",
+            )
+            if stripped.startswith("reasoning:"):
+                current_block = "reasoning"
+                current_action = None
+                in_inputs_outputs = False
+                continue
+
+            # Track inputs:/outputs: sub-blocks to skip field definitions
+            if stripped.startswith("inputs:") or stripped.startswith("outputs:"):
+                in_inputs_outputs = True
+                io_indent = indent_level
+                continue
+
+            # If we're inside inputs/outputs, skip all deeper-indented lines
+            if in_inputs_outputs:
+                if indent_level > io_indent:
+                    continue  # Skip field definitions like "orderId: string"
+                else:
+                    in_inputs_outputs = False  # Exited the sub-block
+
+            if ":" in stripped and not stripped.startswith(skip_keywords):
+                action_match = re.match(r"^(\w+):", stripped)
+                if action_match:
+                    action_name = action_match.group(1)
+                    if "@utils" in stripped or "@topic" in stripped:
+                        continue
+                    current_action = {
+                        "name": action_name,
+                        "description": "",
+                        "target": "",
+                    }
+                    current_topic["actions"].append(current_action)
+                    all_actions.append(current_action)
+                    continue
+
+            if current_action:
+                if stripped.startswith("description:"):
+                    current_action["description"] = _extract_dsl_value(stripped)
+                elif stripped.startswith("target:"):
+                    current_action["target"] = _extract_dsl_value(stripped)
+
+        # --- reasoning block ---
+        if current_block == "reasoning" and current_topic:
+            if stripped.startswith("actions:"):
+                current_block = "reasoning_actions"
+                continue
+
+        # --- reasoning actions (Level 2 invocations + transitions) ---
+        if current_block == "reasoning_actions" and current_topic:
+            # Detect transitions: @utils.transition to @topic.<name>
+            transition_match = re.search(
+                r"@utils\.transition\s+to\s+@topic\.(\w+)", stripped
+            )
+            if transition_match:
+                target_topic = transition_match.group(1)
+                current_topic["transitions"].append(target_topic)
+                # Also record as invocation
+                inv_match = re.match(r"^(\w+):", stripped)
+                if inv_match:
+                    current_topic["invocations"].append({
+                        "name": inv_match.group(1),
+                        "type": "transition",
+                        "target_topic": target_topic,
+                    })
+                continue
+
+            # Detect action invocations: <name>: @actions.<definition_name>
+            action_inv_match = re.match(
+                r"^(\w+):\s*@actions\.(\w+)", stripped
+            )
+            if action_inv_match:
+                inv_name = action_inv_match.group(1)
+                def_name = action_inv_match.group(2)
+                current_topic["invocations"].append({
+                    "name": inv_name,
+                    "type": "action",
+                    "references": def_name,
+                })
+                continue
+
+            # Detect escalation: @utils.escalate
+            if "@utils.escalate" in stripped:
+                inv_match = re.match(r"^(\w+):", stripped)
+                if inv_match:
+                    current_topic["invocations"].append({
+                        "name": inv_match.group(1),
+                        "type": "escalation",
+                    })
+                continue
+
+            # Check if we've exited reasoning_actions (new top-level block)
+            if indent_level <= block_indent and ":" in stripped:
+                current_block = None
+                current_topic = None
+
+    # Build the output in standard discovery format
+    discovery_topics: List[Dict[str, Any]] = []
+    for t in topics:
+        topic_entry: Dict[str, Any] = {
+            "name": t["name"],
+        }
+        if t.get("description"):
+            topic_entry["description"] = t["description"]
+        if t.get("is_start_agent"):
+            topic_entry["is_start_agent"] = True
+            topic_entry["scope"] = "entry"
+        else:
+            topic_entry["scope"] = "topic"
+
+        # Level 1 actions
+        if t["actions"]:
+            topic_entry["actions"] = [
+                {
+                    "name": a["name"],
+                    "description": a.get("description", ""),
+                    "invocationTarget": a.get("target", ""),
+                }
+                for a in t["actions"]
+            ]
+
+        # Level 2 invocations (transitions + action refs)
+        if t["invocations"]:
+            topic_entry["invocations"] = t["invocations"]
+
+        # Transition targets
+        if t["transitions"]:
+            topic_entry["transitions"] = t["transitions"]
+
+        topic_entry["canEscalate"] = any(
+            inv.get("type") == "escalation" for inv in t.get("invocations", [])
+        )
+
+        discovery_topics.append(topic_entry)
+
+    # Fall back to filename if no developer_name found
+    if not agent_name_val:
+        agent_name_val = Path(agent_path).stem
+
+    result: Dict[str, Any] = {
+        "name": agent_name_val,
+        "type": "AiAuthoringBundle",
+        "id": None,
+        "description": agent_description,
+        "label": agent_label or agent_name_val,
+        "topics": discovery_topics,
+        "actions": all_actions,
+        "source_path": agent_path,
+    }
+    if default_agent_user:
+        result["default_agent_user"] = default_agent_user
+
+    return result
+
+
+def _extract_dsl_value(line: str) -> str:
+    """Extract the value from a 'key: value' line in Agent Script DSL."""
+    if ":" not in line:
+        return ""
+    _, value = line.split(":", 1)
+    value = value.strip()
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
+        value = value[1:-1]
+    return value
+
+
+def discover_local(project_dir: str, agent_name: Optional[str] = None) -> Dict[str, Any]:
+    """Discover agents from local SFDX project metadata (XML and Agent Script files).
+
+    Scans for BotDefinition, GenAiPlanner, GenAiFunction XML files AND
+    Agent Script .agent files (in aiAuthoringBundles/) under the project
+    directory. Uses recursive glob patterns to handle various source
+    directory layouts (force-app/, src/, etc.).
 
     Args:
         project_dir: Path to SFDX project root.
@@ -430,6 +740,7 @@ def discover_local(project_dir: str, agent_name: Optional[str] = None) -> Dict[s
         ("*.genAiPlanner-meta.xml", _parse_planner_xml),
         ("*.genAiFunction-meta.xml", _parse_function_xml),
         ("*.genAiPlannerBundle", _parse_planner_bundle_xml),
+        ("*.agent", _parse_agent_script),
     ]
 
     for suffix, parser in scan_config:

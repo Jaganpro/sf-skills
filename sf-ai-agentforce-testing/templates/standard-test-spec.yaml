@@ -60,6 +60,33 @@ testCases:
     expectedTopic: Escalation
 
 # ═══════════════════════════════════════════════════════════════════════
+# NOTES — AGENT SCRIPT ACTION TYPES
+#
+# Agent Script agents (.agent files / AiAuthoringBundle) have TWO types
+# of actions that appear in CLI test results:
+#
+# 1. TRANSITION ACTIONS (from start_agent reasoning.actions):
+#    - Named: go_<topic_name>
+#    - Target: @utils.transition to @topic.<name>
+#    - Captured by single-utterance tests
+#    - Example: go_order_status
+#
+# 2. BUSINESS ACTIONS (from topic.actions + reasoning.actions):
+#    - Named: <action_definition_name> (Level 1 from topic.actions block)
+#    - Target: apex://ClassName or flow://FlowName
+#    - Require conversationHistory to test via CLI (single-utterance
+#      tests only capture the transition action for multi-topic agents)
+#    - Example: get_order_status
+#
+# Use expectedActions with the DEFINITION name (Level 1), not the
+# invocation name (Level 2). E.g., use get_order_status, not check_status.
+#
+# For Agent Script test patterns, see:
+#   templates/agentscript-test-spec.yaml
+#   docs/agentscript-testing-patterns.md
+# ═══════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════
 # NOTES — TOPIC NAME RESOLUTION
 #
 # The expectedTopic value depends on the topic type:
