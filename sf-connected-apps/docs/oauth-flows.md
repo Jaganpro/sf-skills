@@ -151,9 +151,11 @@ curl -X POST https://login.salesforce.com/services/oauth2/token \
   -d "client_secret=<CONSUMER_SECRET>"
 ```
 
-### Agent Runtime API — Required Scopes
+### Agent Runtime API — Required Scopes (Multi-Turn API Testing Only)
 
 When creating an ECA for Agentforce Agent Runtime API testing (`/einstein/ai-agent/v1`), the following OAuth scopes are **required**:
+
+> **Not needed for `sf agent preview`:** As of SF CLI v2.121.7, interactive preview (simulated and live) uses standard org auth. These scopes are only required for automated multi-turn testing via the Agent Runtime API.
 
 | Scope | Purpose |
 |-------|---------|

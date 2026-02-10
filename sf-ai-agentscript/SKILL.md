@@ -878,6 +878,8 @@ sf project deploy start --metadata BotVersion:AgentName.v1 -o TARGET_ORG
 
 The Agent Runtime API requires OAuth with `chatbot_api`, `sfap_api`, and `api` scopes. See `/sf-connected-apps` for ECA creation.
 
+> **Note:** If you only need interactive testing via `sf agent preview`, skip ECA setup — preview uses standard org auth (`sf org login web`, v2.121.7+).
+
 **Validation — Confirm API access works:**
 ```bash
 # Acquire token

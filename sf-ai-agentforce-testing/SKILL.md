@@ -122,7 +122,7 @@ All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. *
 **⚠️ MANDATORY Delegation:**
 - **Fixes**: ALWAYS use `Skill(skill="sf-ai-agentscript")` for agent script fixes
 - **Test Data**: Use `Skill(skill="sf-data")` for action test data
-- **OAuth Setup**: Use `Skill(skill="sf-connected-apps")` for ECA or Connected App
+- **OAuth Setup** (multi-turn API testing only): Use `Skill(skill="sf-connected-apps")` for ECA — NOT needed for `sf agent preview` or CLI tests
 - **Observability**: Use `Skill(skill="sf-ai-agentforce-observability")` for STDM analysis of test sessions
 
 ---
@@ -137,7 +137,7 @@ Deterministic Interview (I-1 → I-7)
     ▼
 Phase 0: Prerequisites & Agent Discovery
     │
-    ├──► Phase A: Multi-Turn API Testing (PRIMARY)
+    ├──► Phase A: Multi-Turn API Testing (PRIMARY — requires ECA)
     │    A1: ECA Credential Setup (via credential_manager.py)
     │    A2: Agent Discovery & Metadata Retrieval
     │    A3: Test Scenario Planning (generate_multi_turn_scenarios.py --categorized)
@@ -167,6 +167,8 @@ Phase E: Observability Integration (STDM analysis)
 | Agent Testing Center IS available + single-utterance tests | Phase B |
 | CI/CD pipeline integration | Phase A (Python scripts) or Phase B (sf CLI) |
 | Quick smoke test | Phase B |
+| Quick manual validation (no ECA setup) | `sf agent preview` (no Phase A/B needed) |
+| No ECA available | `sf agent preview` or Phase B (CLI tests) |
 
 ---
 
@@ -249,7 +251,7 @@ sf agent test list --target-org [alias]
 | **Agent published** | `sf agent validate authoring-bundle --api-name X` | Must be published to test |
 | **Agent activated** | Check activation status | Required for API access |
 | **Dependencies deployed** | Flows and Apex in org | Actions will fail without them |
-| **ECA configured** (Phase A) | Token request test | Required for Agent Runtime API |
+| **ECA configured** (Phase A only) | Token request test | Multi-turn API testing only. NOT needed for preview or CLI tests |
 | **Agent Testing Center** (Phase B) | `sf agent test list` | Required for CLI testing |
 
 ---
@@ -266,7 +268,7 @@ When the testing skill is invoked, follow these interview steps **in order**. Ea
 | **I-1: Agent Name** | User provided → use it. Else walk up from CWD looking for `sfdx-project.json` → run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py local --project-dir .`. Multiple agents → present numbered list via AskUserQuestion. None found → ask user. | AskUserQuestion |
 | **I-2: Org Alias** | User provided → use it. Else parse `sfdx-project.json` → read `sfdx-config.json` for `target-org`. Else ask user. Note: org aliases are **case-sensitive** (e.g., `Vivint-DevInt` ≠ `vivint-devint`). | AskUserQuestion |
 | **I-3: Metadata** | **ALWAYS** run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py live --target-org {org} --agent-name {agent}`. Extract topics, actions, type, agent_id. This step is mandatory — never skip. | Required (fail if no agent found) |
-| **I-4: Credentials** | Run `python3 {SKILL_PATH}/hooks/scripts/credential_manager.py discover --org-alias {org}`. Found ECA → `validate`. Valid → use. Invalid → ask user for new credentials → `save` → re-validate. No ECAs found → ask user → offer to save via `credential_manager.py save`. | AskUserQuestion for credentials |
+| **I-4: Credentials** | **Skip if test type is CLI-only or Preview-only** — standard org auth suffices (no ECA needed). For multi-turn API testing: Run `python3 {SKILL_PATH}/hooks/scripts/credential_manager.py discover --org-alias {org}`. Found ECA → `validate`. Valid → use. Invalid → ask user for new credentials → `save` → re-validate. No ECAs found → ask user → offer to save via `credential_manager.py save`. | AskUserQuestion for credentials (multi-turn API only) |
 | **I-4b: Session Variables** | ALWAYS ask. Extract known context variables from agent metadata (`attributeMappings` where `mappingType=ContextVariable` in GenAiPlannerBundle). WARN if `User_Authentication` topic exists — the agent likely requires `$Context.RoutableId` and `$Context.CaseId` to authenticate the customer. Present discovered variables and ask user for values. | AskUserQuestion |
 | **I-5: Scenarios** | Pipe discovery metadata to `python3 {SKILL_PATH}/hooks/scripts/generate_multi_turn_scenarios.py --metadata - --output {dir} --categorized --cross-topic`. Present summary: N scenarios across M categories. | Required |
 | **I-6: Partition** | Ask user how to split work across workers. | AskUserQuestion (see below) |
@@ -617,6 +619,8 @@ This enables rapid re-runs after fixing agent issues — the user just says "re-
 > **⚠️ NEVER use `curl` for OAuth token validation.** Domains containing `--` (e.g., `my-org--devint.sandbox.my.salesforce.com`) cause shell expansion failures with curl's `--` argument parsing. Use `credential_manager.py validate` instead.
 
 ### A1: ECA Credential Setup
+
+> **Why ECA?** Multi-turn API testing uses the Agent Runtime API (`/einstein/ai-agent/v1`), which requires OAuth Client Credentials. If you only need interactive testing, use `sf agent preview` instead — no ECA needed, just `sf org login web` (v2.121.7+). See [connected-app-setup.md](docs/connected-app-setup.md).
 
 ```
 AskUserQuestion:
@@ -1150,6 +1154,8 @@ See [custom-eval-test-spec.yaml](templates/custom-eval-test-spec.yaml) for a ded
 sf agent test run --api-name MyAgentTest --wait 10 --result-format json --target-org [alias]
 ```
 
+> **No ECA required.** Preview uses standard org auth (`sf org login web`). No Connected App setup needed (v2.121.7+).
+
 **Interactive Preview (Simulated):**
 ```bash
 sf agent preview --api-name AgentName --output-dir ./logs --target-org [alias]
@@ -1322,7 +1328,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | Agent published | `sf agent list --target-org [alias]` | Can't test unpublished agent |
 | Agent activated | Check status | API and preview require activation |
 | Flows deployed | `sf org list metadata --metadata-type Flow` | Actions need Flows |
-| ECA configured (Phase A) | Token request test | API auth required |
+| ECA configured (Phase A — multi-turn API only) | Token request test | Required for Agent Runtime API. Not needed for preview or CLI tests |
 | Org auth (Phase B live) | `sf org display` | Live mode requires valid auth |
 
 **NEVER do these:**
@@ -1408,7 +1414,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | Agent Script agents | sf-ai-agentscript | Parse `.agent` for topic/action discovery; use `conversationHistory` pattern for action tests |
 | Create test data | sf-data | `Skill(skill="sf-data", args="Create...")` |
 | Fix failing Flow | sf-flow | `Skill(skill="sf-flow", args="Fix...")` |
-| Setup ECA or OAuth | sf-connected-apps | `Skill(skill="sf-connected-apps", args="Create...")` |
+| Setup ECA or OAuth (multi-turn API only) | sf-connected-apps | `Skill(skill="sf-connected-apps", args="Create...")` |
 | Analyze debug logs | sf-debug | `Skill(skill="sf-debug", args="Analyze...")` |
 | Session observability | sf-ai-agentforce-observability | `Skill(skill="sf-ai-agentforce-observability", args="Analyze...")` |
 
