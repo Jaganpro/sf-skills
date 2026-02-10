@@ -135,14 +135,6 @@ HIGH_PATTERNS = [
     # matched past pipe boundaries, appending "LIMIT 200" as jq file args.
     # Claude's sf-soql skill already adds LIMIT to queries when appropriate.
     #
-    # Deploy without dry-run to sandbox - add flag
-    {
-        "pattern": r"(sf\s+(?:project\s+)?deploy\s+start)(?!.*(?:--dry-run|--check-only))(.*)$",
-        "fix_pattern": r"(sf\s+(?:project\s+)?deploy\s+start)(.*)$",
-        "replacement": r"\1 --dry-run\2",
-        "message": "Adding --dry-run flag for safe deployment validation",
-        "context": "deploy"
-    },
 ]
 
 # =============================================================================

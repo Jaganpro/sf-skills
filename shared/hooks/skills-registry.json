@@ -45,13 +45,6 @@
       "action": "block",
       "message": "Hardcoded credentials detected - use Named Credentials"
     },
-    "production_deploy_without_validation": {
-      "patterns": ["sf project deploy start.*--target-org.*(prod|production)(?!.*--dry-run)"],
-      "severity": "HIGH",
-      "action": "auto_fix",
-      "fix": "add --dry-run flag",
-      "message": "Production deployment without validation - adding --dry-run"
-    },
     "missing_sharing_keyword": {
       "patterns": ["public class \\w+(?! (with|without|inherited) sharing)"],
       "severity": "MEDIUM",
