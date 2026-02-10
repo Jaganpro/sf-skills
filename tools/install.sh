@@ -299,6 +299,55 @@ check_curl() {
     fi
 }
 
+check_ssl_certs() {
+    local os
+    os=$(detect_os)
+
+    # Only relevant on macOS (python.org builds use bundled OpenSSL)
+    if [[ "$os" != "macos" ]]; then
+        return 0
+    fi
+
+    print_step "Checking Python SSL certificates..."
+    explain "Python on macOS may need extra setup to verify HTTPS certificates."
+
+    # Quick SSL test: try to reach GitHub API
+    if python3 -c "import urllib.request; urllib.request.urlopen('https://api.github.com', timeout=5)" 2>/dev/null; then
+        print_success "SSL certificates OK"
+        return 0
+    fi
+
+    # SSL failed — check if certifi is available (installer will auto-use it)
+    if python3 -c "import certifi" 2>/dev/null; then
+        print_warning "System SSL certs missing, but certifi package found"
+        print_info "The installer will use certifi automatically."
+        return 0
+    fi
+
+    # No certifi — offer to install it
+    print_warning "SSL certificate verification failed"
+    explain "Python from python.org doesn't trust macOS system certificates by default."
+    echo ""
+    print_info "Fix options:"
+    print_info "  1. pip3 install certifi  (quick fix — installer will auto-detect it)"
+    print_info "  2. Run: /Applications/Python 3.*/Install Certificates.command"
+    print_info "  3. Use Homebrew Python: brew install python3"
+    echo ""
+
+    if confirm "  Try 'pip3 install certifi' now?"; then
+        if pip3 install certifi 2>/dev/null; then
+            print_success "certifi installed — SSL should work now"
+            return 0
+        else
+            print_warning "pip3 install failed — continuing anyway (Python installer has its own fallback)"
+        fi
+    else
+        print_info "Continuing — the Python installer will report detailed errors if SSL fails."
+    fi
+
+    return 0  # Don't block installation — let the Python installer handle it
+}
+
 check_claude_code() {
     print_step "Checking for Claude Code..."
     explain "Claude Code is Anthropic's AI coding assistant CLI tool."
@@ -583,6 +632,9 @@ main() {
         fi
     fi
 
+    # Check SSL certificates (macOS python.org builds)
+    check_ssl_certs
+
     # Check Claude Code
     if ! check_claude_code; then
         exit 1
@@ -647,7 +699,19 @@ main() {
     echo "════════════════════════════════════════"
 
     if ! download_and_run_installer; then
-        print_error "Installation failed"
+        echo ""
+        # Check if this was an SSL error
+        if ! python3 -c "import urllib.request; urllib.request.urlopen('https://api.github.com', timeout=5)" 2>/dev/null; then
+            print_error "Installation failed due to SSL certificate error"
+            echo ""
+            print_info "Fix options:"
+            print_info "  1. Run: /Applications/Python\\ 3.*/Install\\ Certificates.command"
+            print_info "  2. pip3 install certifi && export SSL_CERT_FILE=\$(python3 -c \"import certifi; print(certifi.where())\")"
+            print_info "  3. Use Homebrew Python: brew install python3"
+            print_info "  4. Corporate proxy? export SSL_CERT_FILE=/path/to/ca-bundle.pem"
+        else
+            print_error "Installation failed"
+        fi
         exit 1
     fi
 

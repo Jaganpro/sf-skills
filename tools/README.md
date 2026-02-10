@@ -264,6 +264,41 @@ The auto-detect feature checks for:
 
 If your CLI is installed but not detected, use `--cli` explicitly.
 
+### SSL Certificate Errors
+
+If installation fails with `[SSL: CERTIFICATE_VERIFY_FAILED]`, this is common on macOS when Python is installed from python.org (it bundles its own OpenSSL and doesn't use the macOS system keychain).
+
+**Fix 1: Run the macOS certificate installer (recommended)**
+
+```bash
+# Find and run the Install Certificates command for your Python version
+/Applications/Python\ 3.*/Install\ Certificates.command
+```
+
+**Fix 2: Install certifi + set SSL_CERT_FILE**
+
+```bash
+pip3 install certifi
+export SSL_CERT_FILE=$(python3 -c "import certifi; print(certifi.where())")
+# Then re-run the installer
+```
+
+> **Note:** If `certifi` is installed, the sf-skills installer auto-detects it — no env var needed.
+
+**Fix 3: Use Homebrew Python (includes proper CA certs)**
+
+```bash
+brew install python3
+# Homebrew Python uses system certificates — no SSL issues
+```
+
+**Fix 4: Corporate proxy / custom CA bundle**
+
+```bash
+export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem
+# Then re-run the installer
+```
+
 ## Contributing
 
 To add support for a new CLI:

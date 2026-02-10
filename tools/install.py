@@ -29,6 +29,7 @@ import argparse
 import json
 import os
 import shutil
+import ssl
 import sys
 import tempfile
 import time
@@ -306,6 +307,105 @@ def confirm(prompt: str, default: bool = True) -> bool:
 
 
 # ============================================================================
+# SSL CERTIFICATE HANDLING
+# ============================================================================
+
+_SSL_CONTEXT_CACHE: Optional[ssl.SSLContext] = None
+_SSL_ERROR_SHOWN = False
+
+
+def _build_ssl_context() -> ssl.SSLContext:
+    """
+    Build the best available SSL context for urllib.
+
+    Priority:
+    1. SSL_CERT_FILE env var (explicit user/corporate override)
+    2. certifi package (common on python.org installs where pip exists)
+    3. Default ssl.create_default_context() (works on Homebrew Python / Linux)
+
+    Never disables certificate verification — security must be preserved
+    since this installer downloads executable code from GitHub.
+    """
+    # Priority 1: Explicit SSL_CERT_FILE environment variable
+    cert_file = os.environ.get("SSL_CERT_FILE")
+    if cert_file and os.path.isfile(cert_file):
+        ctx = ssl.create_default_context(cafile=cert_file)
+        return ctx
+
+    # Priority 2: certifi package (auto-detect)
+    try:
+        import certifi
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        return ctx
+    except ImportError:
+        pass
+
+    # Priority 3: System default (works on Homebrew Python, Linux, etc.)
+    return ssl.create_default_context()
+
+
+def _get_ssl_context() -> ssl.SSLContext:
+    """Lazy-cached wrapper that calls _build_ssl_context() once."""
+    global _SSL_CONTEXT_CACHE
+    if _SSL_CONTEXT_CACHE is None:
+        _SSL_CONTEXT_CACHE = _build_ssl_context()
+    return _SSL_CONTEXT_CACHE
+
+
+def _print_ssl_troubleshooting():
+    """Print SSL certificate troubleshooting steps."""
+    print()
+    print_error("SSL certificate verification failed")
+    print_info("This is common with python.org installs on macOS.")
+    print()
+    print(c("  Fix options (try in order):", Colors.BOLD))
+    print()
+    print("  1. Run the macOS certificate installer:")
+    print('     /Applications/Python\\ 3.*/Install\\ Certificates.command')
+    print()
+    print("  2. Install certifi and set SSL_CERT_FILE:")
+    print("     pip3 install certifi")
+    print('     export SSL_CERT_FILE=$(python3 -c "import certifi; print(certifi.where())")')
+    print("     Then re-run this installer.")
+    print()
+    print("  3. Use Homebrew Python (includes proper CA certs):")
+    print("     brew install python3")
+    print()
+    print("  4. Corporate proxy? Set SSL_CERT_FILE to your CA bundle:")
+    print("     export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem")
+    print()
+
+
+def _handle_ssl_error(e: Exception) -> bool:
+    """
+    Detect if an exception is SSL-related and print troubleshooting once.
+
+    Args:
+        e: The caught exception (typically urllib.error.URLError)
+
+    Returns:
+        True if the error was SSL-related, False otherwise
+    """
+    global _SSL_ERROR_SHOWN
+
+    is_ssl = False
+
+    # Check URLError wrapping an SSL error
+    if isinstance(e, urllib.error.URLError) and hasattr(e, 'reason'):
+        if isinstance(e.reason, (ssl.SSLCertVerificationError, ssl.SSLError)):
+            is_ssl = True
+    # Direct SSL errors
+    elif isinstance(e, (ssl.SSLCertVerificationError, ssl.SSLError)):
+        is_ssl = True
+
+    if is_ssl and not _SSL_ERROR_SHOWN:
+        _SSL_ERROR_SHOWN = True
+        _print_ssl_troubleshooting()
+
+    return is_ssl
+
+
+# ============================================================================
 # GITHUB OPERATIONS
 # ============================================================================
 
@@ -314,9 +414,10 @@ def fetch_latest_release() -> Optional[Dict[str, Any]]:
     try:
         url = f"{GITHUB_API_URL}/releases/latest"
         req = urllib.request.Request(url, headers={"Accept": "application/vnd.github.v3+json"})
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10, context=_get_ssl_context()) as response:
             return json.loads(response.read().decode())
-    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
+        _handle_ssl_error(e)
         return None
 
 
@@ -337,9 +438,10 @@ def fetch_latest_commit_sha(ref: str = "main") -> Optional[str]:
         req = urllib.request.Request(url, headers={
             "Accept": "application/vnd.github.sha"
         })
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10, context=_get_ssl_context()) as response:
             return response.read().decode().strip()
-    except (urllib.error.URLError, TimeoutError):
+    except (urllib.error.URLError, TimeoutError) as e:
+        _handle_ssl_error(e)
         return None
 
 
@@ -347,10 +449,11 @@ def fetch_registry_version() -> Optional[str]:
     """Fetch version from skills-registry.json on main branch."""
     try:
         url = f"{GITHUB_RAW_URL}/{SKILLS_REGISTRY}"
-        with urllib.request.urlopen(url, timeout=10) as response:
+        with urllib.request.urlopen(url, timeout=10, context=_get_ssl_context()) as response:
             data = json.loads(response.read().decode())
             return data.get("version")
-    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
+        _handle_ssl_error(e)
         return None
 
 
@@ -437,7 +540,7 @@ def download_repo_zip(target_dir: Path, ref: str = "main") -> bool:
         with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
             tmp_path = Path(tmp_file.name)
 
-            with urllib.request.urlopen(zip_url, timeout=60) as response:
+            with urllib.request.urlopen(zip_url, timeout=60, context=_get_ssl_context()) as response:
                 tmp_file.write(response.read())
 
         # Extract
@@ -450,7 +553,8 @@ def download_repo_zip(target_dir: Path, ref: str = "main") -> bool:
         return True
 
     except (urllib.error.URLError, zipfile.BadZipFile, IOError) as e:
-        print_error(f"Download failed: {e}")
+        if not _handle_ssl_error(e):
+            print_error(f"Download failed: {e}")
         return False
 
 
