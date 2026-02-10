@@ -299,6 +299,63 @@ export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem
 # Then re-run the installer
 ```
 
+## Troubleshooting: 401 Authentication Error
+
+If Claude Code fails with a 401 error after installing sf-skills:
+
+```
+401 {"error":{"message":"Authentication Error, No api key passed in","type":"auth_error","code":"401"}}
+```
+
+This means `settings.json` lost its authentication configuration during installation.
+
+### Quick Fix
+
+```bash
+# Restore settings.json from automatic backup
+python3 ~/.claude/sf-skills-install.py --restore-settings
+```
+
+### Diagnose the Issue
+
+```bash
+# Run all diagnostic checks
+python3 ~/.claude/sf-skills-install.py --diagnose
+```
+
+This checks: settings.json validity, auth fields, hook scripts, Python environment,
+backup status, and hook execution.
+
+### Manual Recovery
+
+If no backups are available:
+
+```bash
+# List available backups
+ls -la ~/.claude/.settings-backups/
+
+# Manually copy a backup
+cp ~/.claude/.settings-backups/settings.pre-modify.YYYYMMDD-HHMMSS.json ~/.claude/settings.json
+
+# Validate the restored file
+python3 -c "import json; d = json.load(open('$HOME/.claude/settings.json')); print(f'{len(d)} keys:', list(d.keys()))"
+
+# Restart Claude Code
+```
+
+### CLI Reference
+
+| Command | Description |
+|---------|-------------|
+| `--diagnose` | Run 6-point diagnostic check on installation health |
+| `--restore-settings` | Interactively restore settings.json from latest backup |
+| `--status` | Show installation status and check for updates |
+| `--update` | Check and apply updates (version + content) |
+| `--force-update` | Force reinstall even if up-to-date |
+| `--uninstall` | Remove sf-skills installation |
+| `--dry-run` | Preview changes without applying |
+| `--force` | Skip confirmation prompts |
+
 ## Contributing
 
 To add support for a new CLI:

@@ -715,6 +715,38 @@ main() {
         exit 1
     fi
 
+    # ── Post-install settings.json integrity check ──
+    local settings_file="$HOME/.claude/settings.json"
+    if [[ -f "$settings_file" ]]; then
+        if ! python3 -c "import json; json.load(open('$settings_file'))" 2>/dev/null; then
+            print_error "settings.json is invalid JSON after installation!"
+            # Attempt auto-restore from backups
+            local backup_dir="$HOME/.claude/.settings-backups"
+            if [[ -d "$backup_dir" ]]; then
+                local latest_backup
+                latest_backup=$(/bin/ls -t "$backup_dir"/settings.*.json 2>/dev/null | head -1)
+                if [[ -n "$latest_backup" ]] && python3 -c "import json; json.load(open('$latest_backup'))" 2>/dev/null; then
+                    cp "$latest_backup" "$settings_file"
+                    print_success "Auto-restored settings.json from backup: $(basename "$latest_backup")"
+                    print_info "Restart Claude Code to apply changes"
+                else
+                    print_error "No valid backup found for auto-restore"
+                    print_info "Run: python3 ~/.claude/sf-skills-install.py --diagnose"
+                fi
+            else
+                print_info "Run: python3 ~/.claude/sf-skills-install.py --diagnose"
+            fi
+        else
+            # Valid JSON — check if suspiciously small (might have lost config)
+            local key_count
+            key_count=$(python3 -c "import json; print(len(json.load(open('$settings_file'))))" 2>/dev/null || echo "0")
+            if [[ "$key_count" -lt 3 ]]; then
+                print_warning "settings.json has only $key_count top-level key(s) — config may be incomplete"
+                print_info "Run: python3 ~/.claude/sf-skills-install.py --diagnose"
+            fi
+        fi
+    fi
+
     # ═══════════════════════════════════════════════════════════════════════
     # Phase 5: Post-Install
     # ═══════════════════════════════════════════════════════════════════════

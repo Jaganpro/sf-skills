@@ -11,6 +11,8 @@ Usage:
     python3 install.py --force-update # Force reinstall even if up-to-date
     python3 install.py --uninstall    # Remove sf-skills
     python3 install.py --status       # Show installation status
+    python3 install.py --diagnose    # Run diagnostic checks
+    python3 install.py --restore-settings  # Restore settings.json from backup
     python3 install.py --dry-run      # Preview changes
     python3 install.py --force        # Skip confirmations
 
@@ -44,7 +46,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # CONFIGURATION
 # ============================================================================
 
-VERSION = "1.0.0"  # Installer version
+VERSION = "1.1.0"  # Installer version
 
 # Installation paths (Claude Code native layout)
 CLAUDE_DIR = Path.home() / ".claude"
@@ -54,6 +56,8 @@ LSP_DIR = CLAUDE_DIR / "lsp-engine"
 META_FILE = CLAUDE_DIR / ".sf-skills.json"
 INSTALLER_FILE = CLAUDE_DIR / "sf-skills-install.py"
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
+SETTINGS_BACKUP_DIR = CLAUDE_DIR / ".settings-backups"
+MAX_SETTINGS_BACKUPS = 5
 
 # Legacy paths (for migration cleanup only)
 LEGACY_INSTALL_DIR = CLAUDE_DIR / "sf-skills"
@@ -610,7 +614,11 @@ def cleanup_settings_hooks(dry_run: bool = False) -> int:
 
     try:
         settings = json.loads(SETTINGS_FILE.read_text())
-    except (json.JSONDecodeError, IOError):
+    except json.JSONDecodeError:
+        print_warning("settings.json is invalid JSON — skipping hook cleanup")
+        print_info(f"Run: python3 {INSTALLER_FILE} --diagnose")
+        return 0
+    except IOError:
         return 0
 
     if "hooks" not in settings:
@@ -681,6 +689,93 @@ def is_sf_skills_hook(hook: Dict[str, Any]) -> bool:
             return True
 
     return False
+
+
+# ============================================================================
+# SETTINGS BACKUP & RESTORE
+# ============================================================================
+
+def backup_settings(reason: str = "pre-install") -> Optional[Path]:
+    """
+    Create a timestamped backup of settings.json.
+
+    Args:
+        reason: Tag for the backup filename (e.g., "pre-install", "corrupt", "pre-modify")
+
+    Returns:
+        Path to the backup file, or None if settings.json doesn't exist
+    """
+    if not SETTINGS_FILE.exists():
+        return None
+
+    SETTINGS_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_name = f"settings.{reason}.{timestamp}.json"
+    backup_path = SETTINGS_BACKUP_DIR / backup_name
+
+    shutil.copy2(SETTINGS_FILE, backup_path)
+    _prune_old_backups()
+
+    return backup_path
+
+
+def _prune_old_backups():
+    """Remove oldest backups beyond MAX_SETTINGS_BACKUPS."""
+    if not SETTINGS_BACKUP_DIR.exists():
+        return
+
+    backups = sorted(
+        SETTINGS_BACKUP_DIR.glob("settings.*.json"),
+        key=lambda p: p.stat().st_mtime
+    )
+
+    while len(backups) > MAX_SETTINGS_BACKUPS:
+        oldest = backups.pop(0)
+        oldest.unlink()
+
+
+def get_latest_backup() -> Optional[Path]:
+    """Return the newest settings backup file, or None if no backups exist."""
+    if not SETTINGS_BACKUP_DIR.exists():
+        return None
+
+    backups = sorted(
+        SETTINGS_BACKUP_DIR.glob("settings.*.json"),
+        key=lambda p: p.stat().st_mtime
+    )
+
+    return backups[-1] if backups else None
+
+
+def restore_settings_from_backup(backup_path: Optional[Path] = None) -> bool:
+    """
+    Restore settings.json from a backup file.
+
+    Args:
+        backup_path: Specific backup to restore. If None, uses the latest.
+
+    Returns:
+        True if restore succeeded, False otherwise
+    """
+    if backup_path is None:
+        backup_path = get_latest_backup()
+
+    if backup_path is None or not backup_path.exists():
+        print_error("No backup file found")
+        return False
+
+    # Validate backup is valid JSON
+    try:
+        content = backup_path.read_text()
+        json.loads(content)
+    except (json.JSONDecodeError, IOError) as e:
+        print_error(f"Backup file is not valid JSON: {e}")
+        return False
+
+    # Write to settings.json
+    SETTINGS_FILE.write_text(content)
+    return True
 
 
 # ============================================================================
@@ -1232,28 +1327,83 @@ def touch_all_files(directory: Path):
 
 def update_settings_json(dry_run: bool = False) -> Dict[str, str]:
     """
-    Register hooks in settings.json.
+    Register hooks in settings.json with backup and validation.
+
+    Creates a pre-modification backup before writing, validates the write
+    afterward, and aborts on corrupt input rather than silently overwriting.
 
     Returns:
         Status dict mapping event_name -> "added" | "updated" | "unchanged"
     """
     # Load existing settings
     settings = {}
+    original_keys: set = set()
     if SETTINGS_FILE.exists():
         try:
             settings = json.loads(SETTINGS_FILE.read_text())
-        except json.JSONDecodeError:
-            print_warning("Could not parse settings.json, creating new")
+            original_keys = set(settings.keys())
+        except json.JSONDecodeError as e:
+            print_error(f"settings.json contains invalid JSON (line {e.lineno}, col {e.colno})")
+            corrupt_backup = backup_settings(reason="corrupt")
+            if corrupt_backup:
+                print_info(f"Corrupt file backed up to: {corrupt_backup}")
+            print_error("Cannot safely modify settings.json — aborting")
+            print_info(f"Fix: python3 {INSTALLER_FILE} --restore-settings")
+            sys.exit(1)
 
     # Upsert hooks
     hooks_config = get_hooks_config()
     new_settings, status = upsert_hooks(settings, hooks_config)
 
     if not dry_run:
+        # Pre-modification backup (before we touch the file)
+        backup_settings(reason="pre-modify")
+
         SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
         SETTINGS_FILE.write_text(json.dumps(new_settings, indent=2))
 
+        # Post-write validation
+        _validate_settings_write(original_keys)
+
     return status
+
+
+def _validate_settings_write(original_keys: set):
+    """
+    Validate that settings.json was written correctly.
+
+    Re-reads the file, parses it, and verifies all original top-level keys
+    are still present. If keys are missing, auto-restores from backup.
+
+    Args:
+        original_keys: Set of top-level key names from the pre-write settings
+    """
+    if not original_keys:
+        return  # Nothing to validate (fresh install)
+
+    try:
+        written = json.loads(SETTINGS_FILE.read_text())
+        written_keys = set(written.keys())
+    except (json.JSONDecodeError, IOError) as e:
+        print_error(f"Post-write validation failed: {e}")
+        _attempt_auto_restore()
+        return
+
+    missing = original_keys - written_keys
+    if missing:
+        print_error(f"Settings key loss detected! Missing keys: {', '.join(sorted(missing))}")
+        _attempt_auto_restore()
+
+
+def _attempt_auto_restore():
+    """Attempt automatic restore from the most recent backup."""
+    latest = get_latest_backup()
+    if latest and restore_settings_from_backup(latest):
+        print_warning(f"Auto-restored settings.json from: {latest.name}")
+        print_info("Hooks were NOT applied. Re-run the installer after checking settings.json")
+    else:
+        print_error("Auto-restore failed. Check ~/.claude/.settings-backups/ for manual recovery")
+    sys.exit(1)
 
 
 def verify_installation() -> Tuple[bool, List[str]]:
@@ -1720,6 +1870,12 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
     cleanup_legacy(dry_run)
     cleanup_marketplace(dry_run)
 
+    # Remove settings backups
+    if SETTINGS_BACKUP_DIR.exists():
+        if not dry_run:
+            safe_rmtree(SETTINGS_BACKUP_DIR)
+        print_success("Removed settings backups")
+
     # Clean temp files
     temp_removed = cleanup_temp_files(dry_run)
     if temp_removed > 0:
@@ -1861,6 +2017,283 @@ def cmd_status() -> int:
     return 0
 
 
+def cmd_diagnose() -> int:
+    """
+    Run diagnostic checks on the sf-skills installation.
+
+    Checks 6 areas: settings.json health, hook scripts, Python environment,
+    backup status, settings diff vs backup, and hook execution test.
+
+    Returns:
+        Exit code (0 = all checks pass, 1 = issues found)
+    """
+    import subprocess
+
+    print_banner()
+    print("sf-skills Diagnostics")
+    print("════════════════════════════════════════\n")
+
+    issues = 0
+
+    # ── Check 1: settings.json ──
+    print(c("1. settings.json", Colors.BOLD))
+    if not SETTINGS_FILE.exists():
+        print(f"   {c('❌', Colors.RED)} File not found: {SETTINGS_FILE}")
+        issues += 1
+    else:
+        try:
+            settings = json.loads(SETTINGS_FILE.read_text())
+            key_count = len(settings)
+            print(f"   {c('✅', Colors.GREEN)} Valid JSON ({key_count} top-level keys)")
+
+            # Check auth-related fields
+            auth_fields = ["forceLoginMethod", "env", "permissions", "model"]
+            present = [f for f in auth_fields if f in settings]
+            missing = [f for f in auth_fields if f not in settings]
+
+            if present:
+                print(f"   {c('✅', Colors.GREEN)} Auth fields present: {', '.join(present)}")
+            if missing:
+                print(f"   {c('⚠️', Colors.YELLOW)} Auth fields missing: {', '.join(missing)}")
+                print(f"      (Not all are required — depends on your Claude Code setup)")
+
+            if "hooks" in settings:
+                sf_count = sum(
+                    1 for ev in settings["hooks"].values()
+                    for h in ev if h.get("_sf_skills")
+                )
+                print(f"   {c('✅', Colors.GREEN)} sf-skills hooks registered: {sf_count}")
+            else:
+                print(f"   {c('❌', Colors.RED)} No hooks registered")
+                issues += 1
+
+        except json.JSONDecodeError as e:
+            print(f"   {c('❌', Colors.RED)} Invalid JSON (line {e.lineno}, col {e.colno}): {e.msg}")
+            print(f"      Fix: python3 {INSTALLER_FILE} --restore-settings")
+            issues += 1
+
+    # ── Check 2: Hook scripts ──
+    print(f"\n{c('2. Hook Scripts', Colors.BOLD)}")
+    hooks_config = get_hooks_config()
+    hook_ok = 0
+    hook_missing = 0
+    for event_name, event_hooks in hooks_config.items():
+        for hook_group in event_hooks:
+            for hook in hook_group.get("hooks", []):
+                cmd = hook.get("command", "")
+                # Extract script path from "python3 /path/to/script.py"
+                parts = cmd.split()
+                if len(parts) >= 2:
+                    script_path = Path(parts[-1])
+                    if script_path.exists():
+                        hook_ok += 1
+                    else:
+                        print(f"   {c('❌', Colors.RED)} Missing: {script_path}")
+                        hook_missing += 1
+                        issues += 1
+
+    if hook_missing == 0:
+        print(f"   {c('✅', Colors.GREEN)} All {hook_ok} hook scripts present")
+    else:
+        print(f"   {c('⚠️', Colors.YELLOW)} {hook_ok} present, {hook_missing} missing")
+
+    # ── Check 3: Python environment ──
+    print(f"\n{c('3. Python Environment', Colors.BOLD)}")
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    print(f"   {c('✅', Colors.GREEN)} Python {py_version}")
+
+    # Check json module
+    try:
+        json.loads('{"test": true}')
+        print(f"   {c('✅', Colors.GREEN)} json module OK")
+    except Exception:
+        print(f"   {c('❌', Colors.RED)} json module broken")
+        issues += 1
+
+    # Check ssl module
+    try:
+        _get_ssl_context()
+        print(f"   {c('✅', Colors.GREEN)} ssl module OK")
+    except Exception as e:
+        print(f"   {c('⚠️', Colors.YELLOW)} ssl module issue: {e}")
+
+    # ── Check 4: Backup status ──
+    print(f"\n{c('4. Settings Backups', Colors.BOLD)}")
+    if SETTINGS_BACKUP_DIR.exists():
+        backups = sorted(
+            SETTINGS_BACKUP_DIR.glob("settings.*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+        if backups:
+            print(f"   {c('✅', Colors.GREEN)} {len(backups)} backup(s) available:")
+            for bp in backups[:5]:
+                size = bp.stat().st_size
+                mtime = datetime.fromtimestamp(bp.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                print(f"      {bp.name} ({size:,} bytes, {mtime})")
+        else:
+            print(f"   {c('⚠️', Colors.YELLOW)} Backup directory exists but is empty")
+    else:
+        print(f"   {c('⚠️', Colors.YELLOW)} No backups yet (created on next install/update)")
+
+    # ── Check 5: Settings diff vs latest backup ──
+    print(f"\n{c('5. Settings vs Backup Diff', Colors.BOLD)}")
+    latest_backup = get_latest_backup()
+    if latest_backup and SETTINGS_FILE.exists():
+        try:
+            current = json.loads(SETTINGS_FILE.read_text())
+            backed_up = json.loads(latest_backup.read_text())
+
+            current_keys = set(current.keys())
+            backup_keys = set(backed_up.keys())
+
+            added = current_keys - backup_keys
+            removed = backup_keys - current_keys
+
+            if not added and not removed:
+                print(f"   {c('✅', Colors.GREEN)} Top-level keys match latest backup")
+            else:
+                if removed:
+                    print(f"   {c('❌', Colors.RED)} Keys in backup but MISSING from current: {', '.join(sorted(removed))}")
+                    issues += 1
+                if added:
+                    print(f"   {c('ℹ️', Colors.BLUE)} Keys added since backup: {', '.join(sorted(added))}")
+        except (json.JSONDecodeError, IOError):
+            print(f"   {c('⚠️', Colors.YELLOW)} Could not compare (parse error)")
+    elif not latest_backup:
+        print(f"   {c('⚠️', Colors.YELLOW)} No backup to compare against")
+    elif not SETTINGS_FILE.exists():
+        print(f"   {c('❌', Colors.RED)} settings.json missing — cannot compare")
+        issues += 1
+
+    # ── Check 6: Hook execution test ──
+    print(f"\n{c('6. Hook Execution Test', Colors.BOLD)}")
+    session_init = HOOKS_DIR / "scripts" / "session-init.py"
+    if session_init.exists():
+        try:
+            result = subprocess.run(
+                [sys.executable, str(session_init)],
+                capture_output=True, text=True, timeout=10,
+                env={**os.environ, "CLAUDE_TOOL_NAME": "", "CLAUDE_TOOL_INPUT": ""}
+            )
+            if result.returncode == 0 and not result.stdout.strip():
+                print(f"   {c('✅', Colors.GREEN)} session-init.py runs cleanly (exit 0, no stdout)")
+            elif result.returncode == 0:
+                print(f"   {c('⚠️', Colors.YELLOW)} session-init.py exit 0 but produced output ({len(result.stdout)} chars)")
+            else:
+                print(f"   {c('❌', Colors.RED)} session-init.py exit code {result.returncode}")
+                if result.stderr:
+                    print(f"      stderr: {result.stderr[:200]}")
+                issues += 1
+        except subprocess.TimeoutExpired:
+            print(f"   {c('⚠️', Colors.YELLOW)} session-init.py timed out (10s)")
+        except Exception as e:
+            print(f"   {c('❌', Colors.RED)} Could not run session-init.py: {e}")
+            issues += 1
+    else:
+        print(f"   {c('⚠️', Colors.YELLOW)} session-init.py not found (hooks not installed?)")
+
+    # ── Summary ──
+    print("\n════════════════════════════════════════")
+    if issues == 0:
+        print(f"{c('✅ All checks passed', Colors.GREEN)}")
+    else:
+        print(f"{c(f'❌ {issues} issue(s) found', Colors.RED)}")
+        print(f"\nRemediation:")
+        print(f"  • Restore settings: python3 {INSTALLER_FILE} --restore-settings")
+        print(f"  • Reinstall:        python3 {INSTALLER_FILE} --force-update")
+    print()
+
+    return 0 if issues == 0 else 1
+
+
+def cmd_restore_settings() -> int:
+    """
+    Interactively restore settings.json from the latest backup.
+
+    Shows backup info, compares with current settings, backs up the
+    current (possibly corrupt) file, and restores.
+
+    Returns:
+        Exit code (0 = restored, 1 = no backup or cancelled)
+    """
+    print_banner()
+    print("Restore settings.json")
+    print("════════════════════════════════════════\n")
+
+    # Find latest backup
+    latest = get_latest_backup()
+    if latest is None:
+        print_error("No settings backups found")
+        print_info(f"Backup directory: {SETTINGS_BACKUP_DIR}")
+        print_info("Backups are created automatically during install/update")
+        return 1
+
+    # Show backup info
+    try:
+        backup_content = latest.read_text()
+        backup_data = json.loads(backup_content)
+        backup_keys = sorted(backup_data.keys())
+    except (json.JSONDecodeError, IOError) as e:
+        print_error(f"Latest backup is not valid JSON: {e}")
+        return 1
+
+    backup_size = latest.stat().st_size
+    backup_time = datetime.fromtimestamp(latest.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+
+    print(f"Latest backup: {c(latest.name, Colors.CYAN)}")
+    print(f"  Date:  {backup_time}")
+    print(f"  Size:  {backup_size:,} bytes")
+    print(f"  Keys:  {len(backup_keys)} ({', '.join(backup_keys)})")
+
+    # Compare with current
+    print()
+    if SETTINGS_FILE.exists():
+        try:
+            current_data = json.loads(SETTINGS_FILE.read_text())
+            current_keys = set(current_data.keys())
+            backup_key_set = set(backup_keys)
+
+            missing_from_current = backup_key_set - current_keys
+            extra_in_current = current_keys - backup_key_set
+
+            if missing_from_current:
+                print(f"{c('Keys that will be RESTORED:', Colors.YELLOW)}")
+                for k in sorted(missing_from_current):
+                    print(f"  + {k}")
+            if extra_in_current:
+                print(f"{c('Keys in current but NOT in backup (will be lost):', Colors.RED)}")
+                for k in sorted(extra_in_current):
+                    print(f"  - {k}")
+            if not missing_from_current and not extra_in_current:
+                print(f"{c('Current and backup have the same top-level keys', Colors.GREEN)}")
+        except json.JSONDecodeError:
+            print(f"{c('Current settings.json is invalid JSON — restore recommended', Colors.YELLOW)}")
+    else:
+        print(f"{c('settings.json does not exist — restore will create it', Colors.YELLOW)}")
+
+    # Confirm
+    print()
+    if not confirm("Restore settings.json from this backup?"):
+        print("\nRestore cancelled.")
+        return 1
+
+    # Back up current (possibly corrupt) file before overwriting
+    if SETTINGS_FILE.exists():
+        pre_restore_backup = backup_settings(reason="pre-restore")
+        if pre_restore_backup:
+            print_info(f"Current file backed up to: {pre_restore_backup.name}")
+
+    # Restore
+    if restore_settings_from_backup(latest):
+        print_success(f"settings.json restored from {latest.name}")
+        print_info("Restart Claude Code to apply changes")
+        return 0
+    else:
+        print_error("Restore failed")
+        return 1
+
+
 # ============================================================================
 # CLI ENTRY POINT
 # ============================================================================
@@ -1876,6 +2309,8 @@ Examples:
   python3 install.py --force-update  # Force reinstall even if up-to-date
   python3 install.py --uninstall   # Remove sf-skills
   python3 install.py --status      # Show installation status
+  python3 install.py --diagnose    # Run diagnostic checks
+  python3 install.py --restore-settings  # Restore settings.json from backup
   python3 install.py --dry-run     # Preview changes
   python3 install.py --force       # Skip confirmations
 
@@ -1892,6 +2327,10 @@ Curl one-liner:
                         help="Remove sf-skills installation")
     parser.add_argument("--status", action="store_true",
                         help="Show installation status")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="Run diagnostic checks on installation health")
+    parser.add_argument("--restore-settings", action="store_true",
+                        help="Restore settings.json from latest backup")
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview changes without applying")
     parser.add_argument("--force", "-f", action="store_true",
@@ -1929,7 +2368,11 @@ Curl one-liner:
             pass  # is_relative_to may fail on some platforms
 
     # Route to appropriate command
-    if args.status:
+    if args.diagnose:
+        sys.exit(cmd_diagnose())
+    elif args.restore_settings:
+        sys.exit(cmd_restore_settings())
+    elif args.status:
         sys.exit(cmd_status())
     elif args.uninstall:
         sys.exit(cmd_uninstall(dry_run=args.dry_run, force=args.force))
