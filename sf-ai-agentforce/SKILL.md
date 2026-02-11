@@ -143,6 +143,9 @@ sf agent preview --api-name MyAgent --target-org MyOrg
 **8. Publish**
 ```bash
 sf agent publish authoring-bundle --api-name MyAgent --target-org MyOrg
+
+# Publish (skip metadata retrieve for CI/CD pipelines, v2.122.6+)
+sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve --target-org MyOrg
 ```
 
 ---

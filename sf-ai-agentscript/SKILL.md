@@ -906,6 +906,9 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
 # Publish to org (NOT sf project deploy!)
 sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
 
+# Publish without retrieving metadata (CI/CD optimization, v2.122.6+)
+sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG
+
 # Generate authoring bundle scaffolding
 sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG
 

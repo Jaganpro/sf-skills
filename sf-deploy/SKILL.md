@@ -438,6 +438,7 @@ sf agent activate --api-name [AgentName] --target-org target-org
 | Command | Description |
 |---------|-------------|
 | `sf agent publish authoring-bundle --api-name X` | Publish authoring bundle |
+| `sf agent publish authoring-bundle --api-name X --skip-retrieve` | Publish without retrieving metadata (CI/CD) |
 | `sf agent activate --api-name X` | Activate published agent |
 | `sf agent deactivate --api-name X` | Deactivate agent for changes |
 | `sf agent preview --api-name X` | Preview agent behavior |

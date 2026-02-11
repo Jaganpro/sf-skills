@@ -318,9 +318,9 @@ if sf agent deactivate --api-name $AGENT_NAME --target-org $ORG_ALIAS 2>/dev/nul
     echo "⏸️ Agent deactivated for update"
 fi
 
-# Step 4: Publish agent
+# Step 4: Publish agent (--skip-retrieve skips metadata retrieval, faster in CI)
 echo "📤 Publishing agent..."
-sf agent publish authoring-bundle --api-name $AGENT_NAME --target-org $ORG_ALIAS --wait 10
+sf agent publish authoring-bundle --api-name $AGENT_NAME --target-org $ORG_ALIAS --skip-retrieve --wait 10
 
 # Step 5: Activate agent
 echo "▶️ Activating agent..."
@@ -507,6 +507,7 @@ sf agent activate --api-name My_Agent --target-org myorg
 | Command | Description |
 |---------|-------------|
 | `sf agent publish authoring-bundle --api-name X` | Publish authoring bundle |
+| `sf agent publish authoring-bundle --api-name X --skip-retrieve` | Publish without retrieving from org (CI/CD) |
 | `sf agent activate --api-name X` | Activate published agent |
 | `sf agent deactivate --api-name X` | Deactivate agent for changes |
 | `sf agent preview --api-name X` | Preview agent behavior |
