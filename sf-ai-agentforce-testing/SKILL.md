@@ -1397,6 +1397,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | `comprehensive-test-spec.yaml` | Full coverage (20+ tests) with context vars, metrics, custom evals | `templates/` |
 | `context-vars-test-spec.yaml` | Context variable patterns (RoutableId, EndUserId, CaseId) | `templates/` |
 | `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | `templates/` |
+| `cli-auth-guardrail-tests.yaml` | Auth gate, guardrail, ambiguous routing, session tests (CLI) | `templates/` |
 | `guardrail-tests.yaml` | Security/safety scenarios | `templates/` |
 | `escalation-tests.yaml` | Human handoff scenarios | `templates/` |
 | `agentscript-test-spec.yaml` | Agent Script agents with conversationHistory pattern | `templates/` |
@@ -1603,7 +1604,7 @@ sf agent test results --job-id [JOB_ID] --verbose --result-format json --target-
 
 ## 🐛 Known Issues & CLI Bugs
 
-> **Last Updated**: 2026-02-09 | **Tested With**: sf CLI v2.118.16+
+> **Last Updated**: 2026-02-11 | **Tested With**: sf CLI v2.118.16+
 
 ### RESOLVED: `sf agent test create` MasterLabel Error
 
@@ -1694,6 +1695,20 @@ subjectName: My_Agent
 **Issue**: The `instruction_following` metric labels results as "FAILURE" even when `score: 1` and the explanation text says the agent "follows instructions perfectly." This appears to be a pass/fail threshold configuration error on the platform side.
 
 **Workaround**: Use the numeric `score` value (0 or 1) for evaluation. Ignore the PASS/FAILURE label.
+
+### HIGH: `instruction_following` Crashes Testing Center UI
+
+**Status**: 🔴 Blocks Testing Center UI entirely — separate from threshold bug above
+
+**Error**: `Unable to get test suite: No enum constant einstein.gpt.shared.testingcenter.enums.AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION`
+
+**Scope**: The Testing Center UI (Setup → Agent Testing) throws a Java exception when opening **any** test suite that includes the `instruction_following` metric. The CLI (`sf agent test run`) works fine — only the UI rendering is broken.
+
+**Workaround**: Remove `- instruction_following` from the YAML metrics list and redeploy the test spec via `sf agent test create --force-overwrite`.
+
+**Note**: This is a **different bug** from the threshold mismatch above. The threshold bug affects score interpretation; this bug blocks the entire UI from loading.
+
+**Discovered**: 2026-02-11 on DevInt sandbox (Spring '26).
 
 ---
 

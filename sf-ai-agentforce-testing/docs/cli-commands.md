@@ -422,10 +422,10 @@ testCases:
 
 | Metric | Score Range | Status | Description |
 |--------|-------------|--------|-------------|
-| `coherence` | 1-5 | ✅ Works | Response clarity, grammar, and logical flow. Typically scores 4-5 for clear responses. |
+| `coherence` | 1-5 | ✅ Works (caveat) | Response clarity, grammar, and logical flow. Typically scores 4-5 for clear responses. **⚠️ Scores deflection agents poorly** (2-3) because it evaluates whether the response "answers" the user's literal question, not whether the agent behaved correctly. For deflection/guardrail tests, use `expectedOutcome` instead. |
 | `completeness` | 1-5 | ⚠️ Misleading | How fully the response addresses the query. **Penalizes triage/routing agents** for transferring instead of "solving." |
 | `conciseness` | 1-5 | 🔴 Broken | **Returns score=0** with empty `metricExplainability` on most tests. Platform bug. |
-| `instruction_following` | 0-1 | ⚠️ Threshold bug | Whether agent follows instructions. **Labels "FAILURE" even at score=1** — check score value, ignore label. |
+| `instruction_following` | 0-1 | ⚠️ Two bugs | Whether agent follows instructions. **Bug 1:** Labels "FAILURE" even at score=1 — check score value, ignore label. **Bug 2:** Crashes Testing Center UI — `No enum constant AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION`. Remove from metrics if users need UI. |
 | `output_latency_milliseconds` | Raw ms | ✅ Works | Raw response latency. No pass/fail grading — useful for performance baselining. |
 
 ### Recommendations
@@ -713,6 +713,7 @@ cat ./debug/apex-debug.log | grep ERROR
 | **Test exists confirmation hangs** | Interactive prompt in script | Use `echo "y" \| sf agent test create...` |
 | **"RETRY" / "INTERNAL_SERVER_ERROR"** | Custom eval platform bug (Spring '26) | Skip custom evaluations or use Testing Center UI. See [Known Issues](#critical-custom-evaluations-retry-bug-spring-26) |
 | **Metric score=0 on conciseness** | `conciseness` metric broken | Skip `conciseness` metric until platform patch |
+| **"No enum constant AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION"** | Testing Center UI crashes when test suite includes `instruction_following` metric | Remove `- instruction_following` from YAML metrics and redeploy. CLI execution is unaffected. |
 
 ---
 
@@ -903,6 +904,18 @@ These fields are NOT part of the CLI YAML schema and will be silently ignored or
 **Status**: 🟡 Threshold mismatch — score and label disagree
 
 **Workaround**: Use the numeric `score` value (0 or 1) for evaluation. Ignore the PASS/FAILURE label.
+
+### HIGH: `instruction_following` Crashes Testing Center UI
+
+**Status**: 🔴 Blocks Testing Center UI entirely
+
+**Error**: `No enum constant einstein.gpt.shared.testingcenter.enums.AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION`
+
+**Scope**: Testing Center UI (Setup → Agent Testing) throws a Java exception when opening any test suite with `instruction_following` metric. CLI execution is unaffected.
+
+**Workaround**: Remove `- instruction_following` from YAML metrics, redeploy via `sf agent test create --force-overwrite`.
+
+**Discovered**: 2026-02-11.
 
 ---
 

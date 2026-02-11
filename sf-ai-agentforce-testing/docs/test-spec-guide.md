@@ -230,13 +230,13 @@ testCases:
   - utterance: "What's the status of my account?"
     expectedTopic: account_lookup
     contextVariables:
-      - name: "$Context.RoutableId"
+      - name: RoutableId              # NOT $Context.RoutableId — bare name only
         value: "0Mw8X000000XXXXX"
-      - name: "$Context.CaseId"
+      - name: CaseId
         value: "5008X000000XXXXX"
 ```
 
-> **Important:** Agents with authentication flows (e.g., `User_Authentication` topic) typically require `$Context.RoutableId` and `$Context.CaseId`. Without them, the authentication flow fails and the agent escalates on Turn 1.
+> **Important:** Agents with authentication flows (e.g., `User_Authentication` topic) typically require `RoutableId` and `CaseId` context variables. Without them, the authentication flow fails and the agent escalates on Turn 1. Use bare variable names — the CLI framework adds the `$Context.` prefix automatically.
 
 ---
 
@@ -384,6 +384,53 @@ testCases:
   - utterance: "..."
 ```
 
+### Ambiguous Routing
+
+When multiple topics are acceptable destinations for an utterance, **omit `expectedTopic`** and use `expectedOutcome` for behavioral validation instead. This prevents false failures from non-deterministic routing.
+
+```yaml
+testCases:
+  # ❌ FRAGILE — fails if planner picks Off_Topic instead of Escalation
+  - utterance: "What is the meaning of life?"
+    expectedTopic: Escalation
+
+  # ✅ ROBUST — validates behavior regardless of which topic fires
+  - utterance: "What is the meaning of life?"
+    expectedOutcome: "Agent deflects gracefully. Does NOT crash. Does NOT attempt to answer."
+```
+
+### Auth Gate Verification
+
+For agents with authentication flows, include tests confirming that business-domain requests route to the auth topic first — not to a broad catch-all:
+
+```yaml
+testCases:
+  - utterance: "I need to check my order status"
+    expectedTopic: User_Authentication0
+
+  - utterance: "Can I update my billing information?"
+    expectedTopic: User_Authentication0
+
+  - utterance: "I want to return a product"
+    expectedTopic: User_Authentication0
+```
+
+If any of these route to a non-auth topic (e.g., Escalation), the catch-all topic's description is likely too broad and absorbing business intents.
+
+### Parallel Test Suites
+
+For agents with 20+ test cases, split into category-based YAML specs for parallel execution:
+
+```
+tests/
+├── agent-routing-tests.yaml      # Topic routing (8 tests)
+├── agent-guardrail-tests.yaml    # Guardrails and deflection (10 tests)
+├── agent-auth-tests.yaml         # Auth gate verification (5 tests)
+└── agent-session-tests.yaml      # Session/context tests (3 tests)
+```
+
+Each spec is deployed independently via `sf agent test create`, then executed in parallel via separate `sf agent test run` commands. This reduces total wall-clock time and makes failures easier to categorize.
+
 ---
 
 ## Known Gotchas
@@ -397,6 +444,9 @@ testCases:
 | **CLI has NO MessagingSession context** | Flows that need `recordId` will error at runtime (agent handles gracefully) |
 | **`--use-most-recent` flag is broken** | Always use `--job-id` explicitly for `sf agent test results` |
 | **Promoted topics need full runtime name** | `localDeveloperName` only resolves for standard topics |
+| **`instruction_following` crashes Testing Center UI** | `No enum constant AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION` — CLI works fine but UI breaks. Remove this metric if users need Testing Center UI access. |
+| **Standard platform topics intercept before custom routing** | `Inappropriate_Content`, `Prompt_Injection`, `Reverse_Engineering` fire BEFORE the custom planner. Don't use custom topic names for these guardrail tests. See [topic-name-resolution.md](topic-name-resolution.md#standard-platform-topics-intercept-before-custom-routing). |
+| **`coherence` misleading for deflection agents** | Evaluates whether the response "answers" the user's question — scores 2-3 for correct deflections. Use `expectedOutcome` for guardrail/deflection tests instead. |
 
 ---
 
