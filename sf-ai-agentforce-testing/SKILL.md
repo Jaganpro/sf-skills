@@ -1226,9 +1226,11 @@ See [custom-eval-test-spec.yaml](templates/custom-eval-test-spec.yaml) for a ded
 
 ### B2: Test Execution
 
+> **Context optimization**: The `--json` flag suppresses CLI spinner output (saves context tokens). The `--result-format json` flag formats *test results* as JSON (for programmatic parsing). Use both together for minimal, machine-readable output.
+
 ```bash
-# Run automated tests
-sf agent test run --api-name MyAgentTest --wait 10 --result-format json --target-org [alias]
+# Run automated tests (--json = no spinners, --result-format json = structured results)
+sf agent test run --api-name MyAgentTest --wait 10 --result-format json --json --target-org [alias]
 ```
 
 > **No ECA required.** Preview uses standard org auth (`sf org login web`). No Connected App setup needed (v2.121.7+).

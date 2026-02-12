@@ -913,24 +913,27 @@ curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/einstein/ai-agent/v1" \
 > **Symptom**: 500 error with `"errorCode": "UNKNOWN_EXCEPTION"` → Missing `plannerSurfaces` or `surfacesEnabled=false`.
 
 ### Phase 6: CLI Operations
+
+> **Always use `--json`** to suppress spinner output and return structured results. Spinners flood the context window with repetitive "Waiting..." lines.
+
 ```bash
 # Retrieve from org
-sf agent retrieve --name MyAgent --target-org sandbox
+sf project retrieve start --metadata Agent:MyAgent --target-org sandbox --json
 
 # Validate syntax
-sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
+sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
 # Publish to org (NOT sf project deploy!)
-sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
+sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
 # Publish without retrieving metadata (CI/CD optimization, v2.122.6+)
-sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG
+sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG --json
 
 # Generate authoring bundle scaffolding
-sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG
+sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
 # Generate without retrieving from org (useful for CI/CD)
-sf agent generate authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG
+sf agent generate authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG --json
 ```
 
 ### Bundle Structure (CRITICAL)
@@ -1261,7 +1264,7 @@ Present the results to the user and ask them to select which user to use for `de
 ### Tier 3: Quick References (Docs)
 | Need | Document | Description |
 |------|----------|-------------|
-| CLI commands | [docs/cli-guide.md](docs/cli-guide.md) | sf agent retrieve/validate/deploy |
+| CLI commands | [docs/cli-guide.md](docs/cli-guide.md) | sf project retrieve/agent validate/deploy |
 | Patterns | [docs/patterns-quick-ref.md](docs/patterns-quick-ref.md) | Decision tree for pattern selection |
 
 ### Tier 4: Templates

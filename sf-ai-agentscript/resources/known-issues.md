@@ -87,7 +87,7 @@
   sf bot version list
 
   # ✅ New commands (for Agent Script):
-  sf agent retrieve --name MyAgent
+  sf project retrieve start --metadata Agent:MyAgent
   sf agent validate authoring-bundle --api-name MyAgent
   sf agent publish authoring-bundle --api-name MyAgent
   ```

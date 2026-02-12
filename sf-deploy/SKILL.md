@@ -144,9 +144,9 @@ test -f sfdx-project.json # Valid SFDX project
 ### Phase 2: Pre-Deployment Validation
 
 ```bash
-sf org display --target-org <alias>                    # Check connection
-sf apex test run --test-level RunLocalTests --target-org <alias> --wait 10  # Local tests
-sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias> --wait 30  # Validate
+sf org display --target-org <alias> --json             # Check connection
+sf apex test run --test-level RunLocalTests --target-org <alias> --wait 10 --json  # Local tests
+sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias> --wait 30 --json  # Validate
 ```
 
 ### Phase 3: Deployment Execution
@@ -154,16 +154,16 @@ sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias
 **Commands by scope**:
 ```bash
 # Full metadata
-sf project deploy start --target-org <alias> --wait 30
+sf project deploy start --target-org <alias> --wait 30 --json
 
 # Specific components
-sf project deploy start --source-dir force-app/main/default/classes --target-org <alias>
+sf project deploy start --source-dir force-app/main/default/classes --target-org <alias> --json
 
 # Manifest-based
-sf project deploy start --manifest manifest/package.xml --target-org <alias> --test-level RunLocalTests --wait 30
+sf project deploy start --manifest manifest/package.xml --target-org <alias> --test-level RunLocalTests --wait 30 --json
 
 # Quick deploy (after validation)
-sf project deploy quick --job-id <validation-job-id> --target-org <alias>
+sf project deploy quick --job-id <validation-job-id> --target-org <alias> --json
 ```
 
 Handle failures: Parse errors, identify failed components, suggest fixes.
@@ -171,7 +171,7 @@ Handle failures: Parse errors, identify failed components, suggest fixes.
 ### Phase 4: Post-Deployment Verification
 
 ```bash
-sf project deploy report --job-id <job-id> --target-org <alias>
+sf project deploy report --job-id <job-id> --target-org <alias> --json
 ```
 
 Verify components, run smoke tests, check coverage.
@@ -188,8 +188,8 @@ See [examples/deployment-report-template.md](examples/deployment-report-template
 
 ## CLI Reference
 
-**Deploy**: `sf project deploy start [--dry-run] [--source-dir <path>] [--manifest <xml>] [--test-level <level>]`
-**Quick**: `sf project deploy quick --job-id <id>` | **Status**: `sf project deploy report`
+**Deploy**: `sf project deploy start [--dry-run] [--source-dir <path>] [--manifest <xml>] [--test-level <level>] --json`
+**Quick**: `sf project deploy quick --job-id <id> --json` | **Status**: `sf project deploy report --json`
 **Test**: `sf apex test run --test-level RunLocalTests` | **Coverage**: `sf apex get test --code-coverage`
 **Org**: `sf org list` | `sf org display` | `sf org create scratch [--snapshot <name>]` | `sf org open`
 **Metadata**: `sf project retrieve start` | `sf org list metadata --metadata-type <type>`
@@ -350,51 +350,51 @@ The `Agent` pseudo type syncs all agent components at once:
 
 ```bash
 # Retrieve agent + all dependencies from org
-sf project retrieve start --metadata Agent:[AgentName] --target-org [alias]
+sf project retrieve start --metadata Agent:[AgentName] --target-org [alias] --json
 
 # Deploy agent metadata to org
-sf project deploy start --metadata Agent:[AgentName] --target-org [alias]
+sf project deploy start --metadata Agent:[AgentName] --target-org [alias] --json
 ```
 
 #### Agent Lifecycle Commands
 
 ```bash
 # Activate agent (makes available to users)
-sf agent activate --api-name [AgentName] --target-org [alias]
+sf agent activate --api-name [AgentName] --target-org [alias] --json
 
 # Deactivate agent (REQUIRED before making changes)
-sf agent deactivate --api-name [AgentName] --target-org [alias]
+sf agent deactivate --api-name [AgentName] --target-org [alias] --json
 
-# Preview agent (simulated mode - safe testing)
+# Preview agent (simulated mode - safe testing) — interactive, no --json
 sf agent preview --api-name [AgentName] --target-org [alias]
 
-# Preview agent (live mode - real Apex/Flows)
+# Preview agent (live mode - real Apex/Flows) — interactive, no --json
 sf agent preview --api-name [AgentName] --use-live-actions --target-org [alias]
 
 # Validate Agent Script syntax
-sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
+sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias] --json
 ```
 
 #### Full Agent Deployment Workflow
 
 ```bash
 # 1. Deploy Apex classes (if any)
-sf project deploy start --metadata ApexClass --target-org [alias]
+sf project deploy start --metadata ApexClass --target-org [alias] --json
 
 # 2. Deploy Flows
-sf project deploy start --metadata Flow --target-org [alias]
+sf project deploy start --metadata Flow --target-org [alias] --json
 
 # 3. Validate Agent Script
-sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias]
+sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias] --json
 
 # 4. Publish agent
-sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
+sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias] --json
 
-# 5. Preview (simulated mode)
+# 5. Preview (simulated mode) — interactive, no --json
 sf agent preview --api-name [AgentName] --target-org [alias]
 
 # 6. Activate
-sf agent activate --api-name [AgentName] --target-org [alias]
+sf agent activate --api-name [AgentName] --target-org [alias] --json
 ```
 
 #### Modifying Existing Agents
@@ -403,46 +403,46 @@ sf agent activate --api-name [AgentName] --target-org [alias]
 
 ```bash
 # 1. Deactivate
-sf agent deactivate --api-name [AgentName] --target-org [alias]
+sf agent deactivate --api-name [AgentName] --target-org [alias] --json
 
 # 2. Make changes to Agent Script
 
 # 3. Re-publish
-sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias]
+sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias] --json
 
 # 4. Re-activate
-sf agent activate --api-name [AgentName] --target-org [alias]
+sf agent activate --api-name [AgentName] --target-org [alias] --json
 ```
 
 #### Sync Agent Between Orgs
 
 ```bash
 # 1. Retrieve from source org
-sf project retrieve start --metadata Agent:[AgentName] --target-org source-org
+sf project retrieve start --metadata Agent:[AgentName] --target-org source-org --json
 
 # 2. Deploy dependencies to target org first
-sf project deploy start --metadata ApexClass,Flow --target-org target-org
+sf project deploy start --metadata ApexClass,Flow --target-org target-org --json
 
 # 3. Deploy agent metadata
-sf project deploy start --metadata Agent:[AgentName] --target-org target-org
+sf project deploy start --metadata Agent:[AgentName] --target-org target-org --json
 
 # 4. Publish agent in target org
-sf agent publish authoring-bundle --api-name [AgentName] --target-org target-org
+sf agent publish authoring-bundle --api-name [AgentName] --target-org target-org --json
 
 # 5. Activate in target org
-sf agent activate --api-name [AgentName] --target-org target-org
+sf agent activate --api-name [AgentName] --target-org target-org --json
 ```
 
 #### Agent-Specific CLI Reference
 
 | Command | Description |
 |---------|-------------|
-| `sf agent publish authoring-bundle --api-name X` | Publish authoring bundle |
-| `sf agent publish authoring-bundle --api-name X --skip-retrieve` | Publish without retrieving metadata (CI/CD) |
-| `sf agent activate --api-name X` | Activate published agent |
-| `sf agent deactivate --api-name X` | Deactivate agent for changes |
-| `sf agent preview --api-name X` | Preview agent behavior |
-| `sf agent validate authoring-bundle --api-name X` | Validate Agent Script syntax |
+| `sf agent publish authoring-bundle --api-name X --json` | Publish authoring bundle |
+| `sf agent publish authoring-bundle --api-name X --skip-retrieve --json` | Publish without retrieving metadata (CI/CD) |
+| `sf agent activate --api-name X --json` | Activate published agent |
+| `sf agent deactivate --api-name X --json` | Deactivate agent for changes |
+| `sf agent preview --api-name X` | Preview agent behavior (interactive — no `--json`) |
+| `sf agent validate authoring-bundle --api-name X --json` | Validate Agent Script syntax |
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
 | `sf agent generate authoring-bundle --api-name X` | Generate authoring bundle scaffolding |
