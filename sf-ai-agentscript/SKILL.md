@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -68,7 +68,7 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 
 | Constraint | ❌ WRONG | ✅ CORRECT |
 |------------|----------|-----------|
-| **No nested if statements** | `if x:` then `if y:` (nested) | `if x and y:` (compound) OR flatten to sequential ifs |
+| **No `else if` keyword; nesting rules** | `else if x:` (not valid syntax) | `if x and y:` (compound), flatten to sequential ifs, OR use `else:` with nested `if` block inside (see below) |
 | **No top-level `actions:` block** | `actions:` at root level | Actions only inside `topic.reasoning.actions:` |
 | **No `inputs:`/`outputs:` in actions** | `inputs:` block inside action | Use `with` for inputs, `set` for outputs |
 | **One `available when` per action** | Two `available when` clauses | `available when A and B` |
@@ -186,11 +186,17 @@ if @variables.status == "approved":
    | Approved!
 ```
 
-#### No Nested `if` - Two Valid Approaches
+#### `if`/`else` Nesting Rules — Three Valid Approaches
 ```yaml
-# ❌ WRONG - Nested if (causes SyntaxError)
+# ❌ WRONG - `else if` is NOT valid syntax
+if @variables.tier == "gold":
+   | Gold tier detected.
+else if @variables.tier == "silver":    # SyntaxError!
+   | Silver tier detected.
+
+# ❌ WRONG - Direct nested if inside if (no else:) causes SyntaxError
 if @variables.software_cost > 0:
-   if @variables.software_cost <= 500:
+   if @variables.software_cost <= 500:   # SyntaxError!
       | Auto-approve this software request.
 
 # ✅ CORRECT Approach 1 - Compound condition (when logic allows)
@@ -207,8 +213,19 @@ if @variables.order_verified == False:
 
 if @variables.payment_confirmed == False:
    | - Payment confirmation pending
+
+# ✅ CORRECT Approach 3 - else: with nested if block (functions like else-if)
+if @variables.is_member == True:
+   | Welcome back, valued member! {!@variables.member_name}
+else:
+   if @variables.visit_count > 5:
+      | Welcome back! You've visited {!@variables.visit_count} times.
+   else:
+      | Welcome! Let me know how I can help.
 ```
-> **When to use each**: Use compound conditions when logic permits (single condition block). Use flattening when you need separate conditional outputs that can't be combined.
+> **Summary**: `else if` is NOT valid. Direct `if` inside `if` (without `else:`) is NOT valid. But `else:` followed by a new `if` block IS valid and functions like else-if. Use compound conditions for simple cases, flattening for separate outputs, and `else:` + nested `if` for multi-branch logic.
+>
+> **⚠️ Pending validation**: The `else:` + nested `if` pattern is based on community patterns and needs TDD validation in a live org. If it fails to compile, remove Approach 3 and update `resources/known-issues.md`.
 
 #### `...` is Slot-Filling Syntax (LLM Extracts from Conversation)
 ```yaml
@@ -591,7 +608,7 @@ checkout: @utils.transition to @topic.checkout
 ### Expression Operators (Safe Subset)
 | Category | Operators | NOT Supported |
 |----------|-----------|---------------|
-| Comparison | `==`, `<>` (not-equal), `<`, `<=`, `>`, `>=`, `is`, `is not` | |
+| Comparison | `==`, `<>` / `!=` (not-equal), `<`, `<=`, `>`, `>=`, `is`, `is not` | |
 | Logical | `and`, `or`, `not` | |
 | Arithmetic | `+`, `-` | ❌ `*`, `/`, `%` |
 | Access | `.` (property), `[]` (index) | |
@@ -1160,6 +1177,40 @@ topic refund:
 | Prompt template input not mapped | Unquoted `Input:` parameter | Quote it: `with "Input:email"=...` |
 | Missing type on action input | `email:` with no type in definition | Add type: `email: string` |
 
+### 🔍 Verification Protocol
+
+When something fails, is ambiguous, or the user questions your output — **do not guess**. Fetch the relevant canonical URL from [resources/official-sources.md](resources/official-sources.md) and verify.
+
+#### Triggers to Fetch Official Docs
+
+| Situation | Fetch This |
+|-----------|-----------|
+| Compilation/deployment error | Blocks reference + specific element reference |
+| Action not executing | Actions AND Tools reference (different invocation methods) |
+| Variable not updating | Variables reference (mutable vs immutable, linked vs regular) |
+| Topic transition wrong | Utils + Tools reference (transition vs delegation) |
+| New/unfamiliar syntax | Agent Script overview page first |
+| User contradicts local guide | Trust official docs; update local resource if needed |
+
+#### Fallback
+If a URL 404s, web-search: `site:developer.salesforce.com agent script <topic>`
+
+> **Full decision tree**: See [resources/official-sources.md](resources/official-sources.md) for the complete diagnostic decision tree mapping 6 error categories to specific doc pages.
+
+### 🔄 Self-Improvement
+
+This skill's resource files are editable. When you discover something during a session:
+
+- **Found an error in a resource file?** Fix it in place with a comment noting the correction source
+- **Official doc URL changed or 404'd?** Update [resources/official-sources.md](resources/official-sources.md)
+- **Discovered a new pattern or undocumented behavior?** Append to the relevant resource section
+- **Found a new platform bug?** Add to [resources/known-issues.md](resources/known-issues.md) using the issue template
+- **A recipe solved something tricky?** Add a minimal version to the relevant examples section
+
+> **Goal**: Every session that hits an edge case makes the next session smarter.
+
+---
+
 ### Deployment Gotchas (Validated by Testing)
 
 | ❌ Wrong | ✅ Correct |
@@ -1203,6 +1254,9 @@ Present the results to the user and ask them to select which user to use for `de
 | Prompt template actions | [resources/action-prompt-templates.md](resources/action-prompt-templates.md) | `generatePromptResponse://` input binding, grounded data, `run` limitation |
 | Advanced action patterns | [resources/action-patterns.md](resources/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` instruction refs, binding matrix |
 | Actions reference | [resources/actions-reference.md](resources/actions-reference.md) | Complete action types, GenAiFunction metadata, escalation routing, Flow/Apex/API patterns |
+| Official sources | [resources/official-sources.md](resources/official-sources.md) | Canonical Salesforce documentation URLs + diagnostic decision tree |
+| Known issues | [resources/known-issues.md](resources/known-issues.md) | Unresolved platform bugs & workarounds |
+| Migration guide | [resources/migration-guide.md](resources/migration-guide.md) | Agentforce Builder UI → Agent Script DSL mapping |
 
 ### Tier 3: Quick References (Docs)
 | Need | Document | Description |
@@ -1312,9 +1366,12 @@ start_agent entry:
 
 ## 📖 OFFICIAL RESOURCES
 
-- [Agent Script Documentation](https://developer.salesforce.com/docs/einstein/genai/guide/agent-script.html)
-- [Agentforce Builder Guide](https://help.salesforce.com/s/articleView?id=sf.copilot_builder_overview.htm)
-- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html)
+**Quick Links:**
+- [Agent Script Documentation](https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html) — Primary reference
+- [Agent Script Recipes](https://github.com/trailheadapps/agent-script-recipes) — Official examples
+- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html) — Reasoning internals
+
+**Full Registry:** See [resources/official-sources.md](resources/official-sources.md) for 14 primary doc URLs, 8 recipe URLs, diagnostic decision tree, and fallback search patterns.
 
 ---
 
@@ -1330,6 +1387,7 @@ This skill draws from multiple authoritative sources:
 | Tribal knowledge interviews | Canvas View bugs, VS Code limitations, credit consumption patterns |
 | [agentforce.guide](https://agentforce.guide/) | Unofficial but useful examples (note: some patterns don't compile in current release) |
 | @kunello ([PR #20](https://github.com/Jaganpro/sf-skills/pull/20)) | Prompt template `"Input:fieldName"` binding syntax, context-aware description overrides, `{!@actions.X}` instruction reference patterns, callback behavior notes, error pattern catalog |
+| [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
 
 > **⚠️ Note on Feature Validation**: Some patterns from external sources (e.g., `always_expect_input:`, `label:` property, certain action properties on transitions) do NOT compile in Winter '26. The `before_reasoning:`/`after_reasoning:` lifecycle hooks ARE valid but require **direct content** (no `instructions:` wrapper) - see the Lifecycle Hooks section for correct syntax. This skill documents only patterns that pass TDD validation.
 
@@ -1339,6 +1397,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.8.0 | 2026-02-12 | **Gap analysis audit**: Added 3 new resource files: `resources/official-sources.md` (14 primary doc URLs + 8 recipe URLs + diagnostic decision tree), `resources/known-issues.md` (5 open platform issues with structured tracking), `resources/migration-guide.md` (Builder UI → Agent Script mapping table + side-by-side examples). Added Verification Protocol section (triggers + decision tree for fetching official docs). Added Self-Improvement protocol (editable resources, session-based learning). Updated Official Resources section to point to full registry. Added `!=` as alias for `<>` in comparison operators (SKILL.md + syntax-reference.md). Updated nested `if` constraint to document `else:` + nested `if` pattern (pending TDD validation). Added namespace prefix warning for `apex://` targets in actions-reference.md. Updated Document Map with 3 new entries. Added aquivalabs/my-org-butler to Sources & Acknowledgments and CREDITS.md. |
 | 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |
 | 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |
 | 1.5.0 | 2026-02-06 | **Action patterns & prompt template docs** (from @kunello PR #20): Added `resources/action-prompt-templates.md` documenting `generatePromptResponse://` input binding syntax (`"Input:fieldName"`), grounded data integration, output handling, and `run` keyword limitation workaround. Added `resources/action-patterns.md` covering context-aware action description overrides (beginner/advanced mode), `{!@actions.X}` instruction references for guided LLM action selection, input binding decision matrix, callback success-only behavior, and additional error patterns. Updated Common Issues table with 3 new error entries (wrong protocol, unquoted Input: params, missing type annotations). Added Document Map entries and cross-reference after Action Chaining section. Content consolidated from @kunello's 8-file contribution against Agent Script Recipes. |

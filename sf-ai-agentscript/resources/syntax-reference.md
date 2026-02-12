@@ -424,6 +424,56 @@ start_agent topic_selector:
 
 ---
 
+## Expression Operators
+
+### Comparison Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `==` | Equal to | `if @variables.status == "active":` |
+| `<>` | Not equal to | `if @variables.status <> "closed":` |
+| `!=` | Not equal to (alias for `<>`) | `if @variables.status != "closed":` |
+| `<` | Less than | `if @variables.count < 10:` |
+| `<=` | Less than or equal | `if @variables.count <= 5:` |
+| `>` | Greater than | `if @variables.risk > 80:` |
+| `>=` | Greater than or equal | `if @variables.attempts >= 3:` |
+| `is` | Identity check | `if @variables.data is None:` |
+| `is not` | Negated identity check | `if @variables.data is not None:` |
+
+> **Note**: Both `<>` and `!=` are valid for "not equal" comparisons. Official Salesforce docs and community patterns use both interchangeably.
+
+### Logical Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `and` | Logical AND | `if @variables.verified == True and @variables.active == True:` |
+| `or` | Logical OR | `if @variables.status == "open" or @variables.status == "pending":` |
+| `not` | Logical NOT | `if not @variables.blocked:` |
+
+### Arithmetic Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `+` | Addition | `set @variables.count = @variables.count + 1` |
+| `-` | Subtraction | `set @variables.remaining = @variables.total - @variables.used` |
+
+> ⚠️ **NOT supported**: `*` (multiplication), `/` (division), `%` (modulo). For complex arithmetic, use a Flow or Apex action.
+
+### Access Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `.` | Property access | `@outputs.result.status` |
+| `[]` | Index access | `@variables.items[0]` |
+
+### Conditional Expression (Ternary-like)
+
+```yaml
+| Status: {!@variables.status if @variables.status else "pending"}
+```
+
+---
+
 ## Common Pitfalls
 
 | Pitfall | Symptom | Fix |

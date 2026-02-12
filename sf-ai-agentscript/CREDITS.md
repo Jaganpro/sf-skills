@@ -28,6 +28,12 @@ This skill was developed from comprehensive documentation screenshots covering 8
 - [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html)
 - [Salesforce CLI Agent Commands](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_agent_commands_unified.htm)
 
+### Community Contributions
+
+| Source | Contribution |
+|--------|-------------|
+| [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
+
 ### Related Skills
 
 This skill integrates with other sf-skills:

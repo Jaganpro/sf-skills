@@ -339,6 +339,8 @@ topic discount_calculator:
 
 > ✅ **No GenAiFunction, no GenAiPlugin, no metadata deployment beyond the Apex class itself.** The `apex://ClassName` target auto-discovers the `@InvocableMethod` on the class.
 
+> ⚠️ **Namespace Warning (Unresolved)**: In namespaced packages, `apex://ClassName` may fail at publish time with "invocable action does not exist," even when the Apex class is confirmed deployed via SOQL. It is unclear whether namespace prefix syntax is required (e.g., `apex://ns__ClassName`). If you encounter this in a namespaced org, try: (1) `apex://ns__ClassName` format, (2) wrapping the Apex in a Flow and using `flow://` instead. See [known-issues.md](known-issues.md#issue-2-sf-agent-publish-fails-with-namespace-prefix-on-apex-targets) for tracking.
+
 ### Path B: Agent Builder UI (GenAiPlannerBundle — Legacy)
 
 If you're NOT using Agent Script and are building agents through the Agent Builder UI, you need GenAiFunction metadata to wrap the Apex class. See the `templates/metadata/genai-function-apex.xml` template for the XML format.
