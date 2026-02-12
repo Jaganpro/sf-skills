@@ -72,7 +72,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 | **Agent Script testing** | [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) | 5 patterns for testing Agent Script agents |
 
 **⚡ Quick Links:**
-- [Deterministic Interview Flow](#deterministic-multi-turn-interview-flow) - Rule-based setup (7 steps)
+- [4-Step Interview Flow](#4-step-interview-flow-testing-center-wizard) - Testing Center wizard (4 steps)
 - [Credential Convention](#credential-convention-sfagent) - Persistent ECA storage
 - [Swarm Execution Rules](#swarm-execution-rules-native-claude-code-teams) - Parallel team testing
 - [Test Plan Format](#test-plan-file-format) - Reusable YAML plans
@@ -130,8 +130,8 @@ All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. *
 ## Architecture: Dual-Track Testing Workflow
 
 ```
-Deterministic Interview (I-1 → I-7)
-    │  Agent Name → Org Alias → Metadata → Credentials → Scenarios → Partition → Confirm
+4-Step Interview (mirrors Testing Center wizard)
+    │  Step 1: Basic Info → Step 2: Conditions → Step 3: Test Data → Step 4: Evaluate
     │  (skip if test-plan-{agent}.yaml provided)
     │
     ▼
@@ -256,91 +256,159 @@ sf agent test list --target-org [alias]
 
 ---
 
-## Deterministic Multi-Turn Interview Flow
+## 4-Step Interview Flow (Testing Center Wizard)
 
-When the testing skill is invoked, follow these interview steps **in order**. Each step has deterministic rules with fallbacks. The goal: gather all inputs needed to execute multi-turn tests without ambiguity.
+When the testing skill is invoked, follow these 4 steps in order.
+Each step mirrors one tab of the Salesforce Testing Center "New Test" wizard.
 
-> **Skip the interview** if the user provides a `test-plan-{agent}.yaml` file — load it directly and jump to [Swarm Execution Rules](#swarm-execution-rules-native-claude-code-teams).
+> **Skip the interview** if the user provides a `test-plan-{agent}.yaml` file — load it directly and jump to execution.
 
-| Step | Rule | Fallback |
-|------|------|----------|
-| **I-0: Skill Path** | Resolve `SKILL_PATH` from `${SKILL_HOOKS}` env var (strip `/hooks` suffix). If unset → hardcoded `~/.claude/skills/sf-ai-agentforce-testing`. Verify directory exists. All subsequent script references use `{SKILL_PATH}/hooks/scripts/`. | Hardcoded path |
-| **I-1: Agent Name** | User provided → use it. Else walk up from CWD looking for `sfdx-project.json` → run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py local --project-dir .`. Multiple agents → present numbered list via AskUserQuestion. None found → ask user. | AskUserQuestion |
-| **I-2: Org Alias** | User provided → use it. Else parse `sfdx-project.json` → read `sfdx-config.json` for `target-org`. Else ask user. Note: org aliases are **case-sensitive** (e.g., `Vivint-DevInt` ≠ `vivint-devint`). | AskUserQuestion |
-| **I-3: Metadata** | **ALWAYS** run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py live --target-org {org} --agent-name {agent}`. Extract topics, actions, type, agent_id. This step is mandatory — never skip. | Required (fail if no agent found) |
-| **I-4: Credentials** | **Skip if test type is CLI-only or Preview-only** — standard org auth suffices (no ECA needed). For multi-turn API testing: Run `python3 {SKILL_PATH}/hooks/scripts/credential_manager.py discover --org-alias {org}`. Found ECA → `validate`. Valid → use. Invalid → ask user for new credentials → `save` → re-validate. No ECAs found → ask user → offer to save via `credential_manager.py save`. | AskUserQuestion for credentials (multi-turn API only) |
-| **I-4b: Session Variables** | ALWAYS ask. Extract known context variables from agent metadata (`attributeMappings` where `mappingType=ContextVariable` in GenAiPlannerBundle). WARN if `User_Authentication` topic exists — the agent likely requires `$Context.RoutableId` and `$Context.CaseId` to authenticate the customer. Present discovered variables and ask user for values. | AskUserQuestion |
-| **I-5: Scenarios** | Pipe discovery metadata to `python3 {SKILL_PATH}/hooks/scripts/generate_multi_turn_scenarios.py --metadata - --output {dir} --categorized --cross-topic`. Present summary: N scenarios across M categories. | Required |
-| **I-6: Partition** | Ask user how to split work across workers. | AskUserQuestion (see below) |
-| **I-7: Confirm** | Present test plan summary. Save as `test-plan-{agent}.yaml` using template. User confirms to proceed. | AskUserQuestion |
+### Step 1: Basic Information
 
-### I-4b: Session Variables
-
-Context variables are **MANDATORY** for agents that use authentication flows (e.g., `User_Authentication` topic). Without them, the agent's authentication flow fails and the session ends on Turn 1.
-
-Extract context variables from agent metadata:
-1. Run `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py local --project-dir {project}` and look for `context_variables` in the GenAiPlannerBundle output.
-2. Common variables: `$Context.RoutableId` (MessagingSession ID), `$Context.CaseId` (Case record ID).
+| Input | Source | Fallback |
+|-------|--------|----------|
+| Skill Path | Auto-resolve from `${SKILL_HOOKS}` env var (strip `/hooks` suffix). If unset → hardcoded `~/.claude/skills/sf-ai-agentforce-testing`. | Hardcoded path |
+| Agent Name | User provided or auto-discover via `agent_discovery.py` | AskUserQuestion |
+| Org Alias | User provided or `sfdx-config.json` → `target-org` | AskUserQuestion |
+| Description | ALWAYS ask — used for test generation context | AskUserQuestion |
+| Test Type | User selects: CLI / API / Both | AskUserQuestion |
 
 ```
 AskUserQuestion:
-  question: "The agent requires context variables for testing. Which values should we use?"
-  header: "Variables"
-  options:
-    - label: "Use test record IDs (Recommended)"
-      description: "I'll provide real MessagingSession and Case IDs from the org for testing"
-    - label: "Skip variables"
-      description: "Run without context variables — WARNING: authentication topics will likely fail"
-    - label: "Auto-discover from org"
-      description: "Query the org for recent MessagingSession and Case records to use as test values"
-  multiSelect: false
+  questions:
+    - question: "Which agent do you want to test?"
+      header: "Agent"
+      options:
+        - label: "Discover from org (Recommended)"
+          description: "Auto-discover agents via agent_discovery.py live"
+        - label: "I know the API name"
+          description: "I'll provide the BotDefinition DeveloperName directly"
+    - question: "What is your target org alias?"
+      header: "Org"
+      options:
+        - label: "{auto-detected org alias} (Recommended)"
+          description: "Detected from sfdx-config.json target-org"
+        - label: "Different org"
+          description: "I'll provide a different org alias"
+    - question: "What is this test suite validating?"
+      header: "Description"
+      options:
+        - label: "Topic routing accuracy"
+          description: "Verify utterances route to correct topics"
+        - label: "Guardrail & safety compliance"
+          description: "Test deflection, injection, and abuse handling"
+        - label: "Full agent coverage"
+          description: "Comprehensive coverage across all topics, actions, and edge cases"
+    - question: "What type of testing?"
+      header: "Test Type"
+      options:
+        - label: "CLI Testing Center (Recommended)"
+          description: "Single-utterance tests via sf agent test — no ECA required"
+        - label: "Multi-turn API"
+          description: "Multi-turn conversations via Agent Runtime API — requires ECA"
+        - label: "Both"
+          description: "CLI tests first, then multi-turn API for conversation flow validation"
 ```
 
-> **⚠️ WARNING:** If the agent has a `User_Authentication` topic that runs `Bot_User_Verification`, you MUST provide `$Context.RoutableId` and `$Context.CaseId`. Without them, the verification flow fails → agent escalates → `SessionEnded` on Turn 1.
+**Auto-runs after Step 1:**
+- Skill path resolution (`SKILL_HOOKS` env var or hardcoded fallback)
+- Agent metadata retrieval: `python3 {SKILL_PATH}/hooks/scripts/agent_discovery.py live --target-org {org} --agent-name {agent}`
+- Testing Center availability check: `sf agent test list -o {org}`
 
-### I-6: Partition Strategy
+### Step 2: Test Conditions
 
-**DEFAULT RULE**: If total generated scenarios > 4, default to "2 workers by category". If ≤ 4, default to "Sequential". ALWAYS default — only change if the user explicitly requests otherwise.
+| Input | Source | Fallback |
+|-------|--------|----------|
+| Context Variables | Extract from agent metadata (`attributeMappings` where `mappingType=ContextVariable`) | AskUserQuestion |
+| Record IDs | User provides or auto-discover from org | AskUserQuestion |
+| Credentials | Auto-discover via `credential_manager.py` (API only) | AskUserQuestion |
 
 ```
 AskUserQuestion:
-  question: "How should test scenarios be distributed across workers?"
-  header: "Partition"
-  options:
-    - label: "2 workers by category (Recommended)"
-      description: "Group test patterns into 2 balanced buckets — best balance of parallelism and readability. DEFAULT when > 4 scenarios."
-    - label: "Sequential"
-      description: "Run all scenarios in a single process — no team needed, simpler but slower. DEFAULT when ≤ 4 scenarios."
-  multiSelect: false
+  questions:
+    - question: "Your agent uses context variables: {discovered_vars}. Provide test record IDs?"
+      header: "Variables"
+      options:
+        - label: "Use test record IDs (Recommended)"
+          description: "I'll provide real MessagingSession and Case IDs for testing"
+        - label: "Auto-discover from org"
+          description: "Query the org for recent MessagingSession and Case records"
+        - label: "Skip context variables"
+          description: "WARNING: Auth topics will likely fail without RoutableId + CaseId"
+    - question: "How should conversation history be set up?"
+      header: "History"
+      options:
+        - label: "Single-turn only (Recommended for CLI)"
+          description: "Each test is an independent utterance — no prior context"
+        - label: "Include multi-turn patterns"
+          description: "Add conversationHistory entries for context retention tests"
 ```
 
-### I-7: Confirmation Summary Format
+> **⚠️ WARNING:** If the agent has a `User_Authentication` topic, you MUST provide `$Context.RoutableId` and `$Context.CaseId`. Without them, the verification flow fails → agent escalates → `SessionEnded` on Turn 1.
 
-Present this to the user before execution:
+### Step 3: Test Data (HUMAN-IN-THE-LOOP)
+
+Claude generates test cases based on agent metadata, then presents for review.
+
+**Generation inputs:**
+- Agent topics + `classificationDescription` from each topic
+- System instructions + guardrails from agent metadata
+- Description from Step 1 (guides test focus)
+- Context variables from Step 2
+
+**Generation rules:**
+- ALWAYS include `expectedOutcome` with behavioral description
+- Group by category: auth routing, escalation, guardrail, edge cases, global instructions
+- Include `$Context.` variables on every test case that needs session context
+- Omit `expectedTopic` for ambiguous routing — use `expectedOutcome` instead
+- Add `# Description:` comment block at the top of each YAML file
 
 ```
-📋 TEST PLAN SUMMARY
-════════════════════════════════════════════════════════════════
-Agent:        {agent_name} ({agent_id})
-Org:          {org_alias}
-Credentials:  ~/.sfagent/{org_alias}/{eca_name}/credentials.env ✅
-Scenarios:    {total_count} across {category_count} categories
-Partition:    {strategy} with {worker_count} worker(s)
-Variables:    {var_count} session variable(s)
-
-📂 Scenario Breakdown:
-  topic_routing:        {n} scenarios
-  context_preservation: {n} scenarios
-  escalation_flows:     {n} scenarios
-  guardrail_testing:    {n} scenarios
-  action_chain:         {n} scenarios
-  error_recovery:       {n} scenarios
-  cross_topic_switch:   {n} scenarios
-
-💾 Saved: test-plan-{agent_name}.yaml
-════════════════════════════════════════════════════════════════
-Proceed? [Confirm / Edit / Cancel]
+AskUserQuestion:
+  questions:
+    - question: "I generated {N} test cases across {M} categories. Review the test plan?"
+      header: "Review"
+      options:
+        - label: "Approve all (Recommended)"
+          description: "Deploy and run all generated test cases as-is"
+        - label: "Add more tests"
+          description: "I'll suggest additional scenarios to cover"
+        - label: "Remove tests"
+          description: "I'll identify tests to remove from the suite"
+        - label: "Edit specific tests"
+          description: "I'll modify specific utterances or expected values"
 ```
+
+### Step 4: Evaluations & Deploy
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Which quality metrics to include?"
+      header: "Metrics"
+      multiSelect: true
+      options:
+        - label: "coherence (Recommended)"
+          description: "Response clarity and logical flow — scores 4-5 for clear responses"
+        - label: "output_latency_milliseconds (Recommended)"
+          description: "Raw latency in ms — useful for performance baselining"
+        - label: "instruction_following (CLI only — crashes UI)"
+          description: "Whether agent follows instructions. Works in CLI but breaks Testing Center UI"
+    - question: "Deploy and run strategy?"
+      header: "Strategy"
+      options:
+        - label: "Swarm: parallel deploy+run (Recommended for 3+ suites)"
+          description: "Use agent teams to deploy and run suites in parallel — fastest for large test sets"
+        - label: "Sequential: one suite at a time"
+          description: "Deploy and run each suite sequentially — simpler but slower"
+```
+
+**After confirmation:**
+1. Save test plan as `test-plan-{agent_name}.yaml`
+2. Deploy suites via `sf agent test create --spec`
+3. Run suites via `sf agent test run`
+4. Collect results via `sf agent test results --job-id`
+5. Present formatted results summary
 
 ---
 
@@ -977,6 +1045,14 @@ Required top-level fields:
 - `subjectType: AGENT`
 - `subjectName:` — Agent BotDefinition DeveloperName
 
+**Description convention:** Since `AiEvaluationDefinition` has no XML `<description>` element, use YAML comments to document the test suite's purpose:
+```yaml
+# Description: Validates auth-first routing for all greeting patterns
+name: "VVS Greeting Auth Tests"
+subjectType: AGENT
+subjectName: Product_Troubleshooting2
+```
+
 Test case fields (flat, NOT nested):
 - `utterance:` — User message
 - `expectedTopic:` — NOT `expectation.topic`
@@ -1051,7 +1127,7 @@ See [topic-name-resolution.md](docs/topic-name-resolution.md) for the complete g
 | Missing `expectedOutcome` | `output_validation` reports ERROR — harmless |
 | No MessagingSession context | Flows needing `recordId` error (agent handles gracefully) |
 | `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
-| contextVariables `name` prefix | Use `RoutableId` NOT `$Context.RoutableId` — framework adds prefix |
+| contextVariables `name` format | Both `RoutableId` and `$Context.RoutableId` work — runtime resolves both. Prefer `$Context.` prefix for clarity. |
 | customEvaluations RETRY bug | **⚠️ Spring '26:** Server returns RETRY → REST API 500. See [Known Issues](#critical-custom-evaluations-retry-bug-spring-26). |
 | `conciseness` metric broken | Returns score=0, empty explanation — platform bug |
 | `instruction_following` threshold | Labels FAILURE even at score=1 — use score value, ignore label |
@@ -1065,15 +1141,16 @@ Context variables inject session-level data (record IDs, user info) into CLI tes
 **YAML syntax:**
 ```yaml
 contextVariables:
-  - name: RoutableId            # Bare name — NOT $Context.RoutableId
+  - name: "$Context.RoutableId"   # Prefixed format (recommended)
     value: "0Mwbb000007MGoTCAW"
-  - name: CaseId
+  - name: "$Context.CaseId"
     value: "500XX0000000001"
 ```
 
 **Key rules:**
-- `name` uses **bare variable name** (e.g., `RoutableId`), NOT `$Context.RoutableId` — the CLI adds the prefix
-- Maps to `<contextVariable><variableName>` / `<variableValue>` in XML metadata
+- Both prefixed (`$Context.RoutableId`) and bare (`RoutableId`) formats work — the **runtime resolves both**
+- `$Context.` prefix is recommended as it matches the Merge Field syntax used in Flow Builder and Apex
+- The CLI passes the `name` verbatim to `<contextVariable><variableName>` in XML metadata — no prefix is added or stripped
 
 **Discovery — find valid IDs:**
 ```bash
@@ -1165,6 +1242,53 @@ sf agent preview --api-name AgentName --output-dir ./logs --target-org [alias]
 ```bash
 sf agent preview --api-name AgentName --use-live-actions --apex-debug --target-org [alias]
 ```
+
+### B2.5: Swarm Execution for CLI Tests (Agent Teams)
+
+When multiple CLI test suites need to be deployed and run simultaneously, use agent teams for parallel execution.
+
+**When to use swarm:**
+- 3+ test suites to deploy and run
+- User selects "Swarm: parallel deploy+run" in Step 4
+- Each suite is independent (no shared state)
+
+**Swarm Protocol:**
+
+☐ **Step 1: Create team**
+```
+TeamCreate(team_name="cli-test-{agent_name}")
+```
+
+☐ **Step 2: Create tasks** (one per suite)
+```
+TaskCreate(subject="Deploy+Run {suite_name}", description="sf agent test create + run for {suite}")
+```
+
+☐ **Step 3: Spawn workers** (max 3, batch suites if > 3)
+Workers are `fde-qa-engineer` agents. Each worker:
+1. Deploys its assigned suite(s) via `sf agent test create --spec`
+2. Runs via `sf agent test run --api-name`
+3. Polls results via `sf agent test results --job-id`
+4. SendMessage to leader with results summary
+
+```
+Task(subagent_type="fde-qa-engineer", team_name="cli-test-{agent_name}",
+     name="test-worker-1", prompt=CLI_WORKER_PROMPT)
+Task(subagent_type="fde-qa-engineer", team_name="cli-test-{agent_name}",
+     name="test-worker-2", prompt=CLI_WORKER_PROMPT)
+```
+
+☐ **Step 4: Collect + aggregate results**
+Leader waits for all workers to report back via SendMessage.
+
+☐ **Step 5: Present unified report**
+Aggregate all suite results into the standard B3 results format.
+
+☐ **Step 6: Shutdown + TeamDelete**
+Send shutdown_request to all workers, then TeamDelete to clean up.
+
+**Version check:** Teams require Claude Code with TeamCreate support.
+If TeamCreate is unavailable, fall back to sequential execution in B2.
 
 ### B3: Results Analysis
 

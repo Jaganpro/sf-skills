@@ -8,13 +8,15 @@
 #
 # Compatible with: sf agent test create --spec <file> --api-name <name>
 #
-# IMPORTANT: Variable names use BARE names (e.g., RoutableId), NOT $Context.RoutableId.
-# The CLI framework adds the $Context. prefix automatically during XML generation.
+# Variable names: Both bare (RoutableId) and prefixed ($Context.RoutableId) work.
+# The runtime resolves both formats. Bare names are recommended for simplicity.
 #
 # Discovery — find valid IDs for your org:
 #   sf data query --query "SELECT Id FROM MessagingSession WHERE Status='Active' LIMIT 1" --target-org [alias]
 #   sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --target-org [alias]
 #   sf data query --query "SELECT Id FROM Contact LIMIT 1" --target-org [alias]
+
+# Description: [Brief description of what this test suite validates]
 
 # Required: Display name (MasterLabel) — deploy FAILS without this
 name: "[Agent_Name] Context Variable Tests"
@@ -38,7 +40,7 @@ testCases:
       - [action_name]
     expectedOutcome: "Agent should process the request using session context"
     contextVariables:
-      - name: RoutableId                # Bare name — NOT $Context.RoutableId
+      - name: "$Context.RoutableId"      # Prefixed format (recommended) — bare RoutableId also works
         value: "[MessagingSession_Id]"  # e.g., 0Mwbb000007MGoTCAW
 
   # ═══════════════════════════════════════════════════════════════
@@ -54,7 +56,7 @@ testCases:
     contextVariables:
       - name: RoutableId
         value: "[MessagingSession_Id]"
-      - name: CaseId
+      - name: "$Context.CaseId"
         value: "[Case_Id]"             # e.g., 500XX0000000001
 
   # ═══════════════════════════════════════════════════════════════
@@ -67,7 +69,7 @@ testCases:
     expectedActions:
       - [user_action_name]
     contextVariables:
-      - name: EndUserId
+      - name: "$Context.EndUserId"
         value: "[Contact_Id]"          # e.g., 003XX0000000001
 
   # ═══════════════════════════════════════════════════════════════
@@ -98,16 +100,16 @@ testCases:
         value: "[MessagingSession_Id]"
       - name: CaseId
         value: "[Case_Id]"
-      - name: ContactId
+      - name: "$Context.ContactId"
         value: "[Contact_Id]"
 
 # ═══════════════════════════════════════════════════════════════════════
 # NOTES
 #
 # Context Variable Name Rules:
-#   Use BARE names: RoutableId, CaseId, EndUserId, ContactId
-#   Do NOT use: $Context.RoutableId, $Context.CaseId, etc.
-#   The CLI adds the $Context. prefix during YAML→XML conversion.
+#   Both formats work: $Context.RoutableId OR bare RoutableId
+#   $Context. prefix is recommended (matches Merge Field syntax in Flow Builder)
+#   The CLI passes names verbatim to XML — the runtime resolves both formats.
 #
 # Effect on Action Flows:
 #   Without RoutableId: action receives topic internal name as recordId

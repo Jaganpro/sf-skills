@@ -18,6 +18,8 @@ Test specifications define automated test cases for Agentforce agents. The YAML 
 ### Required Structure
 
 ```yaml
+# Description: [Brief description of what this test suite validates]
+
 # Required: Display name for the test (MasterLabel)
 # Deploy FAILS with "Required fields are missing: [MasterLabel]" if omitted
 name: "My Agent Tests"
@@ -62,12 +64,12 @@ testCases:
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | Variable name — use bare name (e.g., `RoutableId`), NOT `$Context.RoutableId` |
+| `name` | Yes | string | Variable name — both `$Context.RoutableId` (recommended) and bare `RoutableId` work. |
 | `value` | Yes | string | Variable value (e.g., a MessagingSession ID) |
 
 **Context Variable Details:**
 
-- `name` uses the **bare variable name** (e.g., `RoutableId`), NOT the `$Context.RoutableId` prefix. The CLI framework adds the prefix automatically.
+- Both **prefixed names** (e.g., `$Context.RoutableId`) and **bare names** (e.g., `RoutableId`) work. The CLI passes the name verbatim to XML — the Agentforce runtime resolves both formats. The `$Context.` prefix is recommended as it matches the Merge Field syntax used in Flow Builder.
 - Maps to `<contextVariable><variableName>` / `<variableValue>` in the XML metadata.
 - Common variables:
   - `RoutableId` — MessagingSession ID. Without it, action flows receive the topic's internal name as `recordId`. With it, they receive a real MessagingSession ID.
@@ -87,7 +89,7 @@ sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --
 **Example:**
 ```yaml
 contextVariables:
-  - name: RoutableId            # NOT $Context.RoutableId — no prefix needed
+  - name: "$Context.RoutableId"  # Prefixed format (recommended) — bare RoutableId also works
     value: "0Mwbb000007MGoTCAW"
   - name: CaseId
     value: "500XX0000000001"
@@ -520,7 +522,7 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 | `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
 | No MessagingSession context | CLI tests have no session — flows needing `recordId` error at runtime. Use `contextVariables` with `RoutableId` to inject a real session ID. |
 | Promoted topic names | Must use full runtime `developerName` with hash suffix |
-| contextVariables `name` has no prefix | Use `RoutableId` NOT `$Context.RoutableId` — the framework adds the prefix |
+| contextVariables `name` format | Both `$Context.RoutableId` and bare `RoutableId` work — runtime resolves both. `$Context.` prefix recommended. |
 | customEvaluations → RETRY bug | **⚠️ Spring '26:** Server returns RETRY status → REST API 500 error. See [Known Issues](#known-issues). |
 | `conciseness` metric broken | Returns score=0 with empty explanation on most tests — platform bug |
 | `instruction_following` threshold | Labels FAILURE even at score=1 with "follows perfectly" explanation — threshold mismatch |

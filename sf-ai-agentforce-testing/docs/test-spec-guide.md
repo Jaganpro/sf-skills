@@ -15,6 +15,8 @@ Test specifications define expected agent behavior using YAML format. When you r
 ## File Structure
 
 ```yaml
+# Description: [Brief description of what this test suite validates]
+
 # Required: Display name (becomes MasterLabel in metadata)
 name: "My Agent Tests"
 
@@ -230,13 +232,13 @@ testCases:
   - utterance: "What's the status of my account?"
     expectedTopic: account_lookup
     contextVariables:
-      - name: RoutableId              # NOT $Context.RoutableId — bare name only
+      - name: "$Context.RoutableId"    # Prefixed format (recommended) — bare RoutableId also works
         value: "0Mw8X000000XXXXX"
       - name: CaseId
         value: "5008X000000XXXXX"
 ```
 
-> **Important:** Agents with authentication flows (e.g., `User_Authentication` topic) typically require `RoutableId` and `CaseId` context variables. Without them, the authentication flow fails and the agent escalates on Turn 1. Use bare variable names — the CLI framework adds the `$Context.` prefix automatically.
+> **Important:** Agents with authentication flows (e.g., `User_Authentication` topic) typically require `RoutableId` and `CaseId` context variables. Without them, the authentication flow fails and the agent escalates on Turn 1. Both prefixed names (`$Context.RoutableId`) and bare names (`RoutableId`) work — the runtime resolves both formats. The `$Context.` prefix is recommended as it matches the Merge Field syntax used in Flow Builder.
 
 ---
 
@@ -416,6 +418,19 @@ testCases:
 ```
 
 If any of these route to a non-auth topic (e.g., Escalation), the catch-all topic's description is likely too broad and absorbing business intents.
+
+### Description Convention
+
+Since `AiEvaluationDefinition` metadata has no XML `<description>` element, document each test suite's purpose using a YAML comment at the top of the spec file:
+
+```yaml
+# Description: Validates auth-first routing for all greeting patterns
+name: "VVS Greeting Auth Tests"
+subjectType: AGENT
+subjectName: Product_Troubleshooting2
+```
+
+This convention helps teams understand the intent of each test suite at a glance.
 
 ### Parallel Test Suites
 
