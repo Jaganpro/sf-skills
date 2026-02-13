@@ -6,18 +6,22 @@ Comprehensive guide for designing, executing, and analyzing multi-turn agent con
 
 ## Overview
 
-Multi-turn testing validates agent behaviors that **cannot be tested with single-utterance CLI tests**:
+Multi-turn testing validates agent behaviors across conversation turns. The table below shows which testing approach supports each behavior:
 
-| Behavior | Single-Turn (CLI) | Multi-Turn (API) |
-|----------|-------------------|------------------|
-| Topic routing accuracy | ✅ | ✅ |
-| Action invocation | ✅ | ✅ |
-| Topic switching mid-conversation | ❌ | ✅ |
-| Context retention across turns | ❌ | ✅ |
-| Escalation after multiple failures | ❌ | ✅ |
-| Action chaining (output→input) | ❌ | ✅ |
-| Guardrail persistence across turns | ❌ | ✅ |
-| Variable injection and persistence | ❌ | ✅ |
+| Behavior | CLI (no history) | CLI (with `conversationHistory`) | Multi-Turn (API) |
+|----------|-----------------|----------------------------------|------------------|
+| Topic routing accuracy | ✅ | ✅ | ✅ |
+| Action invocation | ✅ | ✅ | ✅ |
+| Topic switching mid-conversation | ❌ | ✅ (simulated) | ✅ (live) |
+| Context retention across turns | ❌ | ✅ (simulated) | ✅ (live) |
+| Escalation after multiple failures | ❌ | ✅ (simulated) | ✅ (live) |
+| Action chaining (output→input) | ❌ | ❌ (no real action execution in history) | ✅ |
+| Guardrail persistence across turns | ❌ | ✅ (simulated) | ✅ (live) |
+| Variable injection and persistence | ❌ | ✅ (per test case) | ✅ (per session) |
+| Real-time state changes across turns | ❌ | ❌ (history is simulated) | ✅ |
+| Live action output chaining | ❌ | ❌ (history turns don't execute actions) | ✅ |
+
+> **Key distinction:** `conversationHistory` in CLI tests *simulates* prior turns — no real actions execute during those turns. Only the final test utterance triggers real action execution. Multi-turn API testing executes every turn live, including real action invocations.
 
 ---
 
@@ -34,6 +38,16 @@ Multi-turn testing validates agent behaviors that **cannot be tested with single
 - Simple action invocation verification
 - Guardrail trigger testing (single harmful input)
 - Initial smoke testing of new agents
+
+### CLI with `conversationHistory` is Sufficient For:
+- **Protocol activation testing** — trigger a follow-up protocol (e.g., feedback) after a completed business interaction
+- **Mid-protocol stage testing** — test behavior at step N of a multi-step protocol
+- **Action invocation via deep history** — position agent to fire a specific action on the test utterance
+- **Opt-out / negative assertion testing** — verify no action fires when user declines (`expectedActions: []`)
+- **Session persistence testing** — verify the session is still alive after completing a full protocol
+- **Deterministic routing for ambiguous inputs** — the `topic` field on agent turns anchors the planner, eliminating stochastic routing
+
+See [Deep Conversation History Patterns](deep-conversation-history-patterns.md) for the 5 patterns (A-E) with YAML examples.
 
 ---
 
@@ -320,5 +334,6 @@ Multi-Turn Test Failed
 | Agent Runtime API Reference | [agent-api-reference.md](agent-api-reference.md) |
 | ECA Setup Guide | [eca-setup-guide.md](eca-setup-guide.md) |
 | Test Patterns Reference | [multi-turn-test-patterns.md](../resources/multi-turn-test-patterns.md) |
+| Deep Conversation History Patterns | [deep-conversation-history-patterns.md](deep-conversation-history-patterns.md) |
 | Coverage Analysis | [coverage-analysis.md](coverage-analysis.md) |
 | Agentic Fix Loops | [agentic-fix-loops.md](../resources/agentic-fix-loops.md) |

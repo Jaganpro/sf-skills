@@ -170,3 +170,5 @@ sf agent test run --api-name My_Agent_Tests --wait 10 --result-format json --jso
 3. **Topic names are org-specific**: The `16j` prefix encodes the org ID. Topic names from one org will NOT work in another org.
 
 4. **`MigrationDefaultTopic`**: Standard Salesforce Copilots (not custom agents) may route everything to `MigrationDefaultTopic`. This is expected behavior for non-custom agents.
+
+5. **Topic hash changes on agent republish**: The runtime `developerName` hash suffix changes each time an agent is republished. Tests with hardcoded full runtime names (e.g., `Escalation_16j9d687a53f890`) will break after republish. **Mitigation:** Use `localDeveloperName` wherever the framework resolves it (standard topics). For promoted topics, re-run the [discovery workflow](#discovery-workflow) after each agent publish to capture new hashes.

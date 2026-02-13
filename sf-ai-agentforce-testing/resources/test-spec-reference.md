@@ -251,6 +251,16 @@ testCases:
     expectedOutcome: "Agent should explain the return process with step-by-step instructions"
 ```
 
+> **Important: `output_validation` judges TEXT, not actions.** The LLM-as-judge evaluates the agent's **text response** only — it does NOT inspect action results, sObject writes, or internal state changes. Write `expectedOutcome` about what the agent *says*, not what it *does* internally.
+>
+> ```yaml
+> # ❌ WRONG — references internal action behavior
+> expectedOutcome: "Agent should create a Survey_Result__c record with rating=4"
+>
+> # ✅ RIGHT — describes what the agent SAYS
+> expectedOutcome: "Agent acknowledges the rating and thanks the user for feedback"
+> ```
+
 ### 4. Escalation Tests
 
 Test routing to the standard `Escalation` topic.
@@ -472,6 +482,7 @@ When `--verbose` is used, `generatedData` includes additional fields — notably
 | `context-vars-test-spec.yaml` | Context variable patterns (RoutableId, EndUserId) | **Yes** |
 | `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | **Yes** (bug blocks results) |
 | `cli-auth-guardrail-tests.yaml` | Auth gate, guardrail, ambiguous routing, and session tests | **Yes** |
+| `cli-deep-history-tests.yaml` | Deep conversation history patterns (protocol activation, mid-stage, opt-out, session persistence) | **Yes** |
 | `escalation-tests.yaml` | Escalation scenarios | **No** — Phase A (API) only |
 | `guardrail-tests.yaml` | Guardrail scenarios | **No** — Phase A (API) only |
 | `multi-turn-*.yaml` | Multi-turn API scenarios | **No** — Phase A (API) only |
@@ -530,6 +541,8 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 | Agent Script single-utterance limit | Multi-topic agents consume first reasoning cycle on topic transition (`go_<topic>`). Use `conversationHistory` to test business actions |
 | Agent Script action names | Use Level 1 definition name (`get_order_status`), NOT Level 2 invocation name (`check_status`) in `expectedActions` |
 | Agent Script permissions | `WITH USER_MODE` Apex silently returns 0 rows if Einstein Agent User lacks object permissions |
+| Topic hash drift on republish | Runtime `developerName` hash changes after agent republish. Tests with hardcoded full names break. Use `localDeveloperName` for standard topics; re-run discovery after each publish for promoted topics. |
+| API vs CLI action visibility gap | Multi-turn API testing may report `has_action_result: false` for actions that actually fired. CLI `--verbose` output is authoritative for action verification — always cross-check with CLI results when API shows missing actions. |
 
 ---
 

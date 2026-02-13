@@ -337,7 +337,7 @@ testCases:
 - **Without RoutableId:** Action flows receive the topic's internal name (e.g., `p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa`) as `recordId`
 - **With RoutableId:** Action flows receive a real MessagingSession ID (e.g., `0Mwbb000007MGoTCAW`) as `recordId`
 
-> **Note:** Context variables do NOT unlock authentication-gated topics. Injecting `RoutableId` + `CaseId` does not satisfy `User_Authentication` flows — the agent still routes based on available data.
+> **Note:** Standard context variables (`RoutableId`, `CaseId`) do NOT unlock authentication-gated topics. Injecting them does not satisfy `User_Authentication` flows. However, **custom boolean auth-state variables** (e.g., `Verified_Check`) CAN bypass the authentication flow for testing post-auth business topics — inject the boolean variable as `true` via `contextVariables` to unlock gated topics directly.
 
 ---
 

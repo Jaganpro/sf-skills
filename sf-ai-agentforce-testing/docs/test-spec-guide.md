@@ -150,18 +150,43 @@ Action assertions use **superset matching**:
 
 ### Empty Actions
 
-```yaml
-# These are equivalent — both mean "not testing actions":
-- utterance: "Hello"
-  expectedTopic: greeting
-  expectedActions: []
+| Pattern | Meaning | Current Behavior |
+|---------|---------|------------------|
+| `expectedActions:` omitted | "Not testing actions" | PASS regardless of what fires |
+| `expectedActions: []` | "Testing that NO actions fire" | Currently same behavior (PASS regardless), but documents intent |
 
+**Best practice:** Use `expectedActions: []` explicitly for opt-out tests to document your intent that no action should fire, even though the CLI currently treats it the same as omitted. This makes the test self-documenting and future-proofs against framework changes.
+
+```yaml
+# Omitted — "I'm not testing actions for this test case"
 - utterance: "Hello"
   expectedTopic: greeting
   # (expectedActions omitted entirely)
+
+# Empty list — DELIBERATE assertion: "NO action should fire"
+- utterance: "No thanks, I'm all set"
+  expectedTopic: feedback_collection
+  expectedActions: []    # Documents intent: opt-out should NOT trigger feedback action
+  expectedOutcome: "Agent gracefully accepts the opt-out without pushing for feedback"
 ```
 
-Both pass even if the agent invokes actions.
+### Action Name Discovery for GenAiPlannerBundle Agents
+
+For GenAiPlannerBundle agents, action names in test results include a hash suffix (e.g., `Store_Feedback_179a9701f17c194`). Short name **prefix matching** works — you can use the prefix in `expectedActions` and the CLI will match.
+
+**Discovery workflow:**
+```bash
+# Run with --verbose to see full action names
+sf agent test run --api-name Discovery --wait 10 --verbose --result-format json --json --target-org [alias]
+
+# Extract action names from results
+jq '.result.testCases[].generatedData | {topic, actionsSequence}' results.json
+
+# For detailed action input/output inspection
+jq '.result.testCases[].generatedData.invokedActions | fromjson | .[0][0].function' results.json
+```
+
+> **Note:** The multi-turn API may report `has_action_result: false` for actions that actually fired. CLI `--verbose` output is authoritative for action verification.
 
 ---
 
@@ -183,6 +208,22 @@ testCases:
 The CLI uses an LLM-as-judge to evaluate whether the agent's actual response satisfies the `expectedOutcome` description.
 
 > **Gotcha:** Omitting `expectedOutcome` causes `output_validation` to report `ERROR` status with "Skip metric result due to missing expected input". This is **harmless** — `topic_assertion` and `actions_assertion` still run normally.
+
+> **Important: `output_validation` judges TEXT, not actions.** The LLM-as-judge evaluates the agent's **text response** only — it does NOT inspect action results, sObject writes, or internal state changes. Write `expectedOutcome` about what the agent *says*, not what it *does* internally.
+>
+> ```yaml
+> # ❌ WRONG — references internal action behavior
+> expectedOutcome: "Agent should create a Survey_Result__c record with rating=4"
+>
+> # ❌ WRONG — references sObject changes
+> expectedOutcome: "Agent should update the MessagingSession.Bot_Support_Path__c field"
+>
+> # ✅ RIGHT — describes what the agent SAYS
+> expectedOutcome: "Agent acknowledges the rating and thanks the user for feedback"
+>
+> # ✅ RIGHT — describes observable text behavior
+> expectedOutcome: "Agent confirms the payment is being processed and provides next steps"
+> ```
 
 ---
 
@@ -220,6 +261,32 @@ testCases:
 | `role` | Yes | `user` or `agent` (NOT `assistant`) |
 | `message` | Yes | The message content |
 | `topic` | Agent only | Topic name for agent turns |
+
+### Deep Conversation History for Protocol Stage Testing
+
+By providing 4-8 turns of `conversationHistory`, you can position the agent at a specific point in a multi-step protocol and test its behavior at that exact stage. The `topic` field on agent turns **anchors the planner** to the correct topic context, making ambiguous utterances (like "thanks" or "I'm done") route deterministically.
+
+```yaml
+# Without history: "Thanks for the help" routes stochastically (greeting? escalation? feedback?)
+# With history: anchored to feedback_collection after completed business interaction
+- utterance: "Thanks for the help"
+  expectedTopic: feedback_collection
+  conversationHistory:
+    - role: user
+      message: "I need to check my account status"
+    - role: agent
+      topic: account_support          # Local developer name — no hash suffix needed
+      message: "I found your account. Everything looks good — your balance is current."
+    - role: user
+      message: "Great, that answers my question"
+    - role: agent
+      topic: account_support
+      message: "Glad I could help! Is there anything else you need?"
+```
+
+> **Key detail:** The `topic` field in `conversationHistory` resolves **local developer names** (e.g., `account_support`, `feedback_collection`). You do NOT need the hash-suffixed runtime `developerName` in history — only in `expectedTopic` for promoted topics.
+
+See [Deep Conversation History Patterns](deep-conversation-history-patterns.md) for 5 patterns: protocol activation, mid-protocol stage, action invocation, opt-out assertion, and session persistence.
 
 ---
 

@@ -118,9 +118,23 @@ testCases:
 #     e.g., recordId = "0Mwbb000007MGoTCAW"
 #
 # Authentication Topics:
-#   Context variables do NOT unlock auth-gated topics.
+#   Standard context variables (RoutableId, CaseId) do NOT unlock auth-gated topics.
 #   Injecting RoutableId + CaseId does NOT satisfy User_Authentication flows.
 #   The agent still routes based on available data, not auth state.
+#
+#   However, custom boolean auth-state variables CAN bypass authentication for
+#   testing post-auth business topics directly. If the agent uses a boolean
+#   variable (e.g., Verified_Check) to gate topics behind authentication,
+#   injecting that variable as a context variable unlocks those topics:
+#
+#     contextVariables:
+#       - name: "$Context.Verified_Check"
+#         value: "true"
+#       - name: "$Context.RoutableId"
+#         value: "[MessagingSession_Id]"
+#
+#   This allows testing post-auth business topics (payments, appointments, etc.)
+#   without running through the full authentication flow in each test case.
 #
 # Verification — use --verbose to confirm:
 #   sf agent test run --api-name [Test_Name] --wait 10 --verbose --result-format json --json --target-org [alias]

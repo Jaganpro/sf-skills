@@ -70,6 +70,7 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 | **Coverage metrics** | [coverage-analysis.md](docs/coverage-analysis.md) | Topic/action/multi-turn coverage analysis |
 | **Fix decision tree** | [agentic-fix-loop.md](docs/agentic-fix-loop.md) | Detailed fix strategies |
 | **Agent Script testing** | [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) | 5 patterns for testing Agent Script agents |
+| **Deep conversation history** | [deep-conversation-history-patterns.md](docs/deep-conversation-history-patterns.md) | 5 patterns for protocol-stage testing via CLI `conversationHistory` |
 
 **⚡ Quick Links:**
 - [4-Step Interview Flow](#4-step-interview-flow-testing-center-wizard) - Testing Center wizard (4 steps)
@@ -1162,7 +1163,7 @@ sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --
 - Without `RoutableId`: action receives `recordId: "p_16jPl000000GwEX_Field_Support_Routing_16j8eeef13560aa"` (topic name)
 - With `RoutableId`: action receives `recordId: "0Mwbb000007MGoTCAW"` (real MessagingSession ID)
 
-> **Note:** Context variables do NOT unlock authentication-gated topics. Injecting `RoutableId` + `CaseId` does not satisfy `User_Authentication` flows.
+> **Note:** Standard context variables (`RoutableId`, `CaseId`) do NOT unlock authentication-gated topics. Injecting them does not satisfy `User_Authentication` flows. However, **custom boolean auth-state variables** (e.g., `Verified_Check`) CAN bypass the authentication flow — inject the boolean variable as `true` via `contextVariables` to test post-auth business topics directly.
 
 See [context-vars-test-spec.yaml](templates/context-vars-test-spec.yaml) for a dedicated template.
 
@@ -1524,6 +1525,7 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 | `context-vars-test-spec.yaml` | Context variable patterns (RoutableId, EndUserId, CaseId) | `templates/` |
 | `custom-eval-test-spec.yaml` | Custom evaluations with JSONPath assertions (**⚠️ Spring '26 bug**) | `templates/` |
 | `cli-auth-guardrail-tests.yaml` | Auth gate, guardrail, ambiguous routing, session tests (CLI) | `templates/` |
+| `cli-deep-history-tests.yaml` | Deep conversation history patterns (protocol activation, mid-stage, opt-out, session persistence) | `templates/` |
 | `guardrail-tests.yaml` | Security/safety scenarios | `templates/` |
 | `escalation-tests.yaml` | Human handoff scenarios | `templates/` |
 | `agentscript-test-spec.yaml` | Agent Script agents with conversationHistory pattern | `templates/` |
@@ -1835,6 +1837,27 @@ subjectName: My_Agent
 **Note**: This is a **different bug** from the threshold mismatch above. The threshold bug affects score interpretation; this bug blocks the entire UI from loading.
 
 **Discovered**: 2026-02-11 on DevInt sandbox (Spring '26).
+
+### MEDIUM: Topic Hash Drift on Agent Republish
+
+**Status**: 🟡 Affects all hardcoded promoted topic names
+
+**Issue**: The runtime `developerName` hash suffix (e.g., `Escalation_16j9d687a53f890`) changes each time an agent is republished. Tests with hardcoded full runtime names break silently — `topic_assertion` reports `FAILURE` because the expected hash no longer matches.
+
+**Mitigation**:
+1. Use `localDeveloperName` for standard topics (framework resolves automatically)
+2. For promoted topics, re-run the [discovery workflow](docs/topic-name-resolution.md#discovery-workflow) after each agent publish
+3. Keep a topic name mapping file that gets updated as part of the publish-and-test cycle
+
+### INFO: API vs CLI Action Visibility Gap
+
+**Status**: ℹ️ Informational — affects multi-turn API testing results
+
+**Issue**: The multi-turn Agent Runtime API may report `has_action_result: false` or omit action results for actions that actually executed. This happens because Agent Script agents embed action outputs within `Inform` text messages rather than returning separate `ActionResult` message types.
+
+**Impact**: Multi-turn API test assertions for `action_invoked` may fail even when the action ran correctly. CLI `--verbose` output is authoritative for action verification.
+
+**Workaround**: When API tests show missing actions, cross-validate with CLI `--verbose` results. For Agent Script agents, prefer `response_contains` checks over `action_invoked` assertions.
 
 ---
 
