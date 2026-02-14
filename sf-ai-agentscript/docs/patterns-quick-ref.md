@@ -23,9 +23,13 @@ What's your agent's purpose?
 │   └─► ESCALATION CHAIN
 │       L1 → L2 → L3 → Human
 │
-└─► Sensitive operations (payments, PII)?
-    └─► VERIFICATION GATE
-        Security check → Protected topics
+├─► Sensitive operations (payments, PII)?
+│   └─► VERIFICATION GATE
+│       Security check → Protected topics
+│
+└─► Multiple protected topics behind shared auth gate?
+    └─► STATE GATE (OPEN GATE)
+        3-variable bypass with deferred routing
 ```
 
 ---
@@ -224,6 +228,35 @@ instructions: ->
    else:
       | Standard customer service.
 ```
+
+### Open Gate (State Gate)
+
+3-variable state machine that bypasses the LLM topic selector when a gate holds focus and routes users through an auth gate before accessing protected topics.
+
+```yaml
+# In topic_selector's before_reasoning — zero-credit bypass:
+before_reasoning:
+   if @variables.open_gate == "protected_workflow":
+      transition to @topic.protected_workflow
+   if @variables.open_gate == "authentication_gate":
+      transition to @topic.authentication_gate
+
+# In protected topic's before_reasoning — auth redirect:
+before_reasoning:
+   if @variables.authenticated == False:
+      set @variables.next_topic = "protected_workflow"
+      set @variables.open_gate = "authentication_gate"
+      transition to @topic.authentication_gate
+   set @variables.open_gate = "protected_workflow"
+
+# EXIT_PROTOCOL — release gate when user changes intent:
+before_reasoning:
+   set @variables.open_gate = "null"
+   set @variables.next_topic = ""
+   transition to @topic.topic_selector
+```
+
+> **Template**: [templates/patterns/open-gate-routing.agent](../templates/patterns/open-gate-routing.agent)
 
 ---
 

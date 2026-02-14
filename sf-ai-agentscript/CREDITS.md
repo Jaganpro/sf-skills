@@ -33,6 +33,7 @@ This skill was developed from comprehensive documentation screenshots covering 8
 | Source | Contribution |
 |--------|-------------|
 | [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
+| Hua Xu (Salesforce APAC FDE team) | "Open Gate" pattern: 3-variable state machine for auth-gated topic routing with LLM bypass and EXIT_PROTOCOL |
 
 ### Related Skills
 
@@ -52,6 +53,7 @@ This skill integrates with other sf-skills:
 | Deterministic Building Blocks | Salesforce Agent Script Workshop |
 | SOMA (Same Org Multi-Agent) | Salesforce Agent Script Workshop |
 | 100-Point Scoring System | sf-skills Pattern (adapted from sf-ai-agentforce) |
+| Open Gate Pattern (State Gate) | Hua Xu (Salesforce APAC FDE team) |
 
 ## Tools & Technologies
 

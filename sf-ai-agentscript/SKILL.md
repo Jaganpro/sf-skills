@@ -466,6 +466,8 @@ topic verification:
             set @variables.verification_in_progress = False
 ```
 
+> **Advanced evolution**: For multi-topic auth gating with LLM bypass and deferred return routing, see the [Open Gate pattern](templates/patterns/open-gate-routing.agent) — a 3-variable extension of the latch concept.
+
 ### Loop Protection Guardrail
 
 > Agent Scripts have a built-in guardrail that limits iterations to approximately **3-4 loops** before breaking out and returning to the Topic Selector.
@@ -1122,6 +1124,36 @@ topic refund:
         | Offer $10 credit instead.
 ```
 
+### Pattern 4: State Gate (Open Gate)
+3-variable state machine that bypasses the LLM topic selector when a gate holds focus. Redirects unauthenticated users to an auth gate, then automatically returns them to their intended topic.
+```
+                      ┌─────────────────┐
+                      │ topic_selector  │
+                      │ before_reasoning│
+                      │ if open_gate<>  │
+                      │ null → bypass   │
+                      └────────┬────────┘
+             ┌─────────────────┼─────────────────┐
+             ▼                 ▼                 ▼
+      ┌────────────┐   ┌────────────┐   ┌────────────┐
+      │ protected  │   │ protected  │   │  general   │
+      │  topic A   │   │  topic B   │   │ (no gate)  │
+      │ if !auth   │   │ if !auth   │   └────────────┘
+      │  → gate    │   │  → gate    │
+      └──────┬─────┘   └──────┬─────┘
+             └────────┬───────┘
+                      ▼
+              ┌──────────────┐
+              │  auth_gate   │
+              │ after_reas.: │
+              │ route via    │
+              │ next_topic   │
+              └──────────────┘
+```
+Uses `open_gate` (string), `next_topic` (string), and `authenticated` (boolean). Includes EXIT_PROTOCOL to release gate when user changes intent.
+
+> **Template**: [templates/patterns/open-gate-routing.agent](templates/patterns/open-gate-routing.agent) | **FSM Details**: [resources/fsm-architecture.md](resources/fsm-architecture.md#pattern-5-state-gate-open-gate)
+
 ---
 
 ## 🐛 DEBUGGING: Trace Analysis
@@ -1273,7 +1305,7 @@ Present the results to the user and ask them to select which user to use for `de
 | Root templates | [templates/](templates/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
 | Complete agents | [templates/agents/](templates/agents/) | 4 full agent examples (hello-world, simple-qa, multi-topic, production-faq) |
 | Components | [templates/components/](templates/components/) | 6 component fragments (apex-action, error-handling, escalation, flow-action, n-ary-conditions, topic-with-actions) |
-| Advanced patterns | [templates/patterns/](templates/patterns/) | 11 pattern templates (action-callbacks, bidirectional-routing, delegation, lifecycle-events, etc.) |
+| Advanced patterns | [templates/patterns/](templates/patterns/) | 12 pattern templates (action-callbacks, bidirectional-routing, delegation, lifecycle-events, open-gate-routing, etc.) |
 | Metadata XML | [templates/metadata/](templates/metadata/) | 6 XML templates (GenAiFunction, GenAiPlugin, PromptTemplate, Flow) |
 | Apex | [templates/apex/](templates/apex/) | Models API queueable class |
 

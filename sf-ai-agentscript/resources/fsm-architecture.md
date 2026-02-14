@@ -263,6 +263,54 @@ Security gate before protected topics.
 
 ---
 
+### Pattern 5: State Gate (Open Gate)
+
+3-variable state machine that bypasses the LLM topic selector when a gate holds focus, redirects unauthenticated users to an auth gate, and automatically returns them to their original intended topic after authentication.
+
+```
+                      ┌─────────────────────┐
+                      │   topic_selector    │
+                      │   (start_agent)     │
+                      │                     │
+                      │ before_reasoning:   │
+                      │ if open_gate <> null│
+                      │   → bypass LLM     │
+                      └──────────┬──────────┘
+             ┌───────────────────┼───────────────────┐
+             ▼                   ▼                   ▼
+  ┌──────────────────┐ ┌────────────────┐ ┌─────────────────┐
+  │ protected_topic_A│ │protected_top_B│ │ general_inquiry  │
+  │ (auth required)  │ │(auth required)│ │ (no auth needed) │
+  │                  │ │               │ │                  │
+  │ if !auth → gate  │ │ if !auth→gate │ │ (no gate logic)  │
+  │ if auth → lock   │ │ if auth→lock  │ │                  │
+  └────────┬─────────┘ └───────┬───────┘ └─────────────────┘
+           │ set next_topic    │ set next_topic
+           ▼                   ▼
+  ┌──────────────────────────────────────┐
+  │         authentication_gate          │
+  │                                      │
+  │ after_reasoning:                     │
+  │   if auth → route via next_topic     │
+  └──────────────────────────────────────┘
+```
+
+**The 3 Variables:**
+
+| Variable | Type | Purpose |
+|----------|------|---------|
+| `open_gate` | string | Which topic holds focus (`"null"` = LLM decides) |
+| `next_topic` | string | Deferred destination after auth completes |
+| `authenticated` | boolean | Whether user has passed authentication |
+
+**When to Use**: Multiple protected topics behind a shared auth gate, especially when you want zero-credit LLM bypass while the gate holds focus.
+
+**Key Difference from Verification Gate (Pattern 4)**: The Verification Gate is a linear, one-time gate — once verified, the user proceeds and never returns. The State Gate supports **deferred routing** (remembers where the user wanted to go), **N protected topics** behind a single gate, and an **EXIT_PROTOCOL** to release the gate when the user changes intent.
+
+> **Template**: See [templates/patterns/open-gate-routing.agent](../templates/patterns/open-gate-routing.agent) for the complete implementation with walkthrough.
+
+---
+
 ## Deterministic vs. Subjective Classification
 
 ### Classification Framework

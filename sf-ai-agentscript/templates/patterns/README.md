@@ -27,6 +27,10 @@ What do you need?
 │   └─► Use: system-instruction-overrides.agent
 │       (tier-based, time-based, feature flag instructions)
 │
+├─► Authentication gate with deferred routing?
+│   └─► Use: open-gate-routing.agent
+│       (3-variable state machine with LLM bypass)
+│
 └─► None of the above?
     └─► Start with: ../getting-started/hello-world.agent
 ```
@@ -186,6 +190,30 @@ reasoning:
 
 ---
 
+### 6. [open-gate-routing.agent](open-gate-routing.agent)
+
+**Purpose**: Auth-gated topic routing with LLM bypass using a 3-variable state machine.
+
+**Use when**:
+- Multiple protected topics require authentication before access
+- You want zero-credit LLM bypass while a gate topic holds focus
+- Users should be redirected to auth, then automatically returned to their intended topic
+- You need an EXIT_PROTOCOL to release gate state when users change intent
+
+**Key syntax**:
+```agentscript
+# topic_selector bypasses LLM when open_gate is set
+before_reasoning:
+   if @variables.open_gate == "protected_workflow":
+      transition to @topic.protected_workflow
+   if @variables.open_gate == "authentication_gate":
+      transition to @topic.authentication_gate
+```
+
+**Credit**: Hua Xu (Salesforce APAC FDE team) — production pattern from Kogan agent deployment.
+
+---
+
 ## Pattern Combinations
 
 These patterns can be combined:
@@ -196,6 +224,11 @@ lifecycle-events + action-callbacks
 ├── reasoning: Process with callbacks
 │   └── action with run callbacks
 └── after_reasoning: Log results
+
+open-gate-routing + lifecycle-events
+├── before_reasoning: Gate check + context refresh
+├── reasoning: Protected actions (if authenticated)
+└── after_reasoning: Post-auth routing + analytics
 ```
 
 ## Validation Scoring Impact
@@ -207,6 +240,7 @@ lifecycle-events + action-callbacks
 | Bidirectional | +5 pts | Return transitions |
 | Input Bindings | +5 pts | Proper binding patterns |
 | System Overrides | +5 pts | Static system, dynamic topics |
+| Open Gate | +5 pts | 3-variable coordination |
 
 ## Anti-Patterns to Avoid
 
@@ -216,3 +250,5 @@ lifecycle-events + action-callbacks
 | Lifecycle in wrong order | before_reasoning, reasoning, after_reasoning |
 | Forget return transition | Always include return action in specialists |
 | Use lifecycle for one-time setup | Use if @variables.turn_count == 1 |
+| Missing EXIT_PROTOCOL in gate pattern | Always include gate reset topic |
+| Hardcoding gate topic name in open_gate | Use variable-driven routing |
