@@ -113,6 +113,105 @@
 
 ---
 
+### Issue 6: `require_user_confirmation` does not trigger confirmation dialog
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: Actions with `require_user_confirmation: True`
+- **Symptom**: Setting `require_user_confirmation: True` on an action definition does not produce a user-facing confirmation dialog before execution. The action executes immediately without user confirmation.
+- **Root Cause**: The property is parsed and saved without error, but the runtime does not implement the confirmation UX for Agent Script actions. It may only work for GenAiPlannerBundle actions in the Agent Builder UI.
+- **Workaround**: Implement confirmation logic manually using a two-step pattern: (1) LLM asks user to confirm, (2) action has `available when @variables.user_confirmed == True` guard.
+- **Open Questions**: Will this be implemented for AiAuthoringBundle in a future release?
+
+---
+
+### Issue 7: OOTB Asset Library actions may ship without proper quote wrapping
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-02-14
+- **Affects**: Out-of-the-box (OOTB) actions from the Agentforce Asset Library
+- **Symptom**: Some pre-built actions from the Asset Library have input parameters that are not properly quote-wrapped, causing parse errors when referenced in Agent Script.
+- **Root Cause**: Asset Library actions were designed for the Agent Builder UI path, which handles quoting differently than Agent Script's text-based syntax.
+- **Workaround**: When importing Asset Library actions, manually verify all input parameter names in the action definition. If a parameter name contains special characters or colons (e.g., `Input:query`), wrap it in quotes: `with "Input:query" = ...`
+- **Open Questions**: Will Salesforce update Asset Library actions for Agent Script compatibility?
+
+---
+
+### Issue 8: Lightning UI components do not render on new planner
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: Agents using Lightning Web Components for rich UI rendering
+- **Symptom**: Custom Lightning UI components referenced in agent actions do not render in the chat interface when using the newer planner engine. Components that worked with the legacy planner appear as plain text or are silently dropped.
+- **Root Cause**: The newer planner (Atlas/Daisy) does not support the same Lightning component rendering pipeline as the legacy Java planner.
+- **Workaround**: None for rich UI. Fall back to text-based responses or use the legacy planner if Lightning component rendering is critical.
+- **Open Questions**: Is Lightning UI rendering on the roadmap for the new planner?
+
+---
+
+### Issue 9: Large action responses cause data loss from state
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: Actions returning large payloads (>50KB response data)
+- **Symptom**: When an action returns a large response payload, subsequent variable access may return null or incomplete data. State appears to lose previously stored values.
+- **Root Cause**: Action output data accumulates in conversation context without compaction. Very large responses may push earlier state data beyond the context window boundary.
+- **Workaround**: Design Flow/Apex actions to return minimal, summarized data. Use `is_displayable: False` on outputs the LLM doesn't need. Avoid `SELECT *` patterns in data retrieval.
+- **Open Questions**: Will automatic context compaction be added for action outputs?
+
+---
+
+### Issue 10: Agent fails if user lacks permission for ANY action
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: Agents with actions targeting secured resources
+- **Symptom**: If the running user (Einstein Agent User or session user) lacks permission to execute ANY action defined in the agent — even actions in other topics — the entire agent may fail with a permission error rather than gracefully skipping the unauthorized action.
+- **Root Cause**: The planner appears to validate permissions for all registered actions at startup, not lazily per-topic.
+- **Workaround**: Ensure the Einstein Agent User has permissions for ALL actions defined across all topics. Use Permission Sets to grant necessary access. Alternatively, split agents by permission boundary.
+- **Open Questions**: Will the planner support lazy permission checking in a future release?
+
+---
+
+### Issue 11: Dynamic welcome messages broken (`{!userName}` not resolved)
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: `system.messages.welcome` with variable interpolation
+- **Symptom**: Variable references like `{!@variables.customer_name}` or `{!userName}` in the welcome message display as literal text instead of resolved values.
+- **Root Cause**: Welcome messages are rendered before the agent runtime initializes variables. Mutable variables have not been set yet, and linked variables may not be resolved at welcome-message time.
+- **Workaround**: Use static welcome messages. Personalize greetings in the first topic's instructions instead.
+- **Open Questions**: Will welcome message variable resolution be supported in a future release?
+
+---
+
+### Issue 12: Welcome message line breaks stripped
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: `system.messages.welcome` with multi-line content
+- **Symptom**: Line breaks (`\n`) in welcome messages are stripped, causing multi-line messages to render as a single line.
+- **Root Cause**: The welcome message renderer does not preserve newline characters from the Agent Script source.
+- **Workaround**: Keep welcome messages as a single line. Use the first topic's instructions with pipe syntax (`|`) for multi-line greetings.
+- **Open Questions**: Is this by design or a bug?
+
+---
+
+### Issue 13: Related agent nodes fail in SOMA configuration
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: Multi-agent configurations using `related_agent` references
+- **Symptom**: SOMA (Same Org Multi-Agent) configurations that reference related agents via node declarations fail with "Node does not have corresponding topic" error at runtime.
+- **Root Cause**: The planner resolves agent references at compile time but may not correctly map cross-agent topic references when agents are deployed independently.
+- **Workaround**: Use `@topic.X` delegation within the same agent instead of cross-agent references. For true multi-agent scenarios, use the `@utils.escalate` or connection-based handoff patterns.
+- **Open Questions**: Will SOMA node resolution be fixed in a future planner update?
+
+---
+
+### Issue 14: Previously valid OpenAPI schemas now fail validation
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-14
+- **Affects**: External Service actions using OpenAPI 3.0 schemas
+- **Symptom**: OpenAPI schemas that previously passed validation and worked with `externalService://` targets now fail with schema validation errors after org upgrades. No changes were made to the schema files.
+- **Root Cause**: Salesforce tightened OpenAPI schema validation rules in recent releases. Schemas that were previously accepted with minor deviations (e.g., missing `info.version`, non-standard extensions) are now rejected.
+- **Workaround**: Re-validate schemas against strict OpenAPI 3.0 spec. Common fixes: ensure `info.version` is present, remove non-standard `x-` extensions, verify all `$ref` paths resolve correctly.
+- **Open Questions**: Will Salesforce publish the exact validation rules that changed?
+
+---
+
 ## Resolved Issues
 
 *(Move issues here when they are fixed by Salesforce or a confirmed workaround is validated.)*
@@ -137,4 +236,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-14*

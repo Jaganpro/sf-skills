@@ -414,12 +414,12 @@ When in doubt, escalate to human. It's better than a bad automated decision.
 #### Required Fields
 
 Every topic MUST have:
-- `label:` - Display name for the topic
-- `description:` - What the topic does (used by LLM for routing)
+- `description:` - What the topic does (used by LLM for routing decisions)
+
+> **`label:` is NOT valid** — causes `Unexpected 'label'` compile error. Use `description:` to convey the topic's purpose.
 
 ```agentscript
 topic order_lookup:
-   label: "Order Lookup"
    description: "Helps customers look up their order status and details"
 
    reasoning:
@@ -445,7 +445,6 @@ Permanently move to another topic. The user CANNOT return to the previous topic 
 
 ```agentscript
 start_agent topic_selector:
-   label: "Topic Selector"
    description: "Routes users to topics"
 
    reasoning:
@@ -522,7 +521,6 @@ actions:
 
 ```agentscript
 start_agent topic_selector:
-   label: "Topic Selector"
    description: "Main menu / router"
 
    reasoning:
@@ -534,7 +532,6 @@ start_agent topic_selector:
          go_faq: @utils.transition to @topic.faq
 
 topic order_management:
-   label: "Order Management"
    description: "Order lookup and tracking"
 
    reasoning:
@@ -544,7 +541,6 @@ topic order_management:
          back: @utils.transition to @topic.topic_selector
 
 topic support:
-   label: "Support"
    description: "Customer support"
 
    reasoning:
@@ -560,7 +556,6 @@ topic support:
 
 ```agentscript
 start_agent onboarding:
-   label: "Onboarding"
    description: "Collect user information"
 
    reasoning:
@@ -570,7 +565,6 @@ start_agent onboarding:
          next: @utils.transition to @topic.collect_address
 
 topic collect_address:
-   label: "Collect Address"
    description: "Get shipping address"
 
    reasoning:
@@ -580,7 +574,6 @@ topic collect_address:
          next: @utils.transition to @topic.confirm_details
 
 topic confirm_details:
-   label: "Confirm Details"
    description: "Review and confirm"
 
    reasoning:
@@ -594,7 +587,6 @@ topic confirm_details:
 
 ```agentscript
 topic order_lookup:
-   label: "Order Lookup"
    description: "Look up order by number"
 
    reasoning:
@@ -631,7 +623,6 @@ topic order_lookup:
 
 ```agentscript
 topic main_agent:
-   label: "Main Agent"
    description: "General assistant that can consult specialists"
 
    reasoning:
@@ -644,7 +635,6 @@ topic main_agent:
          consult_legal: @topic.legal_specialist
 
 topic tax_specialist:
-   label: "Tax Specialist"
    description: "Expert on tax questions"
 
    reasoning:
@@ -656,7 +646,6 @@ topic tax_specialist:
          return_to_main: @utils.transition to @topic.main_agent
 
 topic legal_specialist:
-   label: "Legal Specialist"
    description: "Expert on legal questions"
 
    reasoning:
@@ -676,14 +665,13 @@ topic legal_specialist:
 | Element | Convention | Example |
 |---------|------------|---------|
 | Topic name | snake_case | `order_management` |
-| Topic label | Title Case | "Order Management" |
 | Action name | snake_case | `get_order_status` |
 
 ### Common Topic Design Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| Missing `label` or `description` | Add both to every topic |
+| Missing `description` | Add `description:` to every topic (required for LLM routing) |
 | Orphaned topics (unreachable) | Ensure all topics have incoming transitions |
 | No way to go back | Add transition to topic_selector or escalation |
 | Too many topics | Combine related functionality |

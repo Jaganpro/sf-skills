@@ -115,29 +115,46 @@ target: "externalService://Stripe_Payment_API"
 | Method | Syntax | Behavior | AiAuthoringBundle | GenAiPlannerBundle |
 |--------|--------|----------|-------------------|-------------------|
 | **Actions Block** | `actions:` in `reasoning:` | LLM chooses which to execute | ✅ Works | ✅ Works |
-| **Deterministic** | `run @actions.name` | Always executes when code path is reached | ❌ NOT Supported | ✅ Works |
+| **Deterministic** | `run @actions.name` | Always executes when code path is reached | ⚠️ Partial (see below) | ✅ Works |
 
-### CRITICAL: Deployment Method Limitations
+### Deployment Method Capabilities
 
-**`run` keyword is NOT supported in AiAuthoringBundle (Tested Dec 2025)**
+**`run` keyword IS supported in `reasoning.actions:` post-action blocks and `instructions: ->` blocks (Validated Jan 2026)**
 
 ```agentscript
-# ❌ FAILS in AiAuthoringBundle - SyntaxError: Unexpected 'run'
-before_reasoning:
-   run @actions.log_turn    # NOT SUPPORTED!
-
+# ✅ WORKS — run in reasoning.actions post-action block
 create: @actions.create_order
-   run @actions.send_email  # NOT SUPPORTED!
-```
+   with customer_id = @variables.customer_id
+   run @actions.send_confirmation     # ✅ Chains after create_order
+   set @variables.order_id = @outputs.id
 
-**`{!@actions.name}` interpolation does NOT work (Tested Dec 2025)**
-
-```agentscript
-# ❌ FAILS - SyntaxError: Unexpected '{'
+# ✅ WORKS — run in instructions: -> block
 reasoning:
    instructions: ->
-      | Use {!@actions.get_order} to look up order details.  # BROKEN!
+      run @actions.load_customer
+         with id = @variables.customer_id
+         set @variables.name = @outputs.name
+
+# ❌ DOES NOT WORK — run in before_reasoning (no LLM context)
+before_reasoning:
+   run @actions.log_turn    # ❌ May not execute as expected
 ```
+
+> **Note**: The Dec 2025 finding that `run` was "NOT supported" has been superseded. As of Jan 2026, `run` works in post-action chains and procedural instruction blocks. It does NOT work reliably in `before_reasoning:`.
+
+**`{!@actions.name}` interpolation in instructions (Updated Feb 2026)**
+
+The `{!@actions.action_name}` syntax embeds a reference to the full action definition into reasoning instructions. This gives the LLM richer context about available actions.
+
+```agentscript
+# ✅ WORKS — reference action in instructions for guided selection
+reasoning:
+   instructions: ->
+      | To look up an order, use {!@actions.get_order}.
+      | To check shipping status, use {!@actions.track_shipment}.
+```
+
+> **Note**: The Dec 2025 finding that this was broken has been superseded. See [action-patterns.md](action-patterns.md#2-instruction-action-references) for detailed usage patterns and examples.
 
 ### Correct Approach: Use `reasoning.actions` Block
 
@@ -145,7 +162,6 @@ The LLM automatically selects appropriate actions from those defined in the `rea
 
 ```agentscript
 topic order_management:
-   label: "Order Management"
    description: "Handles order inquiries"
 
    actions:

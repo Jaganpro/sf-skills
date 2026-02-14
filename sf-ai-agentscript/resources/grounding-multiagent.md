@@ -253,6 +253,29 @@ actions:
 | External REST APIs | `externalService://` |
 | Standard SF actions | `standardInvocableAction://` |
 
+### Conditional Knowledge Retrieval Pattern
+
+Use `available when` to route to different knowledge bases based on user context:
+
+```yaml
+topic knowledge_router:
+   description: "Route to appropriate knowledge base"
+   reasoning:
+      instructions: ->
+         | Let me find the right information for you.
+      actions:
+         search_premium_kb: @actions.search_premium_knowledge
+            description: "Search premium support articles"
+            available when @variables.customer_tier == "premium"
+            with query = ...
+         search_standard_kb: @actions.search_standard_knowledge
+            description: "Search standard support articles"
+            available when @variables.customer_tier <> "premium"
+            with query = ...
+```
+
+> **Why this matters**: Different customer tiers may need access to different knowledge bases with different SLA guidance, pricing, or support procedures. The `available when` guard ensures the LLM can only search the appropriate knowledge base.
+
 ---
 
 ## Same Org Multi-Agent (SOMA)
@@ -284,17 +307,17 @@ When a primary agent encounters specialized needs, it can coordinate with expert
 
 **Implementation:**
 ```yaml
-# Delegation uses transition to a specialist topic
-# Control returns after specialist completes
+# Delegation uses topic reference (NOT @utils.transition)
+# Parent orchestrates — child returns control
 reasoning:
   actions:
-    ask_compliance: @utils.transition to @topic.compliance
-      description: "Delegate tax questions to specialist"
-      # Returns here after specialist finishes
+    ask_compliance: @topic.compliance
+      description: "Consult compliance specialist on tax questions"
+      # ✅ Returns to this topic after specialist finishes
 
-    ask_refund_help: @utils.transition to @topic.refund_specialist
-      description: "Delegate refund calculations"
-      # Control returns to continue conversation
+    ask_refund_help: @topic.refund_specialist
+      description: "Consult refund specialist for calculations"
+      # ✅ Control returns to continue conversation
 ```
 
 ---
@@ -329,11 +352,20 @@ reasoning:
 
 | Use This | When You Need |
 |----------|---------------|
-| `@utils.transition to @topic.X` | Temporary delegation - control returns |
+| `@topic.X` (in reasoning.actions) | Temporary delegation — control returns |
+| `@utils.transition to @topic.X` | Permanent handoff — no return |
 | `@utils.escalate` | Permanent handoff to human |
 | `@agent.X` (Connections) | Permanent handoff to another agent |
 
 > **KEY INSIGHT**: The difference is whether the original agent continues after the specialist finishes.
+
+### SOMA Limitations (Community-Confirmed)
+
+| Limitation | Description | Workaround |
+|-----------|-------------|------------|
+| Single action per supervision call | Delegated topic can only execute ONE action before returning | Break complex operations into separate delegation calls |
+| `related_agent` nodes may fail | SOMA configuration with related agent references can cause "Node does not have corresponding topic" errors | Use `@topic.X` delegation within same agent instead |
+| No cross-agent variable sharing | Delegated agents cannot read/write parent agent's variables | Pass data through action inputs/outputs |
 
 ---
 
@@ -386,7 +418,8 @@ Agent Script can't filter inline - wrap retrievers in Flows.
 Ensure linked variables have sources - empty values cause wrong retrievals.
 
 ### 4. Choose Delegation vs Handoff Carefully
-Delegation returns control; handoff is permanent.
+- `@topic.X` (delegation) — returns control to parent topic
+- `@utils.transition to @topic.X` (handoff) — permanent, no return
 
 ### 5. Use `available when` for Sensitive Protocols
 Guard external service calls with verification checks.

@@ -241,4 +241,69 @@ These supplement the "Common Issues" table in SKILL.md.
 
 ---
 
+---
+
+## 6. JSON Parsing Pattern
+
+Agent Script cannot parse JSON strings inline. When an action returns a JSON string that needs to be decomposed into individual fields, use a Flow or Apex action to parse it.
+
+### Problem
+
+```agentscript
+# This will NOT work - cannot parse JSON inline in Agent Script
+set @variables.name = @outputs.json_response["name"]     # Not supported
+set @variables.email = @outputs.json_response.email       # May work for objects, not JSON strings
+```
+
+### Solution: Flow/Apex JSON Parser
+
+```agentscript
+# Step 1: Call the action that returns JSON
+get_data: @actions.fetch_external_data
+   with endpoint = "customer_profile"
+   set @variables.raw_json = @outputs.response_body
+
+# Step 2: Pass JSON to a parser action (Flow or Apex)
+parse: @actions.parse_json_response
+   with json_string = @variables.raw_json
+   set @variables.customer_name = @outputs.name
+   set @variables.customer_email = @outputs.email
+   set @variables.customer_tier = @outputs.tier
+```
+
+### Apex Parser Example
+
+```apex
+public class JsonParserAction {
+    public class ParseRequest {
+        @InvocableVariable(required=true)
+        public String jsonString;
+    }
+
+    public class ParseResult {
+        @InvocableVariable public String name;
+        @InvocableVariable public String email;
+        @InvocableVariable public String tier;
+    }
+
+    @InvocableMethod(label='Parse Customer JSON')
+    public static List<ParseResult> parse(List<ParseRequest> requests) {
+        List<ParseResult> results = new List<ParseResult>();
+        for (ParseRequest req : requests) {
+            Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(req.jsonString);
+            ParseResult result = new ParseResult();
+            result.name = (String) parsed.get('name');
+            result.email = (String) parsed.get('email');
+            result.tier = (String) parsed.get('tier');
+            results.add(result);
+        }
+        return results;
+    }
+}
+```
+
+> **Tip**: For complex nested JSON, create typed Apex wrapper classes instead of using `deserializeUntyped`.
+
+---
+
 *Consolidated from @kunello's [PR #20](https://github.com/Jaganpro/sf-skills/pull/20) research on Agent Script Recipes action configuration patterns.*

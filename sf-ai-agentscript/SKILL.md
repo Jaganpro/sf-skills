@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.8.0"
+  version: "1.9.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -79,6 +79,9 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 | **Post-action only on @actions** | `@utils.X` with `set`/`run` | Only `@actions.X` supports post-action |
 | **agent_name must match folder** | Folder: `MyAgent`, config: `my_agent` | Both must be identical (case-sensitive) |
 | **Reserved field names** | `description: string`, `label: string` | Use `descriptions`, `label_text`, or suffix with `_field` |
+| **No comments inside instruction blocks** | `# comment` inside `instructions: ->` body | Place comments above the block or use `|` for inline notes |
+| **No multi-line action descriptions** | Line break inside `description: "..."` | Keep `description:` value on a single line |
+| **Action alias naming limits** | Special chars, spaces, or >40 chars in alias | Use snake_case, under 40 characters |
 
 ### 🔴 Reserved Field Names (Breaking in Recent Releases)
 
@@ -105,6 +108,14 @@ label        → label_text, display_label, label_field
 | `include_in_progress_indicator:` on transitions | Recipes | `Unexpected 'include_in_progress_indicator'` | ❌ NOT valid on `@utils.transition` |
 | `output_instructions:` on transitions | Recipes | `Unexpected 'output_instructions'` | ❌ NOT valid on `@utils.transition` |
 | `progress_indicator_message:` on transitions | Recipes | `Unexpected 'progress_indicator_message'` | ❌ May only work on `flow://` targets |
+| `onMessage:` event handler | Some examples | `Unexpected 'onMessage'` | ❌ NOT implemented |
+| Tone configuration | Community patterns | `Unexpected 'tone'` | ❌ NOT implemented |
+| Conversation history slicing (`conversations[-1]`) | Community patterns | Not parseable | ❌ NOT available |
+| Topic-scoped variables | Community discussion | Variables are agent-global | ❌ NOT available |
+| `register_locale` / `state.detected_locale` | Pre-Oct 2025 docs | Removed | ❌ Removed Oct 2025 |
+| Model picker (per-agent LLM selection) | Community request | No syntax support | ❌ NOT available |
+| AEA (Autonomous Experience Agent) type | Documentation | Not supported in Agent Script | ❌ NOT supported |
+| Inline retriever in instructions | Community patterns | Must use action target | ❌ Use `retriever://` action |
 
 **What DOES work on `@utils.transition` actions:**
 ```yaml
@@ -151,6 +162,11 @@ actions:
 2. Use Canvas only for visual validation and simple text changes
 3. **Always review in Script view** after any Canvas edit
 
+**Additional Canvas Limitations:**
+- Utility actions (`@utils.transition`, `@utils.escalate`) are **not visible** in Canvas view
+- `else:` branches are **not visualized** in Canvas — only the `if:` path shows
+- `@` notation has **no autocomplete or hints** in Canvas — must be typed manually in Script view
+
 ### ⚠️ Preview Mode Critical Bugs
 
 > **CRITICAL REFRESH BUG**: Browser refresh required after **every** Agent Script save before preview works properly.
@@ -160,6 +176,7 @@ actions:
 | Linked vars in context, not state | `"Cannot access 'X': Not a declared field in dict"` | Convert to mutable + hardcode for testing |
 | Output property access fails | Silent failure, no error | Assign to variable first, then use in conditional |
 | Simulate vs Live behavior differs | Works in Simulate, fails in Live | Test in **BOTH** modes before committing |
+| Draft version shows no trace data | Traces appear empty | Commit + Activate the agent version before testing traces |
 
 **Pattern for Testing Linked Variables:**
 ```yaml
@@ -225,7 +242,7 @@ else:
 ```
 > **Summary**: `else if` is NOT valid. Direct `if` inside `if` (without `else:`) is NOT valid. But `else:` followed by a new `if` block IS valid and functions like else-if. Use compound conditions for simple cases, flattening for separate outputs, and `else:` + nested `if` for multi-branch logic.
 >
-> **⚠️ Pending validation**: The `else:` + nested `if` pattern is based on community patterns and needs TDD validation in a live org. If it fails to compile, remove Approach 3 and update `resources/known-issues.md`.
+> **✅ Community validated (Feb 2026)**: The `else:` + nested `if` pattern compiles and works correctly. Multi-level nesting (3+ levels) is also confirmed.
 
 #### `...` is Slot-Filling Syntax (LLM Extracts from Conversation)
 ```yaml
@@ -239,6 +256,51 @@ reasoning:
          with query=...           # LLM extracts from user message
          with category=...        # LLM decides based on context
          with limit=10            # Fixed value
+```
+
+### ⚠️ Variable Gotchas
+
+#### Negative Number Defaults Cause Type Mismatch
+```yaml
+# ❌ Parser interprets negative default as object, not number
+retry_limit: mutable number = -1
+
+# ✅ Initialize to zero, set negative in before_reasoning if needed
+retry_limit: mutable number = 0
+```
+
+#### Welcome Messages Only Support Linked Variables
+```yaml
+# ❌ Mutable variables NOT resolved in welcome messages
+system:
+  messages:
+    welcome: "Hello {!@variables.customer_name}!"  # Shows literal text
+
+# ✅ Use static welcome messages; personalize in first topic
+system:
+  messages:
+    welcome: "Hello! How can I help you today?"
+```
+
+#### Undefined Variable References → Vague Publish Errors
+Referencing `{!@variables.nonexistent}` saves without error in the editor but causes generic "something went wrong" errors on commit/publish. Double-check all `{!@variables.X}` references match declared variable names exactly.
+
+#### Object Nested Access vs Index Assignment
+```yaml
+# ✅ Works: property access chains
+set @variables.result = @outputs.response.data.name
+
+# ❌ Fails: index assignment not supported
+set @variables.items[0] = "new_value"
+```
+
+#### LLM Cannot Slot `list[string]` Variables
+```yaml
+# ❌ LLM struggles to fill list types via slot-filling
+with tags = ...   # where tags is list[string] — unreliable
+
+# ✅ Collect as comma-separated string, parse in Flow/Apex
+with tags_csv = ...   # "tag1,tag2,tag3" — works reliably
 ```
 
 #### Post-Action Directives: Only on `@actions.*`
@@ -339,6 +401,32 @@ topic main:
 - `before_reasoning:` is FREE (no credit cost) - use for data prep
 - `after_reasoning:` is FREE (no credit cost) - use for logging, cleanup
 
+**Limitations:**
+- `...` (slot-fill) does **NOT** work in `before_reasoning:` — no LLM context available yet
+- `run @actions.X` behavior in `before_reasoning:` is inconsistent — prefer `reasoning.actions:` for action execution
+- No per-action post-processing hook exists — `after_reasoning:` runs after the **entire** reasoning phase, not per-action
+
+**Pattern: after_reasoning Variable Verification**
+```yaml
+topic collect_info:
+   description: "Collect required customer information"
+   reasoning:
+      instructions: ->
+         | Please provide your email address and full name.
+      actions:
+         collect: @actions.collect_customer_info
+            with email = ...
+            with name = ...
+            set @variables.customer_email = @outputs.email
+            set @variables.customer_name = @outputs.name
+   after_reasoning:
+      if @variables.customer_email <> "" and @variables.customer_name <> "":
+         set @variables.info_complete = True
+      if @variables.info_complete == True:
+         transition to @topic.next_step
+```
+> **Why this works**: `after_reasoning:` checks if the LLM successfully collected required data. If both fields are populated, it sets a flag and transitions deterministically — no LLM decision needed.
+
 **❌ WRONG Syntax (causes compile error):**
 ```yaml
 before_reasoning:
@@ -405,6 +493,22 @@ topic intent_router:
             transition to @topic.orders
 ```
 
+**Security Pattern: Hiding Sensitive Data from LLM**
+
+Use `is_used_by_planner: False` combined with `is_displayable: False` to prevent sensitive action outputs (OTP codes, internal IDs, tokens) from being visible to the LLM — blocking social engineering attacks where users ask the agent to reveal hidden data.
+
+```yaml
+# In Agentforce Assets — Action Definition outputs:
+outputs:
+   otp_code: string
+      is_displayable: False       # Cannot show to user
+      is_used_by_planner: False   # Cannot reason about it — fully hidden
+   verification_status: string
+      is_displayable: True        # Can show "Verified" / "Failed"
+      is_used_by_planner: True    # Can route based on status
+```
+> **Result**: Even if a user asks "what was the OTP code?", the LLM has no access to it. Only the Flow/Apex backend handles the sensitive value.
+
 ### Action Chaining with `run` Keyword
 
 > **Known quirk**: Parent action may complain about inputs needed by chained action - this is expected.
@@ -468,6 +572,54 @@ topic verification:
 
 > **Advanced evolution**: For multi-topic auth gating with LLM bypass and deferred return routing, see the [Open Gate pattern](templates/patterns/open-gate-routing.agent) — a 3-variable extension of the latch concept.
 
+### ⚠️ Topic Selector Re-Entry Behavior
+
+> **#1 cause of mid-conversation routing failures**: Every user utterance returns to the topic selector FIRST.
+
+This means the LLM can route away from your current topic mid-conversation — even if the user is providing follow-up information for the current topic.
+
+**Key fact**: Instructions from the previous topic do **NOT** persist into the next turn's topic selection. Traces show only the current topic's instructions are evaluated.
+
+**Step Variable Pattern** (forces re-entry to current workflow):
+```yaml
+variables:
+   workflow_step: mutable number = 0
+   active_workflow: mutable string = ""
+
+start_agent topic_selector:
+   description: "Route conversations"
+   reasoning:
+      instructions: ->
+         # STEP GUARD — force re-entry if workflow in progress
+         if @variables.workflow_step > 0 and @variables.active_workflow == "refund":
+            transition to @topic.refund_workflow
+         if @variables.workflow_step > 0 and @variables.active_workflow == "returns":
+            transition to @topic.returns_workflow
+
+         | How can I help you today?
+      actions:
+         start_refund: @utils.transition to @topic.refund_workflow
+            description: "Start refund process"
+            set @variables.workflow_step = 1
+            set @variables.active_workflow = "refund"
+
+topic refund_workflow:
+   description: "Multi-step refund process"
+   reasoning:
+      instructions: ->
+         if @variables.workflow_step == 3:
+            | Refund complete!
+            set @variables.workflow_step = 0
+            set @variables.active_workflow = ""
+            transition to @topic.topic_selector
+
+         | Step {!@variables.workflow_step} of 3: ...
+      actions:
+         next_step: @actions.process_refund_step
+            set @variables.workflow_step = @variables.workflow_step + 1
+```
+> **Why this matters**: Without the step guard, a user saying "my email is john@example.com" (follow-up to a verification prompt) gets re-routed by the topic selector instead of staying in the current workflow.
+
 ### Loop Protection Guardrail
 
 > Agent Scripts have a built-in guardrail that limits iterations to approximately **3-4 loops** before breaking out and returning to the Topic Selector.
@@ -482,6 +634,17 @@ topic verification:
 | Plan trace limit (Frontend) | 1M characters | For debugging UI |
 | Transformed plan trace (Backend) | 32k tokens | Internal processing |
 | Active/Committed Agents per org | 100 max | Org limit |
+
+**⚠️ Context Bloat Warning**: ALL action outputs accumulate in the conversation context with **no automatic compaction**. Each action response adds to the token count. In long conversations with many action calls, this can cause:
+- Degraded reasoning quality (important context pushed out of window)
+- Increased latency (larger context = slower LLM processing)
+- Eventual context overflow errors
+
+**Mitigations:**
+- Return only essential fields from Flow/Apex actions (avoid `SELECT *` patterns)
+- Use `is_displayable: False` on outputs the LLM doesn't need to show
+- Design Flows to return summaries rather than raw record data
+- For data-heavy workflows, use the latch/step pattern to reset context between phases
 
 ### Progress Indicators
 
@@ -573,6 +736,11 @@ config:
 - Must begin with a letter
 - No spaces, no consecutive underscores, cannot end with underscore
 - **Maximum 80 characters**
+
+**Additional Validation Rules (Community-Confirmed):**
+- Variable names **cannot** start with `_` or contain consecutive underscores (`__`)
+- `agentVersion.developerName` must follow `v*` format (e.g., `v1`, `v2`, `v10`)
+- System may append `_1` suffix during save — if you see false validation errors on names, check for auto-appended suffixes
 
 ### Instruction Syntax Patterns
 | Pattern | Purpose | Example |
@@ -1432,6 +1600,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.9.0 | 2026-02-14 | **Community insight audit (77 insights)**: Added Variable Gotchas section (5 traps: negative defaults, welcome message limits, undefined refs, index assignment, list slot-filling). Added Topic Selector Re-Entry warning with Step Variable pattern. Added before_reasoning limitations and after_reasoning verification pattern. Expanded Features NOT Valid table (+8 entries: onMessage, tone, history slicing, topic-scoped vars, register_locale, model picker, AEA, inline retriever). Added 3 syntax constraint rows (comments in instructions, multi-line descriptions, alias naming). Added developer name validation rules. Added Context Bloat warning with mitigations. Confirmed nested else+if pattern (community validated). Added 3 Canvas View limitations. Added is_used_by_planner security pattern. Added draft version trace issue. Updated known-issues.md with 9 new platform issues (#6-14). Fixed 13 invalid `label:` occurrences in fsm-architecture.md. Fixed delegation vs handoff terminology in grounding-multiagent.md. Updated `run` keyword and `{!@actions.X}` status in actions-reference.md. Added Expression Limitations, Apex type notation, Planner Differences, JSON parsing pattern, SOMA limitations, conditional knowledge retrieval, API versioning note. Updated multi-step-workflow.agent template with step variable + topic selector guard. |
 | 1.8.0 | 2026-02-12 | **Gap analysis audit**: Added 3 new resource files: `resources/official-sources.md` (14 primary doc URLs + 8 recipe URLs + diagnostic decision tree), `resources/known-issues.md` (5 open platform issues with structured tracking), `resources/migration-guide.md` (Builder UI → Agent Script mapping table + side-by-side examples). Added Verification Protocol section (triggers + decision tree for fetching official docs). Added Self-Improvement protocol (editable resources, session-based learning). Updated Official Resources section to point to full registry. Added `!=` as alias for `<>` in comparison operators (SKILL.md + syntax-reference.md). Updated nested `if` constraint to document `else:` + nested `if` pattern (pending TDD validation). Added namespace prefix warning for `apex://` targets in actions-reference.md. Updated Document Map with 3 new entries. Added aquivalabs/my-org-butler to Sources & Acknowledgments and CREDITS.md. |
 | 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |
 | 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |

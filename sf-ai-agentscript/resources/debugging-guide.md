@@ -315,3 +315,35 @@ The LLM might ignore your instructions. The only way to truly prevent unwanted b
 | 3 | **`available when` Blocks Actions** - Makes unauthorized actions invisible, not just discouraged |
 | 4 | **Post-Action at TOP** - Check for completed actions at the start of instructions |
 | 5 | **Linked vs Mutable** - Wrong variable modifier causes empty values |
+
+---
+
+## Planner Engine Differences
+
+Salesforce has multiple planner engines. Behavior differs between them, which affects debugging.
+
+| Capability | Java Planner (Legacy) | Atlas/Daisy Planner (New) |
+|-----------|----------------------|--------------------------|
+| **Citations** | Supported | May not be supported |
+| **Localization** | Full support | Limited support |
+| **Lightning UI components** | Renders in chat | Does not render |
+| **`$Context.ConversationContext`** | Available | May not be available |
+| **Debug logging detail** | Verbose | More concise |
+| **CopilotContext reliability** | Consistent | May vary |
+| **Trace data availability** | Requires committed version | Requires committed + activated version |
+
+### Identifying Your Planner
+
+Check Setup > Agentforce > Agent Settings to see which planner engine is active. Behavior differences between planners are the most common source of "it worked in dev but not in prod" issues.
+
+### Debugging Tips by Planner
+
+**Java Planner:**
+- More verbose trace output — look for detailed span data
+- Lightning components render — test rich UI interactions
+- Citations appear in responses — verify citation accuracy
+
+**Atlas/Daisy Planner:**
+- Trace output may be more concise — focus on variable state changes
+- Lightning components won't render — test text-based fallbacks
+- Context variables may behave differently — verify `$Context` access patterns

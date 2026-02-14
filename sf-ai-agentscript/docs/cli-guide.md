@@ -295,3 +295,27 @@ sf org open agent --api-name MyAgent -o TARGET_ORG --url-only
 | **Activate** | Assign to Connections, go live, monitor |
 
 > **Key Insight**: Commit doesn't deploy - it freezes. Activate makes it live.
+
+---
+
+## API Versioning Behavior
+
+Agent versions share the same `agentId` (the `BotDefinition` / `Agent` record) but have **distinct version IDs**.
+
+| Concept | Description |
+|---------|-------------|
+| `agentId` / `BotDefinition.Id` | Unique per agent — does NOT change between versions |
+| `versionId` / `BotVersion.Id` | Unique per version — changes with each commit |
+| Default API behavior | API calls target the **active** version unless a specific `versionId` is provided |
+
+```bash
+# The Agent Runtime API defaults to the active version:
+curl -X POST ".../einstein/ai-agent/v1" \
+  -d '{"agentDefinitionId": "0XxXXXXXXXXXXX"}'   # Uses active version
+
+# To target a specific version (draft/committed), include versionId:
+curl -X POST ".../einstein/ai-agent/v1" \
+  -d '{"agentDefinitionId": "0XxXXXXXXXXXXX", "agentVersionId": "4KdXXXXXXXXXXX"}'
+```
+
+> **Key implication**: When testing draft versions via API, you must explicitly pass the version ID. Otherwise, the API will use the last activated version — which may not reflect your latest changes.

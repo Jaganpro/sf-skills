@@ -472,6 +472,65 @@ start_agent topic_selector:
 | Status: {!@variables.status if @variables.status else "pending"}
 ```
 
+### Expression Limitations (Sandboxed Python AST Subset)
+
+Agent Script expressions use a sandboxed subset of Python. Not all Python operations are available.
+
+**Supported:**
+
+| Category | Operations |
+|----------|-----------|
+| Arithmetic | `+`, `-` |
+| Comparison | `==`, `<>`, `!=`, `<`, `<=`, `>`, `>=`, `is`, `is not` |
+| Logical | `and`, `or`, `not` |
+| Ternary | `x if condition else y` |
+| Built-in functions | `len()`, `max()`, `min()` |
+| Attribute access | `@outputs.result.field` |
+| Index access | `@variables.items[0]` |
+| String methods | `contains`, `startswith`, `endswith` |
+
+**NOT Supported:**
+
+| Operation | Workaround |
+|-----------|-----------|
+| Multiplication (`*`) | Use Flow/Apex action |
+| Division (`/`) | Use Flow/Apex action |
+| Modulo (`%`) | Use Flow/Apex action |
+| String concatenation (`+` on strings) | Use `{!var1}{!var2}` template injection |
+| List slicing (`items[1:3]`) | Use Flow to extract sublist |
+| List comprehensions (`[x for x in ...]`) | Use Flow/Apex for list transformation |
+| Lambda expressions | Use Flow/Apex action |
+| `for`/`while` loops | Use topic loop pattern (re-entry) |
+| `import` statements | Not available (security sandbox) |
+
+### Apex Complex Type Notation
+
+When action inputs or outputs reference Apex inner classes, use the `@apexClassType` notation:
+
+```
+@apexClassType/c__OuterClass$InnerClass
+```
+
+| Component | Description | Example |
+|-----------|-------------|---------|
+| `@apexClassType/` | Required prefix | — |
+| `c__` | Default namespace (or your package namespace) | `c__`, `myns__` |
+| `OuterClass` | The containing Apex class | `OrderService` |
+| `$` | Inner class separator | — |
+| `InnerClass` | The inner class name | `LineItem` |
+
+**Example:**
+```yaml
+actions:
+   process_order:
+      inputs:
+         line_items: list[object]
+            complex_data_type_name: "@apexClassType/c__OrderService$LineItem"
+      target: "apex://OrderService"
+```
+
+> **Note**: This notation is used in the `complex_data_type_name` field of action input/output definitions in Agentforce Assets, not in the `.agent` file directly.
+
 ---
 
 ## Common Pitfalls
