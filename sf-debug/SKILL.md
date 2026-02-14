@@ -78,9 +78,11 @@ sf apex get log --log-id 07Lxx0000000000 --target-org [alias]
 sf apex tail log --target-org [alias] --color
 ```
 
-**Set Debug Level**:
+**Set Debug Level** (via TraceFlag records, not CLI flags):
 ```bash
-sf apex log tail --debug-level FINE --target-org [alias]
+# Debug levels are configured via TraceFlag records in Setup
+# See "Debug Level Configuration" section in docs/cli-commands.md
+sf data query -q "SELECT Id, MasterLabel FROM DebugLevel" -o [alias] --json
 ```
 
 ### Phase 3: Log Analysis
@@ -388,7 +390,7 @@ XX.X (XXXXX)|TIMESTAMP|EVENT_TYPE|[PARAMS]|DETAILS
 | `sf apex list log` | List available logs |
 | `sf apex get log` | Download specific log |
 | `sf apex tail log` | Stream logs real-time |
-| `sf apex log delete` | Delete logs |
+| `sf data delete record --sobject ApexLog --record-id <id>` | Delete individual log |
 
 ### Debug Level Control
 

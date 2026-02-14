@@ -59,13 +59,13 @@ sf sobject describe --sobject ApexClass --target-org myorg --use-tooling-api
 ### List Objects
 ```bash
 # All objects
-sf sobject list --target-org myorg --sobject-type all
+sf sobject list --target-org myorg --sobject all
 
 # Custom objects only
-sf sobject list --target-org myorg --sobject-type custom
+sf sobject list --target-org myorg --sobject custom
 
 # Standard objects only
-sf sobject list --target-org myorg --sobject-type standard
+sf sobject list --target-org myorg --sobject standard
 ```
 
 ### Parse Object Fields (with jq)
@@ -372,7 +372,7 @@ sf data query -q "SELECT Id FROM Account LIMIT 1" -o myorg
 sf org list metadata-types -o myorg
 
 # What objects exist?
-sf sobject list -o myorg --sobject-type all
+sf sobject list -o myorg --sobject all
 
 # Describe an object
 sf sobject describe -s Account -o myorg

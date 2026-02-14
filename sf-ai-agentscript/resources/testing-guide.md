@@ -80,11 +80,8 @@ For each test case, specify:
 ### Step 3: Run Batch
 
 ```bash
-# Run against draft version
-sf agent test run --name MyAgent --version draft
-
-# Run against committed version
-sf agent test run --name MyAgent --version v1.0
+# Run agent tests (--api-name refers to an AiEvaluationDefinition, not the agent)
+sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 ```
 
 ### Step 4: Analyze Results
@@ -228,14 +225,11 @@ test_case:
 ### Pre-Deployment Validation
 
 ```bash
-# Validate syntax
-sf agent validate --source-dir ./my-agent
+# Validate authoring bundle syntax
+sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
-# Run batch tests
-sf agent test run --name MyAgent --test-suite AllTests
-
-# Check specific version
-sf agent test run --name MyAgent --version v1.0 --test-suite Regression
+# Run agent tests
+sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 ```
 
 ### Common Validation Errors
@@ -263,9 +257,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Validate Agent
-        run: sf agent validate --source-dir ./agents/my-agent
+        run: sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
       - name: Run Tests
-        run: sf agent test run --name MyAgent --test-suite CI
+        run: sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 ```
 
 ### Test Automation Best Practices

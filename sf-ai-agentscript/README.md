@@ -43,8 +43,8 @@ Tell Claude what your agent should do, and it will generate a scored Agent Scrip
 
 ### 3. Validate & Deploy
 ```bash
-sf agent validate --source-dir ./my-agent
-sf agent deploy --source-dir ./my-agent --target-org prod
+sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
+sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 ```
 
 ## Scoring System

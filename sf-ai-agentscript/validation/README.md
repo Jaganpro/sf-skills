@@ -11,13 +11,15 @@ cd /Users/jvalaiyapathy/Projects/claude-code-sfskills/sf-ai-agentscript/validati
 # 2. Validate syntax (no org needed) - Tier 1
 for dir in validation-agents/force-app/main/default/aiAuthoringBundles/*/; do
   echo "Validating $(basename "$dir")..."
-  sf agent validate authoring-bundle --source-dir "$dir"
+  name=$(basename "$dir")
+  sf agent validate authoring-bundle --api-name "$name" -o TARGET_ORG --json
 done
 
 # 3. Deploy all validation agents (requires auth to test org) - Tier 2
 for dir in validation-agents/force-app/main/default/aiAuthoringBundles/*/; do
-  echo "Publishing $(basename "$dir")..."
-  sf agent publish authoring-bundle --source-dir "$dir" --target-org R6-Agentforce-SandboxFull
+  name=$(basename "$dir")
+  echo "Publishing $name..."
+  sf agent publish authoring-bundle --api-name "$name" -o R6-Agentforce-SandboxFull --json
 done
 ```
 

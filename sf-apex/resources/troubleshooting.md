@@ -164,8 +164,8 @@ except LSPNotAvailableException:
 
 **Run from CLI (if available):**
 ```bash
-# This requires Salesforce CLI with Apex Language Server
-sf apex compile --file force-app/main/default/classes/MyClass.cls
+# Apex compilation happens automatically during deploy (no standalone compile command)
+sf project deploy start --metadata ApexClass:MyClass --target-org <alias> --dry-run --json
 ```
 
 ---

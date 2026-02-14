@@ -78,8 +78,8 @@
 - **Status**: OPEN
 - **Date Discovered**: 2026-01-25
 - **Affects**: Users migrating from Einstein Bots to Agent Script
-- **Symptom**: Old `sf bot` and `sf bot version` commands do not recognize Agent Script agents (`AiAuthoringBundle`). Running `sf bot list` shows only legacy Bot definitions.
-- **Root Cause**: The `sf bot` command family predates Agent Script and targets `BotDefinition`/`BotVersion` metadata types. Agent Script uses `AiAuthoringBundle`, a completely separate metadata structure.
+- **Symptom**: Old `sf bot` and `sf bot version` commands were removed in sf CLI v2 — these commands no longer exist, not just "don't recognize Agent Script". Running any `sf bot` command returns "Command not found".
+- **Root Cause**: The `sf bot` command family was deprecated and removed in sf CLI v2. It targeted `BotDefinition`/`BotVersion` metadata types. Agent Script uses `AiAuthoringBundle`, a completely separate metadata structure.
 - **Workaround**: Use `sf agent` commands exclusively for Agent Script:
   ```bash
   # ❌ Old commands (don't work with Agent Script):

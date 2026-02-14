@@ -168,8 +168,9 @@ Test with multiple user profiles to verify security.
 
 **CLI Approach**:
 ```bash
-# Login as different user
-sf org login user --username standard.user@company.com --target-org myOrg
+# Authenticate as different user (sf org login user does not exist)
+sf org login web --alias standard-user-org
+# Note: To test as different users, authenticate separate orgs or use sf org login jwt with per-user credentials
 
 # Run tests/verify behavior
 ```
@@ -481,8 +482,43 @@ sf data query --query "SELECT Id, Status FROM FlowInterview WHERE FlowDeveloperN
 # Check scheduled jobs
 sf data query --query "SELECT Id, CronJobDetail.Name, State, NextFireTime FROM CronTrigger" --target-org sandbox
 
-# Login as different user
-sf org login user --username testuser@company.com --target-org sandbox
+# Authenticate as different user (sf org login user does not exist)
+sf org login web --alias test-user-org
+# Note: To test as different users, authenticate separate orgs or use sf org login jwt
+```
+
+---
+
+## Flow Test CLI Commands
+
+### Run Flow Tests
+
+> `sf flow run test` is a first-class CLI command for running Flow tests (available in sf CLI v2.122.6+).
+
+```bash
+# Run all Flow tests
+sf flow run test -o TARGET_ORG --json
+
+# Run with code coverage
+sf flow run test -o TARGET_ORG --code-coverage --json
+
+# Run specific test classes
+sf flow run test --class-names MyFlowTest -o TARGET_ORG --json
+
+# Synchronous execution (waits for completion)
+sf flow run test -o TARGET_ORG --synchronous --json
+```
+
+### Combined Apex + Flow Test Runner
+
+> `sf logic run test` runs both Apex and Flow tests in a single command — useful for comprehensive CI/CD test suites.
+
+```bash
+# Run combined Apex + Flow tests
+sf logic run test -o TARGET_ORG --json
+
+# Check results
+sf logic get test --test-run-id <id> -o TARGET_ORG --json
 ```
 
 ---

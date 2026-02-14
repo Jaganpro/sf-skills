@@ -7,7 +7,7 @@
 | Create component | `sf lightning generate component --name myComp --type lwc` |
 | Run all tests | `sf lightning lwc test run` |
 | Deploy component | `sf project deploy start --source-dir force-app/.../lwc/myComp` |
-| Create message channel | `sf lightning generate messageChannel --name MyChannel` |
+| Create message channel | Manual XML: `force-app/.../messageChannels/MyChannel.messageChannel-meta.xml` |
 
 ---
 
@@ -90,15 +90,20 @@ sf lightning lwc test run --update-snapshot
 
 ### Run ESLint
 
+> **Note**: `sf lightning lint` does not exist. Use `npx eslint` directly or `sf code-analyzer run`.
+
 ```bash
-# Lint all LWC files
-sf lightning lint ./force-app/main/default/lwc
+# Lint LWC files with ESLint (requires @salesforce/eslint-config-lwc)
+npx eslint force-app/main/default/lwc
 
 # Lint specific component
-sf lightning lint ./force-app/main/default/lwc/accountList
+npx eslint force-app/main/default/lwc/accountList
 
 # Auto-fix issues
-sf lightning lint ./force-app/main/default/lwc --fix
+npx eslint force-app/main/default/lwc --fix
+
+# Or use Code Analyzer (includes ESLint + PMD + RetireJS)
+sf code-analyzer run --workspace force-app/main/default/lwc
 ```
 
 ---
@@ -163,38 +168,34 @@ sf project retrieve start \
 
 ---
 
-## Local Development Server
+## Local Development
 
-### Start Local Dev Server
+### Preview Components Locally
 
-```bash
-# Install if not available
-sf plugins install @salesforce/lwc-dev-server
-
-# Start server
-sf lightning dev-server start
-
-# Server runs at: http://localhost:3333
-```
-
-### Start with Specific Port
+> **Note**: `sf lightning dev-server` was deprecated. Local Dev is now built into sf CLI.
 
 ```bash
-sf lightning dev-server start --port 3000
+# Open component preview in browser (built into sf CLI, no plugin needed)
+sf org open --source-file force-app/main/default/lwc/myComp/myComp.js --target-org my-sandbox
+
+# Open specific Lightning page for testing
+sf org open --target-org my-sandbox --path /lightning/setup/FlexiPageList/home
 ```
 
 ---
 
 ## Message Channels
 
-### Generate Message Channel
+### Create Message Channel
+
+> **Note**: There is no `sf lightning generate messageChannel` command. Message Channels are created as metadata XML files manually.
 
 ```bash
-sf lightning generate messageChannel \
-  --name RecordSelected \
-  --output-dir force-app/main/default/messageChannels
+# Create the directory if it doesn't exist
+mkdir -p force-app/main/default/messageChannels
 
-# Creates: RecordSelected.messageChannel-meta.xml
+# Create the XML file manually:
+# force-app/main/default/messageChannels/RecordSelected.messageChannel-meta.xml
 ```
 
 ### Deploy Message Channel
@@ -308,7 +309,7 @@ sf org open --target-org my-sandbox
 #!/bin/bash
 
 # Lint
-sf lightning lint ./force-app/main/default/lwc || exit 1
+npx eslint ./force-app/main/default/lwc || exit 1
 
 # Test
 sf lightning lwc test run --coverage || exit 1
@@ -449,8 +450,8 @@ rg -n '\-\-slds-g-color' force-app/main/default/lwc/**/*.css
 
 ```bash
 # View GraphQL queries in debug mode (enable in Setup → Debug Logs)
-sf apex tail log --target-org my-sandbox --color \
-  --debug-level FINEST
+sf apex tail log --target-org my-sandbox --color
+# Note: Debug levels are configured via TraceFlag records in Setup, not CLI flags
 
 # Test GraphQL query via Anonymous Apex (for syntax validation)
 sf apex run --target-org my-sandbox <<'EOF'

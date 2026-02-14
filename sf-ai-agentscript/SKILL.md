@@ -932,8 +932,8 @@ sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_O
 # Generate authoring bundle scaffolding
 sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
-# Generate without retrieving from org (useful for CI/CD)
-sf agent generate authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG --json
+# Generate authoring bundle (--skip-retrieve is only available on publish, not generate)
+sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 ```
 
 ### Bundle Structure (CRITICAL)
@@ -1220,7 +1220,7 @@ This skill's resource files are editable. When you discover something during a s
 |----------|-----------|
 | `AgentName.aiAuthoringBundle-meta.xml` | `AgentName.bundle-meta.xml` |
 | `sf project deploy start` | `sf agent publish authoring-bundle` |
-| `sf agent validate --source-dir` | `sf agent validate authoring-bundle --source-dir` |
+| `sf agent validate --source-dir` | `sf agent validate authoring-bundle --api-name <Name> -o TARGET_ORG --json` |
 | Query user from wrong org | Query **target org** specifically with `-o` flag |
 
 ### Einstein Agent User Format (Org-Specific)
@@ -1318,7 +1318,7 @@ Present the results to the user and ask them to select which user to use for `de
 - [ ] Session data uses `linked` variables (not `mutable`)
 
 ### Testing
-- [ ] `sf agent validate --source-dir ./my-agent` passes
+- [ ] `sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json` passes
 - [ ] Preview mode tested before activation
 
 ---

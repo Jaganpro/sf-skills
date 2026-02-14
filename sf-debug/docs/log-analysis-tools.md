@@ -115,8 +115,9 @@ sf apex tail log --target-org my-sandbox
 # With color highlighting
 sf apex tail log --target-org my-sandbox --color
 
-# Filter by user
-sf apex tail log --target-org my-sandbox --debug-level FINE
+# Note: --debug-level flag does not exist on sf apex tail log
+# Debug levels are configured via TraceFlag records in Setup
+sf apex tail log --target-org my-sandbox --skip-trace-flag
 ```
 
 ### Set Debug Level

@@ -322,6 +322,6 @@ System: DEBUG
 | `sf apex list log` | List available logs |
 | `sf apex get log --log-id XXX` | Download specific log |
 | `sf apex tail log` | Stream logs real-time |
-| `sf apex log delete` | Clean up old logs |
+| `sf data delete record --sobject ApexLog --record-id <id>` | Delete individual log record |
 
 See [cli-commands.md](./cli-commands.md) for detailed command reference.

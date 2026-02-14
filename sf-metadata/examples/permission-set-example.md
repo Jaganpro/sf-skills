@@ -390,7 +390,7 @@ sf project deploy start \
 sf org assign permset --name Invoice_Manager --target-org myorg --on-behalf-of user@example.com
 
 # Assign permission set group
-sf org assign permsetgroup --name Finance_Team --target-org myorg --on-behalf-of user@example.com
+sf org assign permset --name Finance_Team --target-org myorg --on-behalf-of user@example.com
 ```
 
 ---

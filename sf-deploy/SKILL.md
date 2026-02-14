@@ -446,7 +446,7 @@ sf agent activate --api-name [AgentName] --target-org target-org --json
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
 | `sf agent generate authoring-bundle --api-name X` | Generate authoring bundle scaffolding |
-| `sf agent generate authoring-bundle --api-name X --skip-retrieve` | Generate without retrieving from org |
+| `sf agent generate authoring-bundle --api-name X --target-org <alias> --json` | Generate authoring bundle scaffolding |
 | `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |
 | `sf project deploy start --metadata Agent:X` | Deploy agent metadata |
 

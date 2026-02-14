@@ -7,7 +7,7 @@
 | List recent logs | `sf apex list log --target-org my-org` |
 | Get specific log | `sf apex get log --log-id 07Lxx0000000000` |
 | Stream real-time | `sf apex tail log --target-org my-org` |
-| Delete all logs | `sf apex log delete --target-org my-org` |
+| Delete log | `sf data delete record --sobject ApexLog --record-id <id> --target-org my-org` |
 
 ---
 
@@ -57,10 +57,11 @@ sf apex list log --target-org my-org --json | \
 # Tail logs with color highlighting
 sf apex tail log --target-org my-org --color
 
-# Tail for specific user
+# Tail with color highlighting
 sf apex tail log \
   --target-org my-org \
-  --debug-level FINE
+  --color
+# Note: Debug levels are configured via TraceFlag records in Setup, not CLI flags
 
 # Tail with skip flag (don't show historical logs)
 sf apex tail log --target-org my-org --skip-trace-flag
@@ -72,11 +73,10 @@ sf apex tail log --target-org my-org --skip-trace-flag
 
 ### Delete Logs
 
-```bash
-# Delete all logs
-sf apex log delete --target-org my-org
+> **Note**: `sf apex log delete` does not exist in sf CLI v2. Use `sf data delete record` instead.
 
-# Delete specific log (use data delete)
+```bash
+# Delete specific log
 sf data delete record \
   --sobject ApexLog \
   --record-id 07Lxx0000000000AAA \
@@ -154,8 +154,9 @@ sf apex list log --target-org my-org --json | \
 sf data query \
   --query "SELECT Id FROM Account WHERE Name = 'Test'" \
   --target-org my-org \
-  --use-tooling-api \
-  --explain
+  --use-tooling-api
+# Note: --explain does not exist. Use REST API for query plans:
+# GET /services/data/v62.0/query/?explain=SELECT+Id+FROM+Account+WHERE+Name='Test'
 ```
 
 ### Log Analysis with grep
