@@ -2,41 +2,24 @@
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Tests comparison and logical operators</description>
     <localTopicLinks>
-        <genAiPluginName>done_16jVZ000000BVJp</genAiPluginName>
+        <genAiPluginName>done_16jak000001QEWb</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>entry_16jVZ000000BVJp</genAiPluginName>
+        <genAiPluginName>entry_16jak000001QEWb</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>test_comparisons_16jVZ000000BVJp</genAiPluginName>
+        <genAiPluginName>test_comparisons_16jak000001QEWb</genAiPluginName>
     </localTopicLinks>
     <localTopics>
-        <fullName>done_16jVZ000000BVJp</fullName>
-        <canEscalate>false</canEscalate>
-        <description>Validation complete</description>
-        <developerName>done_16jVZ000000BVJp</developerName>
-        <genAiPluginInstructions>
-            <description>This agent tests comparison operators.</description>
-            <developerName>instruction0_179VZ000000H54v</developerName>
-            <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H54v</masterLabel>
-            <sortOrder>1</sortOrder>
-        </genAiPluginInstructions>
-        <language>en_US</language>
-        <localDeveloperName>done</localDeveloperName>
-        <masterLabel>Done</masterLabel>
-        <pluginType>Topic</pluginType>
-    </localTopics>
-    <localTopics>
-        <fullName>entry_16jVZ000000BVJp</fullName>
+        <fullName>entry_16jak000001QEWb</fullName>
         <canEscalate>false</canEscalate>
         <description>Entry point</description>
-        <developerName>entry_16jVZ000000BVJp</developerName>
+        <developerName>entry_16jak000001QEWb</developerName>
         <genAiPluginInstructions>
             <description>This agent tests comparison operators.</description>
-            <developerName>instruction0_179VZ000000H54w</developerName>
+            <developerName>instruction0_179ak000002EXFv</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H54w</masterLabel>
+            <masterLabel>instruction0_179ak000002EXFv</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -45,20 +28,37 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>test_comparisons_16jVZ000000BVJp</fullName>
+        <fullName>test_comparisons_16jak000001QEWb</fullName>
         <canEscalate>false</canEscalate>
         <description>Test comparison operations</description>
-        <developerName>test_comparisons_16jVZ000000BVJp</developerName>
+        <developerName>test_comparisons_16jak000001QEWb</developerName>
         <genAiPluginInstructions>
             <description>This agent tests comparison operators.</description>
-            <developerName>instruction0_179VZ000000H54x</developerName>
+            <developerName>instruction0_179ak000002EXFu</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H54x</masterLabel>
+            <masterLabel>instruction0_179ak000002EXFu</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
         <localDeveloperName>test_comparisons</localDeveloperName>
         <masterLabel>Test Comparisons</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>done_16jak000001QEWb</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Validation complete</description>
+        <developerName>done_16jak000001QEWb</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests comparison operators.</description>
+            <developerName>instruction0_179ak000002EXFt</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXFt</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>done</localDeveloperName>
+        <masterLabel>Done</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <masterLabel>Validation: Comparison Operators</masterLabel>

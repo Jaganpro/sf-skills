@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>NEGATIVE TEST: else with nested if does not compile</description>
+    <localTopicLinks>
+        <genAiPluginName>classify_16jak000001QEoL</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>complete_16jak000001QEoL</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001QEoL</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>complete_16jak000001QEoL</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Validation complete</description>
+        <developerName>complete_16jak000001QEoL</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms else: with nested if does NOT compile. Uses compound conditions instead.</description>
+            <developerName>instruction0_179ak000002EXZG</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXZG</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>complete</localDeveloperName>
+        <masterLabel>Complete</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>classify_16jak000001QEoL</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Classify customer tier using compound conditions (Approach 1)</description>
+        <developerName>classify_16jak000001QEoL</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms else: with nested if does NOT compile. Uses compound conditions instead.</description>
+            <developerName>instruction0_179ak000002EXZF</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXZF</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>classify</localDeveloperName>
+        <masterLabel>Classify</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001QEoL</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point for else-nested-if validation</description>
+        <developerName>entry_16jak000001QEoL</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms else: with nested if does NOT compile. Uses compound conditions instead.</description>
+            <developerName>instruction0_179ak000002EXZH</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXZH</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Else Nested If</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

@@ -29,12 +29,20 @@ done
 |------------|---------------|------------------|
 | `Val_Minimal_Syntax` | Basic config, system, start_agent, topic blocks | Core Syntax |
 | `Val_Arithmetic_Ops` | Addition (+) and subtraction (-) operators | Expression Operators |
-| `Val_Comparison_Ops` | Comparison operators (>, <, >=, <=, ==, not-equal) | Expression Operators |
-| `Val_Variable_Scopes` | @state.*, @context.*, @variables.* | Variable Namespaces |
+| `Val_Comparison_Ops` | Comparison operators (>, <, >=, <=, ==, !=) | Expression Operators |
+| `Val_Variable_Scopes` | @variables.* namespace | Variable Namespaces |
 | `Val_Topic_Transitions` | @utils.transition (permanent handoff) | Topic Transitions |
 | `Val_Latch_Pattern` | Boolean flag for topic re-entry | Production Gotchas |
 | `Val_Loop_Guard` | Max 3-4 iteration protection | Production Gotchas |
 | `Val_Interpolation` | Variable injection in strings | Interpolation |
+| `Val_Action_Properties` | Action property validity (NEGATIVE) | Action Properties |
+| `Val_Before_Reasoning` | before_reasoning lifecycle hook | Lifecycle Hooks |
+| `Val_After_Reasoning` | after_reasoning lifecycle hook | Lifecycle Hooks |
+| `Val_Label_Property` | label: property (NEGATIVE) | Reserved Properties |
+| `Val_Always_Expect_Input` | always_expect_input (NEGATIVE) | Unimplemented Features |
+| `Val_Else_Nested_If` | else: + nested if (NEGATIVE) | if/else Nesting Rules |
+| `Val_Step_Guard` | Step counter re-entry guard | Topic Re-Entry |
+| `Val_Multiple_Available_When` | Multiple available when (POSITIVE) | Action Guards |
 
 ## Validation Tiers
 
@@ -46,8 +54,8 @@ done
 
 ## Test Org Configuration
 
-- **Target Org Alias**: `R6-Agentforce-SandboxFull`
-- **Einstein Agent User**: `home_furnishing_agent@00dvz000004evdp1379858245.ext`
+- **Target Org Alias**: `AgentforceTesting`
+- **Einstein Agent User**: `multistepworkflows@00dak00000gdhgd1068670160.ext`
 - **API Version**: 65.0
 
 ## When Validation Fails

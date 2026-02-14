@@ -7,7 +7,7 @@
         <name>Val_Arithmetic_Ops</name>
     </botMlDomain>
     <botSource>None</botSource>
-    <botUser>home_furnishing_agent@00dvz000004evdp1379858245.ext</botUser>
+    <botUser>multistepworkflows@00dak00000gdhgd1068670160.ext</botUser>
     <description>Tests addition and subtraction operators</description>
     <label>Validation: Arithmetic Operators</label>
     <logPrivateConversationData>false</logPrivateConversationData>

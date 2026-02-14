@@ -2,41 +2,24 @@
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Tests variable namespaces and types</description>
     <localTopicLinks>
-        <genAiPluginName>done_16jVZ000000BVLR</genAiPluginName>
+        <genAiPluginName>done_16jak000001QEYD</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>entry_16jVZ000000BVLR</genAiPluginName>
+        <genAiPluginName>entry_16jak000001QEYD</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>test_variables_16jVZ000000BVLR</genAiPluginName>
+        <genAiPluginName>test_variables_16jak000001QEYD</genAiPluginName>
     </localTopicLinks>
     <localTopics>
-        <fullName>entry_16jVZ000000BVLR</fullName>
-        <canEscalate>false</canEscalate>
-        <description>Entry point</description>
-        <developerName>entry_16jVZ000000BVLR</developerName>
-        <genAiPluginInstructions>
-            <description>This agent tests variable scopes and types.</description>
-            <developerName>instruction0_179VZ000000H56X</developerName>
-            <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H56X</masterLabel>
-            <sortOrder>1</sortOrder>
-        </genAiPluginInstructions>
-        <language>en_US</language>
-        <localDeveloperName>entry</localDeveloperName>
-        <masterLabel>Entry</masterLabel>
-        <pluginType>Topic</pluginType>
-    </localTopics>
-    <localTopics>
-        <fullName>done_16jVZ000000BVLR</fullName>
+        <fullName>done_16jak000001QEYD</fullName>
         <canEscalate>false</canEscalate>
         <description>Validation complete</description>
-        <developerName>done_16jVZ000000BVLR</developerName>
+        <developerName>done_16jak000001QEYD</developerName>
         <genAiPluginInstructions>
             <description>This agent tests variable scopes and types.</description>
-            <developerName>instruction0_179VZ000000H56Y</developerName>
+            <developerName>instruction0_179ak000002EXHX</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H56Y</masterLabel>
+            <masterLabel>instruction0_179ak000002EXHX</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -45,20 +28,37 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>test_variables_16jVZ000000BVLR</fullName>
+        <fullName>test_variables_16jak000001QEYD</fullName>
         <canEscalate>false</canEscalate>
         <description>Test variable operations</description>
-        <developerName>test_variables_16jVZ000000BVLR</developerName>
+        <developerName>test_variables_16jak000001QEYD</developerName>
         <genAiPluginInstructions>
             <description>This agent tests variable scopes and types.</description>
-            <developerName>instruction0_179VZ000000H56Z</developerName>
+            <developerName>instruction0_179ak000002EXHW</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H56Z</masterLabel>
+            <masterLabel>instruction0_179ak000002EXHW</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
         <localDeveloperName>test_variables</localDeveloperName>
         <masterLabel>Test Variables</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001QEYD</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point</description>
+        <developerName>entry_16jak000001QEYD</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests variable scopes and types.</description>
+            <developerName>instruction0_179ak000002EXHV</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXHV</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <masterLabel>Validation: Variable Scopes</masterLabel>

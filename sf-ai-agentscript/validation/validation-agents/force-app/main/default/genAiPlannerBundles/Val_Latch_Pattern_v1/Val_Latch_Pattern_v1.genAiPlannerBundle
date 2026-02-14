@@ -2,44 +2,44 @@
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Tests boolean latch for topic re-entry</description>
     <localTopicLinks>
-        <genAiPluginName>done_16jVZ000000BVOf</genAiPluginName>
+        <genAiPluginName>done_16jak000001QEbR</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>entry_16jVZ000000BVOf</genAiPluginName>
+        <genAiPluginName>entry_16jak000001QEbR</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>topic_selector_16jVZ000000BVOf</genAiPluginName>
+        <genAiPluginName>topic_selector_16jak000001QEbR</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>verification_16jVZ000000BVOf</genAiPluginName>
+        <genAiPluginName>verification_16jak000001QEbR</genAiPluginName>
     </localTopicLinks>
     <localTopics>
-        <fullName>topic_selector_16jVZ000000BVOf</fullName>
+        <fullName>done_16jak000001QEbR</fullName>
         <canEscalate>false</canEscalate>
-        <description>Routes based on latch state</description>
-        <developerName>topic_selector_16jVZ000000BVOf</developerName>
+        <description>Validation complete</description>
+        <developerName>done_16jak000001QEbR</developerName>
         <genAiPluginInstructions>
             <description>This agent tests the latch variable pattern.</description>
-            <developerName>instruction0_179VZ000000H59l</developerName>
+            <developerName>instruction0_179ak000002EXKm</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H59l</masterLabel>
+            <masterLabel>instruction0_179ak000002EXKm</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
-        <localDeveloperName>topic_selector</localDeveloperName>
-        <masterLabel>Topic Selector</masterLabel>
+        <localDeveloperName>done</localDeveloperName>
+        <masterLabel>Done</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>entry_16jVZ000000BVOf</fullName>
+        <fullName>entry_16jak000001QEbR</fullName>
         <canEscalate>false</canEscalate>
         <description>Entry point</description>
-        <developerName>entry_16jVZ000000BVOf</developerName>
+        <developerName>entry_16jak000001QEbR</developerName>
         <genAiPluginInstructions>
             <description>This agent tests the latch variable pattern.</description>
-            <developerName>instruction0_179VZ000000H59o</developerName>
+            <developerName>instruction0_179ak000002EXKl</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H59o</masterLabel>
+            <masterLabel>instruction0_179ak000002EXKl</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -48,15 +48,15 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>verification_16jVZ000000BVOf</fullName>
+        <fullName>verification_16jak000001QEbR</fullName>
         <canEscalate>false</canEscalate>
         <description>Verification topic with latch management</description>
-        <developerName>verification_16jVZ000000BVOf</developerName>
+        <developerName>verification_16jak000001QEbR</developerName>
         <genAiPluginInstructions>
             <description>This agent tests the latch variable pattern.</description>
-            <developerName>instruction0_179VZ000000H59m</developerName>
+            <developerName>instruction0_179ak000002EXKk</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H59m</masterLabel>
+            <masterLabel>instruction0_179ak000002EXKk</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -65,20 +65,20 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>done_16jVZ000000BVOf</fullName>
+        <fullName>topic_selector_16jak000001QEbR</fullName>
         <canEscalate>false</canEscalate>
-        <description>Validation complete</description>
-        <developerName>done_16jVZ000000BVOf</developerName>
+        <description>Routes based on latch state</description>
+        <developerName>topic_selector_16jak000001QEbR</developerName>
         <genAiPluginInstructions>
             <description>This agent tests the latch variable pattern.</description>
-            <developerName>instruction0_179VZ000000H59n</developerName>
+            <developerName>instruction0_179ak000002EXKj</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H59n</masterLabel>
+            <masterLabel>instruction0_179ak000002EXKj</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
-        <localDeveloperName>done</localDeveloperName>
-        <masterLabel>Done</masterLabel>
+        <localDeveloperName>topic_selector</localDeveloperName>
+        <masterLabel>Topic Selector</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <masterLabel>Validation: Latch Pattern</masterLabel>

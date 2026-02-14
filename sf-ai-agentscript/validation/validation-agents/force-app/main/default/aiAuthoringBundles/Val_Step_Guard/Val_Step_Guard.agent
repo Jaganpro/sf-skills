@@ -1,0 +1,60 @@
+# Val_Step_Guard - Tests step variable topic re-entry pattern
+# Purpose: Verify step counter guards work to prevent topic selector re-routing
+#
+# Tests:
+#   ✓ Step counter variable (mutable number)
+#   ✓ Guard condition in start_agent (if step > 0, re-enter workflow)
+#   ✓ Step increment within workflow topic
+#   ✓ Workflow-active boolean flag
+#
+# SKILL.md Section: Topic Selector Re-Entry Behavior (Section 2.2 of v1.9.0 audit)
+
+system:
+   messages:
+      welcome: "Step guard validation ready."
+      error: "Step guard validation error."
+   instructions: "This agent tests step counter guards for topic re-entry protection."
+
+config:
+   agent_name: "Val_Step_Guard"
+   agent_label: "Validation: Step Guard"
+   description: "Tests step counter guard pattern for topic re-entry"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+variables:
+   current_step: mutable number = 0
+   workflow_active: mutable boolean = False
+
+start_agent entry:
+   description: "Entry with step guard"
+   reasoning:
+      instructions: ->
+         if @variables.current_step > 0:
+            transition to @topic.workflow
+         | How can I help you today?
+      actions:
+         start_workflow: @utils.transition to @topic.workflow
+            description: "Begin workflow"
+
+topic workflow:
+   description: "Multi-step workflow with step tracking"
+   reasoning:
+      instructions: ->
+         set @variables.workflow_active = True
+         set @variables.current_step = @variables.current_step + 1
+         if @variables.current_step >= 3:
+            | Workflow complete after {!@variables.current_step} steps.
+            set @variables.workflow_active = False
+         else:
+            | Processing step {!@variables.current_step}.
+      actions:
+         finish: @utils.transition to @topic.done
+            description: "Complete workflow"
+            available when @variables.current_step >= 3
+
+topic done:
+   description: "Workflow finished"
+   reasoning:
+      instructions: |
+         Step guard validation successful.
+         Confirmed: step counter prevents topic selector re-routing during workflow.

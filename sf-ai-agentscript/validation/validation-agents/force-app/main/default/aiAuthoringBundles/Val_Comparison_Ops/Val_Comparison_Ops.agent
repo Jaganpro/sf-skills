@@ -22,7 +22,7 @@ config:
    agent_name: "Val_Comparison_Ops"
    agent_label: "Validation: Comparison Operators"
    description: "Tests comparison and logical operators"
-   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
 
 variables:
    score: mutable number = 50

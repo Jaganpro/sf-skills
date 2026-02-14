@@ -19,7 +19,7 @@ config:
    agent_name: "Val_Label_Property"
    agent_label: "Validation: Label Property"
    description: "Confirms label property is NOT valid in Agent Script"
-   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
 
 topic main:
    # NOTE: label: is NOT valid on topics or actions

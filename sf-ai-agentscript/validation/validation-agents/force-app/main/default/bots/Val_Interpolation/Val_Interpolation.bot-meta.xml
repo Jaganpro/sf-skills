@@ -7,7 +7,7 @@
         <name>Val_Interpolation</name>
     </botMlDomain>
     <botSource>None</botSource>
-    <botUser>home_furnishing_agent@00dvz000004evdp1379858245.ext</botUser>
+    <botUser>multistepworkflows@00dak00000gdhgd1068670160.ext</botUser>
     <description>Tests variable injection in strings</description>
     <label>Validation: Interpolation</label>
     <logPrivateConversationData>false</logPrivateConversationData>

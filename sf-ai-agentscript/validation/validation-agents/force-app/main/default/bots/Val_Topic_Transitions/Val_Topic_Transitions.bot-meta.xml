@@ -7,7 +7,7 @@
         <name>Val_Topic_Transitions</name>
     </botMlDomain>
     <botSource>None</botSource>
-    <botUser>home_furnishing_agent@00dvz000004evdp1379858245.ext</botUser>
+    <botUser>multistepworkflows@00dak00000gdhgd1068670160.ext</botUser>
     <description>Tests @utils.transition permanent handoffs</description>
     <label>Validation: Topic Transitions</label>
     <logPrivateConversationData>false</logPrivateConversationData>

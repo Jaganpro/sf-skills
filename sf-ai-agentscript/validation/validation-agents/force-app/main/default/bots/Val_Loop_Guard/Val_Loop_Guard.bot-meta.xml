@@ -7,7 +7,7 @@
         <name>Val_Loop_Guard</name>
     </botMlDomain>
     <botSource>None</botSource>
-    <botUser>home_furnishing_agent@00dvz000004evdp1379858245.ext</botUser>
+    <botUser>multistepworkflows@00dak00000gdhgd1068670160.ext</botUser>
     <description>Tests iteration protection pattern</description>
     <label>Validation: Loop Guard</label>
     <logPrivateConversationData>false</logPrivateConversationData>

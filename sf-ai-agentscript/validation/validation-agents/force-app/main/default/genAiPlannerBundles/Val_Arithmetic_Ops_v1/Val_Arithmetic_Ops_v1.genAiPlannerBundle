@@ -2,24 +2,41 @@
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Tests addition and subtraction operators</description>
     <localTopicLinks>
-        <genAiPluginName>done_16jVZ000000BVID</genAiPluginName>
+        <genAiPluginName>done_16jak000001QEUz</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>entry_16jVZ000000BVID</genAiPluginName>
+        <genAiPluginName>entry_16jak000001QEUz</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>test_arithmetic_16jVZ000000BVID</genAiPluginName>
+        <genAiPluginName>test_arithmetic_16jak000001QEUz</genAiPluginName>
     </localTopicLinks>
     <localTopics>
-        <fullName>test_arithmetic_16jVZ000000BVID</fullName>
+        <fullName>done_16jak000001QEUz</fullName>
         <canEscalate>false</canEscalate>
-        <description>Test arithmetic operations</description>
-        <developerName>test_arithmetic_16jVZ000000BVID</developerName>
+        <description>Validation complete</description>
+        <developerName>done_16jak000001QEUz</developerName>
         <genAiPluginInstructions>
             <description>This agent tests arithmetic operators.</description>
-            <developerName>instruction0_179VZ000000H53J</developerName>
+            <developerName>instruction0_179ak000002EXEJ</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H53J</masterLabel>
+            <masterLabel>instruction0_179ak000002EXEJ</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>done</localDeveloperName>
+        <masterLabel>Done</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>test_arithmetic_16jak000001QEUz</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Test arithmetic operations</description>
+        <developerName>test_arithmetic_16jak000001QEUz</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests arithmetic operators.</description>
+            <developerName>instruction0_179ak000002EXEI</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXEI</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -28,37 +45,20 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>entry_16jVZ000000BVID</fullName>
+        <fullName>entry_16jak000001QEUz</fullName>
         <canEscalate>false</canEscalate>
         <description>Entry point</description>
-        <developerName>entry_16jVZ000000BVID</developerName>
+        <developerName>entry_16jak000001QEUz</developerName>
         <genAiPluginInstructions>
             <description>This agent tests arithmetic operators.</description>
-            <developerName>instruction0_179VZ000000H53K</developerName>
+            <developerName>instruction0_179ak000002EXEH</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H53K</masterLabel>
+            <masterLabel>instruction0_179ak000002EXEH</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
         <localDeveloperName>entry</localDeveloperName>
         <masterLabel>Entry</masterLabel>
-        <pluginType>Topic</pluginType>
-    </localTopics>
-    <localTopics>
-        <fullName>done_16jVZ000000BVID</fullName>
-        <canEscalate>false</canEscalate>
-        <description>Validation complete</description>
-        <developerName>done_16jVZ000000BVID</developerName>
-        <genAiPluginInstructions>
-            <description>This agent tests arithmetic operators.</description>
-            <developerName>instruction0_179VZ000000H53L</developerName>
-            <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H53L</masterLabel>
-            <sortOrder>1</sortOrder>
-        </genAiPluginInstructions>
-        <language>en_US</language>
-        <localDeveloperName>done</localDeveloperName>
-        <masterLabel>Done</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <masterLabel>Validation: Arithmetic Operators</masterLabel>

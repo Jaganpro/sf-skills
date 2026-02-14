@@ -2,61 +2,27 @@
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Tests @utils.transition permanent handoffs</description>
     <localTopicLinks>
-        <genAiPluginName>done_16jVZ000000BVN3</genAiPluginName>
+        <genAiPluginName>done_16jak000001QEZp</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>entry_16jVZ000000BVN3</genAiPluginName>
+        <genAiPluginName>entry_16jak000001QEZp</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>step_one_16jVZ000000BVN3</genAiPluginName>
+        <genAiPluginName>step_one_16jak000001QEZp</genAiPluginName>
     </localTopicLinks>
     <localTopicLinks>
-        <genAiPluginName>step_two_16jVZ000000BVN3</genAiPluginName>
+        <genAiPluginName>step_two_16jak000001QEZp</genAiPluginName>
     </localTopicLinks>
     <localTopics>
-        <fullName>step_one_16jVZ000000BVN3</fullName>
-        <canEscalate>false</canEscalate>
-        <description>First step in transition chain</description>
-        <developerName>step_one_16jVZ000000BVN3</developerName>
-        <genAiPluginInstructions>
-            <description>This agent tests topic transitions.</description>
-            <developerName>instruction0_179VZ000000H589</developerName>
-            <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H589</masterLabel>
-            <sortOrder>1</sortOrder>
-        </genAiPluginInstructions>
-        <language>en_US</language>
-        <localDeveloperName>step_one</localDeveloperName>
-        <masterLabel>Step One</masterLabel>
-        <pluginType>Topic</pluginType>
-    </localTopics>
-    <localTopics>
-        <fullName>step_two_16jVZ000000BVN3</fullName>
-        <canEscalate>false</canEscalate>
-        <description>Second step in transition chain</description>
-        <developerName>step_two_16jVZ000000BVN3</developerName>
-        <genAiPluginInstructions>
-            <description>This agent tests topic transitions.</description>
-            <developerName>instruction0_179VZ000000H58B</developerName>
-            <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H58B</masterLabel>
-            <sortOrder>1</sortOrder>
-        </genAiPluginInstructions>
-        <language>en_US</language>
-        <localDeveloperName>step_two</localDeveloperName>
-        <masterLabel>Step Two</masterLabel>
-        <pluginType>Topic</pluginType>
-    </localTopics>
-    <localTopics>
-        <fullName>entry_16jVZ000000BVN3</fullName>
+        <fullName>entry_16jak000001QEZp</fullName>
         <canEscalate>false</canEscalate>
         <description>Entry point</description>
-        <developerName>entry_16jVZ000000BVN3</developerName>
+        <developerName>entry_16jak000001QEZp</developerName>
         <genAiPluginInstructions>
             <description>This agent tests topic transitions.</description>
-            <developerName>instruction0_179VZ000000H58C</developerName>
+            <developerName>instruction0_179ak000002EXJ7</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H58C</masterLabel>
+            <masterLabel>instruction0_179ak000002EXJ7</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
@@ -65,20 +31,54 @@
         <pluginType>Topic</pluginType>
     </localTopics>
     <localTopics>
-        <fullName>done_16jVZ000000BVN3</fullName>
+        <fullName>done_16jak000001QEZp</fullName>
         <canEscalate>false</canEscalate>
         <description>Final step - validation complete</description>
-        <developerName>done_16jVZ000000BVN3</developerName>
+        <developerName>done_16jak000001QEZp</developerName>
         <genAiPluginInstructions>
             <description>This agent tests topic transitions.</description>
-            <developerName>instruction0_179VZ000000H58A</developerName>
+            <developerName>instruction0_179ak000002EXJA</developerName>
             <language>en_US</language>
-            <masterLabel>instruction0_179VZ000000H58A</masterLabel>
+            <masterLabel>instruction0_179ak000002EXJA</masterLabel>
             <sortOrder>1</sortOrder>
         </genAiPluginInstructions>
         <language>en_US</language>
         <localDeveloperName>done</localDeveloperName>
         <masterLabel>Done</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>step_two_16jak000001QEZp</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Second step in transition chain</description>
+        <developerName>step_two_16jak000001QEZp</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests topic transitions.</description>
+            <developerName>instruction0_179ak000002EXJ9</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXJ9</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>step_two</localDeveloperName>
+        <masterLabel>Step Two</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>step_one_16jak000001QEZp</fullName>
+        <canEscalate>false</canEscalate>
+        <description>First step in transition chain</description>
+        <developerName>step_one_16jak000001QEZp</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests topic transitions.</description>
+            <developerName>instruction0_179ak000002EXJ8</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXJ8</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>step_one</localDeveloperName>
+        <masterLabel>Step One</masterLabel>
         <pluginType>Topic</pluginType>
     </localTopics>
     <masterLabel>Validation: Topic Transitions</masterLabel>

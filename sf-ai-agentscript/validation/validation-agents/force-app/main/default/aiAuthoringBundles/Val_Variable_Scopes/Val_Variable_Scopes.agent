@@ -20,7 +20,7 @@ config:
    agent_name: "Val_Variable_Scopes"
    agent_label: "Validation: Variable Scopes"
    description: "Tests variable namespaces and types"
-   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
 
 variables:
    text_var: mutable string = "initial"

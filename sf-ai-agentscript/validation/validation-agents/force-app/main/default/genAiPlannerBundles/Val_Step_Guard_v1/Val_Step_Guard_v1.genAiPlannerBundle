@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Tests step counter guard pattern for topic re-entry</description>
+    <localTopicLinks>
+        <genAiPluginName>done_16jak000001QEpx</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001QEpx</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>workflow_16jak000001QEpx</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>done_16jak000001QEpx</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Workflow finished</description>
+        <developerName>done_16jak000001QEpx</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests step counter guards for topic re-entry protection.</description>
+            <developerName>instruction0_179ak000002EXat</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXat</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>done</localDeveloperName>
+        <masterLabel>Done</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>workflow_16jak000001QEpx</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Multi-step workflow with step tracking</description>
+        <developerName>workflow_16jak000001QEpx</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests step counter guards for topic re-entry protection.</description>
+            <developerName>instruction0_179ak000002EXas</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXas</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>workflow</localDeveloperName>
+        <masterLabel>Workflow</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001QEpx</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry with step guard</description>
+        <developerName>entry_16jak000001QEpx</developerName>
+        <genAiPluginInstructions>
+            <description>This agent tests step counter guards for topic re-entry protection.</description>
+            <developerName>instruction0_179ak000002EXar</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002EXar</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Step Guard</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

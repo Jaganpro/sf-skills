@@ -20,7 +20,7 @@ config:
    agent_name: "Val_Loop_Guard"
    agent_label: "Validation: Loop Guard"
    description: "Tests iteration protection pattern"
-   default_agent_user: "home_furnishing_agent@00dvz000004evdp1379858245.ext"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
 
 variables:
    iterations: mutable number = 0

@@ -1,0 +1,56 @@
+# Val_Multiple_Available_When - Tests multiple available when clauses on same action
+# Purpose: Determine if multiple available when clauses are valid on a single action
+#
+# Tests:
+#   ✓ Two available when clauses on the same action
+#   ✓ Both conditions must be true for action to be available
+#
+# CRITICAL TDD TEST:
+#   If PASS: Update SKILL.md to document that multiple available when IS supported
+#   If FAIL: Fix multi-step-workflow template to use compound conditions (and)
+#
+# SKILL.md Section: Action Properties - available when
+
+system:
+   messages:
+      welcome: "Multiple available-when validation ready."
+      error: "Multiple available-when validation error."
+   instructions: "This agent tests whether multiple available when clauses work on a single action."
+
+config:
+   agent_name: "Val_Multiple_Available_When"
+   agent_label: "Validation: Multiple Available When"
+   description: "Tests multiple available when clauses on a single action"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+variables:
+   step_1_done: mutable boolean = False
+   step_2_done: mutable boolean = False
+
+topic main:
+   description: "Test multiple available when on one action"
+   reasoning:
+      instructions: ->
+         set @variables.step_1_done = True
+         | Step 1 complete. Testing multiple available when clauses.
+      actions:
+         advance: @utils.transition to @topic.next
+            description: "Only available when both conditions met"
+            available when @variables.step_1_done == True
+            available when @variables.step_2_done == False
+
+topic next:
+   description: "Second topic for validation"
+   reasoning:
+      instructions: |
+         Multiple available when validation PASSED.
+         Confirmed: Two available when clauses on a single action are valid.
+
+start_agent entry:
+   description: "Entry point"
+   reasoning:
+      instructions: |
+         Begin multiple available when validation.
+      actions:
+         begin: @utils.transition to @topic.main
+            description: "Start validation"
