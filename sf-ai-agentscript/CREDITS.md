@@ -23,9 +23,9 @@ This skill was developed from comprehensive documentation screenshots covering 8
 
 ### Official Salesforce Documentation
 
-- [Agent Script Documentation](https://developer.salesforce.com/docs/einstein/genai/guide/agent-script.html)
+- [Agent Script Documentation](https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html)
 - [Agentforce Builder Guide](https://help.salesforce.com/s/articleView?id=sf.copilot_builder_overview.htm)
-- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html)
+- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/ai/agentforce/guide/atlas-reasoning-engine.html)
 - [Salesforce CLI Agent Commands](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_agent_commands_unified.htm)
 
 ### Community Contributions
@@ -33,6 +33,7 @@ This skill was developed from comprehensive documentation screenshots covering 8
 | Source | Contribution |
 |--------|-------------|
 | [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
+| @kunello ([PR #20](https://github.com/Jaganpro/sf-skills/pull/20)) | Prompt template `"Input:fieldName"` binding syntax, context-aware description overrides, `{!@actions.X}` instruction reference patterns, callback behavior notes, error pattern catalog |
 | Hua Xu (Salesforce APAC FDE team) | "Open Gate" pattern: 3-variable state machine for auth-gated topic routing with LLM bypass and EXIT_PROTOCOL |
 
 ### Related Skills
@@ -67,4 +68,4 @@ MIT License - See [LICENSE](LICENSE)
 
 ---
 
-*Last updated: January 2026*
+*Last updated: February 2026*

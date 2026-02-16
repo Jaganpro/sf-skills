@@ -212,6 +212,39 @@
 
 ---
 
+### Issue 15: Action definitions without I/O schemas cause "Internal Error" on publish
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-02-16
+- **Affects**: `sf agent publish authoring-bundle` with topic-level action definitions
+- **Symptom**: `sf agent publish` returns "Internal Error, try again later" when topic-level action definitions have `target:` but no `inputs:`/`outputs:` blocks. LSP + CLI validation both PASS — error is server-side compilation only.
+- **Root Cause**: The server-side compiler needs complete type contracts (I/O schemas) to resolve `flow://` and `apex://` action targets. Without them, the compiler cannot generate the invocation bindings.
+- **Workaround**: Always include `inputs:` and `outputs:` blocks in action definitions, even if the target has no required inputs (use empty blocks or document all parameters). Previously misattributed as a "flow:// platform bug" — adding I/O schemas resolves the issue for both `flow://` and `apex://` targets.
+- **Open Questions**: Will the compiler be updated to infer I/O schemas from the target's metadata?
+
+---
+
+### Issue 16: `connections:` block not GA
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-16
+- **Affects**: Agent Script `connections:` block for escalation routing
+- **Symptom**: CLI validation rejects `connections:` block on some orgs with `SyntaxError: Invalid syntax after conditional statement`. The feature only exists in the `future_recipes/` directory of `agent-script-recipes`, not in production recipes.
+- **Root Cause**: The `connections:` block appears to be a pre-GA feature that is not enabled on all orgs.
+- **Workaround**: Configure escalation routing via GenAiPlannerBundle XML metadata instead. Deploy the `GenAiPlannerBundle` with connection configuration and use `@utils.escalate` in Agent Script.
+- **Open Questions**: When will `connections:` be GA across all orgs?
+
+---
+
+### Issue 17: `EinsteinAgentApiChannel` surfaceType not available on all orgs
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-16
+- **Affects**: Agent Runtime API channel enablement via `plannerSurfaces` metadata
+- **Symptom**: Adding `plannerSurfaces` with `surfaceType: EinsteinAgentApiChannel` causes deployment errors on some orgs. Valid surfaceType values on tested orgs: `Messaging`, `CustomerWebClient`, `Telephony`, `NextGenChat`.
+- **Root Cause**: The `EinsteinAgentApiChannel` surfaceType may require specific org features or licenses that are not universally available.
+- **Workaround**: Use `CustomerWebClient` for Agent Runtime API / CLI testing. This surfaceType is available on all tested orgs and enables API access.
+- **Open Questions**: Is `EinsteinAgentApiChannel` limited to specific editions or feature flags?
+
+---
+
 ## Resolved Issues
 
 *(Move issues here when they are fixed by Salesforce or a confirmed workaround is validated.)*
@@ -236,4 +269,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-02-14*
+*Last updated: 2026-02-16*

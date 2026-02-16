@@ -82,7 +82,7 @@ topic order_lookup:
    reasoning:
       instructions: ->
          # Post-action check (if order was already looked up)
-         if @variables.order_status <> "":
+         if @variables.order_status != "":
             | Your order status is: {!@variables.order_status}
             | Estimated delivery: {!@variables.estimated_delivery}
 

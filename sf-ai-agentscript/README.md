@@ -16,7 +16,7 @@
 
 | Requirement | Value |
 |-------------|-------|
-| API Version | 62.0+ |
+| API Version | 65.0+ |
 | License | Agentforce |
 | Einstein Agent User | Required in org |
 | SF CLI | v2+ with agent commands |
@@ -72,11 +72,12 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 
 ```yaml
 # Block structure
-system:        # Required: Messages and instructions
 config:        # Required: Agent metadata
 variables:     # Optional: State management
-topic:         # Required: Conversation handlers
+system:        # Required: Messages and instructions
+language:      # Optional: Locale settings
 start_agent:   # Required: Entry point
+topic:         # Required: Conversation handlers
 
 # Instruction patterns
 instructions: ->           # Arrow syntax for expressions
@@ -110,9 +111,9 @@ Create Flows   Write agent         Test routing           Deploy to org
 
 ## Official Resources
 
-- [Agent Script Documentation](https://developer.salesforce.com/docs/einstein/genai/guide/agent-script.html)
+- [Agent Script Documentation](https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html)
 - [Agentforce Builder Guide](https://help.salesforce.com/s/articleView?id=sf.copilot_builder_overview.htm)
-- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html)
+- [Atlas Reasoning Engine](https://developer.salesforce.com/docs/ai/agentforce/guide/atlas-reasoning-engine.html)
 
 ## License
 

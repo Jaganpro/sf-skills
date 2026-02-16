@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "1.9.0"
+  version: "2.0.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -70,8 +70,8 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 |------------|----------|-----------|
 | **No `else if` keyword; no nested if** | `else if x:` or `else:` + nested `if` (both invalid) | `if x and y:` (compound), or flatten to sequential ifs |
 | **No top-level `actions:` block** | `actions:` at root level | Actions only inside `topic.reasoning.actions:` |
-| **No `inputs:`/`outputs:` in actions** | `inputs:` block inside action | Use `with` for inputs, `set` for outputs |
-| **Multiple `available when` supported** | *(previously listed as error)* | `available when A` + `available when B` on same action is valid (TDD validated 2026-02-14) |
+| **No `inputs:`/`outputs:` in action INVOCATIONS (Level 2)** | `inputs:` block inside `reasoning.actions:` invocation | Use `with`/`set` in `reasoning.actions:` invocations. The topic-level `actions:` definitions DO use `inputs:`/`outputs:` blocks. |
+| **Multiple `available when` supported** | *(previously listed as error)* | `available when A` + `available when B` on same action is valid (TDD validated 2026-02-14). **Org-dependent**: compiles on AgentforceTesting but REJECTED on some orgs with "Duplicate 'available when' clause." Use compound `and` conditions for portability. |
 | **Avoid reserved action names** | `escalate: @utils.escalate` | `escalate_now: @utils.escalate` |
 | **`...` is slot-filling only** | `my_var: mutable string = ...` | `my_var: mutable string = ""` |
 | **No defaults on linked vars** | `id: linked string = ""` | `id: linked string` + `source:` |
@@ -727,6 +727,16 @@ topic order_status:
             set @variables.case_subject = @outputs.subject
 ```
 
+> **⚠️ PRODUCTION INSIGHT: I/O Schemas Are REQUIRED for Publish**
+>
+> Action definitions with only `description:` and `target:` (no `inputs:`/`outputs:`)
+> will PASS LSP and CLI validation but FAIL server-side compilation with "Internal Error."
+> Always include complete I/O schemas in Level 1 action definitions.
+>
+> This was previously misattributed to a "flow:// target bug." The actual root cause
+> is missing type contracts — adding `inputs:` and `outputs:` blocks resolves the issue
+> for both `flow://` and `apex://` targets.
+
 > ⚠️ **Common Error**: `ValidationError: Tool target 'X' is not an action definition` — This means either:
 > 1. The action is referenced in `reasoning.actions:` via `@actions.X` but `X` is not defined in the topic's `actions:` block, OR
 > 2. The `target:` value points to a Flow/Apex class that doesn't exist in the org
@@ -1158,8 +1168,8 @@ topic refund:
 | `SyntaxError: cannot mix spaces and tabs` | Mixed indentation | Use consistent spacing throughout |
 | `SyntaxError: Unexpected 'if'` | Nested if statements | Use compound condition: `if A and B:` or flatten to sequential ifs |
 | `SyntaxError: Unexpected 'actions'` | Top-level actions block | Move actions inside `topic.reasoning.actions:` |
-| `SyntaxError: Unexpected 'inputs'` | `inputs:` block in action | Use `with param=value` syntax instead |
-| `SyntaxError: Unexpected 'outputs'` | `outputs:` block in action | Use `set @variables.x = @outputs.y` instead |
+| `SyntaxError: Unexpected 'inputs'` | `inputs:` in `reasoning.actions:` invocation (Level 2) | Use `with param=value` in invocations. `inputs:` IS valid in topic-level `actions:` definitions (Level 1). |
+| `SyntaxError: Unexpected 'outputs'` | `outputs:` in `reasoning.actions:` invocation (Level 2) | Use `set @variables.x = @outputs.y` in invocations. `outputs:` IS valid in topic-level `actions:` definitions (Level 1). |
 | `SyntaxError: Unexpected 'set'` | `set` after `@utils.setVariables` | Use Helper Topic Pattern (set in `instructions: ->`) |
 | ~~`Duplicate 'available when' clause`~~ | ~~Multiple guards on action~~ | **DISPROVED (v1.9.0)**: Multiple `available when` IS valid. No need to combine. |
 | `Unexpected 'escalate'` | Reserved action name | Rename to `escalate_now` or `escalate_to_human` |
@@ -1396,6 +1406,7 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.0 | 2026-02-16 | **Production learnings audit**: Fixed `<>` operator references in 3 files (TDD v1.9.0 proved invalid, only `!=` compiles). Fixed config block field names in syntax-reference.md (`agent_name`→`developer_name`, `description`→`agent_description`, added `agent_type`). Removed `label:` as valid property in actions-reference.md (TDD: `Unexpected 'label'` everywhere). Fixed `description` on `@utils.transition` claim in patterns-quick-ref.md (IS valid, confirmed by TDD + 15-topic production agent). Fixed `run` keyword scope documentation (works in reasoning.actions/instructions, NOT lifecycle blocks). Fixed SOMA delegation mislabel in patterns-quick-ref.md. Clarified `inputs:`/`outputs:` constraint applies to Level 2 invocations only (Level 1 definitions DO use them). Added 3 new known issues: I/O schemas required for publish (Issue 15), `connections:` block not GA (Issue 16), `EinsteinAgentApiChannel` surfaceType not available on all orgs (Issue 17). Added production insight: missing I/O schemas cause "Internal Error" (not flow:// bug). Added org-dependent note for multiple `available when` clauses. Added Two-Level Action System section to syntax-reference.md. Added lifecycle hooks syntax to syntax-reference.md. Fixed README API version (62.0→65.0+), documentation URLs, block order. Added @kunello to CREDITS.md. |
 | 1.9.0 | 2026-02-14 | **TDD Validation v1.9.0 (16/16 PASS against AgentforceTesting)**: 3 new validation agents (Val_Else_Nested_If, Val_Step_Guard, Val_Multiple_Available_When). TDD Finding 1: `else:` + nested `if` does NOT compile — removed Approach 3, updated nesting rules to "Two Valid Approaches". TDD Finding 2: `<>` not-equal operator NOT valid — removed from operator table, only `!=` works. TDD Finding 3: Multiple `available when` clauses ARE valid — removed false "One per action" constraint, updated Common Issues table. Updated frontmatter: version 1.9.0, validation_agents 16, validation_org AgentforceTesting, validate_by 2026-03-16. Updated VALIDATION.md with full 16-agent results and 3 TDD findings. |
 | 1.8.0 | 2026-02-12 | **Gap analysis audit**: Added 3 new resource files: `resources/official-sources.md` (14 primary doc URLs + 8 recipe URLs + diagnostic decision tree), `resources/known-issues.md` (5 open platform issues with structured tracking), `resources/migration-guide.md` (Builder UI → Agent Script mapping table + side-by-side examples). Added Verification Protocol section (triggers + decision tree for fetching official docs). Added Self-Improvement protocol (editable resources, session-based learning). Updated Official Resources section to point to full registry. Added `!=` as alias for `<>` in comparison operators (SKILL.md + syntax-reference.md). Updated nested `if` constraint to document `else:` + nested `if` pattern (pending TDD validation). Added namespace prefix warning for `apex://` targets in actions-reference.md. Updated Document Map with 3 new entries. Added aquivalabs/my-org-butler to Sources & Acknowledgments and CREDITS.md. |
 | 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |

@@ -61,17 +61,17 @@ system:
 
 ```yaml
 config:
-  agent_name: "RefundAgent"
-  agent_label: "Refund Agent"
-  description: "Handles refund requests"
+  developer_name: "refund_agent"
+  agent_description: "Handles refund requests"
+  agent_type: "AgentforceServiceAgent"
   default_agent_user: "admin@yourorg.com"
 ```
 
 | Field | Required | Purpose |
 |-------|----------|---------|
-| `agent_name` | ✅ Yes | Internal identifier (snake_case, no spaces) |
-| `agent_label` | ✅ Yes | Display name in UI |
-| `description` | ✅ Yes | Agent description |
+| `developer_name` | ✅ Yes | Internal identifier (must match folder name, case-sensitive) |
+| `agent_description` | ✅ Yes | Agent's purpose description |
+| `agent_type` | ✅ Yes | `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
 | `default_agent_user` | ⚠️ **REQUIRED** | Must be valid Einstein Agent User |
 
 > ⚠️ **Critical**: `default_agent_user` must exist in the org with the "Einstein Agent User" profile. Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`
@@ -250,6 +250,86 @@ actions:
     available when @variables.is_authorized == True
 ```
 
+### Two-Level Action System
+
+Agent Script uses a two-level system for actions. Understanding this distinction is critical:
+
+```
+Level 1: ACTION DEFINITION (in topic's `actions:` block)
+   → Has `target:`, `inputs:`, `outputs:`, `description:`
+   → Specifies WHAT to call (e.g., "flow://GetOrderStatus")
+
+Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
+   → References Level 1 via `@actions.name`
+   → Specifies HOW to call it (`with`, `set` clauses)
+   → Does NOT use `inputs:`/`outputs:` (use `with`/`set` instead)
+```
+
+**Complete Example:**
+```yaml
+topic order_lookup:
+   description: "Look up order details"
+
+   # Level 1: DEFINE the action (with target + I/O schemas)
+   actions:
+      get_order:
+         description: "Retrieves order information by ID"
+         inputs:
+            order_id: string
+               description: "Customer's order number"
+         outputs:
+            status: string
+               description: "Current order status"
+         target: "flow://Get_Order_Details"
+
+   reasoning:
+      instructions: |
+         Help the customer check their order status.
+      # Level 2: INVOKE the action (with/set, NOT inputs/outputs)
+      actions:
+         lookup: @actions.get_order
+            with order_id = ...
+            set @variables.order_status = @outputs.status
+```
+
+> ⚠️ **I/O schemas are REQUIRED for publish**: Action definitions with only `description:` and `target:` (no `inputs:`/`outputs:`) will PASS LSP and CLI validation but FAIL server-side compilation with "Internal Error." Always include complete I/O schemas in Level 1 definitions.
+
+---
+
+### Lifecycle Hooks: `before_reasoning:` and `after_reasoning:`
+
+Lifecycle hooks enable deterministic pre/post-processing around LLM reasoning. They are FREE (no credit cost).
+
+```yaml
+topic main:
+   description: "Topic with lifecycle hooks"
+
+   # BEFORE: Runs deterministically BEFORE LLM sees instructions
+   before_reasoning:
+      # Content goes DIRECTLY here (NO instructions: wrapper!)
+      set @variables.turn_count = @variables.turn_count + 1
+      if @variables.needs_redirect == True:
+         transition to @topic.redirect
+
+   # LLM reasoning phase
+   reasoning:
+      instructions: ->
+         | Turn {!@variables.turn_count}: How can I help?
+
+   # AFTER: Runs deterministically AFTER LLM finishes reasoning
+   after_reasoning:
+      # Content goes DIRECTLY here (NO instructions: wrapper!)
+      set @variables.interaction_logged = True
+```
+
+**Key Rules:**
+- Content goes **directly** under the block (NO `instructions:` wrapper)
+- Supports `set`, `if`, `transition` statements
+- `run` does NOT work reliably in lifecycle blocks (use it in `reasoning.actions:` or `instructions: ->` instead)
+- Both hooks are FREE (no credit cost) — use for data prep, logging, cleanup
+
+---
+
 ### Action Target Protocols
 
 **Core Targets (Validated)**
@@ -334,9 +414,9 @@ system:
   instructions: "You are a helpful customer service agent for Pronto Delivery."
 
 config:
-  agent_name: "pronto_refund_agent"
-  agent_label: "Pronto Refund Agent"
-  description: "Handles customer refund requests with churn risk assessment"
+  developer_name: "pronto_refund_agent"
+  agent_description: "Handles customer refund requests with churn risk assessment"
+  agent_type: "AgentforceServiceAgent"
   default_agent_user: "agent_user@myorg.com"
 
 variables:
@@ -431,8 +511,7 @@ start_agent topic_selector:
 | Operator | Description | Example |
 |----------|-------------|---------|
 | `==` | Equal to | `if @variables.status == "active":` |
-| `<>` | Not equal to | `if @variables.status <> "closed":` |
-| `!=` | Not equal to (alias for `<>`) | `if @variables.status != "closed":` |
+| `!=` | Not equal to | `if @variables.status != "closed":` |
 | `<` | Less than | `if @variables.count < 10:` |
 | `<=` | Less than or equal | `if @variables.count <= 5:` |
 | `>` | Greater than | `if @variables.risk > 80:` |
@@ -440,7 +519,7 @@ start_agent topic_selector:
 | `is` | Identity check | `if @variables.data is None:` |
 | `is not` | Negated identity check | `if @variables.data is not None:` |
 
-> **Note**: Both `<>` and `!=` are valid for "not equal" comparisons. Official Salesforce docs and community patterns use both interchangeably.
+> **Note**: Use `!=` for not-equal comparisons. The `<>` operator does NOT compile (TDD validated v1.9.0).
 
 ### Logical Operators
 
@@ -481,7 +560,7 @@ Agent Script expressions use a sandboxed subset of Python. Not all Python operat
 | Category | Operations |
 |----------|-----------|
 | Arithmetic | `+`, `-` |
-| Comparison | `==`, `<>`, `!=`, `<`, `<=`, `>`, `>=`, `is`, `is not` |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=`, `is`, `is not` |
 | Logical | `and`, `or`, `not` |
 | Ternary | `x if condition else y` |
 | Built-in functions | `len()`, `max()`, `min()` |

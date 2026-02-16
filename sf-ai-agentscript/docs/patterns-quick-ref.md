@@ -135,9 +135,12 @@ Does the conversation return to original agent?
 │
 ├─► Yes, specialist handles sub-task
 │   └─► DELEGATION
-│       `@utils.transition to @topic.specialist`
+│       `@topic.specialist` (in reasoning.actions)
 │
 └─► No, permanent transfer
+    ├─► To another topic?
+    │   └─► HANDOFF  `@utils.transition to @topic.X`
+    │
     ├─► To human?
     │   └─► `@utils.escalate`
     │
@@ -345,7 +348,7 @@ is_verified: mutable boolean = True   # CORRECT
 
 Execute code automatically before and after every reasoning step.
 
-> **⚠️ Deployment Note**: The `run` keyword in lifecycle blocks is **GenAiPlannerBundle only**. AiAuthoringBundle supports `before_reasoning` / `after_reasoning` with `set` statements, but NOT the `run` keyword.
+> **⚠️ Deployment Note**: The `run` keyword works in `reasoning.actions:` post-action blocks and `instructions: ->` blocks. It does NOT work reliably in `before_reasoning:` / `after_reasoning:` lifecycle blocks.
 
 ```agentscript
 topic conversation:
@@ -376,7 +379,7 @@ topic conversation:
 
 Chain deterministic follow-up actions using the `run` keyword.
 
-> **⚠️ Deployment Note**: The `run` keyword is **GenAiPlannerBundle only**. Agents using `run` will NOT be visible in Agentforce Studio.
+> **⚠️ Deployment Note**: The `run` keyword works in `reasoning.actions:` post-action blocks and `instructions: ->` blocks. It does NOT work reliably in `before_reasoning:` / `after_reasoning:` lifecycle blocks.
 
 ```agentscript
 process_order: @actions.create_order
@@ -591,13 +594,15 @@ set @variables.name = ...
 #### 2. Description on @utils.transition
 
 ```agentscript
-# ❌ WRONG
+# ✅ CORRECT - description IS valid on @utils.transition
 go_orders: @utils.transition to @topic.orders
-   description: "Route to orders"   # Fails!
+   description: "Route to orders"
 
-# ✅ CORRECT - No description
+# ✅ ALSO CORRECT - without description
 go_orders: @utils.transition to @topic.orders
 ```
+
+> **Note**: `description:` IS valid on `@utils.transition` (confirmed by TDD Val_Action_Properties and production 15-topic agent). Other properties like `label:`, `require_user_confirmation:`, and `include_in_progress_indicator:` are NOT valid on transitions.
 
 #### 3. Missing Description on @utils.escalate
 

@@ -88,7 +88,7 @@ Agent Script uses a safe subset of Python for expressions:
 **Allowed Operations:**
 | Category | Operators |
 |----------|-----------|
-| **Comparison** | `==`, `<>` (not-equal), `>`, `<`, `>=`, `<=` |
+| **Comparison** | `==`, `!=` (not-equal), `>`, `<`, `>=`, `<=` |
 | **Logical** | `and`, `or`, `not` |
 | **String** | `contains`, `startswith`, `endswith` |
 
@@ -270,7 +270,7 @@ topic knowledge_router:
             with query = ...
          search_standard_kb: @actions.search_standard_knowledge
             description: "Search standard support articles"
-            available when @variables.customer_tier <> "premium"
+            available when @variables.customer_tier != "premium"
             with query = ...
 ```
 

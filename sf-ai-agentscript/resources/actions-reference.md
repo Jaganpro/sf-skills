@@ -21,7 +21,6 @@ All actions in Agent Script support these properties:
 | `description` | String | Yes | Explains behavior for LLM decision-making |
 | `inputs` | Object | No | Input parameters and requirements |
 | `outputs` | Object | No | Return parameters |
-| `label` | String | No | Display name (auto-generated if omitted) |
 | `available_when` | Expression | No | Conditional availability for the LLM |
 | `require_user_confirmation` | Boolean | No | Ask user to confirm before execution |
 | `include_in_progress_indicator` | Boolean | No | Show progress indicator during execution |
@@ -41,7 +40,6 @@ All actions in Agent Script support these properties:
 actions:
    process_payment:
       description: "Processes payment for the order"
-      label: "Process Payment"
       require_user_confirmation: True    # Ask user before executing
       include_in_progress_indicator: True
       inputs:
@@ -443,7 +441,7 @@ connections:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `outbound_route_type` | String | Yes | **MUST be `"OmniChannelFlow"`** — only valid value |
+| `outbound_route_type` | String | Yes | **`"OmniChannelFlow"` is the only TDD-validated value.** SKILL.md mentions `"Queue"` and `"Skill"` but the `connections:` block itself is not GA (see known-issues.md Issue 16). |
 | `outbound_route_name` | String | Yes | API name of Omni-Channel Flow (must exist in org) |
 | `escalation_message` | String | Yes | Message shown to user during transfer |
 | `adaptive_response_allowed` | Boolean | No | Allow agent to adapt responses during escalation (default: False) |
