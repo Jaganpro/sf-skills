@@ -534,7 +534,7 @@ language:
 config:        # 1. Required: Agent metadata (developer_name, agent_type, default_agent_user)
 variables:     # 2. Optional: State management (mutable/linked)
 system:        # 3. Required: Global messages and instructions
-connections:   # 4. Optional: Escalation routing (Service Agents ONLY)
+connection:    # 4. Optional: Escalation routing — use `connection messaging:` (singular, NOT `connections:`)
 knowledge:     # 5. Optional: Knowledge base config
 language:      # 6. Optional: Locale settings
 start_agent:   # 7. Required: Entry point (exactly one)
@@ -746,40 +746,40 @@ topic order_status:
 **Agent Builder UI Path (GenAiPlannerBundle — different workflow):**
 If building agents through the Agent Builder UI (not Agent Script), you DO need GenAiFunction metadata. See `resources/actions-reference.md` for details.
 
-### Connection Block (Full Escalation Pattern)
+### Connection Block (Escalation Routing — Beta Feature)
 
-> ⚠️ **Service Agents Only**: The `connections:` block is only valid for `agent_type: "AgentforceServiceAgent"`. Employee Agents will fail with `Unexpected 'connections' block` error. Employee Agents do not support channel-based escalation routing.
+> ⚠️ **Service Agents Only**: The `connection` block is only valid for `agent_type: "AgentforceServiceAgent"`. Employee Agents do not support channel-based escalation routing.
 
+> **⚠️ CRITICAL SYNTAX**: Use `connection messaging:` (singular, NO wrapper block). The `connections:` (plural) wrapper from some docs/recipes does NOT compile. Each `connection <channel>:` is a standalone top-level block.
+
+> **⚠️ `outbound_route_name` requires `flow://` prefix**: Using a bare Flow API name (e.g., `"My_Flow"`) causes `ERROR_HTTP_404` on publish. Must use `"flow://My_Flow"` format.
+
+**Minimal form (no routing — just enables the channel):**
 ```yaml
-connections:
-   # Messaging channel escalation
-   connection messaging:
-      escalation_message: "One moment, I'm transferring our conversation to get you more help."
-      outbound_route_type: "OmniChannelFlow"
-      outbound_route_name: "<flow://Escalate_Messaging_To_Live_Agent>"
-      adaptive_response_allowed: False
-
-   # Voice channel escalation
-   connection voice:
-      escalation_message: "Please hold while I transfer you to a specialist."
-      outbound_route_type: "Queue"
-      outbound_route_name: "Support_Queue"
-      adaptive_response_allowed: True
-
-   # Web chat escalation
-   connection web:
-      escalation_message: "Connecting you with a live agent now."
-      outbound_route_type: "OmniChannelFlow"
-      outbound_route_name: "<flow://Web_Chat_Escalation>"
+connection messaging:
+   adaptive_response_allowed: True
 ```
+
+**Full form with escalation routing (production-validated on Vivint-DevInt, 2026-02-16):**
+```yaml
+connection messaging:
+   outbound_route_type: "OmniChannelFlow"
+   outbound_route_name: "flow://Route_from_Vivint_Virtual_Support"
+   escalation_message: "One moment while I connect you with a support specialist."
+   adaptive_response_allowed: False
+```
+
+**All-or-nothing rule**: When `outbound_route_type` is present, ALL three route properties are required (`outbound_route_type`, `outbound_route_name`, `escalation_message`). Omitting any one causes validation failure.
 
 **Key Properties:**
 | Property | Required | Description |
 |----------|----------|-------------|
-| `escalation_message` | ✅ | Message shown to user during handoff |
-| `outbound_route_type` | ✅ | `OmniChannelFlow`, `Queue`, or `Skill` |
-| `outbound_route_name` | ✅ | Flow API name or Queue name |
-| `adaptive_response_allowed` | ❌ | Allow LLM to adapt escalation message |
+| `outbound_route_type` | Conditional | `"OmniChannelFlow"`, `"Queue"`, or `"Skill"`. Required if routing is configured. |
+| `outbound_route_name` | Conditional | **Must use `flow://` prefix** for OmniChannelFlow (e.g., `"flow://My_Flow"`). Required with `outbound_route_type`. |
+| `escalation_message` | Conditional | Message shown to user during handoff. Required with `outbound_route_type`. |
+| `adaptive_response_allowed` | ✅ Always | Allow LLM to adapt escalation message. Only required property. |
+
+**Valid channel types**: `messaging`, `voice`, `web`
 
 ---
 

@@ -223,14 +223,17 @@
 
 ---
 
-### Issue 16: `connections:` block not GA
-- **Status**: OPEN
+### Issue 16: `connections:` (plural) wrapper block not valid — use `connection messaging:` (singular)
+- **Status**: RESOLVED
 - **Date Discovered**: 2026-02-16
-- **Affects**: Agent Script `connections:` block for escalation routing
-- **Symptom**: CLI validation rejects `connections:` block on some orgs with `SyntaxError: Invalid syntax after conditional statement`. The feature only exists in the `future_recipes/` directory of `agent-script-recipes`, not in production recipes.
-- **Root Cause**: The `connections:` block appears to be a pre-GA feature that is not enabled on all orgs.
-- **Workaround**: Configure escalation routing via GenAiPlannerBundle XML metadata instead. Deploy the `GenAiPlannerBundle` with connection configuration and use `@utils.escalate` in Agent Script.
-- **Open Questions**: When will `connections:` be GA across all orgs?
+- **Date Resolved**: 2026-02-16
+- **Affects**: Agent Script escalation routing configuration
+- **Symptom**: CLI validation rejects `connections:` (plural wrapper) block with `SyntaxError: Invalid syntax after conditional statement`.
+- **Root Cause**: The correct syntax is `connection messaging:` (singular, standalone top-level block) — NOT the `connections:` plural wrapper shown in some docs and `future_recipes/`. The `connection <channel>:` block is a Beta Feature available on production orgs.
+- **Resolution**: Use `connection messaging:` as a standalone block (no wrapper). Both minimal form (`adaptive_response_allowed` only) and full form (with `outbound_route_type`, `outbound_route_name`, `escalation_message`) are validated.
+- **CRITICAL**: `outbound_route_name` requires `flow://` prefix — bare API name causes `ERROR_HTTP_404` on publish. Correct format: `"flow://My_Flow_Name"`.
+- **All-or-nothing rule**: When `outbound_route_type` is present, all three route properties are required.
+- **Validated on**: Vivint-DevInt (Automated_Virtual_Assistant_BETA), 2026-02-16
 
 ---
 
