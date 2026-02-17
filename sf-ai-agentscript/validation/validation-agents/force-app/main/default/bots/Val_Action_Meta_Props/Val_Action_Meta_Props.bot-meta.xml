@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bot xmlns="http://soap.sforce.com/2006/04/metadata">
+    <agentDSLEnabled>true</agentDSLEnabled>
+    <agentType>EinsteinServiceAgent</agentType>
+    <botMlDomain>
+        <label>Validation: Action Metadata Properties</label>
+        <name>Val_Action_Meta_Props</name>
+    </botMlDomain>
+    <botSource>None</botSource>
+    <botUser>multistepworkflows@00dak00000gdhgd1068670160.ext</botUser>
+    <description>Tests action metadata properties on action definitions with targets</description>
+    <label>Validation: Action Metadata Properties</label>
+    <logPrivateConversationData>false</logPrivateConversationData>
+    <richContentEnabled>true</richContentEnabled>
+    <sessionTimeout>0</sessionTimeout>
+    <type>ExternalCopilot</type>
+</Bot>

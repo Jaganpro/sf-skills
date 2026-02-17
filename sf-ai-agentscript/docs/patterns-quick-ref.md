@@ -602,7 +602,7 @@ go_orders: @utils.transition to @topic.orders
 go_orders: @utils.transition to @topic.orders
 ```
 
-> **Note**: `description:` IS valid on `@utils.transition` (confirmed by TDD Val_Action_Properties and production 15-topic agent). Other properties like `label:`, `require_user_confirmation:`, and `include_in_progress_indicator:` are NOT valid on transitions.
+> **Note**: `description:` IS valid on `@utils.transition` (confirmed by TDD Val_Action_Properties and production 15-topic agent). Other properties like `label:`, `require_user_confirmation:`, and `include_in_progress_indicator:` are NOT valid on `@utils.transition` but ARE valid on action definitions with `target:` (TDD v2.2.0).
 
 #### 3. Missing Description on @utils.escalate
 

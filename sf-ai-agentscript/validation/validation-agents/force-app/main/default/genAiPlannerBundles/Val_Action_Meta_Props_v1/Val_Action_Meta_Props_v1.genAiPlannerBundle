@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Tests action metadata properties on action definitions with targets</description>
+    <localTopicLinks>
+        <genAiPluginName>action_meta_test_16jak000001QtjR</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001QtjR</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>action_meta_test_16jak000001QtjR</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Tests action-level metadata properties on a target-backed action</description>
+        <developerName>action_meta_test_16jak000001QtjR</developerName>
+        <genAiPluginInstructions>
+            <description>This agent validates action-level metadata properties on target-backed actions.</description>
+            <developerName>instruction0_179ak000002G1yH</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G1yH</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>test_action_179ak000002G1yH</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>test_action_179ak000002G1yH</fullName>
+            <description>Tests action-level metadata properties</description>
+            <developerName>test_action_179ak000002G1yH</developerName>
+            <invocationTarget>TestApexAction</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>true</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>test_action</localDeveloperName>
+            <masterLabel>Test Action Label</masterLabel>
+            <progressIndicatorMessage>Processing your request...</progressIndicatorMessage>
+        </localActions>
+        <localDeveloperName>action_meta_test</localDeveloperName>
+        <masterLabel>Action Metadata Test Topic</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001QtjR</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point for action metadata properties validation</description>
+        <developerName>entry_16jak000001QtjR</developerName>
+        <genAiPluginInstructions>
+            <description>This agent validates action-level metadata properties on target-backed actions.</description>
+            <developerName>instruction0_179ak000002G1yI</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G1yI</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Action Metadata Properties</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

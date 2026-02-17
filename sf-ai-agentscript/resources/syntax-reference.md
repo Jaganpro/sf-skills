@@ -250,6 +250,42 @@ actions:
     available when @variables.is_authorized == True
 ```
 
+### Action Metadata Properties (TDD Validated v2.2.0)
+
+Action definitions with `target:` support the following metadata properties. These are NOT valid on `@utils.transition` utility actions.
+
+**Action-Level:**
+
+| Property | Type | Context | Notes |
+|----------|------|---------|-------|
+| `label` | String | Action def, topic, I/O | Display name in UI |
+| `description` | String | Action def, I/O | LLM decision-making context |
+| `require_user_confirmation` | Boolean | Action def | Compiles; runtime no-op (Issue 6) |
+| `include_in_progress_indicator` | Boolean | Action def | Shows spinner during execution |
+| `progress_indicator_message` | String | Action def | Custom spinner text |
+
+**Input-Level:**
+
+| Property | Type | Notes |
+|----------|------|-------|
+| `is_required` | Boolean | Marks input as mandatory |
+| `is_user_input` | Boolean | LLM extracts from conversation |
+| `label` | String | Display name |
+| `description` | String | LLM context |
+| `complex_data_type_name` | String | Lightning type mapping |
+
+**Output-Level:**
+
+| Property | Type | Notes |
+|----------|------|-------|
+| `is_displayable` | Boolean | `False` = hide from user (alias: `filter_from_agent`) |
+| `is_used_by_planner` | Boolean | `True` = LLM can reason about value |
+| `label` | String | Display name |
+| `description` | String | LLM context |
+| `complex_data_type_name` | String | Lightning type mapping |
+
+---
+
 ### Two-Level Action System
 
 Agent Script uses a two-level system for actions. Understanding this distinction is critical:

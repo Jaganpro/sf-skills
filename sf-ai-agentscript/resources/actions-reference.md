@@ -15,24 +15,42 @@ All actions in Agent Script support these properties:
 
 ### Action Definition Properties
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `target` | String | Yes | Executable target (see Action Target Types below) |
-| `description` | String | Yes | Explains behavior for LLM decision-making |
-| `inputs` | Object | No | Input parameters and requirements |
-| `outputs` | Object | No | Return parameters |
-| `available_when` | Expression | No | Conditional availability for the LLM |
-| `require_user_confirmation` | Boolean | No | Ask user to confirm before execution |
-| `include_in_progress_indicator` | Boolean | No | Show progress indicator during execution |
-| `progress_indicator_message` | String | No | Custom message shown during execution (e.g., "Processing your request...") |
+| Property | Type | Required | Description | TDD |
+|----------|------|----------|-------------|-----|
+| `target` | String | Yes | Executable target (see Action Target Types below) | v1.3.0 |
+| `description` | String | Yes | Explains behavior for LLM decision-making | v1.3.0 |
+| `label` | String | No | Display name in UI (valid on action definitions, topics, and I/O fields) | v2.2.0 |
+| `inputs` | Object | No | Input parameters and requirements | v1.3.0 |
+| `outputs` | Object | No | Return parameters | v1.3.0 |
+| `available_when` | Expression | No | Conditional availability for the LLM | v1.3.0 |
+| `require_user_confirmation` | Boolean | No | Ask user to confirm before execution (compiles; runtime no-op per Issue 6) | v2.2.0 |
+| `include_in_progress_indicator` | Boolean | No | Show progress indicator during execution | v2.2.0 |
+| `progress_indicator_message` | String | No | Custom message shown during execution (e.g., "Processing your request...") | v2.2.0 |
 
-### Output Properties
+> **Note**: `label`, `require_user_confirmation`, `include_in_progress_indicator`, and `progress_indicator_message` are valid on action definitions with `target:` but NOT on `@utils.transition` utility actions (see Val_Action_Properties vs Val_Action_Meta_Props).
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `description` | String | Explains the output parameter |
-| `filter_from_agent` | Boolean | Set `True` to hide sensitive data from LLM |
-| `complex_data_type_name` | String | Lightning data type mapping |
+### Input Properties (TDD Validated v2.2.0)
+
+| Property | Type | Description | TDD |
+|----------|------|-------------|-----|
+| `description` | String | Explains the input parameter to LLM | v1.3.0 |
+| `label` | String | Display name in UI | v2.2.0 |
+| `is_required` | Boolean | Marks input as mandatory for the LLM | v2.2.0 |
+| `is_user_input` | Boolean | LLM extracts value from conversation context | v2.2.0 |
+| `complex_data_type_name` | String | Lightning data type mapping | v2.1.0 |
+
+### Output Properties (Updated v2.2.0)
+
+| Property | Type | Description | TDD |
+|----------|------|-------------|-----|
+| `description` | String | Explains the output parameter | v1.3.0 |
+| `label` | String | Display name in UI | v2.2.0 |
+| `is_displayable` | Boolean | `False` = hide from user display (standard name for `filter_from_agent`) | v2.2.0 |
+| `is_used_by_planner` | Boolean | `True` = LLM can reason about this value for routing decisions | v2.2.0 |
+| `filter_from_agent` | Boolean | Alias for `is_displayable: False` — set `True` to hide sensitive data from LLM | v1.3.0 |
+| `complex_data_type_name` | String | Lightning data type mapping | v2.1.0 |
+
+> **`is_displayable` vs `filter_from_agent`**: Both control the same behavior. `is_displayable: False` is the standard property name (used in SKILL.md and zero-hallucination patterns). `filter_from_agent: True` is an older alias that achieves the same result.
 
 ### Example with All Properties
 

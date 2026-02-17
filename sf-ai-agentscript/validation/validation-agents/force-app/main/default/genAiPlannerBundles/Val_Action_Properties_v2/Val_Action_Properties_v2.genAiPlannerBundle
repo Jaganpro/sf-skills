@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Confirms which action properties are valid in Agent Script</description>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001Qtmf</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>main_16jak000001Qtmf</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>verify_16jak000001Qtmf</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>verify_16jak000001Qtmf</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Verify action properties work</description>
+        <developerName>verify_16jak000001Qtmf</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms which action properties are valid.</description>
+            <developerName>instruction0_179ak000002G21W</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G21W</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>verify</localDeveloperName>
+        <masterLabel>Verify</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001Qtmf</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point for action properties validation</description>
+        <developerName>entry_16jak000001Qtmf</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms which action properties are valid.</description>
+            <developerName>instruction0_179ak000002G21X</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G21X</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>main_16jak000001Qtmf</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Test valid action properties only</description>
+        <developerName>main_16jak000001Qtmf</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms which action properties are valid.</description>
+            <developerName>instruction0_179ak000002G21V</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G21V</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>main</localDeveloperName>
+        <masterLabel>Main</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Action Properties</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

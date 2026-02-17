@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Confirms label property is NOT valid in Agent Script</description>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001Qtl3</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>main_16jak000001Qtl3</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>main_16jak000001Qtl3</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Main topic without label property</description>
+        <developerName>main_16jak000001Qtl3</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms label is not a valid property.</description>
+            <developerName>instruction0_179ak000002G1zt</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G1zt</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>main</localDeveloperName>
+        <masterLabel>Main</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001Qtl3</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point for label property validation</description>
+        <developerName>entry_16jak000001Qtl3</developerName>
+        <genAiPluginInstructions>
+            <description>This agent confirms label is not a valid property.</description>
+            <developerName>instruction0_179ak000002G1zu</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002G1zu</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Label Property</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

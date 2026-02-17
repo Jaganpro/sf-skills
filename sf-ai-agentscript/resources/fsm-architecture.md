@@ -416,7 +416,7 @@ When in doubt, escalate to human. It's better than a bad automated decision.
 Every topic MUST have:
 - `description:` - What the topic does (used by LLM for routing decisions)
 
-> **`label:` is NOT valid** — causes `Unexpected 'label'` compile error. Use `description:` to convey the topic's purpose.
+> **`label:` is valid on topics** (TDD v2.2.0). Use `label:` for display names and `description:` to convey the topic's purpose to the LLM.
 
 ```agentscript
 topic order_lookup:

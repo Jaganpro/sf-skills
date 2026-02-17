@@ -1,16 +1,21 @@
-# Val_Action_Properties - Tests action properties beyond basic syntax
-# Purpose: Verify advanced action properties validity
+# Val_Action_Properties - Tests action properties on @utils.transition actions
+# Purpose: Verify which action properties are valid on UTILITY actions (transitions)
 #
-# RESULT: Most action properties from recipes are NOT valid (as of Winter '26)
-# - require_user_confirmation: NOT valid
-# - include_in_progress_indicator: NOT valid
-# - output_instructions: NOT valid
-# - progress_indicator_message: NOT valid on transitions (only on flow:// targets)
+# RESULT: Action metadata properties are NOT valid on @utils.transition (as of Winter '26)
+# - require_user_confirmation: NOT valid on @utils.transition
+# - include_in_progress_indicator: NOT valid on @utils.transition
+# - output_instructions: NOT valid on @utils.transition
+# - progress_indicator_message: NOT valid on @utils.transition
 # - ONLY description works on @utils.transition actions
-# - This is a NEGATIVE test confirming these properties are NOT supported
 #
-# SKILL.md Section: Action Properties - document only working properties
-# Source: TDD validation 2026-01-20
+# ⚠️ SCOPE CLARIFICATION (TDD v2.2.0): These properties ARE valid on action
+# definitions with `target:` (Level 1 actions backed by flow:// or apex://).
+# Val_Action_Meta_Props (agent #23) confirms label, require_user_confirmation,
+# include_in_progress_indicator, and progress_indicator_message ALL compile on
+# target-backed actions. The negative finding here applies ONLY to @utils.transition.
+#
+# SKILL.md Section: Feature Validity by Context
+# Source: TDD validation 2026-01-20 (scoped to @utils.transition only)
 
 system:
    messages:

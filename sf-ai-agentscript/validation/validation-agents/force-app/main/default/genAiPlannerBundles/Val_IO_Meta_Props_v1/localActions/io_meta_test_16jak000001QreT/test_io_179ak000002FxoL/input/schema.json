@@ -1,0 +1,14 @@
+{
+  "required" : [ "inputText" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "inputText" : {
+      "title" : "Input Text",
+      "description" : "Required user input",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : true
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

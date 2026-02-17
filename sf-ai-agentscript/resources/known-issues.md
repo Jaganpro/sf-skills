@@ -116,9 +116,11 @@
 ### Issue 6: `require_user_confirmation` does not trigger confirmation dialog
 - **Status**: OPEN
 - **Date Discovered**: 2026-02-14
+- **Date Updated**: 2026-02-17 (TDD v2.2.0 — confirmed compiles on target-backed actions)
 - **Affects**: Actions with `require_user_confirmation: True`
 - **Symptom**: Setting `require_user_confirmation: True` on an action definition does not produce a user-facing confirmation dialog before execution. The action executes immediately without user confirmation.
 - **Root Cause**: The property is parsed and saved without error, but the runtime does not implement the confirmation UX for Agent Script actions. It may only work for GenAiPlannerBundle actions in the Agent Builder UI.
+- **TDD Update (v2.2.0)**: Property compiles and publishes successfully on action definitions with `target:` (both `flow://` and `apex://`). Val_Action_Meta_Props confirms compilation. The issue is purely runtime — the confirmation dialog never appears. Property is NOT valid on `@utils.transition` actions (Val_Action_Properties, v1.3.0).
 - **Workaround**: Implement confirmation logic manually using a two-step pattern: (1) LLM asks user to confirm, (2) action has `available when @variables.user_confirmed == True` guard.
 - **Open Questions**: Will this be implemented for AiAuthoringBundle in a future release?
 
@@ -274,4 +276,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-02-16*
+*Last updated: 2026-02-17*

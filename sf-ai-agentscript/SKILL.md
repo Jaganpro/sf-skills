@@ -8,14 +8,14 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
   # Validation Framework
   last_validated: "2026-02-17"
   validation_status: "PASS"
-  validation_agents: 22
+  validation_agents: 24
   validate_by: "2026-03-19"  # 30 days from last validation
   validation_org: "AgentforceTesting"
 hooks:
@@ -82,38 +82,59 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 
 ### 🔴 Reserved Field Names (Breaking in Recent Releases)
 
-Common field names that cause parse errors:
+Common field names that cause parse errors **when used as variable or I/O field names**:
 ```
-❌ RESERVED (cannot use as variable/field names):
+❌ RESERVED as variable/field names:
 description, label, is_required, is_displayable, is_used_by_planner
 
-✅ WORKAROUNDS:
+✅ WORKAROUNDS for variable/field names:
 description  → descriptions, description_text, desc_field
 label        → label_text, display_label, label_field
 ```
 
-### 🔴 Features NOT Valid in Current Release (TDD Validated 2026-01-20)
+> **Important distinction (TDD v2.2.0)**: `is_required`, `is_displayable`, `is_used_by_planner`, and `label` are reserved as **variable/field names** but are valid as **action I/O metadata properties**. For example, you cannot name a variable `label`, but you CAN use `label:` as a property on an action definition, input, or output. See "Action I/O Metadata Properties" below.
 
-> **These features appear in documentation or recipes but do NOT compile in Winter '26.**
+### 🔴 Feature Validity by Context (TDD Validated v2.2.0)
 
-| Feature | Where Mentioned | Error | Status |
-|---------|-----------------|-------|--------|
-| `label:` on topics | agentforce.guide | `Unexpected 'label'` | ❌ NOT valid anywhere |
-| `label:` on actions | agentforce.guide | `Unexpected 'label'` | ❌ NOT valid anywhere |
-| `always_expect_input:` | Some docs | `Unexpected 'always_expect_input'` | ❌ NOT implemented |
-| `require_user_confirmation:` on transitions | Recipes | `Unexpected 'require_user_confirmation'` | ❌ NOT valid on `@utils.transition` |
-| `include_in_progress_indicator:` on transitions | Recipes | `Unexpected 'include_in_progress_indicator'` | ❌ NOT valid on `@utils.transition` |
-| `output_instructions:` on transitions | Recipes | `Unexpected 'output_instructions'` | ❌ NOT valid on `@utils.transition` |
-| `progress_indicator_message:` on transitions | Recipes | `Unexpected 'progress_indicator_message'` | ❌ May only work on `flow://` targets |
+> **Key distinction**: Many action metadata properties are valid on **action definitions with targets** (`flow://`, `apex://`) but NOT on **utility actions** (`@utils.transition`). The v1.3.0 finding that tested only `@utils.transition` was too narrow — v2.2.0 corrects this.
 
-**What DOES work on `@utils.transition` actions:**
+| Feature | On `@utils.transition` | On action definitions with `target:` | Notes |
+|---------|------------------------|---------------------------------------|-------|
+| `label:` on topics | ❌ v1.3.0 | ✅ v2.2.0 | Valid on topic blocks |
+| `label:` on actions | ❌ v1.3.0 | ✅ v2.2.0 | Valid on Level 1 action definitions |
+| `label:` on I/O fields | ❌ v1.3.0 | ✅ v2.2.0 | Valid on inputs/outputs |
+| `require_user_confirmation:` | ❌ | ✅ v2.2.0 | Compiles; runtime no-op (Issue 6) |
+| `include_in_progress_indicator:` | ❌ | ✅ v2.2.0 | Shows spinner during action execution |
+| `progress_indicator_message:` | ❌ | ✅ v2.2.0 | Works on both `flow://` and `apex://` |
+| `output_instructions:` | ❌ | ❓ Untested | Not tested on target-backed actions |
+| `always_expect_input:` | ❌ | ❌ | NOT implemented anywhere |
+
+**What works on `@utils.transition` actions:**
 ```yaml
 actions:
    go_next: @utils.transition to @topic.next
-      description: "Navigate to next topic"   # ✅ ONLY this works
+      description: "Navigate to next topic"   # ✅ ONLY description works
 ```
 
-> **Note**: Some of these may work on `flow://` action targets (not validated). The `@utils.transition` utility action has limited property support.
+**What works on action definitions with `target:`:**
+```yaml
+actions:
+   process_order:
+      label: "Process Order"                            # ✅ Display label
+      description: "Process the customer's order"       # ✅ LLM description
+      require_user_confirmation: True                   # ✅ Compiles (runtime Issue 6)
+      include_in_progress_indicator: True               # ✅ Shows spinner
+      progress_indicator_message: "Processing..."       # ✅ Custom spinner message
+      inputs:
+         order_id: string
+            label: "Order ID"                           # ✅ I/O display label
+            description: "The order identifier"
+      outputs:
+         status: string
+            label: "Order Status"                       # ✅ I/O display label
+            description: "Current order status"
+      target: "apex://OrderProcessor"
+```
 
 ### 🔴 `complex_data_type_name` Mapping Table (Critical for Actions)
 
@@ -413,6 +434,52 @@ topic intent_router:
             transition to @topic.refunds
          if @variables.intent == "order_status":
             transition to @topic.orders
+```
+
+### Action I/O Metadata Properties (TDD Validated v2.2.0)
+
+> **Complete reference** for all metadata properties available on action definitions, inputs, and outputs. These control how the LLM and UI interact with action parameters.
+
+**Action-Level Properties:**
+
+| Property | Type | Effect | TDD Status |
+|----------|------|--------|------------|
+| `label` | String | Display name in UI | ✅ v2.2.0 |
+| `description` | String | LLM reads this for decision-making | ✅ v1.3.0 |
+| `require_user_confirmation` | Boolean | Request user confirmation before execution | ✅ Compiles (runtime Issue 6) |
+| `include_in_progress_indicator` | Boolean | Show spinner during execution | ✅ v2.2.0 |
+| `progress_indicator_message` | String | Custom spinner text | ✅ v2.2.0 |
+
+**Input Properties:**
+
+| Property | Type | Effect | TDD Status |
+|----------|------|--------|------------|
+| `description` | String | Explains parameter to LLM | ✅ v1.3.0 |
+| `label` | String | Display name in UI | ✅ v2.2.0 |
+| `is_required` | Boolean | Marks input as mandatory for LLM | ✅ v2.2.0 |
+| `is_user_input` | Boolean | LLM extracts value from conversation | ✅ v2.2.0 |
+| `complex_data_type_name` | String | Lightning type mapping | ✅ v2.1.0 |
+
+**Output Properties:**
+
+| Property | Type | Effect | TDD Status |
+|----------|------|--------|------------|
+| `description` | String | Explains output to LLM | ✅ v1.3.0 |
+| `label` | String | Display name in UI | ✅ v2.2.0 |
+| `is_displayable` | Boolean | `False` = hide from user (alias: `filter_from_agent`) | ✅ v2.2.0 |
+| `is_used_by_planner` | Boolean | `True` = LLM can reason about value | ✅ v2.2.0 |
+| `complex_data_type_name` | String | Lightning type mapping | ✅ v2.1.0 |
+
+> **Cross-reference**: `filter_from_agent: True` (in actions-reference.md) is equivalent to `is_displayable: False`. Both hide the output from user display. `is_displayable` is the standard property name.
+
+**User Input Pattern** (`is_user_input: True`):
+```yaml
+# LLM extracts the value from conversation context rather than asking explicitly
+inputs:
+   customer_name: string
+      description: "Customer's full name"
+      is_user_input: True    # LLM pulls from what user already said
+      is_required: True      # Must have a value before action executes
 ```
 
 ### Action Chaining with `run` Keyword
@@ -1459,7 +1526,7 @@ This skill draws from multiple authoritative sources:
 | @kunello ([PR #20](https://github.com/Jaganpro/sf-skills/pull/20)) | Prompt template `"Input:fieldName"` binding syntax, context-aware description overrides, `{!@actions.X}` instruction reference patterns, callback behavior notes, error pattern catalog |
 | [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
 
-> **⚠️ Note on Feature Validation**: Some patterns from external sources (e.g., `always_expect_input:`, `label:` property, certain action properties on transitions) do NOT compile in Winter '26. The `before_reasoning:`/`after_reasoning:` lifecycle hooks ARE valid but require **direct content** (no `instructions:` wrapper) - see the Lifecycle Hooks section for correct syntax. This skill documents only patterns that pass TDD validation.
+> **⚠️ Note on Feature Validation**: Some patterns from external sources (e.g., `always_expect_input:`) do NOT compile in Winter '26. Action metadata properties (`label:`, `require_user_confirmation:`, etc.) are valid on **action definitions with targets** but NOT on `@utils.transition` — see "Feature Validity by Context" table. The `before_reasoning:`/`after_reasoning:` lifecycle hooks ARE valid but require **direct content** (no `instructions:` wrapper). This skill documents only patterns that pass TDD validation.
 
 ---
 
@@ -1467,13 +1534,14 @@ This skill draws from multiple authoritative sources:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.0 | 2026-02-16 | **Production learnings audit**: Fixed `<>` operator references in 3 files (TDD v1.9.0 proved invalid, only `!=` compiles). Fixed config block field names in syntax-reference.md (`agent_name`→`developer_name`, `description`→`agent_description`, added `agent_type`). Removed `label:` as valid property in actions-reference.md (TDD: `Unexpected 'label'` everywhere). Fixed `description` on `@utils.transition` claim in patterns-quick-ref.md (IS valid, confirmed by TDD + 15-topic production agent). Fixed `run` keyword scope documentation (works in reasoning.actions/instructions, NOT lifecycle blocks). Fixed SOMA delegation mislabel in patterns-quick-ref.md. Clarified `inputs:`/`outputs:` constraint applies to Level 2 invocations only (Level 1 definitions DO use them). Added 3 new known issues: I/O schemas required for publish (Issue 15), `connections:` block not GA (Issue 16), `EinsteinAgentApiChannel` surfaceType not available on all orgs (Issue 17). Added production insight: missing I/O schemas cause "Internal Error" (not flow:// bug). Added org-dependent note for multiple `available when` clauses. Added Two-Level Action System section to syntax-reference.md. Added lifecycle hooks syntax to syntax-reference.md. Fixed README API version (62.0→65.0+), documentation URLs, block order. Added @kunello to CREDITS.md. |
+| 2.2.0 | 2026-02-17 | **TDD Validation v2.2.0 — Action metadata properties validated**: 2 new agents (Val_Action_Meta_Props, Val_IO_Meta_Props). Corrected "Features NOT Valid" table → "Feature Validity by Context" — properties ARE valid on action definitions with targets, only invalid on `@utils.transition`. Validated 9 properties: `label` (action/topic/I/O), `require_user_confirmation`, `include_in_progress_indicator`, `progress_indicator_message`, `is_required`, `is_user_input`, `is_displayable`, `is_used_by_planner`. Root cause: v1.3.0 only tested on `@utils.transition`, never on target-backed actions. Added "Action I/O Metadata Properties" section with complete property tables. Clarified reserved field names (reserved as variable names, valid as I/O metadata properties). Updated actions-reference.md (label property, Input Properties table, Output Properties expansion). Updated known-issues.md Issue 6 (compiles on target-backed actions). Updated VALIDATION.md Tier 4 + findings. Updated syntax-reference.md with Action Metadata Properties subsection. 24 validation agents total. |
+| 2.0.0 | 2026-02-16 | **Production learnings audit**: Fixed `<>` operator references in 3 files (TDD v1.9.0 proved invalid, only `!=` compiles). Fixed config block field names in syntax-reference.md (`agent_name`→`developer_name`, `description`→`agent_description`, added `agent_type`). Removed `label:` as valid property in actions-reference.md (TDD: `Unexpected 'label'` on `@utils.transition` — **corrected in v2.2.0**: IS valid on target-backed actions). Fixed `description` on `@utils.transition` claim in patterns-quick-ref.md (IS valid, confirmed by TDD + 15-topic production agent). Fixed `run` keyword scope documentation (works in reasoning.actions/instructions, NOT lifecycle blocks). Fixed SOMA delegation mislabel in patterns-quick-ref.md. Clarified `inputs:`/`outputs:` constraint applies to Level 2 invocations only (Level 1 definitions DO use them). Added 3 new known issues: I/O schemas required for publish (Issue 15), `connections:` block not GA (Issue 16), `EinsteinAgentApiChannel` surfaceType not available on all orgs (Issue 17). Added production insight: missing I/O schemas cause "Internal Error" (not flow:// bug). Added org-dependent note for multiple `available when` clauses. Added Two-Level Action System section to syntax-reference.md. Added lifecycle hooks syntax to syntax-reference.md. Fixed README API version (62.0→65.0+), documentation URLs, block order. Added @kunello to CREDITS.md. |
 | 1.9.0 | 2026-02-14 | **TDD Validation v1.9.0 (16/16 PASS against AgentforceTesting)**: 3 new validation agents (Val_Else_Nested_If, Val_Step_Guard, Val_Multiple_Available_When). TDD Finding 1: `else:` + nested `if` does NOT compile — removed Approach 3, updated nesting rules to "Two Valid Approaches". TDD Finding 2: `<>` not-equal operator NOT valid — removed from operator table, only `!=` works. TDD Finding 3: Multiple `available when` clauses ARE valid — removed false "One per action" constraint, updated Common Issues table. Updated frontmatter: version 1.9.0, validation_agents 16, validation_org AgentforceTesting, validate_by 2026-03-16. Updated VALIDATION.md with full 16-agent results and 3 TDD findings. |
 | 1.8.0 | 2026-02-12 | **Gap analysis audit**: Added 3 new resource files: `resources/official-sources.md` (14 primary doc URLs + 8 recipe URLs + diagnostic decision tree), `resources/known-issues.md` (5 open platform issues with structured tracking), `resources/migration-guide.md` (Builder UI → Agent Script mapping table + side-by-side examples). Added Verification Protocol section (triggers + decision tree for fetching official docs). Added Self-Improvement protocol (editable resources, session-based learning). Updated Official Resources section to point to full registry. Added `!=` as alias for `<>` in comparison operators (SKILL.md + syntax-reference.md). Updated nested `if` constraint to document `else:` + nested `if` pattern (pending TDD validation). Added namespace prefix warning for `apex://` targets in actions-reference.md. Updated Document Map with 3 new entries. Added aquivalabs/my-org-butler to Sources & Acknowledgments and CREDITS.md. |
 | 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |
 | 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |
 | 1.5.0 | 2026-02-06 | **Action patterns & prompt template docs** (from @kunello PR #20): Added `resources/action-prompt-templates.md` documenting `generatePromptResponse://` input binding syntax (`"Input:fieldName"`), grounded data integration, output handling, and `run` keyword limitation workaround. Added `resources/action-patterns.md` covering context-aware action description overrides (beginner/advanced mode), `{!@actions.X}` instruction references for guided LLM action selection, input binding decision matrix, callback success-only behavior, and additional error patterns. Updated Common Issues table with 3 new error entries (wrong protocol, unquoted Input: params, missing type annotations). Added Document Map entries and cross-reference after Action Chaining section. Content consolidated from @kunello's 8-file contribution against Agent Script Recipes. |
-| 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile (label on topics/actions, always_expect_input, action properties on transitions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
+| 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile on `@utils.transition` (label, always_expect_input, action properties — **corrected in v2.2.0**: most ARE valid on target-backed actions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
 | 1.2.0 | 2026-01-20 | **Gap analysis vs agent-script-recipes**: Expanded Action Target Protocols from 7 to 16 (with validation status indicators), added Variable vs Action I/O Type Matrix, added lifecycle hooks note with TDD validation caveat, added Sources & Acknowledgments section, documented future/planned features notice. TDD validation confirmed `label:` IS reserved (SKILL.md was correct), `before_reasoning:`/`after_reasoning:` syntax from recipes does NOT compile in current release |
 | 1.1.0 | 2026-01-20 | **"Ultimate Guide" tribal knowledge integration**: Added `complex_data_type_name` mapping table, Canvas View corruption bugs, Reserved field names, Preview mode workarounds, Credit consumption table, Supervision vs Handoff clarification, Action output flags for zero-hallucination routing, Latch variable pattern, Loop protection guardrails, Token/size limits, Progress indicators, Connection block escalation patterns, VS Code limitations, Language block quirks. Added 4 new templates: flow-action-lookup, prompt-rag-search, deterministic-routing, escalation-pattern |
 | 1.0.4 | 2026-01-19 | **Progressive testing validation** (Quiz_Master, Expense_Calculator, Order_Processor): Added constraints for no top-level `actions:` block, no `inputs:`/`outputs:` in reasoning.actions, expanded nested-if guidance with flattening approach, added new SyntaxError entries to common issues |
