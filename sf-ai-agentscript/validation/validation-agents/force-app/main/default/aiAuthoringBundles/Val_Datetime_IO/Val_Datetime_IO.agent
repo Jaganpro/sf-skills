@@ -1,0 +1,67 @@
+# Val_Datetime_IO - Tests datetime type in action I/O
+# Purpose: Verify that Agent Script `datetime` type compiles against Apex DateTime params
+#
+# GAP 2: Agent Script type `datetime` maps to `lightning__dateTimeStringType` in the
+#         underlying Lightning type system. This must work in action inputs/outputs
+#         when the Apex target uses DateTime parameters.
+#
+# Tests:
+#   POSITIVE: datetime type in action inputs and outputs compiles and publishes
+#
+# Apex Target: DateTimeAction (deployed to AgentforceTesting)
+#   - Input: DateTime startDateTime, Decimal hoursToAdd
+#   - Output: DateTime endDateTime, String formattedResult
+#
+# SKILL.md Section: Type Mapping, complex_data_type_name
+
+system:
+   messages:
+      welcome: "DateTime I/O validation agent."
+      error: "Validation error occurred."
+   instructions: "This agent validates datetime type in action inputs and outputs."
+
+config:
+   agent_name: "Val_Datetime_IO"
+   agent_label: "Validation: DateTime I/O"
+   description: "Tests datetime type in action I/O against Apex DateTime parameters"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+topic datetime_test:
+   description: "Test datetime type in action I/O"
+
+   actions:
+      calculate_end_time:
+         description: "Calculate end time by adding hours to a start datetime"
+         inputs:
+            startDateTime: datetime
+               description: "The starting date and time"
+            hoursToAdd: number
+               description: "Number of hours to add"
+         outputs:
+            endDateTime: datetime
+               description: "The calculated end date and time"
+            formattedResult: string
+               description: "Human-readable result string"
+         target: "apex://DateTimeAction"
+
+   reasoning:
+      instructions: |
+         Help the user calculate an end time.
+         Ask for a start date/time and hours to add.
+      actions:
+         calc: @actions.calculate_end_time
+            with startDateTime = ...
+            with hoursToAdd = ...
+            set @variables.result = @outputs.formattedResult
+
+start_agent entry:
+   description: "Entry point for datetime I/O validation"
+   reasoning:
+      instructions: |
+         Begin validation by transitioning to the test topic.
+      actions:
+         begin: @utils.transition to @topic.datetime_test
+            description: "Start datetime I/O test"
+
+variables:
+   result: mutable string = ""

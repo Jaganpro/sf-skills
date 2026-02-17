@@ -353,6 +353,49 @@ topic discount_calculator:
 
 > ✅ **No GenAiFunction, no GenAiPlugin, no metadata deployment beyond the Apex class itself.** The `apex://ClassName` target auto-discovers the `@InvocableMethod` on the class.
 
+#### I/O Name Matching Rules (TDD Validated v2.1.0)
+
+Action `inputs:` and `outputs:` names in Agent Script must **exactly match** the `@InvocableVariable` field names in the Apex class:
+
+| Agent Script I/O Name | Apex @InvocableVariable Field | Result |
+|------------------------|-------------------------------|--------|
+| `orderAmount` | `public Decimal orderAmount` | ✅ Publishes |
+| `order_amount` | `public Decimal orderAmount` | ❌ `invalid input 'order_amount'` |
+| `wrong_name` | `public String outputText` | ❌ `invalid output 'wrong_name'` |
+| *(subset of outputs)* | *(declares fewer than all)* | ✅ Publishes (partial is valid) |
+
+> **Partial Output Pattern**: You can declare a **subset** of the target's outputs in your action definition — you don't need to map every output parameter. This is useful when you only need one field from a multi-output action.
+
+#### Bare @InvocableMethod Pattern (NOT Compatible)
+
+> ⚠️ **TDD Finding (v2.1.0)**: Apex classes using bare `List<String>` parameters (no `@InvocableVariable` wrapper classes) are **incompatible** with Agent Script actions. The framework cannot discover bindable parameter names without `@InvocableVariable` annotations.
+
+```apex
+// ❌ INCOMPATIBLE with Agent Script — bare parameters, no wrappers
+public class BareAction {
+    @InvocableMethod(label='Bare Action')
+    public static List<String> execute(List<String> inputs) {
+        return inputs;
+    }
+}
+
+// ✅ COMPATIBLE — wrapper classes with @InvocableVariable
+public class WrappedAction {
+    public class Request {
+        @InvocableVariable(label='Input Text' required=true)
+        public String inputText;  // ← This field name becomes the I/O name
+    }
+    public class Response {
+        @InvocableVariable(label='Output Text')
+        public String outputText;  // ← This field name becomes the I/O name
+    }
+    @InvocableMethod(label='Wrapped Action')
+    public static List<Response> execute(List<Request> requests) { ... }
+}
+```
+
+**Rule**: Always use `@InvocableVariable` wrapper classes when your Apex action will be called from Agent Script.
+
 > ⚠️ **Namespace Warning (Unresolved)**: In namespaced packages, `apex://ClassName` may fail at publish time with "invocable action does not exist," even when the Apex class is confirmed deployed via SOQL. It is unclear whether namespace prefix syntax is required (e.g., `apex://ns__ClassName`). If you encounter this in a namespaced org, try: (1) `apex://ns__ClassName` format, (2) wrapping the Apex in a Flow and using `flow://` instead. See [known-issues.md](known-issues.md#issue-2-sf-agent-publish-fails-with-namespace-prefix-on-apex-targets) for tracking.
 
 ### Path B: Agent Builder UI (GenAiPlannerBundle — Legacy)
@@ -544,6 +587,9 @@ When building agents with external API integrations, follow this order:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | `Tool target 'X' is not an action definition` | Action not defined in topic `actions:` block, or target doesn't exist in org | Define action with `target:` in topic-level `actions:` block; ensure Apex class/Flow is deployed |
+| `invalid input 'X'` or `invalid output 'X'` | I/O name doesn't match `@InvocableVariable` field name in Apex | Use exact field names from the Apex wrapper class (case-sensitive) |
+| `Internal Error` with inputs-only action | Action has `inputs:` but no `outputs:` block | Add `outputs:` block — the server-side compiler requires it (see known-issues.md Issue 15) |
+| `Internal Error` with bare @InvocableMethod | Apex uses `List<String>` without `@InvocableVariable` wrappers | Refactor Apex to use wrapper classes with `@InvocableVariable` annotations |
 | `apex://` target not found | Apex class not deployed or missing `@InvocableMethod` | Deploy class first, ensure it has `@InvocableMethod` annotation |
 | Flow action fails | Flow not active or not Autolaunched | Activate the Flow; ensure it's Autolaunched (not Screen) |
 | API action timeout | External system slow | Increase timeout, add retry logic |

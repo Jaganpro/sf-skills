@@ -77,11 +77,12 @@
     }
 
     Lightning types:
-    - lightning__textType     (String)
-    - lightning__numberType   (Number/Decimal)
-    - lightning__booleanType  (Boolean)
-    - lightning__dateType     (Date)
-    - lightning__currencyType (Currency)
+    - lightning__textType           (String)
+    - lightning__numberType         (Number/Decimal)
+    - lightning__booleanType        (Boolean)
+    - lightning__dateType           (Date)
+    - lightning__dateTimeStringType (DateTime — TDD validated v2.1.0)
+    - lightning__currencyType       (Currency)
 
     APEX CLASS REQUIREMENTS:
     - Must be global or public with sharing

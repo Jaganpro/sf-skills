@@ -2,12 +2,13 @@
 # Define an action that calls a Salesforce Flow
 # This is a PARTIAL template - define actions inside a topic block
 #
-# ⚠️ DEPLOYMENT METHOD MATTERS:
-#    - AiAuthoringBundle: `with`/`set` clauses in reasoning.actions NOT supported
-#    - GenAiPlannerBundle: Full syntax including `with`/`set` supported
+# ⚠️ NOTE ON DEPLOYMENT METHODS:
+#    - AiAuthoringBundle: `with`/`set` clauses ARE supported (TDD validated v1.7.0+)
+#    - GenAiPlannerBundle: Full syntax including `with`/`set` also supported
 #
-# For AiAuthoringBundle: Define actions in topics, let LLM auto-invoke based on description
-# The LLM will automatically call actions when needed - no `with`/`set` required
+# Both deployment methods support the Two-Level Action System:
+#   Level 1: Action definition in topic `actions:` block (with target/inputs/outputs)
+#   Level 2: Action invocation in `reasoning.actions:` block (with `with`/`set` clauses)
 #
 # Usage: Replace {{placeholders}} with your values
 # Place this inside a topic's actions: block
@@ -30,8 +31,8 @@
 # Usage in reasoning block:
 #
 # ═══════════════════════════════════════════════════════════════════════════════
-# ⚠️ GenAiPlannerBundle ONLY - The following `with`/`set` syntax does NOT work
-#    in AiAuthoringBundle (causes "Internal Error" at publish time)
+# ✅ Recommended Pattern — Level 2 invocation with `with`/`set` (works in both
+#    AiAuthoringBundle and GenAiPlannerBundle, TDD validated v1.7.0+)
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # reasoning:
@@ -45,7 +46,7 @@
 #          set @variables.result2 = @outputs.{{output_2_name}}
 #
 # ═══════════════════════════════════════════════════════════════════════════════
-# ✅ AiAuthoringBundle Pattern - Let LLM auto-invoke based on action description
+# Alternative: LLM auto-invoke based on action description (no explicit binding)
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # reasoning:

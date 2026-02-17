@@ -212,13 +212,15 @@
 
 ---
 
-### Issue 15: Action definitions without I/O schemas cause "Internal Error" on publish
+### Issue 15: Action definitions without `outputs:` block cause "Internal Error" on publish
 - **Status**: WORKAROUND
 - **Date Discovered**: 2026-02-16
+- **Date Updated**: 2026-02-17 (TDD v2.1.0 — clarified outputs specifically required)
 - **Affects**: `sf agent publish authoring-bundle` with topic-level action definitions
-- **Symptom**: `sf agent publish` returns "Internal Error, try again later" when topic-level action definitions have `target:` but no `inputs:`/`outputs:` blocks. LSP + CLI validation both PASS — error is server-side compilation only.
-- **Root Cause**: The server-side compiler needs complete type contracts (I/O schemas) to resolve `flow://` and `apex://` action targets. Without them, the compiler cannot generate the invocation bindings.
-- **Workaround**: Always include `inputs:` and `outputs:` blocks in action definitions, even if the target has no required inputs (use empty blocks or document all parameters). Previously misattributed as a "flow:// platform bug" — adding I/O schemas resolves the issue for both `flow://` and `apex://` targets.
+- **Symptom**: `sf agent publish` returns "Internal Error, try again later" when topic-level action definitions have `target:` but no `outputs:` block. Also triggered when using `inputs:` without `outputs:`. LSP + CLI validation both PASS — error is server-side compilation only.
+- **Root Cause**: The server-side compiler needs output type contracts to resolve `flow://` and `apex://` action targets. Without an `outputs:` block, the compiler cannot generate return bindings. The `inputs:` block alone is NOT sufficient — `outputs:` is specifically required.
+- **Workaround**: Always include an `outputs:` block in action definitions. The `inputs:` block can be omitted if the target has no required inputs (the LLM will still slot-fill via `with param=...`), but `outputs:` must always be present.
+- **TDD Validation**: `Val_No_Outputs` (v2.1.0) confirms inputs-only action definition → "Internal Error". `Val_Partial_Output` confirms declaring a subset of outputs IS valid. `Val_Apex_Bare_Output` confirms bare `@InvocableMethod` without wrapper classes also triggers this error.
 - **Open Questions**: Will the compiler be updated to infer I/O schemas from the target's metadata?
 
 ---

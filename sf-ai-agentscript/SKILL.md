@@ -8,15 +8,15 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
   # Validation Framework
-  last_validated: "2026-02-14"
+  last_validated: "2026-02-17"
   validation_status: "PASS"
-  validation_agents: 16
-  validate_by: "2026-03-16"  # 30 days from last validation
+  validation_agents: 22
+  validate_by: "2026-03-19"  # 30 days from last validation
   validation_org: "AgentforceTesting"
 hooks:
   PreToolUse:
@@ -130,6 +130,20 @@ actions:
 | Apex Inner Class | `@apexClassType/NamespacedClass__InnerClass` | Namespace required |
 | Custom LWC Type | `lightning__c__CustomTypeName` | Custom component types |
 | Currency field | `lightning__currencyType` | For monetary values |
+| `datetime` | `lightning__dateTimeStringType` | DateTime values (TDD v2.1.0) |
+
+**Agent Script → Lightning Type Mapping (TDD Validated v2.1.0):**
+
+> Use this when troubleshooting type errors between Agent Script action I/O and Apex/Flow targets.
+
+| Agent Script Type | Lightning Type | Apex Type | Notes |
+|-------------------|---------------|-----------|-------|
+| `string` | `lightning__textType` | `String` | No `complex_data_type_name` needed |
+| `number` | `lightning__numberType` | `Decimal` / `Double` | No `complex_data_type_name` needed |
+| `boolean` | `lightning__booleanType` | `Boolean` | No `complex_data_type_name` needed |
+| `datetime` | `lightning__dateTimeStringType` | `DateTime` | **Actions only** — not valid for variables |
+| `date` | `lightning__dateType` | `Date` | Valid for both variables and actions |
+| `currency` | `lightning__currencyType` | `Decimal` | Annotated with currency type |
 
 **Pro Tip**: Don't manually edit `complex_data_type_name` - use the UI dropdown in **Agentforce Assets > Action Definition**, then export/import the action definition.
 
@@ -732,10 +746,57 @@ topic order_status:
 > Action definitions with only `description:` and `target:` (no `inputs:`/`outputs:`)
 > will PASS LSP and CLI validation but FAIL server-side compilation with "Internal Error."
 > Always include complete I/O schemas in Level 1 action definitions.
+> Specifically, the `outputs:` block is required — having `inputs:` but no `outputs:` still
+> triggers the Internal Error (TDD v2.1.0: Val_No_Outputs).
 >
 > This was previously misattributed to a "flow:// target bug." The actual root cause
 > is missing type contracts — adding `inputs:` and `outputs:` blocks resolves the issue
 > for both `flow://` and `apex://` targets.
+
+> **⚠️ Level 1 Without Level 2 Is Valid (TDD v2.1.0)**
+>
+> You do NOT need a Level 2 `@actions.X` invocation for every Level 1 action definition.
+> Defining an action in the topic's `actions:` block with `target:`, `inputs:`, `outputs:`
+> is sufficient — the LLM auto-selects from available actions based on their descriptions.
+> Val_Level1_Only published successfully with ONLY Level 1 definitions.
+
+**I/O Name Matching Rules (TDD Validated v2.1.0):**
+
+> Action input/output names in Agent Script MUST exactly match the `@InvocableVariable` field names in the Apex target.
+
+| Scenario | Agent Script Name | Apex Field Name | Result |
+|----------|-------------------|-----------------|--------|
+| ✅ Exact match | `inputText` | `inputText` | Publishes |
+| ❌ Wrong name | `wrong_name` | `outputText` | `"invalid output 'wrong_name'"` |
+| ✅ Partial outputs | Declare only `outputText` | Has `outputText` + more | Publishes (subset OK) |
+| ❌ Bare @InvocableMethod | ANY name | `List<String>` param (no wrapper) | Always fails — no discoverable name |
+
+**Bare @InvocableMethod Pattern (NOT Compatible with Agent Script):**
+
+> ⚠️ **CRITICAL**: Apex methods returning `List<String>` directly (without `@InvocableVariable` wrapper classes) **CANNOT** be used as Agent Script action targets. The framework has no discoverable parameter names to bind against.
+
+```apex
+// ❌ DOES NOT WORK with Agent Script:
+@InvocableMethod
+public static List<String> greet(List<String> names) { ... }
+// → No input name is discoverable — "name", "input", "names" all fail
+
+// ✅ ALWAYS use wrapper classes for Agent Script:
+public class GreetInput {
+    @InvocableVariable(label='Name' required=true)
+    public String userName;    // ← Agent Script uses "userName" as input name
+}
+public class GreetOutput {
+    @InvocableVariable(label='Greeting')
+    public String greeting;    // ← Agent Script uses "greeting" as output name
+}
+@InvocableMethod
+public static List<GreetOutput> greet(List<GreetInput> inputs) { ... }
+```
+
+**Partial Output Pattern:**
+
+> You can declare a SUBSET of the target's outputs in your Agent Script action definition. You do NOT need to declare every output field from the Apex class. Val_Partial_Output confirmed: declaring only `outputText` from `TestApexAction` (which has a full output wrapper) publishes successfully.
 
 > ⚠️ **Common Error**: `ValidationError: Tool target 'X' is not an action definition` — This means either:
 > 1. The action is referenced in `reasoning.actions:` via `@actions.X` but `X` is not defined in the topic's `actions:` block, OR

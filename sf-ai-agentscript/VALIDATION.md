@@ -6,7 +6,7 @@ This file tracks the validation history of the sf-ai-agentscript skill. Validati
 
 | Status | Date | Version | Agents Deployed | Test Org |
 |--------|------|---------|-----------------|----------|
-| ✅ PASS | 2026-02-14 | v1.9.0 | 16/16 | AgentforceTesting |
+| ✅ PASS | 2026-02-17 | v2.1.0 | 22/22 | AgentforceTesting |
 
 ## Validation Agent Results
 
@@ -37,6 +37,59 @@ This file tracks the validation history of the sf-ai-agentscript skill. Validati
 | Val_Multiple_Available_When | Multiple available when clauses | ✅ PASS | 14s | POSITIVE: Multiple available when on same action IS valid |
 
 **Total Duration**: ~183s (16 agents)
+
+### Tier 3: Flow/Apex Integration Agents (6) — v2.1.0 Patterns
+
+| Agent | Pattern Tested | Expected | Actual | Notes |
+|-------|----------------|----------|--------|-------|
+| Val_Apex_Bare_Output | Bare @InvocableMethod output naming | ✅ PASS | ❌ FAIL | NEGATIVE FINDING: bare List<String> without @InvocableVariable wrappers is INCOMPATIBLE |
+| Val_Datetime_IO | `datetime` type in action I/O | ✅ PASS | ✅ PASS | datetime maps to lightning__dateTimeStringType |
+| Val_Name_Mismatch | Wrong output name vs Apex field | ❌ FAIL | ❌ FAIL | Expected: "invalid output 'wrong_name'" — confirmed exact-match required |
+| Val_Partial_Output | Subset of target outputs declared | ✅ PASS | ✅ PASS | Can declare fewer outputs than the Apex class exposes |
+| Val_No_Outputs | Inputs-only action (no outputs block) | ❌ FAIL | ❌ FAIL | Expected: "Internal Error" — outputs block specifically required |
+| Val_Level1_Only | Level 1 definition without Level 2 invocation | ✅ PASS | ✅ PASS | Action definitions without @actions.X invocations are valid |
+
+**Apex Test Classes Deployed**: `BareOutputAction.cls` (bare List<String> return), `DateTimeAction.cls` (DateTime with @InvocableVariable wrappers)
+
+## TDD Findings (v2.1.0)
+
+### Finding 4: Bare `@InvocableMethod` is INCOMPATIBLE with Agent Script ❌
+
+- **Pattern**: Apex class returning `List<String>` directly (no `@InvocableVariable` wrapper classes)
+- **Rounds Tested**: 3 iterations — input name `name` (invalid), input name `input` (invalid), no inputs block (Internal Error)
+- **Root Cause**: The framework requires `@InvocableVariable` annotations to discover bindable parameter names. Without wrapper classes, no I/O name can be matched.
+- **Impact**: Added "Bare @InvocableMethod Pattern (NOT Compatible)" warning to SKILL.md and actions-reference.md
+- **Rule**: Always use `@InvocableVariable` wrapper classes when targeting Apex from Agent Script
+
+### Finding 5: `datetime` type works in action I/O ✅
+
+- **Pattern**: `startDateTime: datetime` and `endDateTime: datetime` in action inputs/outputs targeting Apex `DateTime` params
+- **Result**: Publishes successfully; maps to `lightning__dateTimeStringType` in Lightning type system
+- **Impact**: Added `datetime` → `lightning__dateTimeStringType` to SKILL.md type mapping tables
+
+### Finding 6: I/O names must exactly match `@InvocableVariable` field names ❌
+
+- **Pattern**: Output name `wrong_name` when Apex class has `@InvocableVariable public String outputText`
+- **Error**: `"invalid output 'wrong_name'"` at server-side compilation
+- **Impact**: Added I/O Name Matching Rules section to SKILL.md and actions-reference.md with exact-match table
+
+### Finding 7: Partial output declaration is valid ✅
+
+- **Pattern**: Declaring only `outputText: string` when Apex class also has `inputText: string` as output
+- **Result**: Publishes successfully — subset of outputs is valid
+- **Impact**: Added "Partial Output Pattern" documentation to SKILL.md
+
+### Finding 8: `outputs:` block specifically required (not just "I/O") ❌
+
+- **Pattern**: Action with `inputs:` block but no `outputs:` block
+- **Error**: `"Internal Error, try again later"` at server-side compilation
+- **Impact**: Updated Issue 15 in known-issues.md — `outputs:` block is specifically required. `inputs:` alone is NOT sufficient.
+
+### Finding 9: Level 1 without Level 2 is valid ✅
+
+- **Pattern**: Action definition in topic `actions:` block with `target:`, `inputs:`, `outputs:` but NO `@actions.X` invocation in `reasoning.actions:`
+- **Result**: Publishes successfully — action definitions exist for the planner without explicit invocation
+- **Impact**: Added "Level 1 Without Level 2 Is Valid" note to SKILL.md Two-Level Action System section
 
 ## TDD Findings (v1.9.0)
 
@@ -141,6 +194,33 @@ Each validation agent tests specific patterns documented in SKILL.md:
     - CONFIRMED VALID: Multiple `available when` clauses on same action
     - DISPROVES: "One available when per action" constraint in SKILL.md
 
+17. **Val_Apex_Bare_Output** → Bare @InvocableMethod (NEGATIVE)
+    - CONFIRMED NOT COMPATIBLE: Bare `List<String>` return without `@InvocableVariable` wrappers
+    - 3 rounds tested: input name `name` (invalid), `input` (invalid), no inputs (Internal Error)
+    - Rule: Always use `@InvocableVariable` wrapper classes for Agent Script actions
+
+18. **Val_Datetime_IO** → DateTime Type in Action I/O
+    - CONFIRMED VALID: `datetime` type in action inputs/outputs
+    - Maps to `lightning__dateTimeStringType` in Lightning type system
+    - Apex target: `DateTimeAction.cls` with `DateTime` wrapper params
+
+19. **Val_Name_Mismatch** → I/O Name Matching (NEGATIVE)
+    - CONFIRMED: I/O names must exactly match `@InvocableVariable` field names
+    - Output name `wrong_name` vs Apex field `outputText` → `"invalid output 'wrong_name'"`
+
+20. **Val_Partial_Output** → Partial Output Declaration
+    - CONFIRMED VALID: Declaring subset of target outputs is acceptable
+    - Declared `outputText` only from `TestApexAction` (which has both input and output wrappers)
+
+21. **Val_No_Outputs** → Inputs-Only Action (NEGATIVE)
+    - CONFIRMED: `outputs:` block is specifically required for publish
+    - Action with `inputs:` but no `outputs:` → `"Internal Error, try again later"`
+    - Validates Issue 15 nuance: outputs specifically required, not just "I/O"
+
+22. **Val_Level1_Only** → Level 1 Without Level 2
+    - CONFIRMED VALID: Action definition in topic `actions:` block without `@actions.X` in reasoning
+    - Level 1 definitions (target + I/O) without Level 2 invocations publish successfully
+
 ## Validation Command
 
 ```bash
@@ -157,7 +237,9 @@ for agent in Val_Minimal_Syntax Val_Arithmetic_Ops Val_Comparison_Ops Val_Variab
   Val_Topic_Transitions Val_Latch_Pattern Val_Loop_Guard Val_Interpolation \
   Val_Action_Properties Val_Before_Reasoning Val_After_Reasoning \
   Val_Label_Property Val_Always_Expect_Input Val_Else_Nested_If \
-  Val_Step_Guard Val_Multiple_Available_When; do
+  Val_Step_Guard Val_Multiple_Available_When \
+  Val_Apex_Bare_Output Val_Datetime_IO Val_Name_Mismatch \
+  Val_Partial_Output Val_No_Outputs Val_Level1_Only; do
   sf agent publish authoring-bundle --api-name "$agent" --target-org AgentforceTesting --json
 done
 ```
@@ -175,12 +257,13 @@ done
 
 | Date | Version | Status | Passed | Failed | Notes |
 |------|---------|--------|--------|--------|-------|
+| 2026-02-17 | v2.1.0 | ✅ PASS | 22/22 | 0 | 6 new Flow/Apex integration agents. Findings: bare @InvocableMethod INCOMPATIBLE, datetime type WORKS, I/O names must exact-match, partial outputs VALID, outputs block REQUIRED, Level 1 without Level 2 VALID |
 | 2026-02-14 | v1.9.0 | ✅ PASS | 16/16 | 0 | 3 new agents + re-validation against AgentforceTesting. Found: else+nested-if INVALID, <> INVALID, multiple available-when VALID |
 | 2026-01-20 | v1.1.0 | ✅ PASS | 8/8 | 0 | Initial validation framework implementation (R6-Agentforce-SandboxFull) |
 
 ## Next Validation Due
 
-**2026-03-16** (30 days from last validation)
+**2026-03-19** (30 days from last validation)
 
 ---
 

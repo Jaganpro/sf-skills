@@ -1,0 +1,55 @@
+# Val_Level1_Only - Tests Level 1 action definition without Level 2 invocation
+# Purpose: Verify that defining an action with target/I/O but never invoking it
+#          via @actions.X in reasoning.actions is valid
+#
+# GAP 7: Users may think both Level 1 (definition) and Level 2 (invocation)
+#         are always required. This tests that Level 1 alone is valid —
+#         the LLM auto-selects actions from the topic's actions: block.
+#
+# Tests:
+#   POSITIVE: Level 1 action definition with I/O but no Level 2 @actions.X invocation
+#
+# Apex Target: TestApexAction (already deployed to AgentforceTesting)
+#
+# SKILL.md Section: Two-Level Action System
+
+system:
+   messages:
+      welcome: "Level 1 only validation agent."
+      error: "Validation error occurred."
+   instructions: "This agent validates that Level 1 without Level 2 is valid."
+
+config:
+   agent_name: "Val_Level1_Only"
+   agent_label: "Validation: Level 1 Only"
+   description: "Tests that Level 1 action definition without Level 2 invocation compiles"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+topic level1_test:
+   description: "Test Level 1 action without Level 2 invocation"
+
+   actions:
+      process_text:
+         description: "Process text via Apex — defined but NOT explicitly invoked via @actions"
+         inputs:
+            inputText: string
+               description: "Text input for processing"
+         outputs:
+            outputText: string
+               description: "Processed text output"
+         target: "apex://TestApexAction"
+
+   reasoning:
+      instructions: |
+         Help the user process their text.
+         The process_text action is available for you to use when needed.
+         You may invoke it based on the user's request.
+
+start_agent entry:
+   description: "Entry point for Level 1 only validation"
+   reasoning:
+      instructions: |
+         Begin validation by transitioning to the test topic.
+      actions:
+         begin: @utils.transition to @topic.level1_test
+            description: "Start Level 1 only test"

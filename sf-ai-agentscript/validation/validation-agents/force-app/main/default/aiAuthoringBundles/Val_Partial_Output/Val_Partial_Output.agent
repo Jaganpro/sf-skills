@@ -1,0 +1,61 @@
+# Val_Partial_Output - Tests declaring subset of outputs (POSITIVE test)
+# Purpose: Verify that you can declare only SOME outputs from the Apex target
+#
+# GAP 5: Users don't need to declare ALL outputs from the target's return type.
+#         Declaring a subset should compile and publish successfully.
+#
+# Tests:
+#   POSITIVE: Declare only "outputText" from TestApexAction (which has outputText)
+#             without needing to declare every possible output
+#
+# Apex Target: TestApexAction (already deployed to AgentforceTesting)
+#   - Output wrapper: ActionOutput { outputText: String }
+#   - We declare only outputText — if additional outputs existed, we could skip them
+#
+# SKILL.md Section: Partial Output Pattern
+
+system:
+   messages:
+      welcome: "Partial output validation agent."
+      error: "Validation error occurred."
+   instructions: "This agent validates that partial output declarations work."
+
+config:
+   agent_name: "Val_Partial_Output"
+   agent_label: "Validation: Partial Output"
+   description: "Tests declaring a subset of outputs from Apex target"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+topic partial_output_test:
+   description: "Test partial output declaration"
+
+   actions:
+      process_text:
+         description: "Process text and capture only outputText"
+         inputs:
+            inputText: string
+               description: "Text input for processing"
+         outputs:
+            outputText: string
+               description: "Processed text output (partial — only declaring this one)"
+         target: "apex://TestApexAction"
+
+   reasoning:
+      instructions: |
+         Process the user's text input.
+      actions:
+         process: @actions.process_text
+            with inputText = ...
+            set @variables.result = @outputs.outputText
+
+start_agent entry:
+   description: "Entry point for partial output validation"
+   reasoning:
+      instructions: |
+         Begin validation by transitioning to the test topic.
+      actions:
+         begin: @utils.transition to @topic.partial_output_test
+            description: "Start partial output test"
+
+variables:
+   result: mutable string = ""

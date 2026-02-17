@@ -1,0 +1,61 @@
+# Val_Name_Mismatch - Tests wrong output name (NEGATIVE test)
+# Purpose: Verify that wrong output names cause publish failure
+#
+# GAP 4: I/O names in Agent Script must EXACTLY match the @InvocableVariable
+#         field names in the Apex target class. Wrong names should fail.
+#
+# Tests:
+#   NEGATIVE: Output name "wrong_name" instead of "outputText" → expected publish failure
+#
+# Apex Target: TestApexAction (already deployed to AgentforceTesting)
+#   - Input wrapper: ActionInput { inputText: String }
+#   - Output wrapper: ActionOutput { outputText: String }
+#   - Expected error: "Invalid output 'wrong_name'" or similar
+#
+# SKILL.md Section: I/O Name Matching Rules
+
+system:
+   messages:
+      welcome: "Name mismatch validation agent."
+      error: "Validation error occurred."
+   instructions: "This agent validates that wrong I/O names cause publish failure."
+
+config:
+   agent_name: "Val_Name_Mismatch"
+   agent_label: "Validation: Name Mismatch"
+   description: "NEGATIVE TEST: Tests wrong output name against Apex target"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+topic name_mismatch_test:
+   description: "Test wrong output name causes failure"
+
+   actions:
+      process_text:
+         description: "Process text with deliberately wrong output name"
+         inputs:
+            inputText: string
+               description: "Text input for processing"
+         outputs:
+            wrong_name: string
+               description: "DELIBERATELY WRONG: should be 'outputText' to match Apex"
+         target: "apex://TestApexAction"
+
+   reasoning:
+      instructions: |
+         Attempt to process text.
+      actions:
+         process: @actions.process_text
+            with inputText = ...
+            set @variables.result = @outputs.wrong_name
+
+start_agent entry:
+   description: "Entry point for name mismatch validation"
+   reasoning:
+      instructions: |
+         Begin validation by transitioning to the test topic.
+      actions:
+         begin: @utils.transition to @topic.name_mismatch_test
+            description: "Start name mismatch test"
+
+variables:
+   result: mutable string = ""

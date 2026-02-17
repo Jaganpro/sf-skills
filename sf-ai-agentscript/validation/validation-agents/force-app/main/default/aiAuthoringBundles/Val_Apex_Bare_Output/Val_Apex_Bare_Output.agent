@@ -1,0 +1,61 @@
+# Val_Apex_Bare_Output - Tests bare @InvocableMethod output naming
+# Purpose: Verify that a bare List<String> return uses output name "output"
+#
+# GAP 1: When @InvocableMethod uses bare List<String> (no wrapper class),
+#         bare input params have NO discoverable name in Agent Script.
+#         Round 1: "name" invalid. Round 2: "input" invalid.
+#         Round 3: Remove inputs block — output-only pattern.
+#         Discovery: bare @InvocableMethod CANNOT have named inputs in Agent Script.
+#         Must use @InvocableVariable wrapper classes for named I/O.
+#
+# Tests:
+#   POSITIVE: Action with NO inputs and output name "output" for bare @InvocableMethod
+#
+# Apex Target: BareOutputAction (deployed to AgentforceTesting)
+#   - @InvocableMethod returning List<String> greet(List<String> names)
+#   - No @InvocableVariable wrapper — bare return type
+#
+# SKILL.md Section: I/O Name Matching Rules, Bare @InvocableMethod Pattern
+
+system:
+   messages:
+      welcome: "Bare output validation agent."
+      error: "Validation error occurred."
+   instructions: "This agent validates bare @InvocableMethod output naming."
+
+config:
+   agent_name: "Val_Apex_Bare_Output"
+   agent_label: "Validation: Apex Bare Output"
+   description: "Tests output name 'output' for bare @InvocableMethod returning List<String>"
+   default_agent_user: "multistepworkflows@00dak00000gdhgd1068670160.ext"
+
+topic bare_output_test:
+   description: "Test bare @InvocableMethod output naming"
+
+   actions:
+      greet_user:
+         description: "Greet the user using bare @InvocableMethod (no named inputs)"
+         outputs:
+            output: string
+               description: "The greeting result (framework default name for bare return)"
+         target: "apex://BareOutputAction"
+
+   reasoning:
+      instructions: |
+         Help the user by greeting them.
+         Use the greet action to generate a personalized greeting.
+      actions:
+         do_greet: @actions.greet_user
+            set @variables.greeting = @outputs.output
+
+start_agent entry:
+   description: "Entry point for bare output validation"
+   reasoning:
+      instructions: |
+         Begin validation by transitioning to the test topic.
+      actions:
+         begin: @utils.transition to @topic.bare_output_test
+            description: "Start bare output test"
+
+variables:
+   greeting: mutable string = ""

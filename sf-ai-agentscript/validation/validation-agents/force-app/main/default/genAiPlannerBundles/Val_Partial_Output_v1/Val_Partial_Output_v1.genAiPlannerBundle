@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Tests declaring a subset of outputs from Apex target</description>
+    <localTopicLinks>
+        <genAiPluginName>entry_16jak000001QsVd</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>partial_output_test_16jak000001QsVd</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>partial_output_test_16jak000001QsVd</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Test partial output declaration</description>
+        <developerName>partial_output_test_16jak000001QsVd</developerName>
+        <genAiPluginInstructions>
+            <description>This agent validates that partial output declarations work.</description>
+            <developerName>instruction0_179ak000002FzRp</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002FzRp</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>process_text_179ak000002FzRp</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>process_text_179ak000002FzRp</fullName>
+            <description>Process text and capture only outputText</description>
+            <developerName>process_text_179ak000002FzRp</developerName>
+            <invocationTarget>TestApexAction</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>false</isIncludeInProgressIndicator>
+            <localDeveloperName>process_text</localDeveloperName>
+            <masterLabel>Process Text</masterLabel>
+        </localActions>
+        <localDeveloperName>partial_output_test</localDeveloperName>
+        <masterLabel>Partial Output Test</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>entry_16jak000001QsVd</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Entry point for partial output validation</description>
+        <developerName>entry_16jak000001QsVd</developerName>
+        <genAiPluginInstructions>
+            <description>This agent validates that partial output declarations work.</description>
+            <developerName>instruction0_179ak000002FzRq</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179ak000002FzRq</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>entry</localDeveloperName>
+        <masterLabel>Entry</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Validation: Partial Output</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>
