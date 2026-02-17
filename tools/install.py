@@ -723,6 +723,76 @@ def cleanup_settings_hooks(dry_run: bool = False) -> int:
     return removed_count
 
 
+def cleanup_stale_hooks(dry_run: bool = False) -> int:
+    """
+    Remove sf-skills hooks from settings.json that reference missing script files.
+
+    During --update, the running installer process uses its in-memory
+    get_hooks_config() to register hooks (Step 4), while hook *files* on disk
+    come from the newly downloaded repo (Step 3). If the new repo removed
+    scripts that the old installer still references, settings.json ends up
+    pointing to missing files — blocking Claude Code operations.
+
+    This function runs after hook registration to catch and remove any
+    stale references.
+
+    Returns:
+        Number of stale hook groups removed
+    """
+    if not SETTINGS_FILE.exists():
+        return 0
+
+    try:
+        settings = json.loads(SETTINGS_FILE.read_text())
+    except (json.JSONDecodeError, IOError):
+        return 0
+
+    if "hooks" not in settings:
+        return 0
+
+    removed_count = 0
+
+    for event_name in list(settings["hooks"].keys()):
+        cleaned_hooks = []
+
+        for hook_group in settings["hooks"][event_name]:
+            if not is_sf_skills_hook(hook_group):
+                # Keep non-sf-skills hooks untouched
+                cleaned_hooks.append(hook_group)
+                continue
+
+            # Check if all referenced scripts in this hook group exist on disk
+            all_scripts_exist = True
+            for nested_hook in hook_group.get("hooks", []):
+                cmd = nested_hook.get("command", "")
+                parts = cmd.split()
+                if len(parts) >= 2:
+                    script_path = parts[-1]
+                    if not Path(script_path).exists():
+                        all_scripts_exist = False
+                        break
+
+            if all_scripts_exist:
+                cleaned_hooks.append(hook_group)
+            else:
+                removed_count += 1
+
+        settings["hooks"][event_name] = cleaned_hooks
+
+        # Remove empty arrays
+        if not settings["hooks"][event_name]:
+            del settings["hooks"][event_name]
+
+    # Remove empty hooks object
+    if "hooks" in settings and not settings["hooks"]:
+        del settings["hooks"]
+
+    if removed_count > 0 and not dry_run:
+        SETTINGS_FILE.write_text(json.dumps(settings, indent=2))
+
+    return removed_count
+
+
 def cleanup_temp_files(dry_run: bool = False) -> int:
     """
     Remove sf-skills temp files.
@@ -1706,6 +1776,22 @@ def verify_installation() -> Tuple[bool, List[str]]:
                             break
                 if not has_sf_hooks:
                     issues.append("sf-skills hooks not registered")
+
+                # Check for stale hooks referencing missing script files
+                for event_name, event_hooks in settings["hooks"].items():
+                    for hook_group in event_hooks:
+                        if not hook_group.get("_sf_skills"):
+                            continue
+                        for nested_hook in hook_group.get("hooks", []):
+                            cmd = nested_hook.get("command", "")
+                            parts = cmd.split()
+                            if len(parts) >= 2:
+                                script_path = parts[-1]
+                                if not Path(script_path).exists():
+                                    issues.append(
+                                        f"Stale hook in {event_name}: "
+                                        f"{Path(script_path).name} (file missing)"
+                                    )
         except json.JSONDecodeError:
             issues.append("Invalid settings.json")
     else:
@@ -1887,6 +1973,14 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             status = update_settings_json()
             added = sum(1 for s in status.values() if s == "added")
             updated = sum(1 for s in status.values() if s == "updated")
+
+            # Clean up stale hooks that reference missing script files.
+            # This handles the case where the running (old) installer's
+            # in-memory get_hooks_config() references scripts that were
+            # removed in the newly downloaded version.
+            stale_removed = cleanup_stale_hooks()
+            if stale_removed > 0:
+                print_substep(f"Cleaned {stale_removed} stale hook(s) (referenced missing scripts)")
 
             # Migrate: Remove legacy ~/.claude/sf-skills/ if present
             if LEGACY_INSTALL_DIR.exists():
@@ -2363,6 +2457,34 @@ def cmd_diagnose() -> int:
         print(f"   {c('✅', Colors.GREEN)} All {hook_ok} hook scripts present")
     else:
         print(f"   {c('⚠️', Colors.YELLOW)} {hook_ok} present, {hook_missing} missing")
+
+    # Check for stale hooks in settings.json referencing missing files
+    stale_hooks = 0
+    if SETTINGS_FILE.exists():
+        try:
+            settings_check = json.loads(SETTINGS_FILE.read_text())
+            for ev_name, ev_hooks in settings_check.get("hooks", {}).items():
+                for hook_group in ev_hooks:
+                    if not hook_group.get("_sf_skills"):
+                        continue
+                    for nested_hook in hook_group.get("hooks", []):
+                        cmd = nested_hook.get("command", "")
+                        parts = cmd.split()
+                        if len(parts) >= 2:
+                            script_path = Path(parts[-1])
+                            if not script_path.exists():
+                                print(f"   {c('❌', Colors.RED)} Stale hook in settings.json"
+                                      f" [{ev_name}]: {script_path.name}")
+                                stale_hooks += 1
+                                issues += 1
+        except (json.JSONDecodeError, IOError):
+            pass
+
+    if stale_hooks > 0:
+        print(f"   {c('⚠️', Colors.YELLOW)} {stale_hooks} stale hook(s) reference missing files")
+        print(f"      Fix: python3 {INSTALLER_FILE} --force-update")
+    elif hook_missing == 0:
+        print(f"   {c('✅', Colors.GREEN)} No stale hooks in settings.json")
 
     # ── Check 3: Python environment ──
     print(f"\n{c('3. Python Environment', Colors.BOLD)}")
