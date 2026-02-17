@@ -1,27 +1,23 @@
 # Shared Hooks Architecture
 
-This directory contains the centralized hook system for sf-skills, providing intelligent skill discovery, guardrails, and orchestration across all 18 Salesforce skills.
+This directory contains the centralized hook system for sf-skills, providing intelligent skill discovery and guardrails across all 18 Salesforce skills.
 
 ## Overview
 
 ```
 shared/hooks/
 ├── skills-registry.json         # Single source of truth for all skill metadata
-├── skill-activation-prompt.py   # UserPromptSubmit hook (pre-prompt suggestions)
-├── suggest-related-skills.py    # PostToolUse hook (post-action suggestions)
 ├── scripts/
 │   ├── guardrails.py            # PreToolUse hook (block/auto-fix dangerous operations)
-│   ├── chain-validator.py       # SubagentStop hook (workflow chain validation)
 │   ├── auto-approve.py          # PermissionRequest hook (smart auto-approval)
 │   └── llm-eval.py              # LLM-powered semantic evaluation (Haiku)
 ├── docs/
 │   ├── hook-lifecycle-diagram.md    # Visual lifecycle diagram with all SF-Skills hooks
-│   ├── ORCHESTRATION-ARCHITECTURE.md # How skill recommendations work
 │   └── hooks-frontmatter-schema.md  # Hook configuration format
 └── README.md                    # This file
 ```
 
-## Architecture v4.0.0
+## Architecture v5.0.0
 
 ### Proactive vs Reactive Hooks
 
@@ -46,20 +42,10 @@ The modernized architecture shifts from **reactive** (catch issues after) to **p
 │ REACTIVE LAYER (ENHANCED)                                               │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  Tool Executes → PostToolUse Hook → Validate → Suggest Next Steps       │
-│                        ↓                  ↓                             │
-│              skill-specific      suggest-related-skills.py              │
+│  Tool Executes → PostToolUse Hook → Validate                            │
+│                        ↓                                                │
+│              skill-specific                                             │
 │               validators                                                │
-│                                                                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ORCHESTRATION LAYER (NEW)                                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  Subagent Completes → SubagentStop Hook → Chain Validation              │
-│                              ↓                                          │
-│                     chain-validator.py                                  │
-│                              ↓                                          │
-│             "Step 2 of 7 complete. Next: sf-flow"                       │
 │                                                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ PERMISSION LAYER (NEW)                                                  │
@@ -109,36 +95,14 @@ The modernized architecture shifts from **reactive** (catch issues after) to **p
 }
 ```
 
-### 2. PostToolUse (Validation + Suggestions)
+### 2. PostToolUse (Validation)
 
-**Purpose:** Validate tool output and suggest next workflow steps.
+**Purpose:** Validate tool output after execution.
 
 **Components:**
 - **Skill-specific validators:** Located in each skill's `hooks/scripts/` directory
-- **suggest-related-skills.py:** Shared script for workflow suggestions
 
-### 3. SubagentStop (Chain Validation)
-
-**Purpose:** Validate subagents follow orchestration chains, track progress, suggest next skill.
-
-**Location:** `scripts/chain-validator.py`
-
-**Output Example:**
-```
-══════════════════════════════════════════════════════
-🔗 CHAIN VALIDATION (sf-apex completed)
-══════════════════════════════════════════════════════
-
-📋 WORKFLOW: full_feature
-   Step 2 of 7 complete
-   Progress: sf-metadata ✓ → sf-apex ✓ → sf-flow (next)
-
-➡️ NEXT: /sf-testing *** REQUIRED
-   └─ Run tests to validate Apex code
-══════════════════════════════════════════════════════
-```
-
-### 4. PermissionRequest (Auto-Approval)
+### 3. PermissionRequest (Auto-Approval)
 
 **Purpose:** Automatically approve safe operations, require confirmation for risky ones.
 
@@ -154,7 +118,7 @@ The modernized architecture shifts from **reactive** (catch issues after) to **p
 | Deploy to production | Production | REQUIRE CONFIRM |
 | DELETE, org delete | Any | REQUIRE CONFIRM |
 
-### 5. LLM-Powered Hooks (Haiku)
+### 4. LLM-Powered Hooks (Haiku)
 
 **Purpose:** Semantic evaluation for complex patterns that can't be detected by regex.
 
@@ -193,13 +157,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/apex-lsp-validate.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-apex"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-apex"
-      timeout: 5000
 ---
 ```
 
@@ -238,11 +195,11 @@ All skills have been migrated from `hooks/hooks.json` to frontmatter:
 
 ---
 
-## Skills Registry Schema (v4.0.0)
+## Skills Registry Schema (v5.0.0)
 
 ```json
 {
-  "version": "4.0.0",
+  "version": "5.0.0",
   "guardrails": {
     "dangerous_dml": {
       "patterns": ["DELETE FROM \\w+ (;|$)", "UPDATE \\w+ SET .* (?<!WHERE.*)$"],
@@ -274,9 +231,7 @@ All skills have been migrated from `hooks/hooks.json` to frontmatter:
       "reason": "Production operations require confirmation"
     }
   },
-  "skills": { ... },
-  "chains": { ... },
-  "confidence_levels": { ... }
+  "skills": { ... }
 }
 ```
 
@@ -289,11 +244,6 @@ The project's `.claude/hooks.json` wires global hooks:
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [{
-      "type": "command",
-      "command": "python3 ./shared/hooks/skill-activation-prompt.py",
-      "timeout": 5000
-    }],
     "PreToolUse": [{
       "matcher": "Bash",
       "hooks": [{
@@ -316,34 +266,6 @@ The project's `.claude/hooks.json` wires global hooks:
 
 ---
 
-## Workflow Chains
-
-### Defined Chains
-
-| Chain | Order | Trigger Phrases |
-|-------|-------|-----------------|
-| `full_feature` | sf-metadata → sf-apex → sf-flow → sf-lwc → sf-deploy → sf-testing | "build feature", "complete feature" |
-| `agentforce` | sf-metadata → sf-apex → sf-flow → sf-deploy → sf-ai-agentscript → sf-ai-agentforce-testing | "agentforce", "agent", "copilot" |
-| `integration` | sf-connected-apps → sf-integration → sf-flow → sf-deploy | "integration", "external service" |
-| `troubleshooting` | sf-testing → sf-debug → sf-apex → sf-deploy → sf-testing | "debug", "troubleshoot", "fix failing" |
-
-### Context Persistence
-
-Workflow context is persisted to `/tmp/sf-skills-context.json`:
-
-```json
-{
-  "last_skill": "sf-apex",
-  "detected_chain": "full_feature",
-  "chain_position": 2,
-  "files_modified": ["force-app/main/default/classes/AccountService.cls"],
-  "detected_patterns": ["@InvocableMethod"],
-  "timestamp": "2026-01-24T10:30:00Z"
-}
-```
-
----
-
 ## Adding a New Skill
 
 ### 1. Add to skills-registry.json
@@ -354,12 +276,7 @@ Workflow context is persisted to `/tmp/sf-skills-context.json`:
   "intentPatterns": ["create.*pattern", "build.*pattern"],
   "filePatterns": ["\\.ext$"],
   "priority": "medium",
-  "description": "Description of the skill",
-  "orchestration": {
-    "prerequisites": [{ "skill": "sf-metadata", "confidence": 2 }],
-    "next_steps": [{ "skill": "sf-deploy", "confidence": 3 }],
-    "commonly_with": [{ "skill": "sf-testing", "trigger": "test" }]
-  }
+  "description": "Description of the skill"
 }
 ```
 
@@ -379,22 +296,8 @@ hooks:
         - type: command
           command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
           timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-newskill"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-newskill"
-      timeout: 5000
 ---
 ```
-
-### 3. Update chains if applicable
-
-Add the skill to relevant workflow chains in the `chains` section of `skills-registry.json`.
 
 ---
 
@@ -460,12 +363,6 @@ Add the skill to relevant workflow chains in the `chains` section of `skills-reg
    ```
 
 2. Check pattern matching in `auto_approve_policy`
-
-### Chain Validation Issues
-
-1. Check context file exists: `cat /tmp/sf-skills-context.json`
-2. Verify skill name matches registry exactly
-3. Clear context to reset: `rm /tmp/sf-skills-context.json`
 
 ---
 

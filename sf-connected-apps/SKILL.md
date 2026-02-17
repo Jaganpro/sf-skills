@@ -17,16 +17,6 @@ hooks:
         - type: command
           command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
           timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-connected-apps"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-connected-apps"
-      timeout: 5000
 ---
 
 # sf-connected-apps: Salesforce Connected Apps & External Client Apps

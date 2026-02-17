@@ -1098,16 +1098,6 @@ def get_hooks_config() -> Dict[str, Any]:
                 "_sf_skills": True
             }
         ],
-        "UserPromptSubmit": [
-            {
-                "hooks": [{
-                    "type": "command",
-                    "command": f"python3 {hooks_path}/skill-activation-prompt.py",
-                    "timeout": 5000
-                }],
-                "_sf_skills": True
-            }
-        ],
         "PreToolUse": [
             {
                 "matcher": "Bash",
@@ -1125,24 +1115,6 @@ def get_hooks_config() -> Dict[str, Any]:
                 ],
                 "_sf_skills": True
             },
-            {
-                "matcher": "Write|Edit",
-                "hooks": [{
-                    "type": "command",
-                    "command": f"python3 {scripts_path}/skill-enforcement.py",
-                    "timeout": 5000
-                }],
-                "_sf_skills": True
-            },
-            {
-                "matcher": "Skill",
-                "hooks": [{
-                    "type": "command",
-                    "command": f"python3 {scripts_path}/skill-enforcement.py",
-                    "timeout": 5000
-                }],
-                "_sf_skills": True
-            }
         ],
         "PostToolUse": [
             {
@@ -1152,11 +1124,6 @@ def get_hooks_config() -> Dict[str, Any]:
                         "type": "command",
                         "command": f"python3 {scripts_path}/validator-dispatcher.py",
                         "timeout": 10000
-                    },
-                    {
-                        "type": "command",
-                        "command": f"python3 {hooks_path}/suggest-related-skills.py",
-                        "timeout": 5000
                     }
                 ],
                 "_sf_skills": True
@@ -1182,16 +1149,6 @@ def get_hooks_config() -> Dict[str, Any]:
                 "_sf_skills": True
             }
         ],
-        "SubagentStop": [
-            {
-                "hooks": [{
-                    "type": "command",
-                    "command": f"python3 {scripts_path}/chain-validator.py",
-                    "timeout": 5000
-                }],
-                "_sf_skills": True
-            }
-        ]
     }
 
 
@@ -1713,7 +1670,6 @@ def verify_installation() -> Tuple[bool, List[str]]:
         required_scripts = [
             "scripts/guardrails.py",
             "scripts/session-init.py",
-            "skill-activation-prompt.py",
             "skills-registry.json"
         ]
         for script in required_scripts:

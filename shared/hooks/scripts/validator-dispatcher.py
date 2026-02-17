@@ -59,10 +59,6 @@ SHARED_HOOKS_DIR = SCRIPT_DIR.parent  # shared/hooks/
 # Skills are at ~/.claude/skills/ in the native layout
 SKILLS_ROOT = Path.home() / ".claude" / "skills"
 
-# State file for tracking active skill (used by FIX 3)
-ACTIVE_SKILL_FILE = Path("/tmp/sf-skills-active-skill.json")
-
-
 # File pattern to validator mapping
 # Each entry: (regex_pattern, skill_name, validator_path_relative_to_project_root)
 VALIDATOR_REGISTRY: List[tuple] = [
@@ -172,18 +168,6 @@ VALIDATOR_REGISTRY: List[tuple] = [
     ),
 
 ]
-
-
-def get_active_skill() -> Optional[str]:
-    """Read the currently active skill from state file."""
-    try:
-        if ACTIVE_SKILL_FILE.exists():
-            with open(ACTIVE_SKILL_FILE, 'r') as f:
-                state = json.load(f)
-                return state.get("active_skill")
-    except (json.JSONDecodeError, IOError):
-        pass
-    return None
 
 
 def find_validators_for_file(file_path: str) -> List[Dict]:

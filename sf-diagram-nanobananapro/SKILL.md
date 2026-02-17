@@ -16,16 +16,6 @@ hooks:
         - type: command
           command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
           timeout: 5000
-  PostToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-diagram-nanobananapro"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-diagram-nanobananapro"
-      timeout: 5000
 ---
 
 # sf-diagram-nanobananapro: Salesforce Visual AI Skill

@@ -22,13 +22,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-soql"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-soql"
-      timeout: 5000
 ---
 
 # sf-soql: Salesforce SOQL Query Expert

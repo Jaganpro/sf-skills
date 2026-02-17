@@ -1,682 +1,849 @@
 {
-  "version": "4.1.0",
-  "description": "Unified skills registry - single source of truth for skill discovery, orchestration, relationships, guardrails, auto-approval policies, and background operation rules",
-
+  "version": "5.0.0",
+  "description": "Unified skills registry - single source of truth for skill discovery, relationships, guardrails, auto-approval policies, and background operation rules",
   "background_operations": {
     "sf-testing": {
-      "commands": ["sf apex run test", "sf apex test run"],
+      "commands": [
+        "sf apex run test",
+        "sf apex test run"
+      ],
       "typical_duration": "2-15 minutes",
       "always_background": true,
       "reason": "Apex tests can run for extended periods depending on org size and test volume"
     },
     "sf-deploy": {
-      "commands": ["sf project deploy start", "sf org create scratch", "sf org create sandbox"],
+      "commands": [
+        "sf project deploy start",
+        "sf org create scratch",
+        "sf org create sandbox"
+      ],
       "typical_duration": "1-10 minutes",
       "background_if_no_wait": true,
-      "exclude_patterns": ["--dry-run", "--validate-only", "--check-only"],
+      "exclude_patterns": [
+        "--dry-run",
+        "--validate-only",
+        "--check-only"
+      ],
       "reason": "Full deployments and org creation are long-running operations"
     },
     "sf-data": {
-      "commands": ["sf data import tree", "sf data import bulk", "sf data upsert bulk"],
+      "commands": [
+        "sf data import tree",
+        "sf data import bulk",
+        "sf data upsert bulk"
+      ],
       "typical_duration": "5-30 minutes",
       "background_if_large": true,
       "large_threshold": "1000 records",
       "reason": "Large data imports can take significant time"
     }
   },
-
   "guardrails": {
     "dangerous_dml": {
-      "patterns": ["DELETE FROM \\w+ (;|$)", "UPDATE \\w+ SET .* (?<!WHERE.*)$"],
+      "patterns": [
+        "DELETE FROM \\w+ (;|$)",
+        "UPDATE \\w+ SET .* (?<!WHERE.*)$"
+      ],
       "severity": "CRITICAL",
       "action": "block",
       "message": "Destructive DML without WHERE clause detected"
     },
     "unbounded_soql": {
-      "patterns": ["SELECT .* FROM \\w+ (?!.*LIMIT)"],
+      "patterns": [
+        "SELECT .* FROM \\w+ (?!.*LIMIT)"
+      ],
       "severity": "HIGH",
       "action": "auto_fix",
       "fix": "append LIMIT 200",
       "message": "Unbounded SOQL query - adding LIMIT 200"
     },
     "hardcoded_credentials": {
-      "patterns": ["(password|api_key|secret|token)\\s*=\\s*['\"][^'\"]+['\"]"],
+      "patterns": [
+        "(password|api_key|secret|token)\\s*=\\s*['\"][^'\"]+['\"]"
+      ],
       "severity": "CRITICAL",
       "action": "block",
       "message": "Hardcoded credentials detected - use Named Credentials"
     },
     "missing_sharing_keyword": {
-      "patterns": ["public class \\w+(?! (with|without|inherited) sharing)"],
+      "patterns": [
+        "public class \\w+(?! (with|without|inherited) sharing)"
+      ],
       "severity": "MEDIUM",
       "action": "warn",
       "message": "Consider adding explicit sharing keyword (with sharing recommended)"
     },
     "hardcoded_salesforce_ids": {
-      "patterns": ["['\"][a-zA-Z0-9]{15}['\"]|['\"][a-zA-Z0-9]{18}['\"]"],
+      "patterns": [
+        "['\"][a-zA-Z0-9]{15}['\"]|['\"][a-zA-Z0-9]{18}['\"]"
+      ],
       "severity": "MEDIUM",
       "action": "warn",
       "message": "Hardcoded Salesforce ID detected - consider using Custom Metadata"
     }
   },
-
   "auto_approve_policy": {
     "description": "Rules for auto-approving Bash command permissions",
     "read_operations": {
-      "patterns": ["sf data query", "sf org display", "sf org list", "sf project retrieve", "sf apex list log", "sf apex get log", "sf sobject describe", "sf org list metadata"],
+      "patterns": [
+        "sf data query",
+        "sf org display",
+        "sf org list",
+        "sf project retrieve",
+        "sf apex list log",
+        "sf apex get log",
+        "sf sobject describe",
+        "sf org list metadata"
+      ],
       "auto_approve": true,
       "reason": "Read-only operations are safe"
     },
     "scratch_org_operations": {
-      "patterns": ["--target-org.*scratch", "--target-org.*dev.*scratch"],
+      "patterns": [
+        "--target-org.*scratch",
+        "--target-org.*dev.*scratch"
+      ],
       "auto_approve": true,
       "reason": "Scratch orgs are disposable"
     },
     "validation_deploys": {
-      "patterns": ["sf project deploy start.*--dry-run", "sf project deploy validate"],
+      "patterns": [
+        "sf project deploy start.*--dry-run",
+        "sf project deploy validate"
+      ],
       "auto_approve": true,
       "reason": "Dry-run validations don't modify org"
     },
     "require_confirmation": {
-      "patterns": ["--target-org.*(prod|production)", "sf org delete", "DELETE FROM", "git push.*--force"],
+      "patterns": [
+        "--target-org.*(prod|production)",
+        "sf org delete",
+        "DELETE FROM",
+        "git push.*--force"
+      ],
       "auto_approve": false,
       "reason": "Destructive or production operations require confirmation"
     }
   },
-
   "skills": {
     "sf-apex": {
-      "keywords": ["apex", "trigger", "class", "test class", "batch", "queueable", "schedulable", "invocable", "aura enabled", "apex controller", "selector", "domain", "service layer", "trigger handler", "fflib", "apex test"],
-      "intentPatterns": [
-        "create.*apex", "write.*trigger", "implement.*batch", "build.*class",
-        "create.*test.*class", "add.*method", "implement.*interface",
-        "fix.*apex", "debug.*apex", "refactor.*apex", "optimize.*apex"
-      ],
-      "filePatterns": ["\\.cls$", "\\.trigger$", "\\.cls-meta\\.xml$"],
-      "contentTriggers": {
-        "@InvocableMethod": { "suggests": "sf-flow", "message": "Create Flow to call this @InvocableMethod" },
-        "@AuraEnabled": { "suggests": "sf-lwc", "message": "Create LWC to call this @AuraEnabled controller" },
-        "@IsTest": { "suggests": "sf-testing", "message": "This is a test class - use sf-testing for execution" },
-        "Queueable|Batchable|Schedulable": { "suggests": "sf-deploy", "message": "Deploy async Apex to org" }
-      },
-      "priority": "high",
-      "description": "Apex code development with validation and best practices",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "custom_field_reference", "message": "Ensure custom fields exist before Apex references them", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-testing", "condition": "always", "message": "Run tests to validate Apex code", "confidence": 3 },
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy Apex to org with validation", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-flow", "trigger": "@InvocableMethod", "message": "Create Flow to call this @InvocableMethod", "confidence": 2 },
-          { "skill": "sf-lwc", "trigger": "@AuraEnabled", "message": "Create LWC to call this @AuraEnabled controller", "confidence": 2 },
-          { "skill": "sf-data", "trigger": "test|Test", "message": "Generate 251+ test records for bulk testing", "confidence": 1 }
-        ]
-      }
-    },
-
-    "sf-flow": {
-      "keywords": ["flow", "screen flow", "record-triggered", "record triggered", "autolaunched", "auto-launched", "subflow", "scheduled flow", "platform event flow", "flow builder", "flow element", "assignment", "decision", "loop element", "get records", "create records", "update records", "delete records"],
-      "intentPatterns": [
-        "create.*flow", "build.*automation", "automate.*process",
-        "screen.*flow", "record.*triggered", "scheduled.*trigger",
-        "flow.*trigger", "update.*flow", "fix.*flow", "debug.*flow"
-      ],
-      "filePatterns": ["\\.flow-meta\\.xml$", "\\.flow$"],
-      "contentTriggers": {
-        "actionCalls.*apex": { "suggests": "sf-apex", "message": "Create @InvocableMethod Apex for complex logic" },
-        "ComponentInstance|screens": { "suggests": "sf-lwc", "message": "Create LWC screen component for custom UI" },
-        "autolaunched|AutoLaunchedFlow": { "suggests": "sf-ai-agentscript", "message": "Use this Flow as an Agentforce action" }
-      },
-      "priority": "high",
-      "description": "Flow Builder automation with validation",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "custom_object_reference", "message": "Deploy custom objects/fields before creating Flow", "confidence": 2 },
-          { "skill": "sf-apex", "condition": "apex_action", "message": "Deploy @InvocableMethod Apex before Flow references it", "confidence": 3 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy Flow to org (deploy as Draft first)", "confidence": 3 },
-          { "skill": "sf-data", "condition": "record_triggered", "message": "Create 251+ test records to verify bulk behavior", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-apex", "trigger": "actionCalls.*apex", "message": "Create @InvocableMethod Apex for complex logic", "confidence": 2 },
-          { "skill": "sf-lwc", "trigger": "ComponentInstance|screens", "message": "Create LWC screen component for custom UI", "confidence": 2 },
-          { "skill": "sf-ai-agentscript", "trigger": "autolaunched|AutoLaunchedFlow", "message": "Use this Flow as an Agentforce action", "confidence": 1 }
-        ]
-      }
-    },
-
-    "sf-lwc": {
-      "keywords": ["lwc", "lightning web component", "web component", "wire", "wire adapter", "apex wire", "lightning card", "lightning button", "slds", "css", "html template", "js controller", "lightning message service", "lms", "jest", "lwc test"],
-      "intentPatterns": [
-        "create.*component", "build.*lwc", "lightning.*component",
-        "create.*web.*component", "add.*wire", "wire.*apex",
-        "test.*lwc", "jest.*test", "style.*component", "fix.*lwc"
-      ],
-      "filePatterns": ["lwc/[^/]+/[^/]+\\.(js|html|css)$", "\\.js-meta\\.xml$"],
-      "contentTriggers": {
-        "import.*@salesforce/apex": { "suggests": "sf-apex", "message": "Create @AuraEnabled Apex controller" },
-        "lightning__FlowScreen|FlowAttributeChangeEvent": { "suggests": "sf-flow", "message": "Create Flow to embed this screen component" },
-        "MessageContext|publish|subscribe": { "suggests": "sf-lwc", "message": "Create paired LWC for Lightning Message Service" }
-      },
-      "priority": "high",
-      "description": "Lightning Web Components with SLDS compliance",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-apex", "condition": "apex_import", "message": "Deploy Apex controller before LWC imports it", "confidence": 3 },
-          { "skill": "sf-metadata", "condition": "message_channel", "message": "Create Lightning Message Channel first", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy LWC component to org", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-apex", "trigger": "import.*@salesforce/apex", "message": "Create @AuraEnabled Apex controller", "confidence": 2 },
-          { "skill": "sf-flow", "trigger": "lightning__FlowScreen|FlowAttributeChangeEvent", "message": "Create Flow to embed this screen component", "confidence": 2 }
-        ]
-      }
-    },
-
-    "sf-ai-agentforce-conversationdesign": {
       "keywords": [
-        "conversation design", "dialog design", "persona", "utterance",
-        "escalation", "topic design", "instruction writing", "guardrails",
-        "agent UX", "conversation quality", "tone", "agentforce design"
+        "apex",
+        "trigger",
+        "class",
+        "test class",
+        "batch",
+        "queueable",
+        "schedulable",
+        "invocable",
+        "aura enabled",
+        "apex controller",
+        "selector",
+        "domain",
+        "service layer",
+        "trigger handler",
+        "fflib",
+        "apex test"
       ],
       "intentPatterns": [
-        "design.*conversation", "write.*instruction", "create.*persona",
-        "improve.*agent.*quality", "review.*topic", "utterance.*library",
-        "escalation.*matrix", "agent.*tone", "conversation.*flow"
+        "create.*apex",
+        "write.*trigger",
+        "implement.*batch",
+        "build.*class",
+        "create.*test.*class",
+        "add.*method",
+        "implement.*interface",
+        "fix.*apex",
+        "debug.*apex",
+        "refactor.*apex",
+        "optimize.*apex"
       ],
       "filePatterns": [
-        "persona.*\\.md$", "utterance.*\\.csv$", "escalation.*\\.md$",
+        "\\.cls$",
+        "\\.trigger$",
+        "\\.cls-meta\\.xml$"
+      ],
+      "priority": "high",
+      "description": "Apex code development with validation and best practices"
+    },
+    "sf-flow": {
+      "keywords": [
+        "flow",
+        "screen flow",
+        "record-triggered",
+        "record triggered",
+        "autolaunched",
+        "auto-launched",
+        "subflow",
+        "scheduled flow",
+        "platform event flow",
+        "flow builder",
+        "flow element",
+        "assignment",
+        "decision",
+        "loop element",
+        "get records",
+        "create records",
+        "update records",
+        "delete records"
+      ],
+      "intentPatterns": [
+        "create.*flow",
+        "build.*automation",
+        "automate.*process",
+        "screen.*flow",
+        "record.*triggered",
+        "scheduled.*trigger",
+        "flow.*trigger",
+        "update.*flow",
+        "fix.*flow",
+        "debug.*flow"
+      ],
+      "filePatterns": [
+        "\\.flow-meta\\.xml$",
+        "\\.flow$"
+      ],
+      "priority": "high",
+      "description": "Flow Builder automation with validation"
+    },
+    "sf-lwc": {
+      "keywords": [
+        "lwc",
+        "lightning web component",
+        "web component",
+        "wire",
+        "wire adapter",
+        "apex wire",
+        "lightning card",
+        "lightning button",
+        "slds",
+        "css",
+        "html template",
+        "js controller",
+        "lightning message service",
+        "lms",
+        "jest",
+        "lwc test"
+      ],
+      "intentPatterns": [
+        "create.*component",
+        "build.*lwc",
+        "lightning.*component",
+        "create.*web.*component",
+        "add.*wire",
+        "wire.*apex",
+        "test.*lwc",
+        "jest.*test",
+        "style.*component",
+        "fix.*lwc"
+      ],
+      "filePatterns": [
+        "lwc/[^/]+/[^/]+\\.(js|html|css)$",
+        "\\.js-meta\\.xml$"
+      ],
+      "priority": "high",
+      "description": "Lightning Web Components with SLDS compliance"
+    },
+    "sf-ai-agentforce-conversationdesign": {
+      "keywords": [
+        "conversation design",
+        "dialog design",
+        "persona",
+        "utterance",
+        "escalation",
+        "topic design",
+        "instruction writing",
+        "guardrails",
+        "agent UX",
+        "conversation quality",
+        "tone",
+        "agentforce design"
+      ],
+      "intentPatterns": [
+        "design.*conversation",
+        "write.*instruction",
+        "create.*persona",
+        "improve.*agent.*quality",
+        "review.*topic",
+        "utterance.*library",
+        "escalation.*matrix",
+        "agent.*tone",
+        "conversation.*flow"
+      ],
+      "filePatterns": [
+        "persona.*\\.md$",
+        "utterance.*\\.csv$",
+        "escalation.*\\.md$",
         "scorecard.*\\.md$"
       ],
       "priority": "high",
-      "description": "Conversation design for Agentforce agents — personas, topics, instructions, utterances, escalation, guardrails",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [
-          { "skill": "sf-ai-agentscript", "condition": "always", "message": "Implement the designed conversations as Agent Script", "confidence": 3 },
-          { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test the conversation design with multi-turn scenarios", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-ai-agentscript", "trigger": "topic design", "message": "Translate topic architecture into Agent Script", "confidence": 3 },
-          { "skill": "sf-flow", "trigger": "action design", "message": "Build Flow actions for conversation paths", "confidence": 2 },
-          { "skill": "sf-diagram-mermaid", "trigger": "flow visualization", "message": "Visualize conversation flows as diagrams", "confidence": 2 }
-        ]
-      }
+      "description": "Conversation design for Agentforce agents \u2014 personas, topics, instructions, utterances, escalation, guardrails"
     },
-
     "sf-ai-agentforce": {
-      "keywords": ["agentforce", "agent builder", "agent-builder", "prompt template", "prompt-template", "models api", "models-api", "genai function", "genai plugin", "lightning type"],
-      "intentPatterns": [
-        "create.*agent", "build.*agent", "setup.*agent", "prompt.*template", "models.*api", "genai.*function"
+      "keywords": [
+        "agentforce",
+        "agent builder",
+        "agent-builder",
+        "prompt template",
+        "prompt-template",
+        "models api",
+        "models-api",
+        "genai function",
+        "genai plugin",
+        "lightning type"
       ],
-      "filePatterns": ["\\.genAiFunction-meta\\.xml$", "\\.genAiPlugin-meta\\.xml$", "\\.promptTemplate-meta\\.xml$", "\\.lightningTypeBundle-meta\\.xml$"],
-      "contentTriggers": {
-        "flow://": { "suggests": "sf-flow", "message": "Create Flow for this action target" },
-        "apex://": { "suggests": "sf-apex", "message": "Create Apex (wrapped in Flow) for this action" }
-      },
+      "intentPatterns": [
+        "create.*agent",
+        "build.*agent",
+        "setup.*agent",
+        "prompt.*template",
+        "models.*api",
+        "genai.*function"
+      ],
+      "filePatterns": [
+        "\\.genAiFunction-meta\\.xml$",
+        "\\.genAiPlugin-meta\\.xml$",
+        "\\.promptTemplate-meta\\.xml$",
+        "\\.lightningTypeBundle-meta\\.xml$"
+      ],
       "priority": "medium",
-      "description": "Standard Agentforce platform skill for Setup UI agent building, PromptTemplate, Models API, and GenAi metadata",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-flow", "condition": "always", "message": "Create and deploy Flows before agent uses flow:// targets", "confidence": 3 },
-          { "skill": "sf-apex", "condition": "apex_action", "message": "Deploy Apex (wrapped in Flow) before agent references it", "confidence": 2 },
-          { "skill": "sf-metadata", "condition": "custom_fields", "message": "Deploy custom fields before agent queries them", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish authoring-bundle", "confidence": 3 },
-          { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test agent topic routing and actions", "confidence": 2 }
-        ],
-        "commonly_with": []
-      }
+      "description": "Standard Agentforce platform skill for Setup UI agent building, PromptTemplate, Models API, and GenAi metadata"
     },
-
     "sf-metadata": {
-      "keywords": ["custom object", "custom field", "metadata", "permission set", "profile", "page layout", "record type", "validation rule", "formula field", "picklist", "lookup", "master-detail", "field-level security", "fls", "object permissions"],
-      "intentPatterns": [
-        "create.*object", "add.*field", "configure.*permissions",
-        "new.*custom.*field", "setup.*validation", "create.*picklist",
-        "add.*lookup", "create.*master.*detail", "setup.*layout"
+      "keywords": [
+        "custom object",
+        "custom field",
+        "metadata",
+        "permission set",
+        "profile",
+        "page layout",
+        "record type",
+        "validation rule",
+        "formula field",
+        "picklist",
+        "lookup",
+        "master-detail",
+        "field-level security",
+        "fls",
+        "object permissions"
       ],
-      "filePatterns": ["\\.object-meta\\.xml$", "\\.field-meta\\.xml$", "\\.permissionset-meta\\.xml$", "\\.profile-meta\\.xml$"],
-      "contentTriggers": {
-        "CustomObject": { "suggests": "sf-flow", "message": "Create record-triggered Flow for this object" },
-        "CustomField": { "suggests": "sf-apex", "message": "Reference this field in Apex code" }
-      },
+      "intentPatterns": [
+        "create.*object",
+        "add.*field",
+        "configure.*permissions",
+        "new.*custom.*field",
+        "setup.*validation",
+        "create.*picklist",
+        "add.*lookup",
+        "create.*master.*detail",
+        "setup.*layout"
+      ],
+      "filePatterns": [
+        "\\.object-meta\\.xml$",
+        "\\.field-meta\\.xml$",
+        "\\.permissionset-meta\\.xml$",
+        "\\.profile-meta\\.xml$"
+      ],
       "priority": "medium",
-      "description": "Salesforce metadata configuration",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy metadata to org before using in code", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-flow", "trigger": "object-meta\\.xml", "message": "Create record-triggered Flow for this object", "confidence": 2 },
-          { "skill": "sf-apex", "trigger": "object-meta\\.xml", "message": "Create Apex trigger or service for this object", "confidence": 2 },
-          { "skill": "sf-diagram-mermaid", "trigger": "object-meta\\.xml", "message": "Generate ERD diagram for data model", "confidence": 1 }
-        ]
-      }
+      "description": "Salesforce metadata configuration"
     },
-
     "sf-deploy": {
-      "keywords": ["deploy", "deployment", "release", "push", "sandbox", "production", "source deploy", "metadata deploy", "package", "changeset", "scratch org", "ci", "cd", "pipeline", "devops"],
+      "keywords": [
+        "deploy",
+        "deployment",
+        "release",
+        "push",
+        "sandbox",
+        "production",
+        "source deploy",
+        "metadata deploy",
+        "package",
+        "changeset",
+        "scratch org",
+        "ci",
+        "cd",
+        "pipeline",
+        "devops"
+      ],
       "intentPatterns": [
-        "deploy.*org", "release.*production", "push.*changes",
-        "deploy.*sandbox", "create.*package", "deploy.*metadata",
-        "run.*deployment", "validate.*deployment", "quick.*deploy"
+        "deploy.*org",
+        "release.*production",
+        "push.*changes",
+        "deploy.*sandbox",
+        "create.*package",
+        "deploy.*metadata",
+        "run.*deployment",
+        "validate.*deployment",
+        "quick.*deploy"
       ],
       "filePatterns": [],
-      "contentTriggers": {},
       "priority": "medium",
-      "description": "CI/CD deployment automation",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [],
-        "commonly_with": [
-          { "skill": "sf-testing", "trigger": "apex|cls", "message": "Run Apex tests after deployment", "confidence": 2 },
-          { "skill": "sf-data", "trigger": "success", "message": "Create test data in deployed org", "confidence": 1 }
-        ]
-      }
+      "description": "CI/CD deployment automation"
     },
-
     "sf-testing": {
-      "keywords": ["test", "coverage", "assert", "mock", "unit test", "integration test", "apex test", "test method", "test setup", "test factory", "code coverage", "run tests", "test failure"],
-      "intentPatterns": [
-        "run.*tests", "check.*coverage", "write.*test",
-        "test.*class", "increase.*coverage", "fix.*test",
-        "mock.*data", "create.*test.*method", "test.*trigger"
+      "keywords": [
+        "test",
+        "coverage",
+        "assert",
+        "mock",
+        "unit test",
+        "integration test",
+        "apex test",
+        "test method",
+        "test setup",
+        "test factory",
+        "code coverage",
+        "run tests",
+        "test failure"
       ],
-      "filePatterns": [".*Test\\.cls$", ".*_Test\\.cls$"],
-      "contentTriggers": {
-        "@IsTest": { "suggests": "sf-apex", "message": "Review the Apex class being tested" },
-        "Assert": { "suggests": "sf-debug", "message": "Analyze failures with debug logs" }
-      },
+      "intentPatterns": [
+        "run.*tests",
+        "check.*coverage",
+        "write.*test",
+        "test.*class",
+        "increase.*coverage",
+        "fix.*test",
+        "mock.*data",
+        "create.*test.*method",
+        "test.*trigger"
+      ],
+      "filePatterns": [
+        ".*Test\\.cls$",
+        ".*_Test\\.cls$"
+      ],
       "priority": "medium",
-      "description": "Test execution and coverage analysis",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-apex", "condition": "always", "message": "Apex code must exist before testing", "confidence": 3 },
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy code to org before running tests", "confidence": 3 }
-        ],
-        "next_steps": [],
-        "commonly_with": [
-          { "skill": "sf-debug", "trigger": "failure|failed", "message": "Analyze debug logs for test failures", "confidence": 3 },
-          { "skill": "sf-apex", "trigger": "failure|failed", "message": "Fix failing Apex code", "confidence": 3 },
-          { "skill": "sf-data", "trigger": "bulk", "message": "Generate 251+ records for bulk testing", "confidence": 2 }
-        ]
-      }
+      "description": "Test execution and coverage analysis"
     },
-
     "sf-soql": {
-      "keywords": ["soql", "query", "select", "where clause", "relationship query", "aggregate", "group by", "having", "order by", "limit", "offset", "parent-child", "child-parent", "subquery", "sosl", "search"],
-      "intentPatterns": [
-        "write.*query", "optimize.*soql", "build.*select",
-        "query.*records", "search.*data", "soql.*performance",
-        "fix.*query", "debug.*soql", "create.*subquery"
+      "keywords": [
+        "soql",
+        "query",
+        "select",
+        "where clause",
+        "relationship query",
+        "aggregate",
+        "group by",
+        "having",
+        "order by",
+        "limit",
+        "offset",
+        "parent-child",
+        "child-parent",
+        "subquery",
+        "sosl",
+        "search"
       ],
-      "filePatterns": ["\\.soql$"],
-      "contentTriggers": {
-        "SELECT": { "suggests": "sf-data", "message": "Use sf-data to run this query" },
-        "LIKE|IN \\(": { "suggests": "sf-debug", "message": "Check query plan for performance" }
-      },
-      "priority": "medium",
-      "description": "SOQL query optimization and analysis",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "always", "message": "Objects and fields must exist before querying", "confidence": 2 },
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy metadata before querying", "confidence": 2 }
-        ],
-        "next_steps": [],
-        "commonly_with": [
-          { "skill": "sf-data", "trigger": "always", "message": "Execute queries with sf-data", "confidence": 2 },
-          { "skill": "sf-debug", "trigger": "performance|slow", "message": "Analyze query plan performance", "confidence": 2 },
-          { "skill": "sf-apex", "trigger": "always", "message": "Embed query in Apex code", "confidence": 1 }
-        ]
-      }
-    },
-
-    "sf-data": {
-      "keywords": ["test data", "data factory", "sample data", "bulk data", "data load", "record creation", "test records", "bulk insert", "anonymous apex", "data import", "dataloader", "251 records"],
       "intentPatterns": [
-        "create.*test.*data", "generate.*data", "load.*records",
-        "bulk.*insert", "sample.*records", "factory.*method",
-        "setup.*test.*data", "create.*251", "bulk.*test"
+        "write.*query",
+        "optimize.*soql",
+        "build.*select",
+        "query.*records",
+        "search.*data",
+        "soql.*performance",
+        "fix.*query",
+        "debug.*soql",
+        "create.*subquery"
+      ],
+      "filePatterns": [
+        "\\.soql$"
+      ],
+      "priority": "medium",
+      "description": "SOQL query optimization and analysis"
+    },
+    "sf-data": {
+      "keywords": [
+        "test data",
+        "data factory",
+        "sample data",
+        "bulk data",
+        "data load",
+        "record creation",
+        "test records",
+        "bulk insert",
+        "anonymous apex",
+        "data import",
+        "dataloader",
+        "251 records"
+      ],
+      "intentPatterns": [
+        "create.*test.*data",
+        "generate.*data",
+        "load.*records",
+        "bulk.*insert",
+        "sample.*records",
+        "factory.*method",
+        "setup.*test.*data",
+        "create.*251",
+        "bulk.*test"
       ],
       "filePatterns": [],
-      "contentTriggers": {},
       "priority": "medium",
-      "description": "Test data generation and management",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "always", "message": "Deploy objects to org before querying/inserting data", "confidence": 3 },
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy metadata before creating data", "confidence": 3 }
-        ],
-        "next_steps": [
-          { "skill": "sf-testing", "condition": "always", "message": "Run tests with the generated data", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-testing", "trigger": "always", "message": "Use data for test execution", "confidence": 2 },
-          { "skill": "sf-apex", "trigger": "factory", "message": "Create TestDataFactory class", "confidence": 1 }
-        ]
-      }
+      "description": "Test data generation and management"
     },
-
     "sf-integration": {
-      "keywords": ["callout", "http", "rest", "soap", "platform event", "cdc", "webhook", "named credential", "external credential", "external service", "api", "endpoint", "integration", "callback", "http request", "http response"],
-      "intentPatterns": [
-        "call.*external", "integrate.*api", "send.*event",
-        "http.*callout", "rest.*api", "create.*named.*credential",
-        "platform.*event", "change.*data.*capture", "webhook"
+      "keywords": [
+        "callout",
+        "http",
+        "rest",
+        "soap",
+        "platform event",
+        "cdc",
+        "webhook",
+        "named credential",
+        "external credential",
+        "external service",
+        "api",
+        "endpoint",
+        "integration",
+        "callback",
+        "http request",
+        "http response"
       ],
-      "filePatterns": ["\\.namedCredential-meta\\.xml$", "\\.externalCredential-meta\\.xml$", "\\.externalServiceRegistration-meta\\.xml$"],
-      "contentTriggers": {
-        "HttpRequest|HttpResponse": { "suggests": "sf-apex", "message": "Create Queueable Apex for async callouts" },
-        "NamedCredential": { "suggests": "sf-connected-apps", "message": "Configure Connected App for OAuth authentication" }
-      },
+      "intentPatterns": [
+        "call.*external",
+        "integrate.*api",
+        "send.*event",
+        "http.*callout",
+        "rest.*api",
+        "create.*named.*credential",
+        "platform.*event",
+        "change.*data.*capture",
+        "webhook"
+      ],
+      "filePatterns": [
+        "\\.namedCredential-meta\\.xml$",
+        "\\.externalCredential-meta\\.xml$",
+        "\\.externalServiceRegistration-meta\\.xml$"
+      ],
       "priority": "medium",
-      "description": "External system integrations",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-connected-apps", "condition": "oauth", "message": "Configure Connected App for OAuth authentication", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy credentials before code references them", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-connected-apps", "trigger": "OAuth|namedCredential", "message": "Configure Connected App for OAuth authentication", "confidence": 2 },
-          { "skill": "sf-flow", "trigger": "externalService", "message": "Create Flow with HTTP Callout action", "confidence": 2 },
-          { "skill": "sf-apex", "trigger": "callout", "message": "Create Queueable Apex for async callouts", "confidence": 2 }
-        ]
-      }
+      "description": "External system integrations"
     },
-
     "sf-connected-apps": {
-      "keywords": ["connected app", "oauth", "jwt", "named credential", "external credential", "client credentials", "authorization", "token", "consumer key", "consumer secret", "callback url", "scopes", "pkce", "refresh token"],
-      "intentPatterns": [
-        "configure.*oauth", "setup.*authentication", "create.*connected",
-        "jwt.*bearer", "client.*credentials", "oauth.*flow",
-        "named.*credential", "external.*credential"
+      "keywords": [
+        "connected app",
+        "oauth",
+        "jwt",
+        "named credential",
+        "external credential",
+        "client credentials",
+        "authorization",
+        "token",
+        "consumer key",
+        "consumer secret",
+        "callback url",
+        "scopes",
+        "pkce",
+        "refresh token"
       ],
-      "filePatterns": ["\\.connectedApp-meta\\.xml$", "\\.eca-meta\\.xml$"],
-      "contentTriggers": {
-        "oauthConfig": { "suggests": "sf-integration", "message": "Create Named Credential using this Connected App" },
-        "JWT": { "suggests": "sf-diagram-mermaid", "message": "Generate OAuth flow diagram" }
-      },
+      "intentPatterns": [
+        "configure.*oauth",
+        "setup.*authentication",
+        "create.*connected",
+        "jwt.*bearer",
+        "client.*credentials",
+        "oauth.*flow",
+        "named.*credential",
+        "external.*credential"
+      ],
+      "filePatterns": [
+        "\\.connectedApp-meta\\.xml$",
+        "\\.eca-meta\\.xml$"
+      ],
       "priority": "low",
-      "description": "OAuth and authentication configuration",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy Connected App to org", "confidence": 3 },
-          { "skill": "sf-integration", "condition": "always", "message": "Create Named Credential using this Connected App", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-integration", "trigger": "always", "message": "Create Named Credential using this Connected App", "confidence": 2 },
-          { "skill": "sf-diagram-mermaid", "trigger": "OAuth", "message": "Generate OAuth flow diagram", "confidence": 1 }
-        ]
-      }
+      "description": "OAuth and authentication configuration"
     },
-
     "sf-debug": {
-      "keywords": ["debug", "log", "trace", "troubleshoot", "error", "exception", "stack trace", "apex log", "debug log", "log level", "fine", "finest", "callout", "workflow", "validation", "system debug"],
-      "intentPatterns": [
-        "debug.*issue", "analyze.*log", "trace.*execution",
-        "fix.*error", "troubleshoot.*issue", "read.*debug.*log",
-        "enable.*debug", "check.*exception", "find.*error"
+      "keywords": [
+        "debug",
+        "log",
+        "trace",
+        "troubleshoot",
+        "error",
+        "exception",
+        "stack trace",
+        "apex log",
+        "debug log",
+        "log level",
+        "fine",
+        "finest",
+        "callout",
+        "workflow",
+        "validation",
+        "system debug"
       ],
-      "filePatterns": ["\\.log$", "debug.*\\.txt$"],
-      "contentTriggers": {
-        "Exception|ERROR": { "suggests": "sf-apex", "message": "Fix identified Apex issues" },
-        "SOQL_EXECUTE": { "suggests": "sf-soql", "message": "Optimize slow SOQL queries" }
-      },
+      "intentPatterns": [
+        "debug.*issue",
+        "analyze.*log",
+        "trace.*execution",
+        "fix.*error",
+        "troubleshoot.*issue",
+        "read.*debug.*log",
+        "enable.*debug",
+        "check.*exception",
+        "find.*error"
+      ],
+      "filePatterns": [
+        "\\.log$",
+        "debug.*\\.txt$"
+      ],
       "priority": "low",
-      "description": "Debug log analysis and troubleshooting",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [
-          { "skill": "sf-apex", "condition": "error_found", "message": "Fix identified Apex issues", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-apex", "trigger": "fix|error", "message": "Fix identified Apex issues", "confidence": 3 },
-          { "skill": "sf-soql", "trigger": "SOQL|query", "message": "Optimize slow SOQL queries", "confidence": 2 }
-        ]
-      }
+      "description": "Debug log analysis and troubleshooting"
     },
-
     "sf-diagram-mermaid": {
-      "keywords": ["diagram", "erd", "mermaid", "architecture", "visualization", "data model", "entity relationship", "sequence diagram", "flowchart", "class diagram", "object diagram", "schema", "hook lifecycle", "flowchart tb", "flowchart lr", "stateDiagram", "gantt", "pie chart"],
-      "auto_invoke_keywords": ["mermaid", "flowchart", "sequence diagram", "erDiagram", "class diagram", "stateDiagram", "gantt", "hook lifecycle", "architecture diagram"],
-      "intentPatterns": [
-        "create.*diagram", "visualize.*schema", "draw.*architecture",
-        "generate.*erd", "show.*relationships", "data.*model.*diagram",
-        "sequence.*diagram", "architecture.*diagram", "mermaid.*diagram",
-        "flowchart.*diagram", "create.*flowchart", "create.*erd"
+      "keywords": [
+        "diagram",
+        "erd",
+        "mermaid",
+        "architecture",
+        "visualization",
+        "data model",
+        "entity relationship",
+        "sequence diagram",
+        "flowchart",
+        "class diagram",
+        "object diagram",
+        "schema",
+        "hook lifecycle",
+        "flowchart tb",
+        "flowchart lr",
+        "stateDiagram",
+        "gantt",
+        "pie chart"
       ],
-      "filePatterns": ["diagrams?/.*\\.md$", ".*-erd\\.md$", ".*-sequence\\.md$", ".*-diagram\\.md$"],
-      "contentTriggers": {
-        "erDiagram": { "suggests": "sf-metadata", "message": "Query org metadata for accurate ERD" },
-        "sequenceDiagram": { "suggests": "sf-integration", "message": "Document integration endpoints" }
-      },
+      "auto_invoke_keywords": [
+        "mermaid",
+        "flowchart",
+        "sequence diagram",
+        "erDiagram",
+        "class diagram",
+        "stateDiagram",
+        "gantt",
+        "hook lifecycle",
+        "architecture diagram"
+      ],
+      "intentPatterns": [
+        "create.*diagram",
+        "visualize.*schema",
+        "draw.*architecture",
+        "generate.*erd",
+        "show.*relationships",
+        "data.*model.*diagram",
+        "sequence.*diagram",
+        "architecture.*diagram",
+        "mermaid.*diagram",
+        "flowchart.*diagram",
+        "create.*flowchart",
+        "create.*erd"
+      ],
+      "filePatterns": [
+        "diagrams?/.*\\.md$",
+        ".*-erd\\.md$",
+        ".*-sequence\\.md$",
+        ".*-diagram\\.md$"
+      ],
       "priority": "low",
-      "description": "Mermaid diagram generation",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "erd", "message": "Query org metadata for accurate ERD", "confidence": 2 }
-        ],
-        "next_steps": [],
-        "commonly_with": [
-          { "skill": "sf-metadata", "trigger": "erd|ERD|data model", "message": "Query org metadata for accurate ERD", "confidence": 2 },
-          { "skill": "sf-integration", "trigger": "sequence|integration", "message": "Document integration endpoints", "confidence": 1 },
-          { "skill": "sf-diagram-nanobananapro", "trigger": "visual|image", "message": "Generate visual image from diagram", "confidence": 1 }
-        ]
-      }
+      "description": "Mermaid diagram generation"
     },
-
     "sf-diagram-nanobananapro": {
-      "keywords": ["mockup", "visual", "image", "erd image", "wireframe", "ui design", "visual erd", "png", "svg", "screenshot", "preview", "nano banana", "nanobananapro", "generate image"],
-      "auto_invoke_keywords": ["image", "png", "svg", "mockup", "wireframe", "visual erd", "nano banana", "nanobananapro", "visual image", "generate image"],
-      "intentPatterns": [
-        "create.*mockup", "generate.*visual", "design.*ui",
-        "visual.*erd", "image.*diagram", "wireframe.*component",
-        "preview.*design", "generate.*image", "create.*image",
-        "export.*png", "export.*svg"
+      "keywords": [
+        "mockup",
+        "visual",
+        "image",
+        "erd image",
+        "wireframe",
+        "ui design",
+        "visual erd",
+        "png",
+        "svg",
+        "screenshot",
+        "preview",
+        "nano banana",
+        "nanobananapro",
+        "generate image"
       ],
-      "filePatterns": ["\\.png$", "\\.svg$", "\\.jpg$"],
-      "contentTriggers": {},
-      "priority": "low",
-      "description": "Visual mockups and image generation",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-diagram-mermaid", "condition": "mermaid_source", "message": "Create Mermaid diagram first for conversion to image", "confidence": 2 }
-        ],
-        "next_steps": [],
-        "commonly_with": [
-          { "skill": "sf-diagram-mermaid", "trigger": "mermaid|erd", "message": "Generate Mermaid source for this visualization", "confidence": 2 },
-          { "skill": "sf-lwc", "trigger": "mockup|wireframe", "message": "Implement the mockup as an LWC", "confidence": 1 }
-        ]
-      }
-    },
-
-    "sf-ai-agentforce-testing": {
-      "keywords": ["agent test", "test spec", "agent validation", "agentic testing", "test case", "utterance", "expectation", "topic routing", "action sequence", "test definition", "agent test run"],
+      "auto_invoke_keywords": [
+        "image",
+        "png",
+        "svg",
+        "mockup",
+        "wireframe",
+        "visual erd",
+        "nano banana",
+        "nanobananapro",
+        "visual image",
+        "generate image"
+      ],
       "intentPatterns": [
-        "test.*agent", "validate.*agentforce", "create.*test.*spec",
-        "agent.*test.*case", "test.*topic.*routing", "verify.*agent",
+        "create.*mockup",
+        "generate.*visual",
+        "design.*ui",
+        "visual.*erd",
+        "image.*diagram",
+        "wireframe.*component",
+        "preview.*design",
+        "generate.*image",
+        "create.*image",
+        "export.*png",
+        "export.*svg"
+      ],
+      "filePatterns": [
+        "\\.png$",
+        "\\.svg$",
+        "\\.jpg$"
+      ],
+      "priority": "low",
+      "description": "Visual mockups and image generation"
+    },
+    "sf-ai-agentforce-testing": {
+      "keywords": [
+        "agent test",
+        "test spec",
+        "agent validation",
+        "agentic testing",
+        "test case",
+        "utterance",
+        "expectation",
+        "topic routing",
+        "action sequence",
+        "test definition",
+        "agent test run"
+      ],
+      "intentPatterns": [
+        "test.*agent",
+        "validate.*agentforce",
+        "create.*test.*spec",
+        "agent.*test.*case",
+        "test.*topic.*routing",
+        "verify.*agent",
         "run.*agent.*test"
       ],
-      "filePatterns": [".*-test-spec\\.yaml$", ".*-test-spec\\.yml$"],
-      "contentTriggers": {
-        "subjectType: AGENT": { "suggests": "sf-ai-agentscript", "message": "Review agent definition for test alignment" },
-        "utterance:": { "suggests": "sf-ai-agentscript", "message": "Verify topic handles this utterance" }
-      },
+      "filePatterns": [
+        ".*-test-spec\\.yaml$",
+        ".*-test-spec\\.yml$"
+      ],
       "priority": "low",
-      "description": "Agentforce agent test automation",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-ai-agentscript", "condition": "always", "message": "Agent must exist before testing", "confidence": 3 },
-          { "skill": "sf-flow", "condition": "action_test", "message": "Flow actions must be deployed before testing", "confidence": 2 },
-          { "skill": "sf-deploy", "condition": "always", "message": "Agent must be published before testing", "confidence": 3 }
-        ],
-        "next_steps": [
-          { "skill": "sf-ai-agentscript", "condition": "failure", "message": "Fix agent topic routing or action issues", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-ai-agentscript", "trigger": "always", "message": "Iterate on agent based on test results", "confidence": 3 },
-          { "skill": "sf-debug", "trigger": "failure", "message": "Analyze agent execution logs", "confidence": 2 }
-        ]
-      }
+      "description": "Agentforce agent test automation"
     },
-
     "skill-builder": {
-      "keywords": ["create skill", "new skill", "skill template", "build skill", "skill development", "custom skill", "plugin", "hook development"],
-      "intentPatterns": [
-        "create.*skill", "build.*new.*skill", "develop.*plugin",
-        "new.*sf.*skill", "skill.*template"
+      "keywords": [
+        "create skill",
+        "new skill",
+        "skill template",
+        "build skill",
+        "skill development",
+        "custom skill",
+        "plugin",
+        "hook development"
       ],
-      "filePatterns": ["SKILL\\.md$", "plugin\\.json$", "hooks\\.json$"],
-      "contentTriggers": {
-        "---": { "suggests": "skill-builder", "message": "This appears to be a SKILL.md frontmatter" }
-      },
+      "intentPatterns": [
+        "create.*skill",
+        "build.*new.*skill",
+        "develop.*plugin",
+        "new.*sf.*skill",
+        "skill.*template"
+      ],
+      "filePatterns": [
+        "SKILL\\.md$",
+        "plugin\\.json$",
+        "hooks\\.json$"
+      ],
       "priority": "low",
-      "description": "Create new sf-skills modules",
-      "orchestration": {
-        "prerequisites": [],
-        "next_steps": [],
-        "commonly_with": []
-      }
+      "description": "Create new sf-skills modules"
     },
-
     "sf-ai-agentscript": {
-      "keywords": ["agent script", "agentscript", "agentforce", "agent", "topic", "action", "fsm", "state machine", "deterministic agent", "hybrid reasoning", "slot filling", "instruction resolution"],
-      "intentPatterns": [
-        "create.*agent", "build.*agentforce", "new.*agent",
-        "write.*agent.*script", "agent.*topic", "agent.*action",
-        "deterministic.*agent", "fsm.*agent"
+      "keywords": [
+        "agent script",
+        "agentscript",
+        "agentforce",
+        "agent",
+        "topic",
+        "action",
+        "fsm",
+        "state machine",
+        "deterministic agent",
+        "hybrid reasoning",
+        "slot filling",
+        "instruction resolution"
       ],
-      "filePatterns": ["\\.agent$", "\\.agentDefinition-meta\\.xml$", "GenAi.*\\.xml$"],
-      "contentTriggers": {
-        "flow://": { "suggests": "sf-flow", "message": "Create Flow for this action target" },
-        "apex://": { "suggests": "sf-apex", "message": "Create Apex (wrapped in Flow) for this action" },
-        "start_agent": { "suggests": "sf-ai-agentforce-testing", "message": "Test agent after creation" }
-      },
+      "intentPatterns": [
+        "create.*agent",
+        "build.*agentforce",
+        "new.*agent",
+        "write.*agent.*script",
+        "agent.*topic",
+        "agent.*action",
+        "deterministic.*agent",
+        "fsm.*agent"
+      ],
+      "filePatterns": [
+        "\\.agent$",
+        "\\.agentDefinition-meta\\.xml$",
+        "GenAi.*\\.xml$"
+      ],
       "priority": "high",
-      "description": "Agent Script DSL for deterministic Agentforce agents",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-flow", "condition": "always", "message": "Create and deploy Flows before agent uses flow:// targets", "confidence": 3 },
-          { "skill": "sf-apex", "condition": "apex_action", "message": "Deploy Apex (wrapped in Flow) before agent references it", "confidence": 2 },
-          { "skill": "sf-metadata", "condition": "custom_fields", "message": "Deploy custom fields before agent queries them", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Publish agent to org with sf agent publish authoring-bundle", "confidence": 3 },
-          { "skill": "sf-ai-agentforce-testing", "condition": "always", "message": "Test agent topic routing and actions", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-flow", "trigger": "flow://", "message": "Create autolaunched Flow for agent action", "confidence": 3 },
-          { "skill": "sf-ai-agentforce-testing", "trigger": "always", "message": "Test agent with utterances and expectations", "confidence": 2 }
-        ]
-      }
+      "description": "Agent Script DSL for deterministic Agentforce agents"
     },
-
     "sf-permissions": {
-      "keywords": ["permission set", "permission set group", "psg", "fls", "field level security", "object permissions", "who has access", "permission analyzer", "access audit", "hierarchy"],
-      "intentPatterns": [
-        "who.*has.*access", "permission.*set", "analyze.*permissions",
-        "field.*level.*security", "audit.*access", "permission.*hierarchy",
-        "visualize.*permissions", "export.*permissions"
+      "keywords": [
+        "permission set",
+        "permission set group",
+        "psg",
+        "fls",
+        "field level security",
+        "object permissions",
+        "who has access",
+        "permission analyzer",
+        "access audit",
+        "hierarchy"
       ],
-      "filePatterns": ["\\.permissionset-meta\\.xml$", "\\.permissionsetgroup-meta\\.xml$"],
-      "contentTriggers": {
-        "PermissionSet": { "suggests": "sf-metadata", "message": "Generate Permission Set XML metadata" },
-        "fieldPermissions": { "suggests": "sf-deploy", "message": "Deploy Permission Set to org" }
-      },
+      "intentPatterns": [
+        "who.*has.*access",
+        "permission.*set",
+        "analyze.*permissions",
+        "field.*level.*security",
+        "audit.*access",
+        "permission.*hierarchy",
+        "visualize.*permissions",
+        "export.*permissions"
+      ],
+      "filePatterns": [
+        "\\.permissionset-meta\\.xml$",
+        "\\.permissionsetgroup-meta\\.xml$"
+      ],
       "priority": "medium",
-      "description": "Permission Set analysis and hierarchy visualization",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-metadata", "condition": "custom_field", "message": "Deploy custom fields before granting FLS", "confidence": 2 }
-        ],
-        "next_steps": [
-          { "skill": "sf-deploy", "condition": "always", "message": "Deploy Permission Set to org", "confidence": 3 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-metadata", "trigger": "generate", "message": "Generate Permission Set XML metadata", "confidence": 2 },
-          { "skill": "sf-data", "trigger": "query", "message": "Query permission data from org", "confidence": 1 }
-        ]
-      }
+      "description": "Permission Set analysis and hierarchy visualization"
     },
-
     "sf-ai-agentforce-observability": {
-      "keywords": ["session tracing", "stdm", "observability", "agent session", "agentforce analytics", "agent debugging", "data cloud", "parquet", "polars", "session extraction", "agent telemetry"],
-      "intentPatterns": [
-        "extract.*session", "debug.*agent.*session", "analyze.*agentforce",
-        "session.*tracing", "agent.*observability", "agent.*analytics",
-        "extract.*stdm", "session.*data", "agent.*telemetry"
+      "keywords": [
+        "session tracing",
+        "stdm",
+        "observability",
+        "agent session",
+        "agentforce analytics",
+        "agent debugging",
+        "data cloud",
+        "parquet",
+        "polars",
+        "session extraction",
+        "agent telemetry"
       ],
-      "filePatterns": ["\\.parquet$", "stdm_data/"],
-      "contentTriggers": {
-        "ssot__AIAgentSession__dlm": { "suggests": "sf-ai-agentscript", "message": "Review agent configuration based on session analysis" },
-        "Escalated|Failed": { "suggests": "sf-ai-agentforce-testing", "message": "Create tests to reproduce failure patterns" }
-      },
+      "intentPatterns": [
+        "extract.*session",
+        "debug.*agent.*session",
+        "analyze.*agentforce",
+        "session.*tracing",
+        "agent.*observability",
+        "agent.*analytics",
+        "extract.*stdm",
+        "session.*data",
+        "agent.*telemetry"
+      ],
+      "filePatterns": [
+        "\\.parquet$",
+        "stdm_data/"
+      ],
       "priority": "medium",
-      "description": "Extract and analyze Agentforce session tracing data from Data Cloud",
-      "orchestration": {
-        "prerequisites": [
-          { "skill": "sf-connected-apps", "condition": "always", "message": "JWT Bearer authentication required for Data Cloud Query API", "confidence": 3 }
-        ],
-        "next_steps": [
-          { "skill": "sf-ai-agentscript", "condition": "issues_found", "message": "Fix agent issues identified in session analysis", "confidence": 2 },
-          { "skill": "sf-ai-agentforce-testing", "condition": "patterns_found", "message": "Create tests based on observed patterns", "confidence": 2 }
-        ],
-        "commonly_with": [
-          { "skill": "sf-ai-agentscript", "trigger": "debug|issue|failure", "message": "Debug agent issues found in traces", "confidence": 2 },
-          { "skill": "sf-ai-agentforce-testing", "trigger": "pattern|test", "message": "Create test cases from observed patterns", "confidence": 2 },
-          { "skill": "sf-diagram-mermaid", "trigger": "visualize|diagram", "message": "Create session flow diagrams", "confidence": 1 }
-        ]
-      }
+      "description": "Extract and analyze Agentforce session tracing data from Data Cloud"
     }
-  },
-
-  "chains": {
-    "full_feature": {
-      "description": "Complete feature development - from metadata to testing",
-      "trigger_phrases": ["build feature", "complete feature", "full implementation", "end to end"],
-      "order": ["sf-metadata", "sf-apex", "sf-flow", "sf-lwc", "sf-deploy", "sf-testing", "sf-data"]
-    },
-    "integration": {
-      "description": "External API integration - OAuth to callouts",
-      "trigger_phrases": ["integrate api", "external integration", "connect external", "api integration"],
-      "order": ["sf-connected-apps", "sf-integration", "sf-flow", "sf-deploy"]
-    },
-    "agentforce": {
-      "description": "Agentforce agent development - prerequisites to testing",
-      "trigger_phrases": ["build agent", "create agentforce", "agentforce agent", "copilot"],
-      "order": ["sf-ai-agentforce-conversationdesign", "sf-metadata", "sf-apex", "sf-flow", "sf-deploy", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
-    },
-    "agentforce_observability": {
-      "description": "Agentforce agent monitoring and debugging - extract, analyze, fix",
-      "trigger_phrases": ["debug agent", "agent sessions", "session tracing", "agent analytics", "agent observability"],
-      "order": ["sf-ai-agentforce-observability", "sf-ai-agentscript", "sf-deploy", "sf-ai-agentforce-testing"]
-    },
-    "triangle": {
-      "description": "Flow-LWC-Apex integration - the classic triangle pattern",
-      "trigger_phrases": ["apex lwc flow", "triangle", "component with flow", "screen flow with apex"],
-      "order": ["sf-apex", "sf-lwc", "sf-flow", "sf-deploy"]
-    },
-    "troubleshooting": {
-      "description": "Debug and fix loop - from tests to fix to verification",
-      "trigger_phrases": ["debug", "troubleshoot", "fix failing", "test failure"],
-      "order": ["sf-testing", "sf-debug", "sf-apex", "sf-deploy", "sf-testing"]
-    }
-  },
-
-  "confidence_levels": {
-    "3": { "label": "REQUIRED", "icon": "***", "description": "Must use this skill - prerequisite or essential next step" },
-    "2": { "label": "RECOMMENDED", "icon": "**", "description": "Strongly suggested - common best practice" },
-    "1": { "label": "OPTIONAL", "icon": "*", "description": "Consider if applicable - may be useful" }
   }
 }

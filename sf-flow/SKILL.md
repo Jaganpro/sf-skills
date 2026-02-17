@@ -22,13 +22,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
           timeout: 120000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-flow"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-flow"
-      timeout: 5000
 ---
 
 # sf-flow: Salesforce Flow Creation and Validation

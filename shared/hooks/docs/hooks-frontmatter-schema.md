@@ -1,9 +1,9 @@
 # Hooks Frontmatter Schema for SKILL.md Files
 
-> **Version**: 4.0.0
+> **Version**: 5.0.0
 > **Last Updated**: 2026-01-24
 
-This document defines the hooks frontmatter schema for sf-skills SKILL.md files. Starting with v4.0.0, hooks are defined directly in each skill's SKILL.md frontmatter instead of separate `hooks/hooks.json` files.
+This document defines the hooks frontmatter schema for sf-skills SKILL.md files. Starting with v5.0.0, hooks are defined directly in each skill's SKILL.md frontmatter instead of separate `hooks/hooks.json` files.
 
 ---
 
@@ -35,13 +35,6 @@ hooks:
         - type: command
           command: "${SKILL_HOOKS}/apex-lsp-validate.py"
           timeout: 15000
-        - type: command
-          command: "${SHARED_HOOKS}/suggest-related-skills.py sf-apex"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "${SHARED_HOOKS}/scripts/chain-validator.py sf-apex"
-      timeout: 5000
 ---
 ```
 
@@ -53,10 +46,8 @@ hooks:
 |-------|---------------|-----------|
 | `SessionStart` | Claude Code session begins | Environment validation, org authentication checks |
 | `PreToolUse` | Before a tool executes | Guardrails, input validation, auto-fix |
-| `PostToolUse` | After a tool completes | Validation, skill suggestions, notifications |
-| `SubagentStop` | Subagent finishes work | Chain validation, next-step suggestions |
+| `PostToolUse` | After a tool completes | Validation, notifications |
 | `PermissionRequest` | User permission needed | Auto-approval for safe operations |
-| `UserPromptSubmit` | User sends a message | Skill activation, keyword detection |
 
 ---
 
@@ -76,7 +67,7 @@ These variables are resolved at runtime:
 
 ### Basic Hook (No Matcher)
 
-For events that don't need tool matching (SessionStart, UserPromptSubmit):
+For events that don't need tool matching (SessionStart):
 
 ```yaml
 hooks:
@@ -103,24 +94,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/parse-output.py"
           timeout: 30000
-```
-
-### Prompt-Based Hook (LLM Evaluation)
-
-For semantic analysis using Claude:
-
-```yaml
-hooks:
-  SubagentStop:
-    - type: prompt
-      prompt: |
-        Evaluate if this subagent completed its task successfully.
-        Check if:
-        1. All requested files were created
-        2. Validation passed
-        3. No errors occurred
-        Return {"ok": true} to allow, or {"ok": false, "reason": "..."} to continue.
-      timeout: 30
 ```
 
 ---
@@ -174,9 +147,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
           timeout: 120000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-apex"
-          timeout: 5000
 ```
 
 ### 4. Test/Build Output Parsing (PostToolUse on Bash)
@@ -189,16 +159,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/parse-test-results.py"
           timeout: 30000
-```
-
-### 5. Chain Validation (SubagentStop)
-
-```yaml
-hooks:
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-apex"
-      timeout: 5000
 ```
 
 ---
@@ -237,13 +197,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
           timeout: 120000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-apex"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-apex"
-      timeout: 5000
 ---
 ```
 
@@ -274,17 +227,6 @@ hooks:
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
     "additionalContext": "Validation passed. Next: /sf-testing"
-  }
-}
-```
-
-### SubagentStop Output (Chain Validation)
-
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "SubagentStop",
-    "additionalContext": "Chain progress: Step 3/7 complete. Next: sf-deploy"
   }
 }
 ```

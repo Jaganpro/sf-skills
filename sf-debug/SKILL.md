@@ -22,15 +22,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/parse-debug-log.py"
           timeout: 10000
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-debug"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-debug"
-      timeout: 5000
 ---
 
 # sf-debug: Salesforce Debug Log Analysis & Troubleshooting

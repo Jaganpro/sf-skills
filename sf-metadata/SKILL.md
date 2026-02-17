@@ -22,18 +22,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-write-validate.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-metadata"
-          timeout: 5000
-    - matcher: Edit
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-metadata"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-metadata"
-      timeout: 5000
 ---
 
 # sf-metadata: Salesforce Metadata Generation and Org Querying

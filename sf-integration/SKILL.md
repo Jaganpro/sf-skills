@@ -25,21 +25,11 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/validate_integration.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-integration"
-          timeout: 5000
     - matcher: Edit
       hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/suggest_credential_setup.py"
           timeout: 5000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-integration"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-integration"
-      timeout: 5000
 ---
 
 # sf-integration: Salesforce Integration Patterns Expert

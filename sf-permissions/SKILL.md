@@ -16,16 +16,6 @@ hooks:
         - type: command
           command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
           timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-permissions"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-permissions"
-      timeout: 5000
 ---
 
 # sf-permissions

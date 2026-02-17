@@ -136,7 +136,6 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 │   └── ... (5 more)
 ├── hooks/                     # Hook scripts
 │   ├── scripts/
-│   ├── skill-activation-prompt.py
 │   └── skills-registry.json
 ├── lsp-engine/                # LSP wrappers (Apex, LWC, AgentScript)
 ├── .sf-skills.json            # Version + metadata
@@ -149,10 +148,8 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 |------|----------|
 | **SessionStart** | Initializes session, preflights org connection, warms LSP servers |
 | **PreToolUse** | Guardrails - blocks dangerous DML, auto-fixes unbounded SOQL |
-| **PostToolUse** | Validates Apex/Flow/LWC on save, suggests related skills |
-| **UserPromptSubmit** | Auto-suggests skills based on your prompt |
+| **PostToolUse** | Validates Apex/Flow/LWC on save |
 | **PermissionRequest** | Auto-approves safe operations (read queries, scratch deploys) |
-| **SubagentStop** | Tracks workflow chains, suggests next steps |
 
 ## 🎬 Video Tutorials
 
@@ -180,29 +177,7 @@ Skill(skill="sf-deploy", args="Deploy to [org]")
 
 ### 💡 Auto-Activation
 
-Skills **automatically suggest themselves** based on your prompts — no need to remember skill names. All 20 skills have auto-activation triggers.
-
-**How It Works:**
-```
-You: "I need to create an apex trigger for Account"
-    ↓
-🔍 UserPromptSubmit hook analyzes your prompt
-    ↓
-💡 Relevant Skills Detected
-   ⭐ /sf-apex (relevance: 7) - Apex code development with validation
-   ▸ /sf-metadata (relevance: 3) - Salesforce metadata configuration
-    ↓
-You can invoke the suggested skill or let Claude help directly
-```
-
-**Matching System:**
-| Match Type | Score | Example |
-|------------|-------|---------|
-| Keyword match | +2 per keyword | "apex", "trigger", "batch" |
-| Intent pattern | +3 | "create.*apex", "build.*flow" |
-| File pattern | +2 | Working on `*.cls` files |
-
-**Configuration:** Auto-activation is powered by `shared/hooks/skills-registry.json` and `shared/hooks/skill-activation-prompt.py`.
+Skills are available as slash commands (e.g., `/sf-apex`, `/sf-flow`). Claude dynamically selects the appropriate skill based on your request context — keywords, intent, and file patterns in `shared/hooks/skills-registry.json` serve as documentation for skill capabilities.
 
 ---
 

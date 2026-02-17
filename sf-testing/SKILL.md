@@ -22,15 +22,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/parse-test-results.py"
           timeout: 30000
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-testing"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-testing"
-      timeout: 5000
 ---
 
 # sf-testing: Salesforce Test Execution & Coverage Analysis

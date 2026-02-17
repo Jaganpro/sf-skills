@@ -25,13 +25,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/validate-extraction.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-ai-agentforce-observability"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-ai-agentforce-observability"
-      timeout: 5000
 ---
 
 <!-- TIER: 1 | ENTRY POINT -->

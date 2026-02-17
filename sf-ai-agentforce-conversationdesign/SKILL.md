@@ -20,13 +20,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/instruction-quality-validator.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py sf-ai-agentforce-conversationdesign"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py sf-ai-agentforce-conversationdesign"
-      timeout: 5000
 ---
 
 # SF-AI-Agentforce-ConversationDesign Skill

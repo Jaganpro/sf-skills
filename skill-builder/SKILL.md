@@ -21,18 +21,6 @@ hooks:
         - type: command
           command: "python3 ${SKILL_HOOKS}/post-write-validate.py"
           timeout: 10000
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py skill-builder"
-          timeout: 5000
-    - matcher: Edit
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/suggest-related-skills.py skill-builder"
-          timeout: 5000
-  SubagentStop:
-    - type: command
-      command: "python3 ${SHARED_HOOKS}/scripts/chain-validator.py skill-builder"
-      timeout: 5000
 ---
 
 # Skill-Builder: Claude Code Skill Creation Wizard
