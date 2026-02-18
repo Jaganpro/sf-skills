@@ -402,17 +402,33 @@ curl -s -X POST "https://DOMAIN.my.salesforce.com/services/oauth2/token" \
 
 ### Fix: Add Missing plannerSurfaces
 
-If the GenAiPlannerBundle XML is missing the `plannerSurfaces` block:
+If the GenAiPlannerBundle XML is missing the `plannerSurfaces` block, add `CustomerWebClient`:
 
 ```xml
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <!-- existing elements -->
     <plannerSurfaces>
-        <plannerSurface>
-            <surfaceType>EinsteinAgentApiChannel</surfaceType>
-        </plannerSurface>
+        <adaptiveResponseAllowed>false</adaptiveResponseAllowed>
+        <callRecordingAllowed>false</callRecordingAllowed>
+        <surface>SurfaceAction__CustomerWebClient</surface>
+        <surfaceType>CustomerWebClient</surfaceType>
     </plannerSurfaces>
 </GenAiPlannerBundle>
+```
+
+> **Note**: `EinsteinAgentApiChannel` surfaceType is NOT available on all orgs. Use `CustomerWebClient` instead — it enables both Agent Builder Preview and Agent Runtime API access. See `sf-ai-agentscript` Known Issue 17.
+
+> **⚠️ Agent Script agents**: `connection messaging:` in the `.agent` DSL ONLY generates a `Messaging` plannerSurface — `CustomerWebClient` is never auto-generated. You must manually patch it after EVERY `sf agent publish authoring-bundle`. See `sf-ai-agentscript` Known Issue 18 for the full 6-step post-publish workflow.
+
+### Fix: Add plannerSurfaces when agent is active
+
+If the agent is active, you must deactivate before deploying:
+
+```bash
+# Deactivate → Deploy → Activate
+sf agent deactivate --api-name AgentName -o TARGET_ORG
+sf project deploy start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json
+sf agent activate --api-name AgentName -o TARGET_ORG
 ```
 
 ### Fix: Enable surfacesEnabled on BotVersion
@@ -429,7 +445,7 @@ Then redeploy:
 sf project deploy start --metadata GenAiPlannerBundle,BotVersion --target-org myorg
 ```
 
-> **Why this matters**: Without `plannerSurfaces` and `surfacesEnabled=true`, the Agent Runtime API returns `500 UNKNOWN_EXCEPTION` on session creation. The agent works fine in the UI but is unreachable programmatically.
+> **Why this matters**: Without `CustomerWebClient` plannerSurface, the Agent Builder Preview shows "Something went wrong" and the Agent Runtime API returns `500 UNKNOWN_EXCEPTION` on session creation.
 
 ---
 

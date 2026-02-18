@@ -252,6 +252,40 @@
 
 ---
 
+### Issue 18: `connection messaging:` only generates `Messaging` plannerSurface — `CustomerWebClient` dropped on every publish
+- **Status**: OPEN
+- **Date Discovered**: 2026-02-17
+- **Affects**: Agent Builder Preview, Agent Runtime API testing, CLI testing (`sf agent test`, `sf agent preview`)
+- **Symptom**: After `sf agent publish authoring-bundle`, the compiled GenAiPlannerBundle only contains a `Messaging` plannerSurface. `CustomerWebClient` is never auto-generated. Agent Builder Preview shows "Something went wrong. Refresh and try again." because it requires `CustomerWebClient`.
+- **Root Cause**: The `connection messaging:` DSL block only generates a `Messaging` plannerSurface during compilation. There is no `connection customerwebclient:` DSL syntax — attempting it causes `ERROR_HTTP_404` on publish. The compiler has no mechanism to auto-generate `CustomerWebClient`.
+- **Impact**: Every publish overwrites the GenAiPlannerBundle, dropping any manually-added `CustomerWebClient` surface. This requires a post-publish patch after EVERY publish.
+- **Workaround — 6-Step Post-Publish Patch Workflow:**
+  1. `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json` → creates new version (e.g., v22)
+  2. `sf project retrieve start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json` → retrieve compiled bundle
+  3. Manually add second `<plannerSurfaces>` block to the XML with `<surfaceType>CustomerWebClient</surfaceType>` (copy the existing `Messaging` block, change surfaceType and surface fields)
+  4. `sf agent deactivate --api-name AgentName -o TARGET_ORG` → deactivate agent (deploy fails while active)
+  5. `sf project deploy start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json` → deploy patched bundle
+  6. `sf agent activate --api-name AgentName -o TARGET_ORG` → reactivate agent
+- **Patch XML Example:**
+  ```xml
+  <!-- Add this AFTER the existing Messaging plannerSurfaces block -->
+  <plannerSurfaces>
+      <adaptiveResponseAllowed>false</adaptiveResponseAllowed>
+      <callRecordingAllowed>false</callRecordingAllowed>
+      <outboundRouteConfigs>
+          <escalationMessage>One moment while I connect you with a support specialist.</escalationMessage>
+          <outboundRouteName>Route_from_Vivint_Virtual_Support</outboundRouteName>
+          <outboundRouteType>OmniChannelFlow</outboundRouteType>
+      </outboundRouteConfigs>
+      <surface>SurfaceAction__CustomerWebClient</surface>
+      <surfaceType>CustomerWebClient</surfaceType>
+  </plannerSurfaces>
+  ```
+- **Note**: The `outboundRouteConfigs` should mirror the Messaging surface config. If no routing is configured, omit `outboundRouteConfigs`.
+- **Validated on**: Vivint-DevInt (Automated_Virtual_Assistant_BETA v22), 2026-02-17
+
+---
+
 ## Resolved Issues
 
 *(Move issues here when they are fixed by Salesforce or a confirmed workaround is validated.)*

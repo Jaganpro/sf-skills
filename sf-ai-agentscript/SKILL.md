@@ -979,46 +979,54 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
 3. **Publish**: `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG`
 4. **Monitor** - Use trace debugging for production issues
 
-### Phase 5.5: API Channel Enablement (For Agent Runtime API Testing)
+### Phase 5.5: CustomerWebClient Surface Enablement (REQUIRED after every publish)
 
-> ⚠️ **Without these steps, Agent Runtime API calls return `500 Internal Server Error`.**
+> ⚠️ **Without `CustomerWebClient` surface, Agent Builder Preview shows "Something went wrong" and Agent Runtime API / CLI testing returns `500 Internal Server Error`.**
 
-After publishing an Agent Script agent, the following metadata must be configured for API access:
+**The Problem**: `connection messaging:` in the `.agent` file ONLY generates a `Messaging` plannerSurface during compilation. There is NO `connection customerwebclient:` DSL syntax — attempting it causes `ERROR_HTTP_404` on publish. Agent Builder Preview + CLI testing require `CustomerWebClient`, which must be manually patched after every publish.
 
-**1. GenAiPlannerBundle — Add `plannerSurfaces` block:**
-
-When deploying via the `Agent` pseudo metadata type, retrieve and verify the `GenAiPlannerBundle` XML includes:
-```xml
-<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <!-- ... existing elements ... -->
-    <plannerSurfaces>
-        <plannerSurface>
-            <surfaceType>EinsteinAgentApiChannel</surfaceType>
-        </plannerSurface>
-    </plannerSurfaces>
-</GenAiPlannerBundle>
-```
-
-If missing, add it and redeploy:
-```bash
-sf project deploy start --metadata GenAiPlannerBundle:AgentName_Planner -o TARGET_ORG
-```
-
-**2. BotVersion — Set `surfacesEnabled` to `true`:**
-
-The `BotVersion` metadata defaults `surfacesEnabled` to `false`. Update:
-```xml
-<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
-    <!-- ... existing elements ... -->
-    <surfacesEnabled>true</surfacesEnabled>
-</BotVersion>
-```
+**Post-Publish Patch Workflow (6 steps, required after EVERY publish):**
 
 ```bash
-sf project deploy start --metadata BotVersion:AgentName.v1 -o TARGET_ORG
+# Step 1: Publish the agent (creates new version, e.g., v22)
+sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
+
+# Step 2: Retrieve the compiled GenAiPlannerBundle
+sf project retrieve start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json
+
+# Step 3: Add CustomerWebClient plannerSurface to the XML (see template below)
+
+# Step 4: Deactivate agent (deploy fails while active)
+sf agent deactivate --api-name AgentName -o TARGET_ORG
+
+# Step 5: Deploy patched bundle
+sf project deploy start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json
+
+# Step 6: Reactivate agent
+sf agent activate --api-name AgentName -o TARGET_ORG
 ```
 
-**3. External Client App (ECA) — Required for Client Credentials flow:**
+**Step 3 — XML patch template** (add after existing `Messaging` plannerSurfaces block):
+```xml
+<!-- Add this SECOND plannerSurfaces block for CustomerWebClient -->
+<plannerSurfaces>
+    <adaptiveResponseAllowed>false</adaptiveResponseAllowed>
+    <callRecordingAllowed>false</callRecordingAllowed>
+    <outboundRouteConfigs>
+        <escalationMessage>Your escalation message here.</escalationMessage>
+        <outboundRouteName>Your_OmniChannel_Flow_Name</outboundRouteName>
+        <outboundRouteType>OmniChannelFlow</outboundRouteType>
+    </outboundRouteConfigs>
+    <surface>SurfaceAction__CustomerWebClient</surface>
+    <surfaceType>CustomerWebClient</surfaceType>
+</plannerSurfaces>
+```
+
+> **Note**: The `outboundRouteConfigs` should mirror your Messaging surface config. If no escalation routing is configured, omit the `outboundRouteConfigs` block.
+
+> **Note**: `EinsteinAgentApiChannel` surfaceType is NOT available on all orgs (see Known Issue 17). Use `CustomerWebClient` instead — it enables both Agent Builder Preview and Agent Runtime API access.
+
+**External Client App (ECA) — Required for Client Credentials flow:**
 
 The Agent Runtime API requires OAuth with `chatbot_api`, `sfap_api`, and `api` scopes. See `/sf-connected-apps` for ECA creation.
 
@@ -1037,7 +1045,8 @@ curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/einstein/ai-agent/v1" \
   -d '{"agentDefinitionId":"0XxXXXXXXXXXXXXXXX"}'
 ```
 
-> **Symptom**: 500 error with `"errorCode": "UNKNOWN_EXCEPTION"` → Missing `plannerSurfaces` or `surfacesEnabled=false`.
+> **Symptom**: 500 error with `"errorCode": "UNKNOWN_EXCEPTION"` → Missing `CustomerWebClient` plannerSurface.
+> **Symptom**: Agent Builder Preview → "Something went wrong. Refresh and try again." → Same root cause.
 
 ### Phase 6: CLI Operations
 
