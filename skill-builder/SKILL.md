@@ -8,19 +8,6 @@ license: MIT
 metadata:
   version: "2.1.0"
   author: "Jag Valaiyapathy"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
-  PostToolUse:
-    - matcher: Write
-      hooks:
-        - type: command
-          command: "python3 ${SKILL_HOOKS}/post-write-validate.py"
-          timeout: 10000
 ---
 
 # Skill-Builder: Claude Code Skill Creation Wizard

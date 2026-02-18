@@ -10,13 +10,6 @@ compatibility: "Requires API v65.0+ (Winter '26)"
 metadata:
   version: "2.0.0"
   author: "Jag Valaiyapathy"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
 ---
 
 <!-- TIER: 1 | ENTRY POINT -->

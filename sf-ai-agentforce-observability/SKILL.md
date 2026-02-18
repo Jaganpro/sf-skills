@@ -12,19 +12,6 @@ metadata:
   data_model: "Session Tracing Data Model (STDM)"
   storage_format: "Parquet (via PyArrow)"
   analysis_library: "Polars"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SKILL_HOOKS}/validate-extraction.py"
-          timeout: 10000
 ---
 
 <!-- TIER: 1 | ENTRY POINT -->
@@ -54,12 +41,8 @@ Expert in extracting and analyzing Agentforce session tracing data from Salesfor
 | **CLI reference** | [docs/cli-reference.md](docs/cli-reference.md) | Complete command documentation |
 | **Auth setup** | [docs/auth-setup.md](docs/auth-setup.md) | JWT Bearer configuration |
 | **Troubleshooting** | [resources/troubleshooting.md](resources/troubleshooting.md) | Common issues & fixes |
-
-**Quick Links:**
-- [Data Model Overview](#session-tracing-data-model-stdm)
-- [CLI Quick Reference](#cli-quick-reference)
-- [Analysis Examples](#analysis-examples)
-- [Cross-Skill Integration](#cross-skill-integration)
+| **Analysis examples** | [references/analysis-examples.md](references/analysis-examples.md) | Session summary & debug timeline output |
+| **Billing & issues** | [references/billing-and-troubleshooting.md](references/billing-and-troubleshooting.md) | Credit consumption & common errors |
 
 ---
 
@@ -105,120 +88,48 @@ See [docs/auth-setup.md](docs/auth-setup.md) for detailed instructions.
 
 ---
 
-## T6 Live API Discovery Summary ✅
+## T6 Live API Discovery Summary
 
 **Validated: January 30, 2026** | **24 DMOs Found** | **260+ Test Points**
 
 | Category | DMOs | Status |
 |----------|------|--------|
-| **Session Tracing** | 5 | ✅ All Found (Session, Interaction, Step, Message, Participant) |
-| **Agent Optimizer** | 6 | ✅ All Found (Moment, Tag system) |
-| **GenAI Audit** | 13 | ✅ All Found (Generation, Quality, Feedback, Gateway) |
-| **RAG Quality** | 3 | ❌ Not Found (GenAIRetriever* DMOs don't exist) |
+| **Session Tracing** | 5 | All Found (Session, Interaction, Step, Message, Participant) |
+| **Agent Optimizer** | 6 | All Found (Moment, Tag system) |
+| **GenAI Audit** | 13 | All Found (Generation, Quality, Feedback, Gateway) |
+| **RAG Quality** | 3 | Not Found (GenAIRetriever* DMOs don't exist) |
 
 **Key Discoveries:**
 - Field naming: API uses `AiAgent` (lowercase 'i'), not `AIAgent`
 - Agent name location: Stored on `Moment`, not `Session`
-- Channel types: `E & O`, `Builder`, `SCRT2 - EmbeddedMessaging`, `Voice`, `NGC`, `Builder: Voice Preview`
-- Agent types: `EinsteinServiceAgent`, `AgentforceEmployeeAgent`, `AgentforceServiceAgent`, `Employee`
+- Channel types: `E & O`, `Builder`, `SCRT2 - EmbeddedMessaging`, `Voice`, `NGC`
 - Participant roles: `USER`, `AGENT` (not Owner/Observer)
-- GenAI detectors: `TOXICITY` (9 categories), `PII` (4 types), `PROMPT_DEFENSE`, `InstructionAdherence`
 
 ---
 
 ## Session Tracing Data Model (STDM)
 
-The STDM consists of 5 core DMOs plus 13 GenAI Audit DMOs. **Important**: Field names use `AiAgent` (lowercase 'i'), not `AIAgent`.
+> See [resources/data-model-reference.md](resources/data-model-reference.md) for the complete field-level schema of all 5 core DMOs + 13 GenAI Audit DMOs.
 
-```
-ssot__AIAgentSession__dlm (SESSION)
-├── ssot__Id__c                          # Session ID (UUID)
-├── ssot__StartTimestamp__c              # Session start (TimestampTZ)
-├── ssot__EndTimestamp__c                # Session end (TimestampTZ)
-├── ssot__AiAgentSessionEndType__c       # End type (Completed, Abandoned, etc.)
-├── ssot__AiAgentChannelType__c          # Channel (PSTN, Messaging, etc.)
-├── ssot__RelatedMessagingSessionId__c   # Linked messaging session
-├── ssot__RelatedVoiceCallId__c          # Linked voice call
-├── ssot__SessionOwnerId__c              # Owner ID
-├── ssot__IndividualId__c                # Data Cloud individual
-└── ssot__InternalOrganizationId__c      # Org ID
+**5 Core DMOs** — all field names use `AiAgent` prefix (lowercase 'i'):
 
-    └── ssot__AIAgentInteraction__dlm (TURN)  [1:N]
-        ├── ssot__Id__c                          # Interaction ID
-        ├── ssot__AiAgentSessionId__c            # FK to Session
-        ├── ssot__AiAgentInteractionType__c      # TURN or SESSION_END
-        ├── ssot__TopicApiName__c                # Topic that handled this turn
-        ├── ssot__StartTimestamp__c              # Turn start
-        ├── ssot__EndTimestamp__c                # Turn end
-        ├── ssot__TelemetryTraceId__c            # Trace ID for debugging
-        └── ssot__TelemetryTraceSpanId__c        # Span ID for debugging
+| DMO | Key | Relationship | Primary Fields |
+|-----|-----|-------------|----------------|
+| `AIAgentSession__dlm` | `Id__c` | Root | StartTimestamp, EndTimestamp, ChannelType, EndType |
+| `AIAgentInteraction__dlm` | `Id__c` | Session → N Turns | TopicApiName, InteractionType, TraceId |
+| `AIAgentInteractionStep__dlm` | `Id__c` | Turn → N Steps | StepType (LLM/ACTION), InputValue, OutputValue, Error |
+| `AIAgentMoment__dlm` | `Id__c` | Session (NOT Turn) | **AgentApiName lives here**, RequestSummary, ResponseSummary |
+| `AIAgentMessage__dlm` | `Id__c` | Turn → Messages | Content, Role, Timestamp |
 
-            └── ssot__AIAgentInteractionStep__dlm (STEP)  [1:N]
-                ├── ssot__Id__c                          # Step ID
-                ├── ssot__AiAgentInteractionId__c        # FK to Interaction
-                ├── ssot__AiAgentInteractionStepType__c  # LLM_STEP or ACTION_STEP
-                ├── ssot__Name__c                        # Action/step name
-                ├── ssot__InputValueText__c              # Input to step (JSON)
-                ├── ssot__OutputValueText__c             # Output from step (JSON)
-                ├── ssot__ErrorMessageText__c            # Error if step failed
-                ├── ssot__PreStepVariableText__c         # Variables before
-                ├── ssot__PostStepVariableText__c        # Variables after
-                ├── ssot__GenerationId__c                # LLM generation ID
-                └── ssot__GenAiGatewayRequestId__c       # GenAI Gateway request
+**13 GenAI Trust Layer DMOs** — detectors for toxicity, PII, prompt defense, instruction adherence:
 
-ssot__AIAgentMoment__dlm (MOMENT - links to Session, not Interaction)
-├── ssot__Id__c                          # Moment ID
-├── ssot__AiAgentSessionId__c            # FK to Session (NOT interaction!)
-├── ssot__AiAgentApiName__c              # Agent API name (lives here!)
-├── ssot__AiAgentVersionApiName__c       # Agent version
-├── ssot__RequestSummaryText__c          # User request summary
-├── ssot__ResponseSummaryText__c         # Agent response summary
-├── ssot__StartTimestamp__c              # Moment start
-└── ssot__EndTimestamp__c                # Moment end
-```
-
-**Key Schema Notes:**
-- Agent API name is in `AIAgentMoment`, not `AIAgentSession`
-- Moments link to sessions via `AiAgentSessionId`, not interactions
-- All field names use `AiAgent` prefix (lowercase 'i')
-
-### GenAI Trust Layer DMOs (13) ✅ T6 Verified
-
-```
-GenAIGatewayRequest__dlm (30 fields) - LLM request details
-├── gatewayRequestId__c, prompt__c, maskedPrompt__c
-├── model__c, provider__c, temperature__c
-├── promptTokens__c, completionTokens__c, totalTokens__c
-├── enableInputSafetyScoring__c, enableOutputSafetyScoring__c, enablePiiMasking__c
-└── sessionId__c, userId__c, appType__c, feature__c
-
-GenAIGeneration__dlm (11 fields) - LLM output
-├── generationId__c (FK for Steps)
-├── responseText__c, maskedResponseText__c
-└── Links to: AIAgentInteractionStep.ssot__GenerationId__c
-
-GenAIContentQuality__dlm (10 fields) - Trust Layer assessment
-└── isToxicityDetected__c, parent__c (FK to Generation)
-
-GenAIContentCategory__dlm (10 fields) - Detector results
-├── detectorType__c: TOXICITY | PII | PROMPT_DEFENSE | InstructionAdherence
-├── category__c: hate, identity, CREDIT_CARD, EMAIL_ADDRESS, High, Low, etc.
-└── value__c: Confidence score (0.0-1.0)
-
-GenAIFeedback__dlm (16 fields) - User feedback
-├── feedback__c: GOOD | BAD
-└── GenAIFeedbackDetail__dlm (10 fields) - Free-text comments
-```
-
-**Detector Categories (Live API Verified):**
-| Detector | Categories |
-|----------|------------|
-| `TOXICITY` | `hate`, `identity`, `physical`, `profanity`, `safety_score`, `sexual`, `toxicity`, `violence` |
-| `PII` | `CREDIT_CARD`, `EMAIL_ADDRESS`, `PERSON`, `US_PHONE_NUMBER` |
-| `PROMPT_DEFENSE` | `aggregatePromptAttackScore`, `isPromptAttackDetected` |
-| `InstructionAdherence` | `High`, `Low`, `Uncertain` |
-
-See [resources/data-model-reference.md](resources/data-model-reference.md) for full field documentation.
+| DMO | Purpose | Key Fields |
+|-----|---------|------------|
+| `GenAIGatewayRequest__dlm` | LLM request details | model, provider, tokens, safety flags |
+| `GenAIGeneration__dlm` | LLM output | responseText, links to Steps via GenerationId |
+| `GenAIContentQuality__dlm` | Trust Layer assessment | isToxicityDetected |
+| `GenAIContentCategory__dlm` | Detector results | detectorType, category, confidence value |
+| `GenAIFeedback__dlm` | User feedback | GOOD/BAD + detail comments |
 
 ---
 
@@ -354,12 +265,10 @@ Based on analysis findings:
 | `--consumer-key` | ECA consumer key | `$SF_CONSUMER_KEY` env var |
 | `--key-path` | JWT private key path | `~/.sf/jwt/{org}-agentforce-observability.key` |
 | `--days` | Last N days | 7 |
-| `--since` | Start date (YYYY-MM-DD) | - |
-| `--until` | End date (YYYY-MM-DD) | Today |
+| `--since` / `--until` | Date range (YYYY-MM-DD) | - / Today |
 | `--agent` | Filter by agent API name | All |
 | `--output` | Output directory | `./stdm_data` |
 | `--verbose` | Detailed logging | False |
-| `--format` | Output format (table/json/csv) | table |
 
 See [docs/cli-reference.md](docs/cli-reference.md) for complete documentation.
 
@@ -367,87 +276,22 @@ See [docs/cli-reference.md](docs/cli-reference.md) for complete documentation.
 
 ## Analysis Examples
 
-### Session Summary
+> See [references/analysis-examples.md](references/analysis-examples.md) for full session summary and debug timeline output examples.
 
-```
-📊 SESSION SUMMARY
-════════════════════════════════════════════════════════════════
+**Session Summary**: Shows sessions by agent (count, avg turns, avg duration) and end type distribution (completed/escalated/abandoned).
 
-Period: 2026-01-21 to 2026-01-28
-Total Sessions: 15,234
-Unique Agents: 3
-
-SESSIONS BY AGENT
-────────────────────────────────────────────────────────────────
-Agent                          │ Sessions │ Avg Turns │ Avg Duration
-───────────────────────────────┼──────────┼───────────┼─────────────
-Customer_Support_Agent         │   8,502  │    4.2    │     3m 15s
-Order_Tracking_Agent           │   4,128  │    2.8    │     1m 45s
-Product_FAQ_Agent              │   2,604  │    1.9    │       45s
-
-END TYPE DISTRIBUTION
-────────────────────────────────────────────────────────────────
-✅ Completed:    12,890 (84.6%)
-🔄 Escalated:     1,523 (10.0%)
-❌ Abandoned:       821 (5.4%)
-```
-
-### Debug Session Timeline
-
-```
-🔍 SESSION DEBUG: a0x1234567890ABC
-════════════════════════════════════════════════════════════════
-
-Agent: Customer_Support_Agent
-Started: 2026-01-28 10:15:23 UTC
-Duration: 4m 32s
-End Type: Completed
-Turns: 5
-
-TIMELINE
-────────────────────────────────────────────────────────────────
-10:15:23 │ [INPUT]  "I need help with my order #12345"
-10:15:24 │ [TOPIC]  → Order_Tracking (confidence: 0.95)
-10:15:24 │ [STEP]   LLM_STEP: Identify intent
-10:15:25 │ [STEP]   ACTION_STEP: Get_Order_Status
-         │          Input: {"orderId": "12345"}
-         │          Output: {"status": "Shipped", "eta": "2026-01-30"}
-10:15:26 │ [OUTPUT] "Your order #12345 has shipped and will arrive by Jan 30."
-
-10:16:01 │ [INPUT]  "Can I change the delivery address?"
-10:16:02 │ [TOPIC]  → Order_Tracking (same topic)
-10:16:02 │ [STEP]   LLM_STEP: Clarify request
-10:16:03 │ [STEP]   ACTION_STEP: Check_Modification_Eligibility
-         │          Input: {"orderId": "12345", "type": "address_change"}
-         │          Output: {"eligible": false, "reason": "Already shipped"}
-10:16:04 │ [OUTPUT] "I'm sorry, the order has already shipped..."
-```
+**Debug Timeline**: Reconstructs a session step-by-step — input → topic routing → LLM steps → action steps → output — with timestamps and I/O payloads.
 
 ---
 
 ## Cross-Skill Integration
 
-### Prerequisite Skills
-
 | Skill | When | How to Invoke |
 |-------|------|---------------|
 | `sf-connected-apps` | Auth setup | `Skill(skill="sf-connected-apps", args="JWT Bearer for Data Cloud")` |
-
-### Follow-up Skills
-
-| Finding | Skill | How to Invoke |
-|---------|-------|---------------|
-| Topic routing issues | `sf-ai-agentscript` | `Skill(skill="sf-ai-agentscript", args="Fix topic: [issue]")` |
-| Action failures | `sf-flow` / `sf-debug` | `Skill(skill="sf-debug", args="Analyze agent action failure")` |
-| Test coverage gaps | `sf-ai-agentforce-testing` | `Skill(skill="sf-ai-agentforce-testing", args="Add test cases")` |
-
-### Commonly Used With
-
-| Skill | Use Case | Confidence |
-|-------|----------|------------|
-| `sf-ai-agentscript` | Fix agent based on trace analysis | ⭐⭐⭐ Required |
-| `sf-ai-agentforce-testing` | Create test cases from observed patterns | ⭐⭐ Recommended |
-| `sf-debug` | Deep-dive into action failures | ⭐⭐ Recommended |
+| `sf-ai-agentscript` | Fix topic routing issues | `Skill(skill="sf-ai-agentscript", args="Fix topic: [issue]")` |
+| `sf-flow` / `sf-debug` | Debug action failures | `Skill(skill="sf-debug", args="Analyze agent action failure")` |
+| `sf-ai-agentforce-testing` | Create test cases from patterns | `Skill(skill="sf-ai-agentforce-testing", args="Add test cases")` |
 
 ---
 
@@ -461,98 +305,39 @@ TIMELINE
 | **Parquet efficiency** | 10x smaller than JSON | Always use Parquet for storage |
 | **Lazy evaluation** | Polars scans without loading | Handles 100M+ rows |
 | **~24 records per LLM call** | Each round-trip generates ~24 records | Factor into volume estimates |
-| **5-minute collection interval** | Data collection runs every 5 minutes | Account for processing delay |
 
 ---
 
-## Billing Considerations
+## Billing & Common Issues
 
-> **Reference**: [Billing Considerations for Agentforce Session Tracing](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_usage_types.htm)
+> See [references/billing-and-troubleshooting.md](references/billing-and-troubleshooting.md) for credit consumption details and error resolution.
 
-Agentforce Session Tracing consumes **Data 360 credits** for ingestion, storage, and processing.
+**Quick reference**: Session Tracing consumes Data 360 credits. ~24 records per LLM round-trip. 1,000 sessions/day × 4 turns × 24 = ~96K records/day. Use [Digital Wallet](https://help.salesforce.com/s/articleView?id=sf.digital_wallet.htm) for consumption tracking.
 
-### Credit Consumption
-
-| Usage Type | Digital Wallet Card | Description |
-|------------|---------------------|-------------|
-| **Batch Data Pipeline** | Data Services | Records ingested via data streams. ~24 records per LLM round-trip. **Primary cost driver**. |
-| **Data Queries** | Data Services | Records processed when running queries, reports, dashboards |
-| **Streaming Calculated Insights** | Data Services | Used for Prompt Builder usage and feedback metrics |
-| **Storage Beyond Allocation** | Data Storage | Storage consumed above allocated amount |
-
-### Cost Estimation
-
-```
-Records per session ≈ Turns × 24 (avg per LLM call)
-Daily records ≈ Sessions/day × Avg turns × 24
-
-Example:
-  1,000 sessions/day × 4 turns × 24 = 96,000 records/day ingested
-```
-
-**Tip**: Use [Digital Wallet](https://help.salesforce.com/s/articleView?id=sf.digital_wallet.htm) for near real-time consumption tracking.
-
----
-
-## Common Issues & Fixes
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `401 Unauthorized` | JWT auth expired/invalid | Refresh token or reconfigure ECA |
-| `No session data` | Tracing not enabled | Enable Session Tracing in Agent Settings |
-| `Query timeout` | Too much data | Add date filters, use incremental |
-| `Memory error` | Loading all data | Use Polars lazy frames |
-| `Missing DMO` | Wrong API version | Use API v60.0+ |
-
-See [resources/troubleshooting.md](resources/troubleshooting.md) for detailed solutions.
+| Error | Quick Fix |
+|-------|-----------|
+| `401 Unauthorized` | Refresh token or reconfigure ECA |
+| `No session data` | Enable Session Tracing in Agent Settings |
+| `Query timeout` | Add date filters, use incremental |
+| `Memory error` | Use Polars lazy frames |
 
 ---
 
 ## Output Directory Structure
 
-After extraction:
-
 ```
 stdm_data/
-├── sessions/
-│   └── date=2026-01-28/
-│       └── part-0000.parquet
-├── interactions/
-│   └── date=2026-01-28/
-│       └── part-0000.parquet
-├── steps/
-│   └── date=2026-01-28/
-│       └── part-0000.parquet
-├── messages/
-│   └── date=2026-01-28/
-│       └── part-0000.parquet
-└── metadata/
-    ├── extraction.json      # Extraction parameters
-    └── watermark.json       # For incremental extraction
+├── sessions/          # date=YYYY-MM-DD/part-0000.parquet
+├── interactions/      # date=YYYY-MM-DD/part-0000.parquet
+├── steps/             # date=YYYY-MM-DD/part-0000.parquet
+├── messages/          # date=YYYY-MM-DD/part-0000.parquet
+└── metadata/          # extraction.json + watermark.json (incremental)
 ```
 
 ---
 
 ## Dependencies
 
-**Python 3.10+** with:
-
-```
-polars>=1.0.0           # DataFrame library (lazy evaluation)
-pyarrow>=15.0.0         # Parquet support
-pyjwt>=2.8.0            # JWT generation
-cryptography>=42.0.0    # Certificate handling
-httpx>=0.27.0           # HTTP client
-rich>=13.0.0            # CLI progress bars
-click>=8.1.0            # CLI framework
-pydantic>=2.6.0         # Data validation
-```
+**Python 3.10+**: `polars>=1.0`, `pyarrow>=15.0`, `pyjwt>=2.8`, `cryptography>=42.0`, `httpx>=0.27`, `rich>=13.0`, `click>=8.1`, `pydantic>=2.6`
 
 Install: `pip install -r requirements.txt`
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE) file.
-Copyright (c) 2024-2026 Jag Valaiyapathy

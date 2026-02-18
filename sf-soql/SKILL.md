@@ -9,19 +9,6 @@ metadata:
   version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 5 categories"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SKILL_HOOKS}/post-tool-validate.py"
-          timeout: 10000
 ---
 
 # sf-soql: Salesforce SOQL Query Expert
@@ -73,7 +60,7 @@ Use **AskUserQuestion** to gather:
 
 ```bash
 # Test query
-sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org
+sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org --json
 
 # Analyze query plan
 sf data query --query "..." --target-org my-org --use-tooling-api --plan
@@ -91,428 +78,84 @@ sf data query --query "..." --target-org my-org --use-tooling-api --plan
 | **Correctness** | 15 | Proper syntax, valid field references |
 | **Readability** | 15 | Formatted, meaningful aliases, comments |
 
-**Scoring Thresholds**:
-```
-⭐⭐⭐⭐⭐ 90-100 pts → Production-optimized query
-⭐⭐⭐⭐   80-89 pts  → Good query, minor optimizations possible
-⭐⭐⭐    70-79 pts   → Functional, performance concerns
-⭐⭐      60-69 pts   → Basic query, needs improvement
-⭐        <60 pts    → Problematic query
-```
+**Scoring Thresholds**: 90-100 = Production-optimized, 80-89 = Good (minor optimizations possible), 70-79 = Performance concerns, <70 = Needs improvement.
 
 ---
 
-## SOQL Reference
+## Quick Reference
 
-### Basic Query Structure
-
-```sql
-SELECT field1, field2, ...
-FROM ObjectName
-WHERE condition1 AND condition2
-ORDER BY field1 ASC/DESC
-LIMIT number
-OFFSET number
-```
-
-### Field Selection
+### Security (Always Apply)
 
 ```sql
--- Specific fields (recommended)
-SELECT Id, Name, Industry FROM Account
+-- Enforce FLS (throws exception on inaccessible fields)
+SELECT Id, Name, Phone FROM Account WITH SECURITY_ENFORCED
 
--- All fields (avoid in Apex - use only in Developer Console)
-SELECT FIELDS(ALL) FROM Account LIMIT 200
-
--- Standard fields only
-SELECT FIELDS(STANDARD) FROM Account
-```
-
-### WHERE Clause Operators
-
-| Operator | Example | Notes |
-|----------|---------|-------|
-| `=` | `Name = 'Acme'` | Exact match |
-| `!=` | `Status != 'Closed'` | Not equal |
-| `<`, `>`, `<=`, `>=` | `Amount > 1000` | Comparison |
-| `LIKE` | `Name LIKE 'Acme%'` | Wildcard match |
-| `IN` | `Status IN ('New', 'Open')` | Multiple values |
-| `NOT IN` | `Type NOT IN ('Other')` | Exclude values |
-| `INCLUDES` | `Interests__c INCLUDES ('Golf')` | Multi-select picklist |
-| `EXCLUDES` | `Interests__c EXCLUDES ('Golf')` | Multi-select exclude |
-
-### Date Literals
-
-| Literal | Meaning |
-|---------|---------|
-| `TODAY` | Current day |
-| `YESTERDAY` | Previous day |
-| `THIS_WEEK` | Current week (Sun-Sat) |
-| `LAST_WEEK` | Previous week |
-| `THIS_MONTH` | Current month |
-| `LAST_MONTH` | Previous month |
-| `THIS_QUARTER` | Current quarter |
-| `THIS_YEAR` | Current year |
-| `LAST_N_DAYS:n` | Last n days |
-| `NEXT_N_DAYS:n` | Next n days |
-
-```sql
--- Created in last 30 days
-SELECT Id FROM Account WHERE CreatedDate = LAST_N_DAYS:30
-
--- Modified this month
-SELECT Id FROM Contact WHERE LastModifiedDate = THIS_MONTH
-```
-
----
-
-## Relationship Queries
-
-### Child-to-Parent (Dot Notation)
-
-```sql
--- Access parent fields
-SELECT Id, Name, Account.Name, Account.Industry
-FROM Contact
-WHERE Account.AnnualRevenue > 1000000
-
--- Up to 5 levels
-SELECT Id, Contact.Account.Owner.Manager.Name
-FROM Case
-```
-
-### Parent-to-Child (Subquery)
-
-```sql
--- Get parent with related children
-SELECT Id, Name,
-       (SELECT Id, FirstName, LastName FROM Contacts),
-       (SELECT Id, Name, Amount FROM Opportunities WHERE StageName = 'Closed Won')
-FROM Account
-WHERE Industry = 'Technology'
-```
-
-### Relationship Names
-
-| Object | Relationship Name | Example |
-|--------|-------------------|---------|
-| Account → Contacts | `Contacts` | `(SELECT Id FROM Contacts)` |
-| Account → Opportunities | `Opportunities` | `(SELECT Id FROM Opportunities)` |
-| Account → Cases | `Cases` | `(SELECT Id FROM Cases)` |
-| Contact → Cases | `Cases` | `(SELECT Id FROM Cases)` |
-| Opportunity → OpportunityLineItems | `OpportunityLineItems` | `(SELECT Id FROM OpportunityLineItems)` |
-
-### Custom Object Relationships
-
-```sql
--- Custom relationship: add __r suffix
-SELECT Id, Name, Custom_Object__r.Name
-FROM Another_Object__c
-
--- Child relationship: add __r suffix
-SELECT Id, (SELECT Id FROM Custom_Children__r)
-FROM Parent_Object__c
-```
-
----
-
-## Aggregate Queries
-
-### Basic Aggregates
-
-```sql
--- Count all records
-SELECT COUNT() FROM Account
-
--- Count with alias
-SELECT COUNT(Id) cnt FROM Account
-
--- Sum, Average, Min, Max
-SELECT SUM(Amount), AVG(Amount), MIN(Amount), MAX(Amount)
-FROM Opportunity
-WHERE StageName = 'Closed Won'
-```
-
-### GROUP BY
-
-```sql
--- Count by field
-SELECT Industry, COUNT(Id)
-FROM Account
-GROUP BY Industry
-
--- Multiple groupings
-SELECT StageName, CALENDAR_YEAR(CloseDate), COUNT(Id)
-FROM Opportunity
-GROUP BY StageName, CALENDAR_YEAR(CloseDate)
-```
-
-### HAVING Clause
-
-```sql
--- Filter aggregated results
-SELECT Industry, COUNT(Id) cnt
-FROM Account
-GROUP BY Industry
-HAVING COUNT(Id) > 10
-```
-
-### GROUP BY ROLLUP
-
-```sql
--- Subtotals
-SELECT LeadSource, Rating, COUNT(Id)
-FROM Lead
-GROUP BY ROLLUP(LeadSource, Rating)
-```
-
----
-
-## Query Optimization
-
-### Indexing Strategy
-
-**Indexed Fields** (Always Selective):
-- Id
-- Name
-- OwnerId
-- CreatedDate
-- LastModifiedDate
-- RecordTypeId
-- External ID fields
-- Master-Detail relationship fields
-- Lookup fields (when unique)
-
-**Standard Indexed Fields by Object**:
-- Account: AccountNumber, Site
-- Contact: Email
-- Lead: Email
-- Case: CaseNumber
-- Opportunity: -
-
-### Selectivity Rules
-
-```
-A filter is selective when it returns:
-- < 10% of total records for first 1 million
-- < 5% of total records for additional records
-- OR uses an indexed field
-```
-
-### Optimization Patterns
-
-```sql
--- ❌ NON-SELECTIVE (scans all records)
-SELECT Id FROM Lead WHERE Status = 'Open'
-
--- ✅ SELECTIVE (uses index + selective filter)
-SELECT Id FROM Lead
-WHERE Status = 'Open'
-AND CreatedDate = LAST_N_DAYS:30
-LIMIT 10000
-
--- ❌ LEADING WILDCARD (can't use index)
-SELECT Id FROM Account WHERE Name LIKE '%corp'
-
--- ✅ TRAILING WILDCARD (uses index)
-SELECT Id FROM Account WHERE Name LIKE 'Acme%'
-```
-
-### Query Plan Analysis
-
-```bash
-# Get query plan
-sf data query \
-  --query "SELECT Id FROM Account WHERE Name = 'Test'" \
-  --target-org my-org \
-  --use-tooling-api \
-  --plan
-```
-
-**Plan Output Interpretation**:
-- `Cardinality`: Estimated rows returned
-- `Cost`: Relative query cost (lower is better)
-- `Fields`: Index fields used
-- `LeadingOperationType`: How the query starts (Index vs TableScan)
-
----
-
-## Security Patterns
-
-### WITH SECURITY_ENFORCED
-
-```sql
--- Throws exception if user lacks FLS
-SELECT Id, Name, Phone
-FROM Account
-WITH SECURITY_ENFORCED
-```
-
-### WITH USER_MODE / SYSTEM_MODE
-
-```sql
--- Respects sharing rules (default in Apex)
+-- Respect sharing rules
 SELECT Id, Name FROM Account WITH USER_MODE
-
--- Bypasses sharing rules (use with caution)
-SELECT Id, Name FROM Account WITH SYSTEM_MODE
 ```
 
-### In Apex: stripInaccessible
+> See [references/query-optimization.md](references/query-optimization.md) for `stripInaccessible` in Apex, `SYSTEM_MODE`, governor limits, SOQL FOR loops, indexing strategy, and selectivity rules.
 
-```apex
-// Strip inaccessible fields instead of throwing
-SObjectAccessDecision decision = Security.stripInaccessible(
-    AccessType.READABLE,
-    [SELECT Id, Name, SecretField__c FROM Account]
-);
-List<Account> safeAccounts = decision.getRecords();
-```
-
----
-
-## Governor Limits
+### Governor Limits (Key Numbers)
 
 | Limit | Synchronous | Asynchronous |
 |-------|-------------|--------------|
 | Total SOQL Queries | 100 | 200 |
 | Records Retrieved | 50,000 | 50,000 |
-| Query Rows (queryMore) | 2,000 | 2,000 |
-| Query Locator Rows | 10 million | 10 million |
 
-### Efficient Patterns
-
-```sql
--- ❌ Query all, filter in Apex
-SELECT Id, Name FROM Account
--- Then filter 50,000 records in Apex
-
--- ✅ Filter in SOQL
-SELECT Id, Name FROM Account
-WHERE Industry = 'Technology' AND IsActive__c = true
-LIMIT 1000
-
--- ❌ Multiple queries in loop
-for (Contact c : contacts) {
-    Account a = [SELECT Name FROM Account WHERE Id = :c.AccountId];
-}
-
--- ✅ Single query with Map
-Map<Id, Account> accounts = new Map<Id, Account>(
-    [SELECT Id, Name FROM Account WHERE Id IN :accountIds]
-);
-```
+> **Anti-pattern**: Never query inside a loop. Use `Map<Id, SObject>` with `WHERE Id IN :idSet` instead.
 
 ---
 
-## SOQL FOR Loops
+## SOQL Syntax, Relationships & Aggregates
 
-```apex
-// For large datasets - doesn't load all into heap
-for (Account acc : [SELECT Id, Name FROM Account WHERE Industry = 'Technology']) {
-    // Process one record at a time
-    // Governor: Uses queryMore internally (200 at a time)
-}
+> See [references/soql-syntax-reference.md](references/soql-syntax-reference.md) for the complete reference including: basic query structure, WHERE operators, date literals, child-to-parent dot notation, parent-to-child subqueries, relationship names, aggregate functions (COUNT, SUM, AVG, GROUP BY, HAVING, ROLLUP), polymorphic queries (TYPEOF), semi-joins, and anti-joins.
 
-// With explicit batch size
-for (List<Account> accs : [SELECT Id, Name FROM Account]) {
-    // Process 200 records at a time
-}
-```
+**Key patterns:**
+- **Child-to-Parent**: `SELECT Contact.Account.Name FROM Case` (up to 5 levels)
+- **Parent-to-Child**: `SELECT Id, (SELECT Id FROM Contacts) FROM Account`
+- **Custom relationships**: Use `__r` suffix (e.g., `Custom_Object__r.Name`)
+- **Aggregates**: `SELECT Industry, COUNT(Id) FROM Account GROUP BY Industry HAVING COUNT(Id) > 10`
+
+## Query Optimization
+
+> See [references/query-optimization.md](references/query-optimization.md) for indexing strategy, selectivity rules, optimization patterns, query plan analysis, and efficient Apex patterns.
+
+**Key rules:**
+- Use indexed fields in WHERE (Id, Name, CreatedDate, Email, External IDs)
+- Trailing wildcards use indexes (`LIKE 'Acme%'`), leading wildcards don't (`LIKE '%corp'`)
+- Filter in SOQL, not in Apex — use `LIMIT` appropriate to use case
+- Use `sf data query --plan` to analyze query cost
 
 ---
 
-## Advanced Features
+## Natural Language Examples
 
-### Polymorphic Relationships (What)
-
-```sql
--- Query polymorphic fields
-SELECT Id, What.Name, What.Type
-FROM Task
-WHERE What.Type IN ('Account', 'Opportunity')
-
--- TYPEOF for conditional fields
-SELECT
-    TYPEOF What
-        WHEN Account THEN Name, Phone
-        WHEN Opportunity THEN Name, Amount
-    END
-FROM Task
-```
-
-### Semi-Joins and Anti-Joins
-
-```sql
--- Semi-join: Records that HAVE related records
-SELECT Id, Name FROM Account
-WHERE Id IN (SELECT AccountId FROM Contact)
-
--- Anti-join: Records that DON'T HAVE related records
-SELECT Id, Name FROM Account
-WHERE Id NOT IN (SELECT AccountId FROM Opportunity)
-```
-
-### Format in Aggregate Queries
-
-```sql
--- Format currency/date in results
-SELECT FORMAT(Amount), FORMAT(CloseDate)
-FROM Opportunity
-```
-
-### convertCurrency()
-
-```sql
--- Convert to user's currency
-SELECT Id, convertCurrency(Amount)
-FROM Opportunity
-```
+| Request | SOQL |
+|---------|------|
+| "Get me all accounts" | `SELECT Id, Name FROM Account LIMIT 1000` |
+| "Find contacts without email" | `SELECT Id, Name FROM Contact WHERE Email = null` |
+| "Top 10 opportunities by amount" | `SELECT Id, Name, Amount FROM Opportunity ORDER BY Amount DESC LIMIT 10` |
+| "Contacts with @gmail emails" | `SELECT Id, Name, Email FROM Contact WHERE Email LIKE '%@gmail.com'` |
+| "Opportunities closing this quarter" | `SELECT Id, Name, CloseDate FROM Opportunity WHERE CloseDate = THIS_QUARTER` |
+| "Total revenue by industry" | `SELECT Industry, SUM(AnnualRevenue) FROM Account GROUP BY Industry` |
 
 ---
 
 ## CLI Commands
 
-### Execute Query
-
 ```bash
-# Basic query
-sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org
+# Basic query (JSON output)
+sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org --json
 
-# JSON output
-sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --json
-
-# CSV output
-sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --result-format csv
-
-# Direct to file
+# CSV output to file
 sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --result-format csv --output-file accounts.csv
-```
 
-### Bulk Data Export
-
-```bash
-# For large datasets (> 2,000 records)
+# Bulk export (> 2,000 records)
 sf data export bulk --query "SELECT Id, Name FROM Account" --target-org my-org --output-file accounts.csv
-```
 
-### Query Plan
-
-```bash
-sf data query \
-  --query "SELECT Id FROM Account WHERE Name = 'Test'" \
-  --target-org my-org \
-  --use-tooling-api \
-  --plan
-```
-
----
-
-### SOSL Search
-
-```bash
-# For full-text search across objects, use SOSL:
-sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name)"  --target-org my-org
+# SOSL search
+sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name)" --target-org my-org
 ```
 
 ---
@@ -528,47 +171,24 @@ sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), C
 
 ---
 
-## Natural Language Examples
+## Document Map
 
-| Request | SOQL |
-|---------|------|
-| "Get me all accounts" | `SELECT Id, Name FROM Account LIMIT 1000` |
-| "Find contacts without email" | `SELECT Id, Name FROM Contact WHERE Email = null` |
-| "Accounts created by John Smith" | `SELECT Id, Name FROM Account WHERE CreatedBy.Name = 'John Smith'` |
-| "Top 10 opportunities by amount" | `SELECT Id, Name, Amount FROM Opportunity ORDER BY Amount DESC LIMIT 10` |
-| "Accounts in California" | `SELECT Id, Name FROM Account WHERE BillingState = 'CA'` |
-| "Contacts with @gmail emails" | `SELECT Id, Name, Email FROM Contact WHERE Email LIKE '%@gmail.com'` |
-| "Opportunities closing this quarter" | `SELECT Id, Name, CloseDate FROM Opportunity WHERE CloseDate = THIS_QUARTER` |
-| "Cases opened in last 7 days" | `SELECT Id, Subject FROM Case WHERE CreatedDate = LAST_N_DAYS:7` |
-| "Total revenue by industry" | `SELECT Industry, SUM(AnnualRevenue) FROM Account GROUP BY Industry` |
-| "Accounts with more than 5 contacts" | `SELECT Id, Name, (SELECT Id FROM Contacts) FROM Account` + filter in Apex |
+### References (Extracted)
+| Document | Description |
+|----------|-------------|
+| [SOQL Syntax Reference](references/soql-syntax-reference.md) | Complete syntax, operators, dates, relationships, aggregates, advanced features |
+| [Query Optimization](references/query-optimization.md) | Indexing, selectivity, patterns, query plan, governor limits, security |
 
----
-
-## Dependencies
-
-**Required**: Target org with `sf` CLI authenticated
-
-**Recommended**:
-- sf-debug (for query plan analysis)
-- sf-apex (for embedding in Apex code)
-
-Install: `/plugin install github:Jaganpro/sf-skills/sf-soql`
-
----
-
-## Documentation
-
+### Docs
 | Document | Description |
 |----------|-------------|
 | [soql-reference.md](docs/soql-reference.md) | Complete SOQL syntax reference |
 | [cli-commands.md](docs/cli-commands.md) | SF CLI query commands |
 | [anti-patterns.md](docs/anti-patterns.md) | Common mistakes and how to avoid them |
 | [selector-patterns.md](docs/selector-patterns.md) | Query abstraction patterns (vanilla Apex) |
-| [field-coverage-rules.md](docs/field-coverage-rules.md) | **NEW**: Ensure queries include all accessed fields (LLM mistake prevention) |
+| [field-coverage-rules.md](docs/field-coverage-rules.md) | Ensure queries include all accessed fields |
 
-## Templates
-
+### Templates
 | Template | Description |
 |----------|-------------|
 | [basic-queries.soql](templates/basic-queries.soql) | Basic SOQL syntax examples |
@@ -580,13 +200,14 @@ Install: `/plugin install github:Jaganpro/sf-skills/sf-soql`
 
 ---
 
-## Credits
+## Dependencies
 
-See [CREDITS.md](CREDITS.md) for acknowledgments of community resources that shaped this skill.
+**Required**: Target org with `sf` CLI authenticated
+
+**Recommended**: sf-debug (for query plan analysis), sf-apex (for embedding in Apex code)
 
 ---
 
-## License
+## Credits
 
-MIT License. See [LICENSE](LICENSE) file.
-Copyright (c) 2024-2025 Jag Valaiyapathy
+See [CREDITS.md](CREDITS.md) for acknowledgments of community resources that shaped this skill.

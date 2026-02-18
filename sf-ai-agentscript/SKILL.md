@@ -18,19 +18,6 @@ metadata:
   validation_agents: 24
   validate_by: "2026-03-19"  # 30 days from last validation
   validation_org: "AgentforceTesting"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "python3 ${SKILL_HOOKS}/agentscript-syntax-validator.py"
-          timeout: 10000
 ---
 
 # SF-AI-AgentScript Skill
@@ -85,509 +72,28 @@ description  → descriptions, description_text, desc_field
 label        → label_text, display_label, label_field
 ```
 
-> **Important distinction (TDD v2.2.0)**: `is_required`, `is_displayable`, `is_used_by_planner`, and `label` are reserved as **variable/field names** but are valid as **action I/O metadata properties**. For example, you cannot name a variable `label`, but you CAN use `label:` as a property on an action definition, input, or output. See "Action I/O Metadata Properties" below.
+> **Important distinction (TDD v2.2.0)**: `is_required`, `is_displayable`, `is_used_by_planner`, and `label` are reserved as **variable/field names** but are valid as **action I/O metadata properties**. For example, you cannot name a variable `label`, but you CAN use `label:` as a property on an action definition, input, or output. See [references/feature-validity.md](references/feature-validity.md).
 
-### 🔴 Feature Validity by Context (TDD Validated v2.2.0)
+### Feature Validity, Data Types & UI Bugs
 
-> **Key distinction**: Many action metadata properties are valid on **action definitions with targets** (`flow://`, `apex://`) but NOT on **utility actions** (`@utils.transition`). The v1.3.0 finding that tested only `@utils.transition` was too narrow — v2.2.0 corrects this.
+> See [references/feature-validity.md](references/feature-validity.md) for the full TDD v2.2.0 feature validity by context table (which properties work on `@utils.transition` vs target-backed actions).
 
-| Feature | On `@utils.transition` | On action definitions with `target:` | Notes |
-|---------|------------------------|---------------------------------------|-------|
-| `label:` on topics | ❌ v1.3.0 | ✅ v2.2.0 | Valid on topic blocks |
-| `label:` on actions | ❌ v1.3.0 | ✅ v2.2.0 | Valid on Level 1 action definitions |
-| `label:` on I/O fields | ❌ v1.3.0 | ✅ v2.2.0 | Valid on inputs/outputs |
-| `require_user_confirmation:` | ❌ | ✅ v2.2.0 | Compiles; runtime no-op (Issue 6) |
-| `include_in_progress_indicator:` | ❌ | ✅ v2.2.0 | Shows spinner during action execution |
-| `progress_indicator_message:` | ❌ | ✅ v2.2.0 | Works on both `flow://` and `apex://` |
-| `output_instructions:` | ❌ | ❓ Untested | Not tested on target-backed actions |
-| `always_expect_input:` | ❌ | ❌ | NOT implemented anywhere |
+> See [references/complex-data-types.md](references/complex-data-types.md) for the `complex_data_type_name` mapping table and Agent Script → Lightning type mapping.
 
-**What works on `@utils.transition` actions:**
-```yaml
-actions:
-   go_next: @utils.transition to @topic.next
-      description: "Navigate to next topic"   # ✅ ONLY description works
-```
+> **Canvas View** can silently corrupt syntax (`==` → `{! OPERATOR.EQUAL }`, missing colons, de-indentation). Always use **Script view** for structural edits. **Preview Mode** has known bugs with linked variables and output property access — see [resources/known-issues.md](resources/known-issues.md) for workarounds.
 
-**What works on action definitions with `target:`:**
-```yaml
-actions:
-   process_order:
-      label: "Process Order"                            # ✅ Display label
-      description: "Process the customer's order"       # ✅ LLM description
-      require_user_confirmation: True                   # ✅ Compiles (runtime Issue 6)
-      include_in_progress_indicator: True               # ✅ Shows spinner
-      progress_indicator_message: "Processing..."       # ✅ Custom spinner message
-      inputs:
-         order_id: string
-            label: "Order ID"                           # ✅ I/O display label
-            description: "The order identifier"
-      outputs:
-         status: string
-            label: "Order Status"                       # ✅ I/O display label
-            description: "Current order status"
-      target: "apex://OrderProcessor"
-```
-
-### 🔴 `complex_data_type_name` Mapping Table (Critical for Actions)
-
-> **"#1 source of compile errors"** - Use this table when defining action inputs/outputs in Agentforce Assets.
-
-| Data Type | `complex_data_type_name` Value | Notes |
-|-----------|-------------------------------|-------|
-| `string` | *(none needed)* | Primitive type |
-| `number` | *(none needed)* | Primitive type |
-| `boolean` | *(none needed)* | Primitive type |
-| `object` (SObject) | `lightning__recordInfoType` | Use for Account, Contact, etc. |
-| `list[string]` | `lightning__textType` | Collection of text values |
-| `list[object]` | `lightning__textType` | Serialized as JSON text |
-| Apex Inner Class | `@apexClassType/NamespacedClass__InnerClass` | Namespace required |
-| Custom LWC Type | `lightning__c__CustomTypeName` | Custom component types |
-| Currency field | `lightning__currencyType` | For monetary values |
-| `datetime` | `lightning__dateTimeStringType` | DateTime values (TDD v2.1.0) |
-
-**Agent Script → Lightning Type Mapping (TDD Validated v2.1.0):**
-
-> Use this when troubleshooting type errors between Agent Script action I/O and Apex/Flow targets.
-
-| Agent Script Type | Lightning Type | Apex Type | Notes |
-|-------------------|---------------|-----------|-------|
-| `string` | `lightning__textType` | `String` | No `complex_data_type_name` needed |
-| `number` | `lightning__numberType` | `Decimal` / `Double` | No `complex_data_type_name` needed |
-| `boolean` | `lightning__booleanType` | `Boolean` | No `complex_data_type_name` needed |
-| `datetime` | `lightning__dateTimeStringType` | `DateTime` | **Actions only** — not valid for variables |
-| `date` | `lightning__dateType` | `Date` | Valid for both variables and actions |
-| `currency` | `lightning__currencyType` | `Decimal` | Annotated with currency type |
-
-**Pro Tip**: Don't manually edit `complex_data_type_name` - use the UI dropdown in **Agentforce Assets > Action Definition**, then export/import the action definition.
-
-### ⚠️ Canvas View Corruption Bugs
-
-> **CRITICAL**: Canvas view can silently corrupt Agent Script syntax. Make complex edits in **Script view**.
-
-| Original Syntax | Canvas Corrupts To | Impact |
-|-----------------|-------------------|--------|
-| `==` | `{! OPERATOR.EQUAL }` | Breaks conditionals |
-| `if condition:` | `if condition` (missing colon) | Parse error |
-| `with email =` | `with @inputs.email =` | Invalid syntax |
-| 4-space indent | De-indented (breaks nesting) | Structure lost |
-| `@topic.X` (supervision) | `@utils.transition to @topic.X` (handoff) | Changes return behavior |
-| `A and B` | `A {! and } B` | Breaks compound conditions |
-
-**Safe Workflow**:
-1. Use **Script view** for all structural edits (conditionals, actions, transitions)
-2. Use Canvas only for visual validation and simple text changes
-3. **Always review in Script view** after any Canvas edit
-
-### ⚠️ Preview Mode Critical Bugs
-
-> **CRITICAL REFRESH BUG**: Browser refresh required after **every** Agent Script save before preview works properly.
-
-| Issue | Error Message | Workaround |
-|-------|---------------|------------|
-| Linked vars in context, not state | `"Cannot access 'X': Not a declared field in dict"` | Convert to mutable + hardcode for testing |
-| Output property access fails | Silent failure, no error | Assign to variable first, then use in conditional |
-| Simulate vs Live behavior differs | Works in Simulate, fails in Live | Test in **BOTH** modes before committing |
-
-**Pattern for Testing Linked Variables:**
-```yaml
-# ❌ DOESN'T WORK IN PREVIEW (linked var from session):
-RoutableId: linked string
-   source: @MessagingSession.Id
-
-# ✅ WORKAROUND FOR TESTING (hardcode value):
-RoutableId: mutable string = "test-session-123"
-   description: "MessagingSession Id (hardcoded for testing)"
-
-# After testing, switch back to linked for production
-```
-
-**Output Property Access Pattern:**
-```yaml
-# ❌ DOESN'T WORK IN PREVIEW (direct output access):
-if @actions.check_status.result == "approved":
-   | Approved!
-
-# ✅ CORRECT (assign to variable first):
-set @variables.status = @outputs.result
-if @variables.status == "approved":
-   | Approved!
-```
-
-#### `if`/`else` Nesting Rules — Two Valid Approaches
-```yaml
-# ❌ WRONG - `else if` is NOT valid syntax
-if @variables.tier == "gold":
-   | Gold tier detected.
-else if @variables.tier == "silver":    # SyntaxError!
-   | Silver tier detected.
-
-# ❌ WRONG - Direct nested if inside if (no else:) causes SyntaxError
-if @variables.software_cost > 0:
-   if @variables.software_cost <= 500:   # SyntaxError!
-      | Auto-approve this software request.
-
-# ❌ WRONG - else: with nested if ALSO causes SyntaxError (TDD validated 2026-02-14)
-if @variables.is_member == True:
-   | Welcome back, member!
-else:
-   if @variables.visit_count > 5:       # SyntaxError: Unexpected 'if'
-      | Welcome back, frequent visitor!
-
-# ✅ CORRECT Approach 1 - Compound condition (when logic allows)
-if @variables.software_cost > 0 and @variables.software_cost <= 500:
-   | Auto-approve this software request.
-
-# ✅ CORRECT Approach 2 - Flatten to sequential ifs (for separate messages)
-if @variables.order_verified == False or @variables.payment_confirmed == False:
-   | ❌ **PROCESSING BLOCKED**
-   | Missing requirements:
-
-if @variables.order_verified == False:
-   | - Order verification pending
-
-if @variables.payment_confirmed == False:
-   | - Payment confirmation pending
-```
-> **Summary**: `else if` is NOT valid. Direct `if` inside `if` is NOT valid. `else:` with nested `if` is also NOT valid (TDD disproved 2026-02-14). Use compound conditions for multi-branch logic, or flatten to sequential ifs for separate outputs.
-
-#### `...` is Slot-Filling Syntax (LLM Extracts from Conversation)
-```yaml
-# ❌ WRONG - Using ... as default value
-order_id: mutable string = ...
-
-# ✅ CORRECT - Use ... only in action parameter binding
-reasoning:
-   actions:
-      search: @actions.search_products
-         with query=...           # LLM extracts from user message
-         with category=...        # LLM decides based on context
-         with limit=10            # Fixed value
-```
-
-#### Post-Action Directives: Only on `@actions.*`
-```yaml
-# ❌ WRONG - @utils does NOT support set/run/if
-go_next: @utils.transition to @topic.main
-   set @variables.visited = True   # ERROR!
-
-# ✅ CORRECT - Only @actions.* supports post-action
-process: @actions.process_order
-   with order_id=@variables.order_id
-   set @variables.status = @outputs.status        # ✅ Works
-   run @actions.send_notification                 # ✅ Works
-   if @outputs.needs_review:                      # ✅ Works
-      transition to @topic.review
-```
-
-#### Helper Topic Pattern (For Demo Agents Without Flows/Apex)
-When you need to set variables without backend actions, use dedicated "helper topics":
-```yaml
-# Main topic offers LLM-selectable action
-topic verify_employee:
-   reasoning:
-      actions:
-         complete_verification: @utils.transition to @topic.verification_success
-            description: "Mark employee as verified"
-            available when @variables.employee_verified == False
-
-# Helper topic sets variables in instructions, then returns
-topic verification_success:
-   description: "Set verified state and return"
-   reasoning:
-      instructions: ->
-         set @variables.employee_verified = True
-         set @variables.employee_name = "Demo Employee"
-         | ✓ Identity verified!
-         transition to @topic.verify_employee  # Return to parent
-```
-> **Why this works**: `set` statements ARE valid inside `instructions: ->` blocks. The topic loop pattern lets you change state without Flows/Apex.
+> **Conditional nesting**: `else if` is NOT valid, nested `if` inside `if`/`else:` is NOT valid (TDD disproved). Use compound `if A and B:` or flatten to sequential ifs. `...` is slot-filling only (for `with param=...`). Post-action `set`/`run` only works on `@actions.*`, NOT `@utils.*`. See [resources/syntax-reference.md](resources/syntax-reference.md) for detailed examples.
 
 ---
 
-## 💰 PRODUCTION GOTCHAS: Billing, Determinism & Performance
+## 💰 PRODUCTION GOTCHAS
 
-### Credit Consumption Table
+> See [references/production-gotchas.md](references/production-gotchas.md) for the full production guide including: credit consumption table, lifecycle hooks (`before_reasoning:`/`after_reasoning:` syntax), supervision vs handoff, zero-hallucination routing with `is_displayable`/`is_used_by_planner`, action I/O metadata properties (TDD v2.2.0), action chaining, latch variable pattern, loop protection, token limits, progress indicators, VS Code limitations, and language block quirks.
 
-> **Key insight**: Framework operations are FREE. Only actions that invoke external services consume credits.
-
-| Operation | Credits | Notes |
-|-----------|---------|-------|
-| `@utils.transition` | FREE | Framework navigation |
-| `@utils.setVariables` | FREE | Framework state management |
-| `@utils.escalate` | FREE | Framework escalation |
-| `if`/`else` control flow | FREE | Deterministic resolution |
-| `before_reasoning` | FREE | Deterministic pre-processing (see note below) |
-| `after_reasoning` | FREE | Deterministic post-processing (see note below) |
-| `reasoning` (LLM turn) | FREE | LLM reasoning itself is not billed |
-| Prompt Templates | 2-16 | Per invocation (varies by complexity) |
-| Flow actions | 20 | Per action execution |
-| Apex actions | 20 | Per action execution |
-| Any other action | 20 | Per action execution |
-
-> **✅ Lifecycle Hooks Validated (v1.3.0)**: The `before_reasoning:` and `after_reasoning:` lifecycle hooks are now TDD-validated. Content goes **directly** under the block (no `instructions:` wrapper). See "Lifecycle Hooks" section below for correct syntax.
-
-**Cost Optimization Pattern**: Fetch data once in `before_reasoning:`, cache in variables, reuse across topics.
-
-### Lifecycle Hooks: `before_reasoning:` and `after_reasoning:`
-
-> **TDD Validated (2026-01-20)**: These hooks enable deterministic pre/post-processing around LLM reasoning.
-
-```yaml
-topic main:
-   description: "Topic with lifecycle hooks"
-
-   # BEFORE: Runs deterministically BEFORE LLM sees instructions
-   before_reasoning:
-      # Content goes DIRECTLY here (NO instructions: wrapper!)
-      set @variables.pre_processed = True
-      set @variables.customer_tier = "gold"
-
-   # LLM reasoning phase
-   reasoning:
-      instructions: ->
-         | Customer tier: {!@variables.customer_tier}
-         | How can I help you today?
-
-   # AFTER: Runs deterministically AFTER LLM finishes reasoning
-   after_reasoning:
-      # Content goes DIRECTLY here (NO instructions: wrapper!)
-      set @variables.interaction_logged = True
-      if @variables.needs_audit == True:
-         set @variables.audit_flag = True
-```
-
-**Key Points:**
-- Content goes **directly** under `before_reasoning:` / `after_reasoning:` (NO `instructions:` wrapper)
-- Supports `set`, `if`, `run` statements (same as procedural `instructions: ->`)
-- `before_reasoning:` is FREE (no credit cost) - use for data prep
-- `after_reasoning:` is FREE (no credit cost) - use for logging, cleanup
-
-**❌ WRONG Syntax (causes compile error):**
-```yaml
-before_reasoning:
-   instructions: ->      # ❌ NO! Don't wrap with instructions:
-      set @variables.x = True
-```
-
-**✅ CORRECT Syntax:**
-```yaml
-before_reasoning:
-   set @variables.x = True   # ✅ Direct content under the block
-```
-
-### Supervision vs Handoff (Clarified Terminology)
-
-| Term | Syntax | Behavior | Use When |
-|------|--------|----------|----------|
-| **Handoff** | `@utils.transition to @topic.X` | Control transfers completely, child generates final response | Checkout, escalation, terminal states |
-| **Supervision** | `@topic.X` (as action reference) | Parent orchestrates, child returns, parent synthesizes | Expert consultation, sub-tasks |
-
-```yaml
-# HANDOFF - child topic takes over completely:
-checkout: @utils.transition to @topic.order_checkout
-   description: "Proceed to checkout"
-# → @topic.order_checkout generates the user-facing response
-
-# SUPERVISION - parent remains in control:
-get_advice: @topic.product_expert
-   description: "Consult product expert"
-# → @topic.product_expert returns, parent topic synthesizes final response
-```
-
-**KNOWN BUG**: Adding ANY new action in Canvas view may inadvertently change Supervision references to Handoff transitions.
-
-### Action Output Flags for Zero-Hallucination Routing
-
-> **Key Pattern for Determinism**: Control what the LLM can see and say.
-
-When defining actions in Agentforce Assets, use these output flags:
-
-| Flag | Effect | Use When |
-|------|--------|----------|
-| `is_displayable: False` | LLM **cannot** show this value to user | Preventing hallucinated responses |
-| `is_used_by_planner: True` | LLM **can** reason about this value | Decision-making, routing |
-
-**Zero-Hallucination Intent Classification Pattern:**
-```yaml
-# In Agentforce Assets - Action Definition outputs:
-outputs:
-   intent_classification: string
-      is_displayable: False       # LLM cannot show this to user
-      is_used_by_planner: True    # LLM can use for routing decisions
-
-# In Agent Script - LLM routes but cannot hallucinate:
-topic intent_router:
-   reasoning:
-      instructions: ->
-         run @actions.classify_intent
-         set @variables.intent = @outputs.intent_classification
-
-         if @variables.intent == "refund":
-            transition to @topic.refunds
-         if @variables.intent == "order_status":
-            transition to @topic.orders
-```
-
-### Action I/O Metadata Properties (TDD Validated v2.2.0)
-
-> **Complete reference** for all metadata properties available on action definitions, inputs, and outputs. These control how the LLM and UI interact with action parameters.
-
-**Action-Level Properties:**
-
-| Property | Type | Effect | TDD Status |
-|----------|------|--------|------------|
-| `label` | String | Display name in UI | ✅ v2.2.0 |
-| `description` | String | LLM reads this for decision-making | ✅ v1.3.0 |
-| `require_user_confirmation` | Boolean | Request user confirmation before execution | ✅ Compiles (runtime Issue 6) |
-| `include_in_progress_indicator` | Boolean | Show spinner during execution | ✅ v2.2.0 |
-| `progress_indicator_message` | String | Custom spinner text | ✅ v2.2.0 |
-
-**Input Properties:**
-
-| Property | Type | Effect | TDD Status |
-|----------|------|--------|------------|
-| `description` | String | Explains parameter to LLM | ✅ v1.3.0 |
-| `label` | String | Display name in UI | ✅ v2.2.0 |
-| `is_required` | Boolean | Marks input as mandatory for LLM | ✅ v2.2.0 |
-| `is_user_input` | Boolean | LLM extracts value from conversation | ✅ v2.2.0 |
-| `complex_data_type_name` | String | Lightning type mapping | ✅ v2.1.0 |
-
-**Output Properties:**
-
-| Property | Type | Effect | TDD Status |
-|----------|------|--------|------------|
-| `description` | String | Explains output to LLM | ✅ v1.3.0 |
-| `label` | String | Display name in UI | ✅ v2.2.0 |
-| `is_displayable` | Boolean | `False` = hide from user (alias: `filter_from_agent`) | ✅ v2.2.0 |
-| `is_used_by_planner` | Boolean | `True` = LLM can reason about value | ✅ v2.2.0 |
-| `complex_data_type_name` | String | Lightning type mapping | ✅ v2.1.0 |
-
-> **Cross-reference**: `filter_from_agent: True` (in actions-reference.md) is equivalent to `is_displayable: False`. Both hide the output from user display. `is_displayable` is the standard property name.
-
-**User Input Pattern** (`is_user_input: True`):
-```yaml
-# LLM extracts the value from conversation context rather than asking explicitly
-inputs:
-   customer_name: string
-      description: "Customer's full name"
-      is_user_input: True    # LLM pulls from what user already said
-      is_required: True      # Must have a value before action executes
-```
-
-### Action Chaining with `run` Keyword
-
-> **Known quirk**: Parent action may complain about inputs needed by chained action - this is expected.
-
-```yaml
-# Chained action execution:
-process_order: @actions.create_order
-   with customer_id = @variables.customer_id
-   run @actions.send_confirmation        # Chains after create_order completes
-   set @variables.order_id = @outputs.id
-```
-
-**KNOWN BUG**: Chained actions with Prompt Templates don't properly map inputs using `Input:Query` format:
-```yaml
-# ❌ MAY NOT WORK with Prompt Templates:
-run @actions.transform_recommendation
-   with "Input:Reco_Input" = @variables.ProductReco
-
-# ⚠️ TRY THIS (may still have issues):
-run @actions.transform_recommendation
-   with Reco_Input = @variables.ProductReco
-```
-
-> **📖 For prompt template action definitions, input binding syntax, and grounded data patterns**, see [resources/action-prompt-templates.md](resources/action-prompt-templates.md). For context-aware descriptions, instruction references (`{!@actions.X}`), and advanced binding strategies, see [resources/action-patterns.md](resources/action-patterns.md).
-
-### Latch Variable Pattern for Topic Re-entry
-
-> **Problem**: Topic selector doesn't properly re-evaluate after user provides missing input.
-
-**Solution**: Use a "latch" variable to force re-entry:
-
-```yaml
-variables:
-   verification_in_progress: mutable boolean = False
-
-start_agent topic_selector:
-   reasoning:
-      instructions: ->
-         # LATCH CHECK - force re-entry if verification was started
-         if @variables.verification_in_progress == True:
-            transition to @topic.verification
-
-         | How can I help you today?
-      actions:
-         start_verify: @topic.verification
-            description: "Start identity verification"
-            # Set latch when user chooses this action
-            set @variables.verification_in_progress = True
-
-topic verification:
-   reasoning:
-      instructions: ->
-         | Please provide your email to verify your identity.
-      actions:
-         verify: @actions.verify_identity
-            with email = ...
-            set @variables.verified = @outputs.success
-            # Clear latch when verification completes
-            set @variables.verification_in_progress = False
-```
-
-### Loop Protection Guardrail
-
-> Agent Scripts have a built-in guardrail that limits iterations to approximately **3-4 loops** before breaking out and returning to the Topic Selector.
-
-**Best Practice**: Map out your execution paths - particularly topic transitions. Ensure testing covers all paths and specifically check for unintended circular references between topics.
-
-### Token & Size Limits
-
-| Limit Type | Value | Notes |
-|------------|-------|-------|
-| Max response size | 1,048,576 bytes (1MB) | Per agent response |
-| Plan trace limit (Frontend) | 1M characters | For debugging UI |
-| Transformed plan trace (Backend) | 32k tokens | Internal processing |
-| Active/Committed Agents per org | 100 max | Org limit |
-
-### Progress Indicators
-
-Add user feedback during long-running actions:
-
-```yaml
-actions:
-   fetch_data: @actions.get_customer_data
-      description: "Fetch customer information"
-      include_in_progress_indicator: True
-      progress_indicator_message: "Fetching your account details..."
-```
-
-### VS Code Pull/Push NOT Supported
-
-```bash
-# ❌ ERROR when using source tracking:
-Failed to retrieve components using source tracking:
-[SfError [UnsupportedBundleTypeError]: Unsupported Bundle Type: AiAuthoringBundle
-
-# ✅ WORKAROUND - Use CLI directly:
-sf project retrieve start -m AiAuthoringBundle:MyAgent
-sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
-```
-
-### Language Block Quirks
-
-- Hebrew and Indonesian appear **twice** in the language dropdown
-- Selecting from the second set causes save errors
-- Use `adaptive_response_allowed: True` for automatic language adaptation
-
-```yaml
-language:
-   locale: en_US
-   adaptive_response_allowed: True  # Allow language adaptation
-```
-
----
+**Key highlights:**
+- Framework operations (`@utils.*`, `if`/`else`, `set`, lifecycle hooks) are **FREE** — only Flow/Apex/API actions cost 20 credits each
+- `before_reasoning:`/`after_reasoning:` content goes **directly** under the block (NO `instructions:` wrapper)
+- Use `is_displayable: False` + `is_used_by_planner: True` on outputs for zero-hallucination routing
 
 ### Cross-Skill Orchestration
 
@@ -617,14 +123,10 @@ topic:         # 8. Required: Conversation topics (one or more)
 
 ### Config Block Field Names (CRITICAL)
 
-> ⚠️ **Common Error**: Using incorrect field names from outdated documentation.
-
 | Documented Field (Wrong) | Actual Field (Correct) | Notes |
 |--------------------------|------------------------|-------|
 | `agent_name` | `developer_name` | Must match folder name (case-sensitive) |
 | `description` | `agent_description` | Agent's purpose description |
-| `agent_label` | *(not used)* | Remove from examples |
-| `default_agent_user` | `default_agent_user` | ✓ Correct |
 | *(missing)* | `agent_type` | **Required**: `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
 
 ```yaml
@@ -636,11 +138,9 @@ config:
   default_agent_user: "agent_user@00dxx000001234.ext"
 ```
 
-### Naming Rules (All Identifiers)
-- Only letters, numbers, underscores
-- Must begin with a letter
-- No spaces, no consecutive underscores, cannot end with underscore
-- **Maximum 80 characters**
+### Naming Rules
+- Only letters, numbers, underscores. Must begin with a letter.
+- No spaces, no consecutive underscores, cannot end with underscore. **Max 80 characters.**
 
 ### Instruction Syntax Patterns
 | Pattern | Purpose | Example |
@@ -651,12 +151,9 @@ config:
 | `if @variables.x:` | Conditional (resolves before LLM) | `if @variables.verified == True:` |
 | `run @actions.x` | Execute action during resolution | `run @actions.load_customer` |
 | `set @var = @outputs.y` | Capture action output | `set @variables.risk = @outputs.score` |
-| `set @var = value` | Set variable in instructions | `set @variables.count = 0` |
 | `{!@variables.x}` | Variable injection in text | `Risk score: {!@variables.risk}` |
-| `{!expr if cond else alt}` | Conditional interpolation | `{!@variables.status if @variables.status else "pending"}` |
 | `available when` | Control action visibility to LLM | `available when @variables.verified == True` |
 | `with param=...` | LLM slot-filling (extracts from conversation) | `with query=...` |
-| `with param=value` | Fixed parameter value | `with limit=10` |
 
 ### Transition vs Delegation (CRITICAL DISTINCTION)
 | Syntax | Behavior | Returns? | Use When |
@@ -665,24 +162,12 @@ config:
 | `@topic.X` (in reasoning.actions) | Delegation | ✅ Yes | Get expert advice, sub-tasks |
 | `transition to @topic.X` (inline) | Deterministic jump | ❌ No | Post-action routing, gates |
 
-```yaml
-# Delegation - returns to current topic after specialist finishes
-consulting: @topic.expert_topic
-   description: "Get expert advice"
-
-# Transition - permanent handoff, no return
-checkout: @utils.transition to @topic.checkout
-   description: "Proceed to purchase"
-```
-
 ### Expression Operators (Safe Subset)
 | Category | Operators | NOT Supported |
 |----------|-----------|---------------|
-| Comparison | `==`, `!=` (not-equal), `<`, `<=`, `>`, `>=`, `is`, `is not` | ❌ `<>` (not valid, use `!=`) |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=`, `is`, `is not` | ❌ `<>` (not valid, use `!=`) |
 | Logical | `and`, `or`, `not` | |
 | Arithmetic | `+`, `-` | ❌ `*`, `/`, `%` |
-| Access | `.` (property), `[]` (index) | |
-| Conditional | `x if condition else y` | |
 
 ### Variable Types
 | Modifier | Behavior | Supported Types | Default Required? |
@@ -690,504 +175,98 @@ checkout: @utils.transition to @topic.checkout
 | `mutable` | Read/write state | `string`, `number`, `boolean`, `object`, `date`, `timestamp`, `currency`, `id`, `list[T]` | ✅ Yes |
 | `linked` | Read-only from source | `string`, `number`, `boolean`, `date`, `timestamp`, `currency`, `id` | ❌ No (has `source:`) |
 
-> ⚠️ **Linked variables CANNOT use `object` or `list` types**
+> ⚠️ **Linked variables CANNOT use `object` or `list` types**. `datetime`, `time`, `integer`, `long` are valid for action I/O only — NOT for variables. See [resources/actions-reference.md](resources/actions-reference.md) for the full type matrix.
 
-### Linked Variable Sources by Agent Type
+### Connection Block (Escalation Routing)
 
-> ⚠️ **CRITICAL**: Not all source bindings work for all agent types.
-
-| Source Pattern | Service Agent | Employee Agent |
-|----------------|---------------|----------------|
-| `@MessagingSession.Id` | ✅ Works | ❌ Not available |
-| `@MessagingSession.RoutableId` | ✅ Works | ❌ Not available |
-| `@Record.Id` | ❓ Untested | ❌ Does not work |
-| `@context.recordId` | ❓ Untested | ❌ Does not work |
-
-**Workaround for Employee Agents**:
-Employee Agents in the Copilot panel don't automatically receive record context. Use a mutable variable and have the Flow action look up the current record.
+> ⚠️ **Service Agents Only**. Use `connection messaging:` (singular, NOT `connections:`). The `outbound_route_name` requires `flow://` prefix.
 
 ```yaml
-# ❌ DOESN'T WORK for Employee Agents:
-case_id: linked string
-   source: @Record.Id
+# Minimal form (no routing):
+connection messaging:
+   adaptive_response_allowed: True
 
-# ✅ WORKAROUND - use mutable variable:
-case_id: mutable string = ""
-   description: "Case ID - enter or will be looked up by Flow"
+# Full form with escalation routing:
+connection messaging:
+   outbound_route_type: "OmniChannelFlow"
+   outbound_route_name: "flow://Route_from_Agent"
+   escalation_message: "Connecting you with a specialist."
+   adaptive_response_allowed: False
 ```
 
-### Variable vs Action I/O Type Matrix
-> **Critical distinction**: Some types are valid ONLY for action inputs/outputs, NOT for Agent Script variables.
+**All-or-nothing rule**: When `outbound_route_type` is present, ALL three route properties are required (`outbound_route_type`, `outbound_route_name`, `escalation_message`). Valid channel types: `messaging`, `voice`, `web`.
 
-| Type | Variables | Action I/O | Notes |
-|------|-----------|------------|-------|
-| `string` | ✅ | ✅ | Universal |
-| `number` | ✅ | ✅ | Universal |
-| `boolean` | ✅ | ✅ | Universal |
-| `date` | ✅ | ✅ | Universal |
-| `currency` | ✅ | ✅ | Universal |
-| `id` | ✅ | ✅ | Salesforce IDs |
-| `list` | ✅ (mutable only) | ✅ | Collections |
-| `object` | ✅ (mutable only) | ✅ | ⚠️ Not for linked vars |
-| `datetime` | ❌ | ✅ | **Actions only** |
-| `time` | ❌ | ✅ | **Actions only** |
-| `integer` | ❌ | ✅ | **Actions only** |
-| `long` | ❌ | ✅ | **Actions only** |
-
-> **Source**: AGENT_SCRIPT.md rules document from trailheadapps/agent-script-recipes
-
-### Action Target Protocols
-| Short | Long Form | Use When | Validated? |
-|-------|-----------|----------|------------|
-| `flow` | `flow://` | Data operations, business logic | ✅ TDD |
-| `apex` | `apex://` | Custom calculations, validation | ✅ TDD |
-| `prompt` | `generatePromptResponse://` | Grounded LLM responses | ✅ TDD |
-| `api` | `api://` | REST API calls | ✅ TDD |
-| `retriever` | `retriever://` | RAG knowledge search | ✅ TDD |
-| `externalService` | `externalService://` | Third-party APIs via Named Credentials | ✅ TDD |
-| `standardInvocableAction` | `standardInvocableAction://` | Built-in SF actions (email, tasks) | ✅ TDD |
-| `datacloudDataGraphAction` | `datacloudDataGraphAction://` | Data Cloud graph queries | 📋 Spec |
-| `datacloudSegmentAction` | `datacloudSegmentAction://` | Data Cloud segment operations | 📋 Spec |
-| `triggerByKnowledgeSource` | `triggerByKnowledgeSource://` | Knowledge article triggers | 📋 Spec |
-| `contextGrounding` | `contextGrounding://` | Context grounding for LLM | 📋 Spec |
-| `predictiveAI` | `predictiveAI://` | Einstein prediction models | 📋 Spec |
-| `runAction` | `runAction://` | Execute sub-actions | 📋 Spec |
-| `external` | `external://` | External service calls | 📋 Spec |
-| `copilotAction` | `copilotAction://` | Salesforce Copilot actions | 📋 Spec |
-| `@topic.X` | (inline) | Topic delegation (returns to parent) | ✅ TDD |
-
-> **Legend**: ✅ TDD = Validated via deployment testing | 📋 Spec = Documented in AGENT_SCRIPT.md spec (requires specific org setup to test)
-
-### Using Flow and Apex Actions in Agent Script
-
-> **For AiAuthoringBundle (Agent Script)**: `flow://` and `apex://` targets work **directly** — no GenAiFunction registration needed. The target just needs to exist in the org (active Flow or deployed Apex class with `@InvocableMethod`).
-
-**Two-Level Action System (CRITICAL to understand):**
+### Two-Level Action System
 
 ```
 Level 1: ACTION DEFINITION (in topic's `actions:` block)
    → Has `target:`, `inputs:`, `outputs:`, `description:`
-   → Specifies WHAT to call (e.g., "apex://OrderService")
 
 Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
    → References Level 1 via `@actions.name`
    → Specifies HOW to call it (with/set clauses)
 ```
 
-**Complete Example:**
-```yaml
-topic order_status:
-   description: "Look up order details"
-
-   # Level 1: DEFINE the action with a target
-   actions:
-      get_case_details:
-         description: "Fetch case information by ID"
-         inputs:
-            case_id: string
-               description: "The Case record ID"
-         outputs:
-            subject: string
-               description: "Case subject line"
-         target: "flow://Get_Case_Details"   # Flow must exist and be active
-
-   reasoning:
-      instructions: |
-         Help the customer check their case status.
-      # Level 2: INVOKE the action defined above
-      actions:
-         lookup_case: @actions.get_case_details
-            with case_id = @variables.case_id
-            set @variables.case_subject = @outputs.subject
-```
-
-> **⚠️ PRODUCTION INSIGHT: I/O Schemas Are REQUIRED for Publish**
->
-> Action definitions with only `description:` and `target:` (no `inputs:`/`outputs:`)
-> will PASS LSP and CLI validation but FAIL server-side compilation with "Internal Error."
-> Always include complete I/O schemas in Level 1 action definitions.
-> Specifically, the `outputs:` block is required — having `inputs:` but no `outputs:` still
-> triggers the Internal Error (TDD v2.1.0: Val_No_Outputs).
->
-> This was previously misattributed to a "flow:// target bug." The actual root cause
-> is missing type contracts — adding `inputs:` and `outputs:` blocks resolves the issue
-> for both `flow://` and `apex://` targets.
-
-> **⚠️ Level 1 Without Level 2 Is Valid (TDD v2.1.0)**
->
-> You do NOT need a Level 2 `@actions.X` invocation for every Level 1 action definition.
-> Defining an action in the topic's `actions:` block with `target:`, `inputs:`, `outputs:`
-> is sufficient — the LLM auto-selects from available actions based on their descriptions.
-> Val_Level1_Only published successfully with ONLY Level 1 definitions.
-
-**I/O Name Matching Rules (TDD Validated v2.1.0):**
-
-> Action input/output names in Agent Script MUST exactly match the `@InvocableVariable` field names in the Apex target.
-
-| Scenario | Agent Script Name | Apex Field Name | Result |
-|----------|-------------------|-----------------|--------|
-| ✅ Exact match | `inputText` | `inputText` | Publishes |
-| ❌ Wrong name | `wrong_name` | `outputText` | `"invalid output 'wrong_name'"` |
-| ✅ Partial outputs | Declare only `outputText` | Has `outputText` + more | Publishes (subset OK) |
-| ❌ Bare @InvocableMethod | ANY name | `List<String>` param (no wrapper) | Always fails — no discoverable name |
-
-**Bare @InvocableMethod Pattern (NOT Compatible with Agent Script):**
-
-> ⚠️ **CRITICAL**: Apex methods returning `List<String>` directly (without `@InvocableVariable` wrapper classes) **CANNOT** be used as Agent Script action targets. The framework has no discoverable parameter names to bind against.
-
-```apex
-// ❌ DOES NOT WORK with Agent Script:
-@InvocableMethod
-public static List<String> greet(List<String> names) { ... }
-// → No input name is discoverable — "name", "input", "names" all fail
-
-// ✅ ALWAYS use wrapper classes for Agent Script:
-public class GreetInput {
-    @InvocableVariable(label='Name' required=true)
-    public String userName;    // ← Agent Script uses "userName" as input name
-}
-public class GreetOutput {
-    @InvocableVariable(label='Greeting')
-    public String greeting;    // ← Agent Script uses "greeting" as output name
-}
-@InvocableMethod
-public static List<GreetOutput> greet(List<GreetInput> inputs) { ... }
-```
-
-**Partial Output Pattern:**
-
-> You can declare a SUBSET of the target's outputs in your Agent Script action definition. You do NOT need to declare every output field from the Apex class. Val_Partial_Output confirmed: declaring only `outputText` from `TestApexAction` (which has a full output wrapper) publishes successfully.
-
-> ⚠️ **Common Error**: `ValidationError: Tool target 'X' is not an action definition` — This means either:
-> 1. The action is referenced in `reasoning.actions:` via `@actions.X` but `X` is not defined in the topic's `actions:` block, OR
-> 2. The `target:` value points to a Flow/Apex class that doesn't exist in the org
->
-> **Fix**: Ensure you have BOTH levels: action definition (with `target:`) AND action invocation (with `@actions.name`).
-
-**Agent Builder UI Path (GenAiPlannerBundle — different workflow):**
-If building agents through the Agent Builder UI (not Agent Script), you DO need GenAiFunction metadata. See `resources/actions-reference.md` for details.
-
-### Connection Block (Escalation Routing — Beta Feature)
-
-> ⚠️ **Service Agents Only**: The `connection` block is only valid for `agent_type: "AgentforceServiceAgent"`. Employee Agents do not support channel-based escalation routing.
-
-> **⚠️ CRITICAL SYNTAX**: Use `connection messaging:` (singular, NO wrapper block). The `connections:` (plural) wrapper from some docs/recipes does NOT compile. Each `connection <channel>:` is a standalone top-level block.
-
-> **⚠️ `outbound_route_name` requires `flow://` prefix**: Using a bare Flow API name (e.g., `"My_Flow"`) causes `ERROR_HTTP_404` on publish. Must use `"flow://My_Flow"` format.
-
-**Minimal form (no routing — just enables the channel):**
-```yaml
-connection messaging:
-   adaptive_response_allowed: True
-```
-
-**Full form with escalation routing (production-validated on Vivint-DevInt, 2026-02-16):**
-```yaml
-connection messaging:
-   outbound_route_type: "OmniChannelFlow"
-   outbound_route_name: "flow://Route_from_Vivint_Virtual_Support"
-   escalation_message: "One moment while I connect you with a support specialist."
-   adaptive_response_allowed: False
-```
-
-**All-or-nothing rule**: When `outbound_route_type` is present, ALL three route properties are required (`outbound_route_type`, `outbound_route_name`, `escalation_message`). Omitting any one causes validation failure.
-
-**Key Properties:**
-| Property | Required | Description |
-|----------|----------|-------------|
-| `outbound_route_type` | Conditional | `"OmniChannelFlow"`, `"Queue"`, or `"Skill"`. Required if routing is configured. |
-| `outbound_route_name` | Conditional | **Must use `flow://` prefix** for OmniChannelFlow (e.g., `"flow://My_Flow"`). Required with `outbound_route_type`. |
-| `escalation_message` | Conditional | Message shown to user during handoff. Required with `outbound_route_type`. |
-| `adaptive_response_allowed` | ✅ Always | Allow LLM to adapt escalation message. Only required property. |
-
-**Valid channel types**: `messaging`, `voice`, `web`
+> For AiAuthoringBundle (Agent Script): `flow://` and `apex://` targets work **directly** — no GenAiFunction registration needed. I/O schemas (`inputs:` + `outputs:`) are REQUIRED for publish — omitting them causes "Internal Error." See [resources/actions-reference.md](resources/actions-reference.md) for complete action types, target protocols, I/O name matching rules, and the Bare @InvocableMethod pattern.
 
 ---
 
 ## 🔄 WORKFLOW: Agent Development Lifecycle
 
 ### Phase 1: Requirements & Design
-1. **Identify deterministic vs. subjective logic**
-   - Deterministic: Security checks, financial thresholds, data lookups, counters
-   - Subjective: Greetings, context understanding, natural language generation
-2. **Design FSM architecture** - Map topics as states, transitions as edges
-3. **Define variables** - Mutable for state tracking, linked for session context
+1. **Identify deterministic vs. subjective logic** — Deterministic: security checks, thresholds, data lookups. Subjective: greetings, context understanding, NLG.
+2. **Design FSM architecture** — Map topics as states, transitions as edges
+3. **Define variables** — Mutable for state tracking, linked for session context
 
 ### Phase 2: Agent Script Authoring
-1. **Create `.agent` file** with required blocks
-2. **Write topics** with instruction resolution pattern:
-   - Post-action checks at TOP (triggers on loop)
-   - Pre-LLM data loading
-   - Dynamic instructions for LLM
+1. **Create `.agent` file** with required blocks (see Block Structure above)
+2. **Write topics** with instruction resolution pattern: post-action checks at TOP, pre-LLM data loading, dynamic instructions for LLM
 3. **Configure actions** with appropriate target protocols
-4. **Add `available when` guards** to enforce security
+4. **Add `available when` guards** to enforce security deterministically
 
 ### Phase 3: Validation (LSP + CLI)
 
-> **AUTOMATIC**: LSP validation runs on every Write/Edit to `.agent` files. Errors are reported with line numbers and autofix suggestions.
+> **AUTOMATIC**: LSP validation runs on every Write/Edit to `.agent` files — catches mixed tabs/spaces, lowercase booleans, missing blocks, invalid `default_agent_user`, and undefined topic references. Fix errors, re-save, repeat until clean.
 
-#### LSP Validation Loop (Find Error → Autofix)
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Write/Edit  │ ──▶ │ LSP Analyze │ ──▶ │ Report      │
-│ .agent file │     │ (automatic) │     │ Errors      │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-      ┌────────────────────────────────────────┘
-      ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Claude      │ ──▶ │ Apply Fix   │ ──▶ │ Re-validate │
-│ Suggests Fix│     │ (Edit tool) │     │ (loop)      │
-└─────────────┘     └─────────────┘     └─────────────┘
-```
-
-#### LSP Checks (Automatic)
-| Check | Severity | Autofix |
-|-------|----------|---------|
-| Mixed tabs/spaces | ❌ Error | Convert to consistent spacing |
-| Lowercase booleans (`true`/`false`) | ❌ Error | Capitalize to `True`/`False` |
-| Missing required blocks | ❌ Error | Add missing block template |
-| Missing `default_agent_user` | ❌ Error | Add placeholder with comment |
-| Mutable + linked conflict | ❌ Error | Remove conflicting modifier |
-| Undefined topic references | ⚠️ Warning | Create topic stub |
-| Post-action check position | ⚠️ Warning | Move to top of instructions |
-
-#### CLI Validation (Before Deploy)
 ```bash
-# Validate authoring bundle syntax
-sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG
+# CLI Validation (before deploy):
+sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 ```
-
-#### Manual Checks
-- `default_agent_user` exists and is active Einstein Agent User
-- All topic references resolve to existing topics
-- Action targets (`flow://`, `apex://`, etc.) exist in org
 
 ### Phase 4: Testing (Delegate to `/sf-ai-agentforce-testing`)
-1. **Batch testing** - Run up to 100 test cases simultaneously
-2. **Quality metrics** - Completeness, Coherence, Topic/Action Assertions
-3. **LLM-as-Judge** - Automated scoring against golden responses
+Batch testing (up to 100 cases), quality metrics (Completeness, Coherence, Topic/Action Assertions), LLM-as-Judge scoring.
 
 ### Phase 5: Deployment
 
 > ⚠️ **CRITICAL**: Use `sf agent publish authoring-bundle`, NOT `sf project deploy start`
 
 1. **Create bundle directory**: `force-app/main/default/aiAuthoringBundles/AgentName/`
-2. **Add files**:
-   - `AgentName.agent` - Your Agent Script
-   - `AgentName.bundle-meta.xml` - Metadata XML (NOT `.aiAuthoringBundle-meta.xml`)
-3. **Publish**: `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG`
-4. **Monitor** - Use trace debugging for production issues
+2. **Add files**: `AgentName.agent` + `AgentName.bundle-meta.xml` (NOT `.aiAuthoringBundle-meta.xml`)
+3. **Publish**: `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json`
 
-### Phase 5.5: CustomerWebClient Surface Enablement (REQUIRED after every publish)
+### Phase 5.5: CustomerWebClient Surface Enablement
 
-> ⚠️ **Without `CustomerWebClient` surface, Agent Builder Preview shows "Something went wrong" and Agent Runtime API / CLI testing returns `500 Internal Server Error`.**
-
-**The Problem**: `connection messaging:` in the `.agent` file ONLY generates a `Messaging` plannerSurface during compilation. There is NO `connection customerwebclient:` DSL syntax — attempting it causes `ERROR_HTTP_404` on publish. Agent Builder Preview + CLI testing require `CustomerWebClient`, which must be manually patched after every publish.
-
-**Post-Publish Patch Workflow (6 steps, required after EVERY publish):**
-
-```bash
-# Step 1: Publish the agent (creates new version, e.g., v22)
-sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
-
-# Step 2: Retrieve the compiled GenAiPlannerBundle
-sf project retrieve start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json
-
-# Step 3: Add CustomerWebClient plannerSurface to the XML (see template below)
-
-# Step 4: Deactivate agent (deploy fails while active)
-sf agent deactivate --api-name AgentName -o TARGET_ORG
-
-# Step 5: Deploy patched bundle
-sf project deploy start --metadata "GenAiPlannerBundle:AgentName_vNN" -o TARGET_ORG --json
-
-# Step 6: Reactivate agent
-sf agent activate --api-name AgentName -o TARGET_ORG
-```
-
-**Step 3 — XML patch template** (add after existing `Messaging` plannerSurfaces block):
-```xml
-<!-- Add this SECOND plannerSurfaces block for CustomerWebClient -->
-<plannerSurfaces>
-    <adaptiveResponseAllowed>false</adaptiveResponseAllowed>
-    <callRecordingAllowed>false</callRecordingAllowed>
-    <outboundRouteConfigs>
-        <escalationMessage>Your escalation message here.</escalationMessage>
-        <outboundRouteName>Your_OmniChannel_Flow_Name</outboundRouteName>
-        <outboundRouteType>OmniChannelFlow</outboundRouteType>
-    </outboundRouteConfigs>
-    <surface>SurfaceAction__CustomerWebClient</surface>
-    <surfaceType>CustomerWebClient</surfaceType>
-</plannerSurfaces>
-```
-
-> **Note**: The `outboundRouteConfigs` should mirror your Messaging surface config. If no escalation routing is configured, omit the `outboundRouteConfigs` block.
-
-> **Note**: `EinsteinAgentApiChannel` surfaceType is NOT available on all orgs (see Known Issue 17). Use `CustomerWebClient` instead — it enables both Agent Builder Preview and Agent Runtime API access.
-
-**External Client App (ECA) — Required for Client Credentials flow:**
-
-The Agent Runtime API requires OAuth with `chatbot_api`, `sfap_api`, and `api` scopes. See `/sf-connected-apps` for ECA creation.
-
-> **Note:** If you only need interactive testing via `sf agent preview`, skip ECA setup — preview uses standard org auth (`sf org login web`, v2.121.7+).
-
-**Validation — Confirm API access works:**
-```bash
-# Acquire token
-curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/services/oauth2/token" \
-  -d "grant_type=client_credentials&client_id=KEY&client_secret=SECRET"
-
-# Create agent session
-curl -X POST "https://YOUR_DOMAIN.my.salesforce.com/einstein/ai-agent/v1" \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"agentDefinitionId":"0XxXXXXXXXXXXXXXXX"}'
-```
-
-> **Symptom**: 500 error with `"errorCode": "UNKNOWN_EXCEPTION"` → Missing `CustomerWebClient` plannerSurface.
-> **Symptom**: Agent Builder Preview → "Something went wrong. Refresh and try again." → Same root cause.
+> ⚠️ **Without `CustomerWebClient` surface, Agent Builder Preview shows "Something went wrong" and Agent Runtime API returns 500.** See [references/customer-web-client.md](references/customer-web-client.md) for the required 6-step post-publish patch workflow.
 
 ### Phase 6: CLI Operations
 
-> **Always use `--json`** to suppress spinner output and return structured results. Spinners flood the context window with repetitive "Waiting..." lines.
+> See [docs/cli-guide.md](docs/cli-guide.md) for retrieve, validate, publish, and generate commands. Always use `--json` to suppress spinner output.
 
-```bash
-# Retrieve from org
-sf project retrieve start --metadata Agent:MyAgent --target-org sandbox --json
-
-# Validate syntax
-sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
-
-# Publish to org (NOT sf project deploy!)
-sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --json
-
-# Publish without retrieving metadata (CI/CD optimization, v2.122.6+)
-sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG --json
-
-# Generate authoring bundle scaffolding
-sf agent generate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
-
-# Generate without retrieving from org (useful for CI/CD)
-sf agent generate authoring-bundle --api-name MyAgent --skip-retrieve -o TARGET_ORG --json
+### Bundle Structure
 ```
-
-### Bundle Structure (CRITICAL)
+force-app/main/default/aiAuthoringBundles/MyAgent/
+├── MyAgent.agent            # Agent Script file
+└── MyAgent.bundle-meta.xml  # NOT .aiAuthoringBundle-meta.xml!
 ```
-force-app/main/default/aiAuthoringBundles/
-└── MyAgent/
-    ├── MyAgent.agent              # Agent Script file
-    └── MyAgent.bundle-meta.xml    # NOT .aiAuthoringBundle-meta.xml!
-```
-
-**bundle-meta.xml content:**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <bundleType>AGENT</bundleType>
-</AiAuthoringBundle>
-```
+The `bundle-meta.xml` contains only: `<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata"><bundleType>AGENT</bundleType></AiAuthoringBundle>`
 
 ---
 
 ## 📊 SCORING SYSTEM (100 Points)
 
-### Categories
+> See [references/scoring-rubric.md](references/scoring-rubric.md) for the full 6-category breakdown, rubric details, and score report format.
 
-| Category | Points | Key Criteria |
-|----------|--------|--------------|
-| **Structure & Syntax** | 20 | Block ordering, indentation consistency, required fields present |
-| **Deterministic Logic** | 25 | Security via `available when`, post-action checks, proper conditionals |
-| **Instruction Resolution** | 20 | Correct use of `->` vs `\|`, template injection, action execution |
-| **FSM Architecture** | 15 | Clear topic separation, explicit transitions, state management |
-| **Action Configuration** | 10 | Correct protocols, input/output mapping, error handling |
-| **Deployment Readiness** | 10 | Valid `default_agent_user`, no compilation errors, metadata complete |
-
-### Scoring Rubric Details
-
-#### Structure & Syntax (20 points)
-| Points | Criteria |
-|--------|----------|
-| 20 | All required blocks present, consistent indentation, valid identifiers |
-| 15 | Minor issues (e.g., inconsistent spacing within tolerance) |
-| 10 | Missing optional blocks that would improve clarity |
-| 5 | Block ordering issues or mixed indentation |
-| 0 | Missing required blocks or compilation failures |
-
-#### Deterministic Logic (25 points)
-| Points | Criteria |
-|--------|----------|
-| 25 | All security actions guarded with `available when`, post-action patterns used |
-| 20 | Most guards present, minor gaps in deterministic enforcement |
-| 15 | Some security logic relies on prompts instead of guards |
-| 10 | Critical actions lack `available when` guards |
-| 0 | Security logic entirely prompt-based (LLM can bypass) |
-
-#### Instruction Resolution (20 points)
-| Points | Criteria |
-|--------|----------|
-| 20 | Arrow syntax for complex logic, proper template injection, correct action execution |
-| 15 | Mostly correct, minor syntax issues |
-| 10 | Uses pipe syntax where arrow needed, template injection errors |
-| 5 | Incorrect phase ordering (data loads after LLM sees instructions) |
-| 0 | Fundamental misunderstanding of resolution order |
-
-#### FSM Architecture (15 points)
-| Points | Criteria |
-|--------|----------|
-| 15 | Clear topic boundaries, explicit transitions, appropriate escalation paths |
-| 12 | Good structure with minor redundancy |
-| 9 | Topics too broad or transitions unclear |
-| 5 | Monolithic topic handling multiple concerns |
-| 0 | No topic separation, all logic in start_agent |
-
-#### Action Configuration (10 points)
-| Points | Criteria |
-|--------|----------|
-| 10 | Correct protocols, proper I/O mapping, descriptions present |
-| 8 | Minor issues (missing descriptions) |
-| 5 | Wrong protocol for use case |
-| 2 | Input/output mapping errors |
-| 0 | Actions don't compile |
-
-#### Deployment Readiness (10 points)
-| Points | Criteria |
-|--------|----------|
-| 10 | Valid user, clean validation, metadata complete |
-| 8 | Minor warnings |
-| 5 | Validation errors that need fixing |
-| 2 | Missing metadata files |
-| 0 | Cannot deploy |
-
-### Score Thresholds
-
-| Score | Rating | Action |
-|-------|--------|--------|
-| 90-100 | ⭐⭐⭐⭐⭐ Excellent | Deploy with confidence |
-| 80-89 | ⭐⭐⭐⭐ Very Good | Minor improvements recommended |
-| 70-79 | ⭐⭐⭐ Good | Review flagged issues before deploy |
-| 60-69 | ⭐⭐ Needs Work | Address issues before deploy |
-| <60 | ⭐ Critical | **BLOCK** - Fix critical issues |
-
-### Score Report Format
-```
-📊 AGENT SCRIPT SCORE REPORT
-════════════════════════════════════════
-
-Score: 85/100 ⭐⭐⭐⭐ Very Good
-├─ Structure & Syntax:    18/20 (90%)
-├─ Deterministic Logic:   22/25 (88%)
-├─ Instruction Resolution: 16/20 (80%)
-├─ FSM Architecture:      12/15 (80%)
-├─ Action Configuration:   9/10 (90%)
-└─ Deployment Readiness:   8/10 (80%)
-
-Issues:
-⚠️ [Deterministic] Missing `available when` on process_refund action
-⚠️ [Resolution] Post-action check should be at TOP of instructions
-✓ All Structure & Syntax checks passed
-✓ All Action Configuration checks passed
-```
+**Quick summary:** Structure & Syntax (20), Deterministic Logic (25), Instruction Resolution (20), FSM Architecture (15), Action Configuration (10), Deployment Readiness (10). Score 90+ = deploy with confidence. Score <60 = BLOCK.
 
 ---
 
@@ -1208,145 +287,39 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 
 ## 📐 ARCHITECTURE PATTERNS
 
-### Pattern 1: Hub and Spoke
-Central router (hub) to specialized topics (spokes). Use for multi-purpose agents.
-```
-       ┌─────────────┐
-       │ topic_sel   │
-       │   (hub)     │
-       └──────┬──────┘
-    ┌─────────┼─────────┐
-    ▼         ▼         ▼
-┌────────┐ ┌────────┐ ┌────────┐
-│refunds │ │ orders │ │support │
-└────────┘ └────────┘ └────────┘
-```
+> See [references/architecture-patterns.md](references/architecture-patterns.md) for Hub-and-Spoke, Verification Gate, and Post-Action Loop patterns with diagrams and code examples.
 
-### Pattern 2: Verification Gate
-Security gate before protected topics. Mandatory for sensitive data.
-```
-┌─────────┐     ┌──────────┐     ┌───────────┐
-│  entry  │ ──▶ │ VERIFY   │ ──▶ │ protected │
-└─────────┘     │  (GATE)  │     │  topics   │
-                └────┬─────┘     └───────────┘
-                     │ 3 fails
-                     ▼
-                ┌──────────┐
-                │ lockout  │
-                └──────────┘
-```
-
-### Pattern 3: Post-Action Loop
-Topic re-resolves after action completes - put checks at TOP.
-```yaml
-topic refund:
-  reasoning:
-    instructions: ->
-      # POST-ACTION CHECK (at TOP - triggers on next loop)
-      if @variables.refund_status == "Approved":
-        run @actions.create_crm_case
-        transition to @topic.success
-
-      # PRE-LLM DATA LOADING
-      run @actions.check_churn_risk
-      set @variables.risk = @outputs.score
-
-      # DYNAMIC INSTRUCTIONS FOR LLM
-      if @variables.risk >= 80:
-        | Offer full refund to retain customer.
-      else:
-        | Offer $10 credit instead.
-```
+**Post-Action Loop** (most important): Topic re-resolves after action completes — put checks at TOP of `instructions: ->`.
 
 ---
 
-## 🐛 DEBUGGING: Trace Analysis
+## 🐛 DEBUGGING & COMMON ISSUES
 
-### The 6 Span Types
-| Span | Description |
-|------|-------------|
-| ➡️ `topic_enter` | Execution enters a topic |
-| ▶ `before_reasoning` | Deterministic pre-processing |
-| 🧠 `reasoning` | LLM processes instructions |
-| ⚡ `action_call` | Action invoked |
-| → `transition` | Topic navigation |
-| ✓ `after_reasoning` | Deterministic post-processing |
+> See [resources/debugging-guide.md](resources/debugging-guide.md) for the 6 span types (topic_enter, before_reasoning, reasoning, action_call, transition, after_reasoning), trace analysis workflow, and forensic debugging patterns.
 
-### Debugging Workflow
-1. **Interaction Details** - Quick understanding of what happened
-2. **Trace Waterfall** - Technical view with exact prompts, latencies
-3. **Variable State** - Entry vs Exit values reveal when state was ignored
-4. **Script View** - Red squiggles show syntax errors
-
-### Common Debug Patterns
-| Symptom | Check | Fix |
-|---------|-------|-----|
-| Wrong policy applied | Variable Entry values | Change `mutable` to `linked` with `source:` |
-| Action executed without auth | `available when` presence | Add guard clause |
-| LLM ignores variable | Instruction resolution order | Move data load before LLM text |
-| Infinite loop | Transition conditions | Add exit condition |
-
----
-
-## ⚠️ COMMON ISSUES & FIXES
+### Common Issues Quick Reference
 
 | Issue | Symptom | Fix |
 |-------|---------|-----|
-| `Internal Error, try again later` | Invalid `default_agent_user` | Query: `sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User'" -o TARGET_ORG` |
-| `Default agent user X could not be found` | User doesn't exist in target org | Query the **specific target org** (user formats vary: some use `user@orgid.ext`) |
-| `No .agent file found in directory` | `agent_name` doesn't match folder | Make `agent_name` identical to folder name (case-sensitive) |
+| `Internal Error, try again later` | Invalid `default_agent_user` | Query Einstein Agent User in target org |
+| `No .agent file found in directory` | `agent_name` doesn't match folder | Make `developer_name` identical to folder name |
 | `SyntaxError: cannot mix spaces and tabs` | Mixed indentation | Use consistent spacing throughout |
-| `SyntaxError: Unexpected 'if'` | Nested if statements | Use compound condition: `if A and B:` or flatten to sequential ifs |
-| `SyntaxError: Unexpected 'actions'` | Top-level actions block | Move actions inside `topic.reasoning.actions:` |
-| `SyntaxError: Unexpected 'inputs'` | `inputs:` in `reasoning.actions:` invocation (Level 2) | Use `with param=value` in invocations. `inputs:` IS valid in topic-level `actions:` definitions (Level 1). |
-| `SyntaxError: Unexpected 'outputs'` | `outputs:` in `reasoning.actions:` invocation (Level 2) | Use `set @variables.x = @outputs.y` in invocations. `outputs:` IS valid in topic-level `actions:` definitions (Level 1). |
-| `SyntaxError: Unexpected 'set'` | `set` after `@utils.setVariables` | Use Helper Topic Pattern (set in `instructions: ->`) |
-| ~~`Duplicate 'available when' clause`~~ | ~~Multiple guards on action~~ | **DISPROVED (v1.9.0)**: Multiple `available when` IS valid. No need to combine. |
-| `Unexpected 'escalate'` | Reserved action name | Rename to `escalate_now` or `escalate_to_human` |
-| `Transition to undefined topic` | Typo in topic reference | Check spelling, ensure topic exists |
-| `Variables cannot be both mutable AND linked` | Conflicting modifiers | Choose one: mutable for state, linked for external |
-| `Required fields missing: [BundleType]` | Using wrong deploy command | Use `sf agent publish authoring-bundle`, NOT `sf project deploy start` |
-| `Cannot find a bundle-meta.xml file` | Wrong file naming | Rename to `AgentName.bundle-meta.xml`, NOT `.aiAuthoringBundle-meta.xml` |
-| `ValidationError: Tool target 'X' is not an action definition` | Action not defined in topic `actions:` block with `target:`, OR target doesn't exist in org | Define action in topic-level `actions:` block with valid `target:` (e.g., `apex://ClassName`), then reference via `@actions.name` in `reasoning.actions:` |
-| LLM bypasses security check | Using prompts for security | Use `available when` guards instead |
-| Post-action logic doesn't run | Check not at TOP | Move post-action check to first lines |
-| Wrong data retrieved | Missing filter | Wrap retriever in Flow with filter inputs |
-| Variables don't change | Using `@utils.setVariables` with `set` | Post-action `set` only works on `@actions.*`, use Helper Topics |
-| Wrong target protocol | `flows://` instead of `flow://` | Remove trailing `s`: `flow://FlowName` |
-| Prompt template input not mapped | Unquoted `Input:` parameter | Quote it: `with "Input:email"=...` |
-| Missing type on action input | `email:` with no type in definition | Add type: `email: string` |
+| `SyntaxError: Unexpected 'if'` | Nested if statements | Use compound `if A and B:` or flatten |
+| `SyntaxError: Unexpected 'actions'` | Top-level actions block | Move inside `topic.reasoning.actions:` |
+| `SyntaxError: Unexpected 'inputs'` | `inputs:` in Level 2 invocation | Use `with param=value` in invocations |
+| `ValidationError: Tool target 'X'...` | Action not defined or target missing | Ensure Level 1 definition + valid target |
+| `Required fields missing: [BundleType]` | Wrong deploy command | Use `sf agent publish authoring-bundle` |
+| `Cannot find a bundle-meta.xml file` | Wrong file naming | Use `AgentName.bundle-meta.xml` |
 
-### 🔍 Verification Protocol
+> **Full issue catalog**: See [resources/known-issues.md](resources/known-issues.md) for 17+ platform bugs and workarounds.
 
-When something fails, is ambiguous, or the user questions your output — **do not guess**. Fetch the relevant canonical URL from [resources/official-sources.md](resources/official-sources.md) and verify.
+### Verification Protocol
 
-#### Triggers to Fetch Official Docs
+When something fails, fetch the relevant canonical URL from [resources/official-sources.md](resources/official-sources.md) and verify. See the diagnostic decision tree mapping 6 error categories to specific doc pages.
 
-| Situation | Fetch This |
-|-----------|-----------|
-| Compilation/deployment error | Blocks reference + specific element reference |
-| Action not executing | Actions AND Tools reference (different invocation methods) |
-| Variable not updating | Variables reference (mutable vs immutable, linked vs regular) |
-| Topic transition wrong | Utils + Tools reference (transition vs delegation) |
-| New/unfamiliar syntax | Agent Script overview page first |
-| User contradicts local guide | Trust official docs; update local resource if needed |
+### Self-Improvement
 
-#### Fallback
-If a URL 404s, web-search: `site:developer.salesforce.com agent script <topic>`
-
-> **Full decision tree**: See [resources/official-sources.md](resources/official-sources.md) for the complete diagnostic decision tree mapping 6 error categories to specific doc pages.
-
-### 🔄 Self-Improvement
-
-This skill's resource files are editable. When you discover something during a session:
-
-- **Found an error in a resource file?** Fix it in place with a comment noting the correction source
-- **Official doc URL changed or 404'd?** Update [resources/official-sources.md](resources/official-sources.md)
-- **Discovered a new pattern or undocumented behavior?** Append to the relevant resource section
-- **Found a new platform bug?** Add to [resources/known-issues.md](resources/known-issues.md) using the issue template
-- **A recipe solved something tricky?** Add a minimal version to the relevant examples section
-
-> **Goal**: Every session that hits an edge case makes the next session smarter.
+This skill's resource files are editable. When you discover errors, new patterns, or platform bugs during a session — fix them in place. See [resources/known-issues.md](resources/known-issues.md) for the issue template.
 
 ---
 
@@ -1361,25 +334,27 @@ This skill's resource files are editable. When you discover something during a s
 
 ### Einstein Agent User Format (Org-Specific)
 
-Einstein Agent User formats vary between orgs:
-- **Production/Partner orgs**: Often use `username@orgid.ext` format (e.g., `resort_manager@00dak00000gdgwu480119933.ext`)
-- **Dev orgs**: May use `username.suffix@orgfarm.salesforce.com` format
+Formats vary: `username@orgid.ext` (production) or `username.suffix@orgfarm.salesforce.com` (dev). **MANDATORY: Ask user to confirm which Einstein Agent User when creating a new agent.**
 
-**MANDATORY: Ask user to confirm which Einstein Agent User to use when creating a new agent.**
-
-**Always query the specific target org:**
 ```bash
-# Query target org specifically
-sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o YOUR_TARGET_ORG
+sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o YOUR_TARGET_ORG --json
 ```
-
-Present the results to the user and ask them to select which user to use for `default_agent_user`.
-
-> ⚠️ A user existing in one org does NOT mean it exists in another. Always verify in the deployment target.
 
 ---
 
 ## 📚 DOCUMENT MAP (Progressive Disclosure)
+
+### Tier 1: Reference Guides (Extracted from this skill)
+| Need | Document | Description |
+|------|----------|-------------|
+| Production gotchas | [references/production-gotchas.md](references/production-gotchas.md) | Credits, lifecycle hooks, supervision, I/O metadata, latch pattern, limits |
+| Feature validity | [references/feature-validity.md](references/feature-validity.md) | TDD v2.2.0 property validity by context |
+| Data type mapping | [references/complex-data-types.md](references/complex-data-types.md) | `complex_data_type_name` + Lightning type mapping |
+| CustomerWebClient | [references/customer-web-client.md](references/customer-web-client.md) | Post-publish 6-step patch workflow |
+| Scoring rubric | [references/scoring-rubric.md](references/scoring-rubric.md) | 100-point scoring system details |
+| Architecture patterns | [references/architecture-patterns.md](references/architecture-patterns.md) | Hub-and-spoke, verification gate, post-action loop |
+| Sources | [references/sources.md](references/sources.md) | Source attributions & acknowledgments |
+| Version history | [references/version-history.md](references/version-history.md) | Changelog from v1.0.0 to current |
 
 ### Tier 2: Resource Guides (Comprehensive)
 | Need | Document | Description |
@@ -1390,12 +365,12 @@ Present the results to the user and ask them to select which user to use for `de
 | Data & multi-agent | [resources/grounding-multiagent.md](resources/grounding-multiagent.md) | Retriever actions & SOMA patterns |
 | Debugging | [resources/debugging-guide.md](resources/debugging-guide.md) | Trace analysis & forensics |
 | Testing | [resources/testing-guide.md](resources/testing-guide.md) | Batch testing & quality metrics |
-| Prompt template actions | [resources/action-prompt-templates.md](resources/action-prompt-templates.md) | `generatePromptResponse://` input binding, grounded data, `run` limitation |
-| Advanced action patterns | [resources/action-patterns.md](resources/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` instruction refs, binding matrix |
-| Actions reference | [resources/actions-reference.md](resources/actions-reference.md) | Complete action types, GenAiFunction metadata, escalation routing, Flow/Apex/API patterns |
-| Official sources | [resources/official-sources.md](resources/official-sources.md) | Canonical Salesforce documentation URLs + diagnostic decision tree |
-| Known issues | [resources/known-issues.md](resources/known-issues.md) | Unresolved platform bugs & workarounds |
-| Migration guide | [resources/migration-guide.md](resources/migration-guide.md) | Agentforce Builder UI → Agent Script DSL mapping |
+| Prompt template actions | [resources/action-prompt-templates.md](resources/action-prompt-templates.md) | `generatePromptResponse://` binding, grounded data |
+| Advanced action patterns | [resources/action-patterns.md](resources/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` refs |
+| Actions reference | [resources/actions-reference.md](resources/actions-reference.md) | Complete action types, GenAiFunction, I/O matching |
+| Official sources | [resources/official-sources.md](resources/official-sources.md) | Canonical SF docs + diagnostic decision tree |
+| Known issues | [resources/known-issues.md](resources/known-issues.md) | Platform bugs & workarounds |
+| Migration guide | [resources/migration-guide.md](resources/migration-guide.md) | Builder UI → Agent Script DSL mapping |
 
 ### Tier 3: Quick References (Docs)
 | Need | Document | Description |
@@ -1407,10 +382,10 @@ Present the results to the user and ask them to select which user to use for `de
 | Category | Directory | Contents |
 |----------|-----------|----------|
 | Root templates | [templates/](templates/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
-| Complete agents | [templates/agents/](templates/agents/) | 4 full agent examples (hello-world, simple-qa, multi-topic, production-faq) |
-| Components | [templates/components/](templates/components/) | 6 component fragments (apex-action, error-handling, escalation, flow-action, n-ary-conditions, topic-with-actions) |
-| Advanced patterns | [templates/patterns/](templates/patterns/) | 11 pattern templates (action-callbacks, bidirectional-routing, delegation, lifecycle-events, etc.) |
-| Metadata XML | [templates/metadata/](templates/metadata/) | 6 XML templates (GenAiFunction, GenAiPlugin, PromptTemplate, Flow) |
+| Complete agents | [templates/agents/](templates/agents/) | 4 full agent examples |
+| Components | [templates/components/](templates/components/) | 6 component fragments |
+| Advanced patterns | [templates/patterns/](templates/patterns/) | 11 pattern templates |
+| Metadata XML | [templates/metadata/](templates/metadata/) | 6 XML templates |
 | Apex | [templates/apex/](templates/apex/) | Models API queueable class |
 
 ---
@@ -1437,7 +412,7 @@ Present the results to the user and ask them to select which user to use for `de
 
 ### Configuration
 - [ ] `default_agent_user` is valid Einstein Agent User
-- [ ] `agent_name` uses snake_case (no spaces)
+- [ ] `developer_name` uses snake_case (no spaces)
 
 ### Syntax
 - [ ] No mixed tabs/spaces
@@ -1454,7 +429,7 @@ Present the results to the user and ask them to select which user to use for `de
 - [ ] Session data uses `linked` variables (not `mutable`)
 
 ### Testing
-- [ ] `sf agent validate --source-dir ./my-agent` passes
+- [ ] `sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG` passes
 - [ ] Preview mode tested before activation
 
 ---
@@ -1465,7 +440,7 @@ Present the results to the user and ask them to select which user to use for `de
 config:
   developer_name: "simple_agent"
   agent_description: "A minimal working agent example"
-  agent_type: "AgentforceServiceAgent"  # or "AgentforceEmployeeAgent"
+  agent_type: "AgentforceServiceAgent"
   default_agent_user: "agent_user@yourorg.com"
 
 system:
@@ -1505,7 +480,6 @@ start_agent entry:
 
 ## 📖 OFFICIAL RESOURCES
 
-**Quick Links:**
 - [Agent Script Documentation](https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html) — Primary reference
 - [Agent Script Recipes](https://github.com/trailheadapps/agent-script-recipes) — Official examples
 - [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html) — Reasoning internals
@@ -1514,40 +488,8 @@ start_agent entry:
 
 ---
 
-## 📚 SOURCES & ACKNOWLEDGMENTS
+## 📚 SOURCES & VERSION HISTORY
 
-This skill draws from multiple authoritative sources:
+> See [references/sources.md](references/sources.md) for full source attributions (trailheadapps/agent-script-recipes, @kunello PR #20, aquivalabs/my-org-butler, and more).
 
-| Source | Contribution |
-|--------|--------------|
-| [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) | 20 reference recipes across 4 categories, AGENT_SCRIPT.md rules document, variable patterns, action target catalog |
-| Salesforce Official Documentation | Core syntax, API references, deployment guides |
-| TDD Validation (this skill) | 13 validation agents confirming current-release syntax compatibility |
-| Tribal knowledge interviews | Canvas View bugs, VS Code limitations, credit consumption patterns |
-| [agentforce.guide](https://agentforce.guide/) | Unofficial but useful examples (note: some patterns don't compile in current release) |
-| @kunello ([PR #20](https://github.com/Jaganpro/sf-skills/pull/20)) | Prompt template `"Input:fieldName"` binding syntax, context-aware description overrides, `{!@actions.X}` instruction reference patterns, callback behavior notes, error pattern catalog |
-| [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
-
-> **⚠️ Note on Feature Validation**: Some patterns from external sources (e.g., `always_expect_input:`) do NOT compile in Winter '26. Action metadata properties (`label:`, `require_user_confirmation:`, etc.) are valid on **action definitions with targets** but NOT on `@utils.transition` — see "Feature Validity by Context" table. The `before_reasoning:`/`after_reasoning:` lifecycle hooks ARE valid but require **direct content** (no `instructions:` wrapper). This skill documents only patterns that pass TDD validation.
-
----
-
-## 🏷️ VERSION HISTORY
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 2.2.0 | 2026-02-17 | **TDD Validation v2.2.0 — Action metadata properties validated**: 2 new agents (Val_Action_Meta_Props, Val_IO_Meta_Props). Corrected "Features NOT Valid" table → "Feature Validity by Context" — properties ARE valid on action definitions with targets, only invalid on `@utils.transition`. Validated 9 properties: `label` (action/topic/I/O), `require_user_confirmation`, `include_in_progress_indicator`, `progress_indicator_message`, `is_required`, `is_user_input`, `is_displayable`, `is_used_by_planner`. Root cause: v1.3.0 only tested on `@utils.transition`, never on target-backed actions. Added "Action I/O Metadata Properties" section with complete property tables. Clarified reserved field names (reserved as variable names, valid as I/O metadata properties). Updated actions-reference.md (label property, Input Properties table, Output Properties expansion). Updated known-issues.md Issue 6 (compiles on target-backed actions). Updated VALIDATION.md Tier 4 + findings. Updated syntax-reference.md with Action Metadata Properties subsection. 24 validation agents total. |
-| 2.0.0 | 2026-02-16 | **Production learnings audit**: Fixed `<>` operator references in 3 files (TDD v1.9.0 proved invalid, only `!=` compiles). Fixed config block field names in syntax-reference.md (`agent_name`→`developer_name`, `description`→`agent_description`, added `agent_type`). Removed `label:` as valid property in actions-reference.md (TDD: `Unexpected 'label'` on `@utils.transition` — **corrected in v2.2.0**: IS valid on target-backed actions). Fixed `description` on `@utils.transition` claim in patterns-quick-ref.md (IS valid, confirmed by TDD + 15-topic production agent). Fixed `run` keyword scope documentation (works in reasoning.actions/instructions, NOT lifecycle blocks). Fixed SOMA delegation mislabel in patterns-quick-ref.md. Clarified `inputs:`/`outputs:` constraint applies to Level 2 invocations only (Level 1 definitions DO use them). Added 3 new known issues: I/O schemas required for publish (Issue 15), `connections:` block not GA (Issue 16), `EinsteinAgentApiChannel` surfaceType not available on all orgs (Issue 17). Added production insight: missing I/O schemas cause "Internal Error" (not flow:// bug). Added org-dependent note for multiple `available when` clauses. Added Two-Level Action System section to syntax-reference.md. Added lifecycle hooks syntax to syntax-reference.md. Fixed README API version (62.0→65.0+), documentation URLs, block order. Added @kunello to CREDITS.md. |
-| 1.9.0 | 2026-02-14 | **TDD Validation v1.9.0 (16/16 PASS against AgentforceTesting)**: 3 new validation agents (Val_Else_Nested_If, Val_Step_Guard, Val_Multiple_Available_When). TDD Finding 1: `else:` + nested `if` does NOT compile — removed Approach 3, updated nesting rules to "Two Valid Approaches". TDD Finding 2: `<>` not-equal operator NOT valid — removed from operator table, only `!=` works. TDD Finding 3: Multiple `available when` clauses ARE valid — removed false "One per action" constraint, updated Common Issues table. Updated frontmatter: version 1.9.0, validation_agents 16, validation_org AgentforceTesting, validate_by 2026-03-16. Updated VALIDATION.md with full 16-agent results and 3 TDD findings. |
-| 1.8.0 | 2026-02-12 | **Gap analysis audit**: Added 3 new resource files: `resources/official-sources.md` (14 primary doc URLs + 8 recipe URLs + diagnostic decision tree), `resources/known-issues.md` (5 open platform issues with structured tracking), `resources/migration-guide.md` (Builder UI → Agent Script mapping table + side-by-side examples). Added Verification Protocol section (triggers + decision tree for fetching official docs). Added Self-Improvement protocol (editable resources, session-based learning). Updated Official Resources section to point to full registry. Added `!=` as alias for `<>` in comparison operators (SKILL.md + syntax-reference.md). Updated nested `if` constraint to document `else:` + nested `if` pattern (pending TDD validation). Added namespace prefix warning for `apex://` targets in actions-reference.md. Updated Document Map with 3 new entries. Added aquivalabs/my-org-butler to Sources & Acknowledgments and CREDITS.md. |
-| 1.7.0 | 2026-02-09 | **CRITICAL FIX: apex:// works directly, GenAiFunction NOT needed for Agent Script**. Removed false "Known Issue" claiming `apex://ClassName` doesn't work (actions-reference.md line 393). Rewrote "Action Type 2: Apex Actions" section to document two deployment paths (AiAuthoringBundle uses `apex://` directly; Agent Builder UI needs GenAiFunction). Added "Two-Level Action System" explanation (topic `actions:` block defines with `target:`, `reasoning.actions:` invokes via `@actions.name`). Fixed GenAiFunction XML templates to use correct API v65.0 schema (removed invalid `<capability>`, `<genAiFunctionParameters>`, `<genAiFunctionInputs>`, `<genAiFunctionOutputs>` elements; added `input/schema.json` + `output/schema.json` bundle pattern). Fixed `apex-action.agent` template to use `apex://ClassName` (not `ClassName.MethodName`). Fixed `topic-with-actions.agent` to remove incorrect "with/set not supported in AiAuthoringBundle" warning. Fixed troubleshooting table entries. Updated SKILL.md "Registering Flow Actions" section to clarify AiAuthoringBundle vs Agent Builder UI paths. Confirmed against `trailheadapps/agent-script-recipes` (zero GenAiFunction/GenAiPlugin in official recipes). |
-| 1.6.0 | 2026-02-07 | **Content migration from former sf-ai-agentforce-legacy**: Migrated 28 template files across 5 categories (agents/, components/, patterns/, metadata/, apex/) from the former legacy skill (now `sf-ai-agentforce`). Created `resources/actions-reference.md` (602 lines) with exhaustive action type reference, GenAiFunction metadata, escalation routing, and Flow/Apex/API patterns. Merged topic design patterns into `resources/fsm-architecture.md`. Merged advanced decision trees into `docs/patterns-quick-ref.md`. Added Tier 4 Templates section to Document Map. The former legacy skill directory is now `sf-ai-agentforce` — repurposed for standard Agentforce platform content (Agent Builder, PromptTemplate, Models API). |
-| 1.5.0 | 2026-02-06 | **Action patterns & prompt template docs** (from @kunello PR #20): Added `resources/action-prompt-templates.md` documenting `generatePromptResponse://` input binding syntax (`"Input:fieldName"`), grounded data integration, output handling, and `run` keyword limitation workaround. Added `resources/action-patterns.md` covering context-aware action description overrides (beginner/advanced mode), `{!@actions.X}` instruction references for guided LLM action selection, input binding decision matrix, callback success-only behavior, and additional error patterns. Updated Common Issues table with 3 new error entries (wrong protocol, unquoted Input: params, missing type annotations). Added Document Map entries and cross-reference after Action Chaining section. Content consolidated from @kunello's 8-file contribution against Agent Script Recipes. |
-| 1.3.0 | 2026-01-20 | **Lifecycle hooks validated**: Added full documentation for `before_reasoning:` and `after_reasoning:` with CORRECT syntax (content directly under block, NO `instructions:` wrapper). Added "Features NOT Valid in Current Release" section documenting 7 features that appear in docs/recipes but don't compile on `@utils.transition` (label, always_expect_input, action properties — **corrected in v2.2.0**: most ARE valid on target-backed actions). Updated validation_agents count to 13. Confirmed `@utils.transition` only supports `description:` property. |
-| 1.2.0 | 2026-01-20 | **Gap analysis vs agent-script-recipes**: Expanded Action Target Protocols from 7 to 16 (with validation status indicators), added Variable vs Action I/O Type Matrix, added lifecycle hooks note with TDD validation caveat, added Sources & Acknowledgments section, documented future/planned features notice. TDD validation confirmed `label:` IS reserved (SKILL.md was correct), `before_reasoning:`/`after_reasoning:` syntax from recipes does NOT compile in current release |
-| 1.1.0 | 2026-01-20 | **"Ultimate Guide" tribal knowledge integration**: Added `complex_data_type_name` mapping table, Canvas View corruption bugs, Reserved field names, Preview mode workarounds, Credit consumption table, Supervision vs Handoff clarification, Action output flags for zero-hallucination routing, Latch variable pattern, Loop protection guardrails, Token/size limits, Progress indicators, Connection block escalation patterns, VS Code limitations, Language block quirks. Added 4 new templates: flow-action-lookup, prompt-rag-search, deterministic-routing, escalation-pattern |
-| 1.0.4 | 2026-01-19 | **Progressive testing validation** (Quiz_Master, Expense_Calculator, Order_Processor): Added constraints for no top-level `actions:` block, no `inputs:`/`outputs:` in reasoning.actions, expanded nested-if guidance with flattening approach, added new SyntaxError entries to common issues |
-| 1.0.3 | 2026-01-19 | Added Einstein Agent User interview requirement - mandatory user confirmation when creating new agents |
-| 1.0.2 | 2026-01-19 | **Major corrections from GitHub reference**: Fixed block order (config→system), added Helper Topic Pattern, transition vs delegation, expression operators (+/- only), naming rules (80 char max), slot-filling `...` syntax, post-action directives (@actions.* only) |
-| 1.0.1 | 2026-01-19 | Added syntax constraints from 0-shot testing: no nested if, one available when per action, reserved action names |
-| 1.0.0 | 2026-01 | Initial release with 8-module coverage |
+> See [references/version-history.md](references/version-history.md) for the complete changelog from v1.0.0 through v2.2.0.

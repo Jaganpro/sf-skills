@@ -10,13 +10,6 @@ metadata:
   version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "120 points across 6 categories"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
 ---
 
 # sf-connected-apps: Salesforce Connected Apps & External Client Apps

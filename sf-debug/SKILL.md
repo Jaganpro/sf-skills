@@ -9,19 +9,6 @@ metadata:
   version: "1.1.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 5 categories"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
-  PostToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SKILL_HOOKS}/parse-debug-log.py"
-          timeout: 10000
 ---
 
 # sf-debug: Salesforce Debug Log Analysis & Troubleshooting

@@ -8,13 +8,6 @@ license: MIT
 metadata:
   version: "2.1.0"
   author: "Jag Valaiyapathy"
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
-          timeout: 5000
 ---
 
 # sf-deploy: Comprehensive Salesforce DevOps Automation

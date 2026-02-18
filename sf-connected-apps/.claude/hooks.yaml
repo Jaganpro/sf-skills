@@ -1,0 +1,10 @@
+# Claude Code lifecycle hooks for sf-connected-apps
+# These hooks are registered by the installer (tools/install.py)
+# and are NOT part of the Agent Skills open specification.
+
+PreToolUse:
+- matcher: Bash
+  hooks:
+  - type: command
+    command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+    timeout: 5000

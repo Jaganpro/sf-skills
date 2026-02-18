@@ -59,15 +59,11 @@ class CodexAdapter(CLIAdapter):
         Changes:
         - Remove Claude Code-specific syntax
         - Update directory references (templates → assets, docs → references)
-        - Remove Claude-specific hooks from frontmatter
         - Replace Claude references and hook sections in body
         - Add Codex-specific usage section
         """
         # Apply common transformations
         content = self._common_skill_md_transforms(content)
-
-        # Remove Claude hook configuration from frontmatter if present
-        content = self._strip_hooks_from_frontmatter(content)
 
         # Replace Claude Code references in body
         content = self._replace_claude_references(content)
@@ -118,47 +114,6 @@ See `scripts/README.md` for validation script usage.
             content += codex_section
 
         return content
-
-    def _strip_hooks_from_frontmatter(self, content: str) -> str:
-        """
-        Remove Claude Code hooks from YAML frontmatter for Codex.
-
-        Keeps the rest of the frontmatter intact.
-        """
-        if not content.startswith("---"):
-            return content
-
-        # Match frontmatter block
-        match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
-        if not match:
-            return content
-
-        frontmatter = match.group(1)
-        body = content[match.end():]
-
-        # Remove hooks block at top-level, preserving other keys
-        lines = frontmatter.splitlines()
-        cleaned = []
-        skipping = False
-        for line in lines:
-            if not skipping and re.match(r'^hooks:\s*$', line):
-                skipping = True
-                continue
-            if skipping:
-                # Stop skipping when we hit a new top-level key
-                if line and not line.startswith((" ", "\t")):
-                    skipping = False
-                else:
-                    continue
-            if not skipping:
-                cleaned.append(line)
-
-        frontmatter = "\n".join(cleaned)
-
-        # Clean up extra blank lines
-        frontmatter = re.sub(r'\n{3,}', '\n\n', frontmatter).strip()
-
-        return f"---\n{frontmatter}\n---\n{body}"
 
     def _replace_claude_references(self, content: str) -> str:
         """

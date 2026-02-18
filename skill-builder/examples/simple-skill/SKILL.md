@@ -1,11 +1,12 @@
 ---
-name: hello-world-skill
+name: simple-skill
 description: A minimal example skill demonstrating Claude Code skill structure
-version: 1.0.0
-author: Claude Code Team
-tags: [example, tutorial, beginner]
-allowed-tools:
-  - Bash
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "Claude Code Team"
+  tags: "example, tutorial, beginner"
+allowed-tools: Bash
 ---
 
 # Hello World Skill: A Minimal Example
@@ -51,10 +52,10 @@ This example demonstrates:
 ## Example Invocation
 
 ```
-User: "Use the hello-world-skill"
+User: "Use the simple-skill"
 
 Response:
-👋 Hello! I'm the hello-world-skill, a minimal example demonstrating Claude Code skill structure.
+👋 Hello! I'm the simple-skill, a minimal example demonstrating Claude Code skill structure.
 
 I'm here to show you how skills work:
 
@@ -80,7 +81,7 @@ Let me demonstrate using the Bash tool I have access to:
 [Runs: date]
 Current time: [output]
 
-That's the hello-world-skill! It's intentionally simple to show the basic structure.
+That's the simple-skill! It's intentionally simple to show the basic structure.
 Real skills are more sophisticated but follow the same pattern.
 ```
 
@@ -121,4 +122,4 @@ This skill demonstrates Bash tool usage:
 3. Test with realistic scenarios
 4. Refine based on results
 
-**Remember:** This hello-world-skill is intentionally minimal. Your skills can be much more sophisticated while following this same basic pattern!
+**Remember:** This simple-skill is intentionally minimal. Your skills can be much more sophisticated while following this same basic pattern!
