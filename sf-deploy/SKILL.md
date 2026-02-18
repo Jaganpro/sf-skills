@@ -452,8 +452,6 @@ Reusable multi-step deployment script: **[examples/deploy.sh](examples/deploy.sh
 
 Deploys in order: Objects → Permission Sets → Apex (with tests) → Flows (Draft)
 
----
-
 ## Generate Package Manifest
 
 **Auto-generate package.xml from source directory:**
@@ -482,8 +480,6 @@ sf project deploy start --manifest manifest/package.xml --target-org alias
 | CI/CD pipelines | `--manifest` | Controlled, reproducible deployments |
 | Development iteration | `--source-dir` | Quick local changes |
 
----
-
 ## Notes
 
 - **CLI**: Uses only `sf` (v2) with modern flag syntax
@@ -491,8 +487,6 @@ sf project deploy start --manifest manifest/package.xml --target-org alias
 - **API**: Uses Metadata API (not Tooling API)
 - **Async**: Use `--wait` to monitor; most deploys are async
 - **Limits**: Be aware of Salesforce governor limits
-
----
 
 ## License
 

@@ -325,6 +325,6 @@ hooks:
 
 ## Related Documentation
 
-- [skills-registry.json](../shared/hooks/skills-registry.json) - Skill orchestration config
+- [skills-registry.json](../shared/hooks/skills-registry.json) - Skill registry and metadata
 - [shared/hooks/README.md](../shared/hooks/README.md) - Shared hooks documentation
 - [Claude Code Hooks](https://docs.anthropic.com/claude-code/hooks) - Official hooks reference

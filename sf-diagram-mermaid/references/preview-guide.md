@@ -1,3 +1,4 @@
+<!-- Parent: sf-diagram-mermaid/SKILL.md -->
 # Mermaid Preview Server Guide
 
 After generating the diagram, offer the user a localhost preview for real-time iteration.

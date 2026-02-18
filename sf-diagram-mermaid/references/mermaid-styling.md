@@ -1,3 +1,4 @@
+<!-- Parent: sf-diagram-mermaid/SKILL.md -->
 # Mermaid Styling Guide (sf-skills Standard)
 
 Use individual `style` declarations with **Tailwind 200-level pastel fills** and **dark strokes** for consistent, visually soft diagrams.

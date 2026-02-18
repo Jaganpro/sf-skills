@@ -1838,7 +1838,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
      • 18 Salesforce skills (sf-apex, sf-flow, sf-metadata, ...)
      • 14 hook scripts (guardrails, auto-approval, validation)
      • LSP engine (Apex, LWC, AgentScript language servers)
-     • Automatic skill suggestions and workflow orchestration
+     • Automatic validation, guardrails, and org preflight checks
 
   📍 INSTALL LOCATIONS:
      ~/.claude/skills/sf-*/     (skills — native Claude Code discovery)
