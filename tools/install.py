@@ -1816,6 +1816,18 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
     Returns:
         Exit code (0 = success)
     """
+    # Cache running installer bytes for re-exec detection (before Step 3 overwrites it).
+    # During --update, the running process has OLD code. Step 3 copies the NEW installer
+    # to INSTALLER_FILE. By comparing bytes, we detect if the binary changed and re-exec
+    # so Steps 4-5 run with the NEW get_hooks_config() and cleanup_stale_hooks().
+    _running_installer_bytes = None
+    try:
+        _running_file = Path(__file__).resolve()
+        if _running_file.is_file():
+            _running_installer_bytes = _running_file.read_bytes()
+    except (NameError, IOError, OSError):
+        pass
+
     # When called from bash wrapper, skip banner and intro (bash handles it)
     if not called_from_bash:
         print_banner()
@@ -1948,6 +1960,32 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             if installer_source.exists():
                 shutil.copy2(installer_source, INSTALLER_FILE)
 
+            # Re-exec detection: if the installer binary changed, hand off to the
+            # new version for Steps 4-5. This solves the bootstrapping problem where
+            # the OLD process's get_hooks_config() references deleted hooks.
+            if _running_installer_bytes is not None and INSTALLER_FILE.exists():
+                try:
+                    _new_installer_bytes = INSTALLER_FILE.read_bytes()
+                    if _running_installer_bytes != _new_installer_bytes:
+                        print_substep("Installer updated — restarting with new version...")
+                        _exec_args = [
+                            sys.executable, str(INSTALLER_FILE),
+                            "--_finalize-install",
+                            "--_version", version,
+                        ]
+                        if commit_sha:
+                            _exec_args.extend(["--_commit-sha", commit_sha])
+                        if dry_run:
+                            _exec_args.append("--dry-run")
+                        if force:
+                            _exec_args.append("--force")
+                        if called_from_bash:
+                            _exec_args.append("--called-from-bash")
+                        os.execv(sys.executable, _exec_args)
+                        # os.execv replaces the process; unreachable below
+                except (IOError, OSError) as e:
+                    print_warning(f"Re-exec check failed ({e}), continuing with current process")
+
             # Write metadata (version + commit SHA for update detection)
             write_metadata(version, commit_sha=commit_sha)
 
@@ -2029,6 +2067,110 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
 """)
         else:
             # Full message when run directly
+            print(f"""
+═══════════════════════════════════════════════════════════════════
+{c('✅ Installation complete!', Colors.GREEN)}
+
+   Version:  {version}
+   Skills:   ~/.claude/skills/sf-*/
+   Hooks:    ~/.claude/hooks/
+   LSP:      ~/.claude/lsp-engine/
+
+   🚀 Next steps:
+   1. Restart Claude Code (or start new session)
+   2. Try: /sf-apex to start building!
+
+   📖 Commands:
+   • Update:    python3 ~/.claude/sf-skills-install.py --update
+   • Uninstall: python3 ~/.claude/sf-skills-install.py --uninstall
+   • Status:    python3 ~/.claude/sf-skills-install.py --status
+═══════════════════════════════════════════════════════════════════
+""")
+    else:
+        print(f"\n{c('DRY RUN complete - no changes made', Colors.YELLOW)}\n")
+
+    return 0
+
+
+def cmd_finalize_install(version: str, commit_sha: Optional[str] = None,
+                         dry_run: bool = False, force: bool = False,
+                         called_from_bash: bool = False) -> int:
+    """
+    Finalize installation (Steps 4-5 only).
+
+    Called via re-exec when the installer binary was updated during Step 3.
+    The NEW binary runs this to ensure get_hooks_config() and cleanup_stale_hooks()
+    use current code rather than the old process's stale in-memory definitions.
+
+    Args:
+        version: Version string from Step 1 (passed via --_version)
+        commit_sha: Commit SHA from Step 1 (passed via --_commit-sha)
+        dry_run: Preview changes without applying
+        force: Skip confirmation prompts
+        called_from_bash: Suppress redundant output
+
+    Returns:
+        Exit code (0 = success)
+    """
+    # Step 4: Configure Claude Code (re-exec continuation)
+    print_step(4, 5, "Configuring Claude Code...", "...")
+
+    if not dry_run:
+        # Register hooks using the NEW get_hooks_config()
+        status = update_settings_json()
+        added = sum(1 for s in status.values() if s == "added")
+        updated = sum(1 for s in status.values() if s == "updated")
+
+        # Clean up stale hooks that reference missing script files
+        stale_removed = cleanup_stale_hooks()
+        if stale_removed > 0:
+            print_substep(f"Cleaned {stale_removed} stale hook(s) (referenced missing scripts)")
+
+        # Migrate: Remove legacy ~/.claude/sf-skills/ if present
+        if LEGACY_INSTALL_DIR.exists():
+            safe_rmtree(LEGACY_INSTALL_DIR)
+            print_substep("Migrated: removed legacy ~/.claude/sf-skills/")
+
+        # Migrate: Remove legacy command symlinks
+        old_cmds = unregister_skills_from_commands()
+        if old_cmds > 0:
+            print_substep(f"Migrated: removed {old_cmds} legacy command symlinks")
+
+        print_step(4, 5, "Claude Code configured", "done")
+        if added > 0:
+            print_substep(f"{added} hook events added")
+        if updated > 0:
+            print_substep(f"{updated} hook events updated")
+    else:
+        print_step(4, 5, "Would configure settings.json", "skip")
+
+    # Step 5: Validate
+    print_step(5, 5, "Validating installation...", "...")
+
+    if not dry_run:
+        success, issues = verify_installation()
+        if success:
+            print_step(5, 5, "All checks passed", "done")
+        else:
+            print_step(5, 5, "Validation issues found", "fail")
+            for issue in issues:
+                print_substep(c(issue, Colors.YELLOW))
+    else:
+        print_step(5, 5, "Would validate installation", "skip")
+
+    # Clean up temp files
+    cleanup_temp_files(dry_run)
+
+    # Success message
+    if not dry_run:
+        if called_from_bash:
+            print(f"""
+{c('✅ sf-skills installed successfully!', Colors.GREEN)}
+   Version:  {version}
+   Skills:   ~/.claude/skills/sf-*/
+   Hooks:    ~/.claude/hooks/
+""")
+        else:
             print(f"""
 ═══════════════════════════════════════════════════════════════════
 {c('✅ Installation complete!', Colors.GREEN)}
@@ -2913,6 +3055,14 @@ Curl one-liner:
     parser.add_argument("--version", action="version",
                         version=f"sf-skills installer v{VERSION}")
 
+    # Internal flags for re-exec (not user-facing)
+    parser.add_argument("--_finalize-install", dest="finalize_install",
+                        action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--_version", dest="finalize_version",
+                        default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--_commit-sha", dest="finalize_sha",
+                        default=None, help=argparse.SUPPRESS)
+
     args = parser.parse_args()
 
     # Ensure ~/.claude exists
@@ -2941,7 +3091,16 @@ Curl one-liner:
             pass  # is_relative_to may fail on some platforms
 
     # Route to appropriate command
-    if args.profile is not None:
+    # Handle re-exec finalization first (internal, not user-facing)
+    if getattr(args, 'finalize_install', False):
+        sys.exit(cmd_finalize_install(
+            version=getattr(args, 'finalize_version', None) or "unknown",
+            commit_sha=getattr(args, 'finalize_sha', None) or None,
+            dry_run=args.dry_run,
+            force=args.force,
+            called_from_bash=args.called_from_bash
+        ))
+    elif args.profile is not None:
         sys.exit(cmd_profile(args.profile, dry_run=args.dry_run, force=args.force))
     elif args.diagnose:
         sys.exit(cmd_diagnose())

@@ -105,6 +105,76 @@ def cleanup_old_sessions():
             pass
 
 
+def cleanup_stale_settings_hooks():
+    """
+    Defense-in-depth: remove sf-skills hooks from settings.json that reference
+    missing script files. Runs at session start to self-heal from interrupted
+    updates or installer re-exec failures.
+
+    Silent: no stdout output (would break Claude Code JSON parsing).
+    Fast: only reads/writes a small JSON file.
+    Idempotent: no-op if no stale hooks exist.
+    """
+    settings_file = Path.home() / ".claude" / "settings.json"
+    if not settings_file.exists():
+        return
+
+    try:
+        settings = json.loads(settings_file.read_text())
+    except (json.JSONDecodeError, IOError):
+        return
+
+    if "hooks" not in settings:
+        return
+
+    removed = 0
+    for event_name in list(settings["hooks"].keys()):
+        cleaned = []
+        for hook_group in settings["hooks"][event_name]:
+            # Identify sf-skills hooks via marker or path heuristic
+            is_sf = hook_group.get("_sf_skills", False)
+            if not is_sf:
+                for nested in hook_group.get("hooks", []):
+                    cmd = nested.get("command", "")
+                    if ".claude/hooks" in cmd or "sf-skills" in cmd or "shared/hooks" in cmd:
+                        is_sf = True
+                        break
+
+            if not is_sf:
+                cleaned.append(hook_group)
+                continue
+
+            # Verify all referenced scripts exist on disk
+            all_exist = True
+            for nested in hook_group.get("hooks", []):
+                cmd = nested.get("command", "")
+                parts = cmd.split()
+                # Find the script path (first part containing '/')
+                for part in parts[1:]:
+                    if "/" in part:
+                        if not Path(part).exists():
+                            all_exist = False
+                        break
+
+            if all_exist:
+                cleaned.append(hook_group)
+            else:
+                removed += 1
+
+        settings["hooks"][event_name] = cleaned
+        if not cleaned:
+            del settings["hooks"][event_name]
+
+    if "hooks" in settings and not settings["hooks"]:
+        del settings["hooks"]
+
+    if removed > 0:
+        try:
+            settings_file.write_text(json.dumps(settings, indent=2))
+        except IOError:
+            pass
+
+
 def is_clear_event(input_data: dict) -> bool:
     """
     Detect if this is a /clear command (SessionStart:clear) vs fresh session.
@@ -185,6 +255,10 @@ def main():
 
     # Clean up old sessions first (dead PIDs)
     cleanup_old_sessions()
+
+    # Defense-in-depth: auto-clean stale hooks from settings.json
+    # (catches interrupted updates or installer re-exec failures)
+    cleanup_stale_settings_hooks()
 
     # Create this session's directory
     session_dir.mkdir(parents=True, exist_ok=True)

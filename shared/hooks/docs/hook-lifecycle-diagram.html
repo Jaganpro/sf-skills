@@ -69,12 +69,9 @@ flowchart TB
     end
 
     subgraph hooks_session["📌 SessionStart Hooks"]
+        H_INIT["🏗️ session-init.py"]
         H_ORG["🔌 org-preflight.py"]
         H_LSP["⚡ lsp-prewarm.py"]
-    end
-
-    subgraph hooks_prompt["📌 UserPromptSubmit Hooks"]
-        H_SKILL_ACT["🎯 skill-activation-prompt.py"]
     end
 
     subgraph agentic["⚙️ AGENTIC LOOP"]
@@ -89,7 +86,6 @@ flowchart TB
     subgraph hooks_pre["📌 PreToolUse Hooks"]
         H_GUARD["🛡️ guardrails.py"]
         H_API["📊 api-version-check.py"]
-        H_ENFORCE["🚫 skill-enforcement.py"]
     end
 
     subgraph hooks_perm["📌 PermissionRequest Hooks"]
@@ -98,7 +94,6 @@ flowchart TB
 
     subgraph hooks_post["📌 PostToolUse Hooks"]
         H_VALID["🔍 validator-dispatcher.py"]
-        H_SUGGEST["💡 suggest-related-skills.py"]
     end
 
     subgraph subagent["🤖 SUBAGENT FLOW"]
@@ -107,10 +102,6 @@ flowchart TB
         SUB_RUN(["SUBAGENT RUNS"])
         S9["9️⃣ SUBAGENT STOP"]
         MORE_Q{{"MORE WORK?"}}
-    end
-
-    subgraph hooks_sub["📌 SubagentStop Hooks"]
-        H_CHAIN["⛓️ chain-validator.py"]
     end
 
     subgraph finish["🏁 COMPLETION"]
@@ -124,11 +115,9 @@ flowchart TB
     S1 --> S2 --> S3 --> LLM
 
     %% SessionStart hooks
+    S1 -.-> H_INIT
     S1 -.-> H_ORG
     S1 -.-> H_LSP
-
-    %% UserPromptSubmit hooks
-    S3 -.-> H_SKILL_ACT
 
     %% Agentic Loop
     LLM --> S4 --> S5 --> EXEC
@@ -138,14 +127,12 @@ flowchart TB
     %% PreToolUse hooks
     S4 -.-> H_GUARD
     S4 -.-> H_API
-    S4 -.-> H_ENFORCE
 
     %% PermissionRequest hooks
     S5 -.-> H_AUTO
 
     %% PostToolUse hooks
     S6 -.-> H_VALID
-    S6 -.-> H_SUGGEST
 
     %% Subagent flow
     S6 --> SUB_Q
@@ -154,9 +141,6 @@ flowchart TB
     SUB_Q -->|No| MORE_Q
     S8 --> SUB_RUN --> S9
     S9 --> MORE_Q
-
-    %% SubagentStop hooks
-    S9 -.-> H_CHAIN
 
     %% Loop back or finish
     MORE_Q -->|Yes| LLM
@@ -190,26 +174,19 @@ flowchart TB
     style MORE_Q fill:#fde68a,stroke:#b45309,color:#1f2937
 
     %% Node Styling - SessionStart hooks (Teal-200)
+    style H_INIT fill:#99f6e4,stroke:#0f766e,color:#1f2937
     style H_ORG fill:#99f6e4,stroke:#0f766e,color:#1f2937
     style H_LSP fill:#99f6e4,stroke:#0f766e,color:#1f2937
-
-    %% Node Styling - UserPromptSubmit hooks (Pink-200 AI)
-    style H_SKILL_ACT fill:#fbcfe8,stroke:#be185d,color:#1f2937
 
     %% Node Styling - PreToolUse hooks (Orange-200)
     style H_GUARD fill:#fed7aa,stroke:#c2410c,color:#1f2937
     style H_API fill:#fed7aa,stroke:#c2410c,color:#1f2937
-    style H_ENFORCE fill:#fed7aa,stroke:#c2410c,color:#1f2937
 
     %% Node Styling - PermissionRequest hooks (Green-200)
     style H_AUTO fill:#a7f3d0,stroke:#047857,color:#1f2937
 
     %% Node Styling - PostToolUse hooks (Violet-200)
     style H_VALID fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
-    style H_SUGGEST fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
-
-    %% Node Styling - SubagentStop hooks (Indigo-200)
-    style H_CHAIN fill:#c7d2fe,stroke:#4338ca,color:#1f2937
 
     %% Subgraph Styling - 50-level fills with dark dashed borders
     style init fill:#ecfeff,stroke:#0e7490,stroke-dasharray:5
@@ -219,11 +196,9 @@ flowchart TB
 
     %% Hook subgraph styling
     style hooks_session fill:#f0fdfa,stroke:#0f766e,stroke-dasharray:5
-    style hooks_prompt fill:#fdf2f8,stroke:#be185d,stroke-dasharray:5
     style hooks_pre fill:#fff7ed,stroke:#c2410c,stroke-dasharray:5
     style hooks_perm fill:#ecfdf5,stroke:#047857,stroke-dasharray:5
     style hooks_post fill:#f5f3ff,stroke:#6d28d9,stroke-dasharray:5
-    style hooks_sub fill:#eef2ff,stroke:#4338ca,stroke-dasharray:5
     </div>
 
     <div class="legend">
@@ -234,10 +209,6 @@ flowchart TB
         <div class="legend-item">
             <div class="color-box" style="background:#99f6e4;border-color:#0f766e"></div>
             <span>SessionStart Hooks</span>
-        </div>
-        <div class="legend-item">
-            <div class="color-box" style="background:#fbcfe8;border-color:#be185d"></div>
-            <span>UserPromptSubmit Hooks</span>
         </div>
         <div class="legend-item">
             <div class="color-box" style="background:#fed7aa;border-color:#c2410c"></div>
@@ -253,7 +224,7 @@ flowchart TB
         </div>
         <div class="legend-item">
             <div class="color-box" style="background:#c7d2fe;border-color:#4338ca"></div>
-            <span>Execution / Chain Hooks</span>
+            <span>Execution Nodes</span>
         </div>
         <div class="legend-item">
             <div class="color-box" style="background:#fde68a;border-color:#b45309"></div>
