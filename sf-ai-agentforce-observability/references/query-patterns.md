@@ -1,1003 +1,1003 @@
 <!-- Parent: sf-ai-agentforce-observability/SKILL.md -->
-   1 # Data Cloud Query Patterns
-   2 
-   3 Common query patterns for extracting and analyzing Agentforce session tracing data.
-   4 
-   5 > **Official Reference**: [Get Insights from Agent Session Tracing Data](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_use.htm)
-   6 
-   7 ## Basic Extraction Queries
-   8 
-   9 ### All Sessions (Last 7 Days)
-  10 
-  11 ```sql
-  12 SELECT
-  13     ssot__Id__c,
-  14     ssot__AiAgentChannelType__c,
-  15     ssot__StartTimestamp__c,
-  16     ssot__EndTimestamp__c,
-  17     ssot__AiAgentSessionEndType__c
-  18 FROM ssot__AIAgentSession__dlm
-  19 WHERE ssot__StartTimestamp__c >= '2026-01-21T00:00:00.000Z'
-  20 ORDER BY ssot__StartTimestamp__c DESC;
-  21 ```
-  22 
-  23 ### Sessions by Agent (via Moment Join)
-  24 
-  25 > **Note:** Agent name is stored on the Moment table, not Session. Use a JOIN to filter by agent.
-  26 
-  27 ```sql
-  28 SELECT DISTINCT s.*
-  29 FROM ssot__AIAgentSession__dlm s
-  30 JOIN ssot__AiAgentMoment__dlm m
-  31     ON m.ssot__AiAgentSessionId__c = s.ssot__Id__c
-  32 WHERE m.ssot__AiAgentApiName__c = 'Customer_Support_Agent'
-  33   AND s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-  34 ORDER BY s.ssot__StartTimestamp__c DESC;
-  35 ```
-  36 
-  37 ### Failed/Escalated Sessions
-  38 
-  39 ```sql
-  40 SELECT *
-  41 FROM ssot__AIAgentSession__dlm
-  42 WHERE ssot__AiAgentSessionEndType__c IN ('Escalated', 'Abandoned', 'Failed')
-  43   AND ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-  44 ORDER BY ssot__StartTimestamp__c DESC;
-  45 ```
-  46 
-  47 ---
-  48 
-  49 ## Aggregation Queries
-  50 
-  51 ### Session Count by Agent (via Moment)
-  52 
-  53 > **Note:** Agent name is on the Moment table. Query Moments and count distinct sessions.
-  54 
-  55 ```sql
-  56 SELECT
-  57     ssot__AiAgentApiName__c as agent,
-  58     COUNT(DISTINCT ssot__AiAgentSessionId__c) as session_count
-  59 FROM ssot__AiAgentMoment__dlm
-  60 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-  61 GROUP BY ssot__AiAgentApiName__c
-  62 ORDER BY session_count DESC;
-  63 ```
-  64 
-  65 ### End Type Distribution
-  66 
-  67 ```sql
-  68 SELECT
-  69     ssot__AiAgentSessionEndType__c as end_type,
-  70     COUNT(*) as count
-  71 FROM ssot__AIAgentSession__dlm
-  72 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
-  73 GROUP BY ssot__AiAgentSessionEndType__c;
-  74 ```
-  75 
-  76 ### Topic Usage
-  77 
-  78 ```sql
-  79 SELECT
-  80     ssot__TopicApiName__c as topic,
-  81     COUNT(*) as turn_count
-  82 FROM ssot__AIAgentInteraction__dlm
-  83 WHERE ssot__AiAgentInteractionType__c = 'TURN'
-  84 GROUP BY ssot__TopicApiName__c
-  85 ORDER BY turn_count DESC;
-  86 ```
-  87 
-  88 ### Action Invocation Frequency
-  89 
-  90 ```sql
-  91 SELECT
-  92     ssot__Name__c as action_name,
-  93     COUNT(*) as invocation_count
-  94 FROM ssot__AIAgentInteractionStep__dlm
-  95 WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
-  96 GROUP BY ssot__Name__c
-  97 ORDER BY invocation_count DESC;
-  98 ```
-  99 
- 100 ---
- 101 
- 102 ## Relationship Queries
- 103 
- 104 ### Session with Turn Count
- 105 
- 106 ```sql
- 107 SELECT
- 108     s.ssot__Id__c,
- 109     s.ssot__AiAgentChannelType__c,
- 110     COUNT(i.ssot__Id__c) as turn_count
- 111 FROM ssot__AIAgentSession__dlm s
- 112 LEFT JOIN ssot__AIAgentInteraction__dlm i
- 113     ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
- 114     AND i.ssot__AiAgentInteractionType__c = 'TURN'
- 115 WHERE s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
- 116 GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c;
- 117 ```
- 118 
- 119 ### Complete Session Tree
- 120 
- 121 ```sql
- 122 -- Step 1: Get session
- 123 SELECT * FROM ssot__AIAgentSession__dlm
- 124 WHERE ssot__Id__c = 'a0x1234567890ABC';
- 125 
- 126 -- Step 2: Get interactions
- 127 SELECT * FROM ssot__AIAgentInteraction__dlm
- 128 WHERE ssot__AiAgentSessionId__c = 'a0x1234567890ABC';
- 129 
- 130 -- Step 3: Get steps (using interaction IDs from step 2)
- 131 SELECT * FROM ssot__AIAgentInteractionStep__dlm
- 132 WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
- 133 
- 134 -- Step 4: Get messages (using interaction IDs from step 2)
- 135 SELECT * FROM ssot__AIAgentMoment__dlm
- 136 WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
- 137 ```
- 138 
- 139 ---
- 140 
- 141 ## Time-Based Queries
- 142 
- 143 ### Daily Session Counts
- 144 
- 145 ```sql
- 146 SELECT
- 147     SUBSTRING(ssot__StartTimestamp__c, 1, 10) as date,
- 148     COUNT(*) as session_count
- 149 FROM ssot__AIAgentSession__dlm
- 150 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
- 151 GROUP BY SUBSTRING(ssot__StartTimestamp__c, 1, 10)
- 152 ORDER BY date;
- 153 ```
- 154 
- 155 ### Hourly Distribution
- 156 
- 157 ```sql
- 158 SELECT
- 159     SUBSTRING(ssot__StartTimestamp__c, 12, 2) as hour,
- 160     COUNT(*) as session_count
- 161 FROM ssot__AIAgentSession__dlm
- 162 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
- 163 GROUP BY SUBSTRING(ssot__StartTimestamp__c, 12, 2)
- 164 ORDER BY hour;
- 165 ```
- 166 
- 167 ---
- 168 
- 169 ## Analysis Queries
- 170 
- 171 ### Sessions with Topic Switches
- 172 
- 173 ```sql
- 174 SELECT
- 175     ssot__AiAgentSessionId__c,
- 176     COUNT(DISTINCT ssot__TopicApiName__c) as topic_count
- 177 FROM ssot__AIAgentInteraction__dlm
- 178 WHERE ssot__AiAgentInteractionType__c = 'TURN'
- 179 GROUP BY ssot__AiAgentSessionId__c
- 180 HAVING COUNT(DISTINCT ssot__TopicApiName__c) > 1;
- 181 ```
- 182 
- 183 ### Long Sessions (Many Turns)
- 184 
- 185 ```sql
- 186 SELECT
- 187     ssot__AiAgentSessionId__c,
- 188     COUNT(*) as turn_count
- 189 FROM ssot__AIAgentInteraction__dlm
- 190 WHERE ssot__AiAgentInteractionType__c = 'TURN'
- 191 GROUP BY ssot__AiAgentSessionId__c
- 192 HAVING COUNT(*) > 10
- 193 ORDER BY turn_count DESC;
- 194 ```
- 195 
- 196 ### Actions with High Failure Rate
- 197 
- 198 ```sql
- 199 -- Note: This requires output parsing for error detection
- 200 SELECT
- 201     ssot__Name__c as action_name,
- 202     COUNT(*) as total_invocations,
- 203     COUNT(CASE WHEN ssot__OutputValueText__c LIKE '%error%' THEN 1 END) as errors
- 204 FROM ssot__AIAgentInteractionStep__dlm
- 205 WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
- 206 GROUP BY ssot__Name__c;
- 207 ```
- 208 
- 209 ---
- 210 
- 211 ## Performance Tips
- 212 
- 213 ### Use Date Filters Early
- 214 
- 215 ```sql
- 216 -- Good: Filter by date first
- 217 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
- 218   AND ssot__AiAgentSessionEndType__c = 'Completed'
- 219 
- 220 -- Avoid: No date filter on large tables
- 221 WHERE ssot__AiAgentSessionEndType__c = 'Completed'
- 222 ```
- 223 
- 224 ### Limit Result Sets
- 225 
- 226 ```sql
- 227 -- Use LIMIT for exploration
- 228 SELECT * FROM ssot__AIAgentSession__dlm
- 229 WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
- 230 ORDER BY ssot__StartTimestamp__c DESC
- 231 LIMIT 100;
- 232 ```
- 233 
- 234 ### Select Only Needed Columns
- 235 
- 236 ```sql
- 237 -- Good: Select specific columns
- 238 SELECT ssot__Id__c, ssot__AiAgentChannelType__c, ssot__StartTimestamp__c
- 239 FROM ssot__AIAgentSession__dlm;
- 240 
- 241 -- Avoid: SELECT * on wide tables
- 242 SELECT * FROM ssot__AIAgentInteractionStep__dlm;  -- Has large text fields
- 243 ```
- 244 
- 245 ---
- 246 
- 247 ## Official Example Queries (from Salesforce Help)
- 248 
- 249 These are official query patterns from the Salesforce documentation.
- 250 
- 251 ### Full Session Join (All Entities)
- 252 
- 253 ```sql
- 254 SELECT *
- 255 FROM "AiAgentSession__dlm"
- 256 JOIN "AiAgentSessionParticipant__dlm"
- 257     ON "AiAgentSession__dlm"."id__c" = "AiAgentSessionParticipant__dlm"."aiAgentSessionId__c"
- 258 JOIN "AiAgentInteraction__dlm"
- 259     ON "AiAgentSession__dlm"."id__c" = "AiAgentInteraction__dlm"."aiAgentSessionId__c"
- 260 JOIN "AiAgentInteractionMessage__dlm"
- 261     ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionMessage__dlm"."aiAgentInteractionId__c"
- 262 JOIN "AiAgentInteractionStep__dlm"
- 263     ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionStep__dlm"."aiAgentInteractionId__c"
- 264 WHERE "AiAgentSession__dlm"."id__c" = '{{SESSION_ID}}'
- 265 LIMIT 10;
- 266 ```
- 267 
- 268 ### Recent Sessions (Last N Days)
- 269 
- 270 ```sql
- 271 SELECT
- 272     ssot__Id__c,
- 273     ssot__StartTimestamp__c
- 274 FROM ssot__AiAgentSession__dlm s
- 275 WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
- 276 ORDER BY s.ssot__StartTimestamp__c DESC;
- 277 ```
- 278 
- 279 ### All Messages in an Interaction
- 280 
- 281 ```sql
- 282 SELECT
- 283     ssot__AiAgentInteractionId__c AS InteractionId,
- 284     ssot__AiAgentInteractionMessageType__c,     -- user or agent
- 285     ssot__AiAgentInteractionMsgContentType__c,  -- e.g., text
- 286     ssot__ContentText__c,
- 287     ssot__AiAgentSessionParticipantId__c AS SenderParticipantId,
- 288     ssot__ParentMessageId__c                    -- if part of a thread
- 289 FROM "ssot__AiAgentInteractionMessage__dlm"
- 290 WHERE ssot__AiAgentInteractionId__c = '{{INTERACTION_ID}}'
- 291 ORDER BY ssot__MessageSentTimestamp__c ASC;
- 292 ```
- 293 
- 294 ### Steps with Errors
- 295 
- 296 Find all interaction steps that encountered errors:
- 297 
- 298 ```sql
- 299 SELECT
- 300     ssot__AiAgentInteractionId__c AS InteractionId,
- 301     ssot__Id__c AS StepId,
- 302     ssot__Name__c AS StepName,
- 303     ssot__InputValueText__c AS Input,
- 304     ssot__ErrorMessageText__c AS StepErrorMessage
- 305 FROM "ssot__AiAgentInteractionStep__dlm"
- 306 WHERE length(ssot__ErrorMessageText__c) > 0
- 307   AND ssot__ErrorMessageText__c != 'NOT_SET'
- 308 LIMIT 100;
- 309 ```
- 310 
- 311 ### Join with GenAI Feedback Data
- 312 
- 313 Combine session tracing with feedback and guardrails metrics:
- 314 
- 315 ```sql
- 316 SELECT
- 317     ssot__AiAgentInteractionId__c AS InteractionId,
- 318     ssot__Name__c AS StepName,
- 319     GenAIGatewayRequest__dlm.prompt__c AS Input_Prompt,
- 320     GenAIGeneration__dlm.responseText__c AS LLM_Response,
- 321     GenAIFeedback__dlm.feedback__c AS Feedback
- 322 FROM ssot__AiAgentInteractionStep__dlm
- 323 LEFT JOIN GenAIGeneration__dlm
- 324     ON ssot__AiAgentInteractionStep__dlm.ssot__GenerationId__c = GenAIGeneration__dlm.generationId__c
- 325 LEFT JOIN GenAIGatewayRequest__dlm
- 326     ON ssot__AiAgentInteractionStep__dlm.ssot__GenAiGatewayRequestId__c = GenAIGatewayRequest__dlm.gatewayRequestId__c
- 327 LEFT JOIN GenAIGatewayResponse__dlm
- 328     ON GenAIGatewayRequest__dlm.gatewayRequestId__c = GenAIGatewayResponse__dlm.generationRequestId__c
- 329 LEFT JOIN GenAIFeedback__dlm
- 330     ON GenAIGeneration__dlm.generationId__c = GenAIFeedback__dlm.generationId__c
- 331 WHERE GenAIGatewayResponse__dlm.generationResponseId__c = GenAIGeneration__dlm.generationResponseId__c
- 332 LIMIT 100;
- 333 ```
- 334 
- 335 ---
- 336 
- 337 ## Advanced Session Inspection
- 338 
- 339 ### Full Session Details (All Related Entities)
- 340 
- 341 Join all session tracing entities for complete visibility:
- 342 
- 343 ```sql
- 344 SELECT *
- 345 FROM ssot__AiAgentSession__dlm s
- 346 JOIN ssot__AiAgentSessionParticipant__dlm sp
- 347     ON s.ssot__id__c = sp.ssot__AiAgentSessionId__c
- 348 JOIN ssot__AiAgentInteraction__dlm i
- 349     ON s.ssot__id__c = i.ssot__AiAgentSessionId__c
- 350 JOIN ssot__AiAgentInteractionMessage__dlm im
- 351     ON i.ssot__id__c = im.ssot__AiAgentInteractionId__c
- 352 JOIN ssot__AiAgentInteractionStep__dlm st
- 353     ON i.ssot__id__c = st.ssot__AiAgentInteractionId__c
- 354 WHERE s.ssot__id__c = '{{SESSION_ID}}'
- 355 LIMIT 100;
- 356 ```
- 357 
- 358 **Note:** This query includes `SessionParticipant` and `InteractionMessage` entities not in basic extraction.
- 359 
- 360 ### Session Insights with CTEs
- 361 
- 362 Use CTEs for complex session analysis with messages and steps:
- 363 
- 364 ```sql
- 365 WITH
- 366   -- Store session ID for reuse
- 367   params AS (
- 368     SELECT '{{SESSION_ID}}' AS session_id
- 369   ),
- 370 
- 371   -- Get interactions with their messages
- 372   interactionsWithMessages AS (
- 373     SELECT
- 374       i.ssot__Id__c AS InteractionId,
- 375       i.ssot__TopicApiName__c AS TopicName,
- 376       i.ssot__AiAgentInteractionType__c AS InteractionType,
- 377       i.ssot__StartTimestamp__c AS InteractionStartTime,
- 378       i.ssot__EndTimestamp__c AS InteractionEndTime,
- 379       im.ssot__SentTime__c AS MessageSentTime,
- 380       im.ssot__MessageType__c AS InteractionMessageType,
- 381       im.ssot__ContextText__c AS ContextText,
- 382       NULL AS InteractionStepType,
- 383       NULL AS Name,
- 384       NULL AS InputValueText,
- 385       NULL AS OutputValueText,
- 386       NULL AS PreStepVariableText,
- 387       NULL AS PostStepVariableText
- 388     FROM ssot__AiAgentInteraction__dlm i
- 389     JOIN ssot__AiAgentInteractionMessage__dlm im
- 390       ON i.ssot__Id__c = im.ssot__AiAgentInteractionId__c
- 391     WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
- 392   ),
- 393 
- 394   -- Get interactions with their steps
- 395   interactionsWithSteps AS (
- 396     SELECT
- 397       i.ssot__Id__c AS InteractionId,
- 398       i.ssot__TopicApiName__c AS TopicName,
- 399       i.ssot__AiAgentInteractionType__c AS InteractionType,
- 400       i.ssot__StartTimestamp__c AS InteractionStartTime,
- 401       i.ssot__EndTimestamp__c AS InteractionEndTime,
- 402       st.ssot__StartTimestamp__c AS MessageSentTime,
- 403       NULL AS InteractionMessageType,
- 404       NULL AS ContextText,
- 405       st.ssot__AiAgentInteractionStepType__c AS InteractionStepType,
- 406       st.ssot__Name__c AS Name,
- 407       st.ssot__InputValueText__c AS InputValueText,
- 408       st.ssot__OutputValueText__c AS OutputValueText,
- 409       st.ssot__PreStepVariableText__c AS PreStepVariableText,
- 410       st.ssot__PostStepVariableText__c AS PostStepVariableText
- 411     FROM ssot__AiAgentInteraction__dlm i
- 412     JOIN ssot__AiAgentInteractionStep__dlm st
- 413       ON i.ssot__Id__c = st.ssot__AiAgentInteractionId__c
- 414     WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
- 415   ),
- 416 
- 417   -- Combine messages and steps
- 418   combined AS (
- 419     SELECT * FROM interactionsWithMessages
- 420     UNION ALL
- 421     SELECT * FROM interactionsWithSteps
- 422   )
- 423 
- 424 -- Final output sorted chronologically
- 425 SELECT
- 426   TopicName,
- 427   InteractionType,
- 428   InteractionStartTime,
- 429   InteractionEndTime,
- 430   MessageSentTime,
- 431   InteractionMessageType,
- 432   ContextText,
- 433   InteractionStepType,
- 434   Name,
- 435   InputValueText,
- 436   OutputValueText,
- 437   PreStepVariableText,
- 438   PostStepVariableText
- 439 FROM combined
- 440 ORDER BY MessageSentTime ASC;
- 441 ```
- 442 
- 443 **Tips for Finding Session IDs:**
- 444 - For Service Agent: Use `ssot__RelatedMessagingSessionId__c` field on `ssot__AiAgentSession__dlm`
- 445 - Use start/end timestamp fields to narrow down timeframes
- 446 
- 447 ---
- 448 
- 449 ## Quality Analysis Queries
- 450 
- 451 ### Toxic Response Detection
- 452 
- 453 Find generations flagged as toxic and trace back to sessions:
- 454 
- 455 ```sql
- 456 SELECT
- 457     i.ssot__AiAgentSessionId__c AS SessionId,
- 458     i.ssot__TopicApiName__c AS TopicName,
- 459     g.responseText__c AS ResponseText,
- 460     c.category__c AS ToxicityCategory,
- 461     c.value__c AS ConfidenceScore
- 462 FROM GenAIContentQuality__dlm AS q
- 463 JOIN GenAIContentCategory__dlm AS c
- 464     ON c.parent__c = q.id__c
- 465 JOIN GenAIGeneration__dlm AS g
- 466     ON g.generationId__c = q.parent__c
- 467 JOIN ssot__AiAgentInteractionStep__dlm st
- 468     ON st.ssot__GenerationId__c = g.generationId__c
- 469 JOIN ssot__AiAgentInteraction__dlm i
- 470     ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 471 WHERE
- 472     q.isToxicityDetected__c = 'true'
- 473     AND TRY_CAST(c.value__c AS DECIMAL) >= 0.5
- 474 LIMIT 100;
- 475 ```
- 476 
- 477 **Join Chain:** ContentQuality → ContentCategory → Generation → Step → Interaction → Session
- 478 
- 479 ### Low Instruction Adherence Detection
- 480 
- 481 Find sessions where agent responses didn't follow instructions well:
- 482 
- 483 ```sql
- 484 SELECT
- 485     i.ssot__AiAgentSessionId__c AS SessionId,
- 486     i.ssot__TopicApiName__c AS TopicName,
- 487     g.responseText__c AS ResponseText,
- 488     c.category__c AS AdherenceLevel,
- 489     c.value__c AS ConfidenceScore
- 490 FROM GenAIContentCategory__dlm AS c
- 491 JOIN GenAIGeneration__dlm AS g
- 492     ON g.generationId__c = c.parent__c
- 493 JOIN ssot__AiAgentInteractionStep__dlm st
- 494     ON st.ssot__GenerationId__c = g.generationId__c
- 495 JOIN ssot__AiAgentInteraction__dlm i
- 496     ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 497 WHERE
- 498     c.detectorType__c = 'InstructionAdherence'
- 499     AND c.category__c = 'Low'
- 500 LIMIT 100;
- 501 ```
- 502 
- 503 **Detector Types (Live API Verified - T6 Discovery):**
- 504 
- 505 | Detector Type | Occurrences | Categories/Values |
- 506 |---------------|-------------|-------------------|
- 507 | `TOXICITY` | 627,603 | `hate`, `identity`, `physical`, `profanity`, `safety_score`, `sexual`, `toxicity`, `violence` |
- 508 | `PROMPT_DEFENSE` | 119,050 | `aggregatePromptAttackScore`, `isPromptAttackDetected` |
- 509 | `PII` | 27,805 | `CREDIT_CARD`, `EMAIL_ADDRESS`, `PERSON`, `US_PHONE_NUMBER` |
- 510 | `InstructionAdherence` | 16,380 | `High`, `Low`, `Uncertain` |
- 511 
- 512 **Detection Thresholds:**
- 513 - **Toxicity**: `value__c >= 0.5` indicates toxic content
- 514 - **PII**: Any category present indicates PII detection
- 515 - **PROMPT_DEFENSE**: `isPromptAttackDetected` = `true` indicates attack
- 516 - **InstructionAdherence**: `Low` category indicates poor adherence
- 517 
- 518 ### Unresolved Tasks Detection
- 519 
- 520 Find sessions where user requests weren't fully resolved:
- 521 
- 522 ```sql
- 523 SELECT
- 524     i.ssot__AiAgentSessionId__c AS SessionId,
- 525     i.ssot__TopicApiName__c AS TopicName,
- 526     g.responseText__c AS ResponseText,
- 527     c.category__c AS ResolutionStatus,
- 528     c.value__c AS ConfidenceScore
- 529 FROM GenAIContentCategory__dlm AS c
- 530 JOIN GenAIGeneration__dlm AS g
- 531     ON g.generationId__c = c.parent__c
- 532 JOIN ssot__AiAgentInteractionStep__dlm st
- 533     ON st.ssot__GenerationId__c = g.generationId__c
- 534 JOIN ssot__AiAgentInteraction__dlm i
- 535     ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 536 WHERE
- 537     c.detectorType__c = 'TaskResolution'
- 538     AND c.category__c != 'FULLY_RESOLVED'
- 539 LIMIT 100;
- 540 ```
- 541 
- 542 ### PII Detection Analysis ✅ NEW
- 543 
- 544 Find sessions where PII was detected in user inputs or agent responses:
- 545 
- 546 ```sql
- 547 SELECT
- 548     c.category__c AS PiiType,
- 549     COUNT(*) AS DetectionCount
- 550 FROM GenAIContentCategory__dlm c
- 551 WHERE c.detectorType__c = 'PII'
- 552   AND c.timestamp__c >= current_date - INTERVAL '30' DAY
- 553 GROUP BY c.category__c
- 554 ORDER BY DetectionCount DESC;
- 555 ```
- 556 
- 557 **PII Categories:**
- 558 | Category | Description |
- 559 |----------|-------------|
- 560 | `CREDIT_CARD` | Credit card numbers |
- 561 | `EMAIL_ADDRESS` | Email addresses |
- 562 | `PERSON` | Person names |
- 563 | `US_PHONE_NUMBER` | US phone numbers |
- 564 
- 565 ### Prompt Attack Detection ✅ NEW
- 566 
- 567 Find sessions with potential prompt injection attacks:
- 568 
- 569 ```sql
- 570 SELECT
- 571     i.ssot__AiAgentSessionId__c AS SessionId,
- 572     i.ssot__TopicApiName__c AS TopicName,
- 573     c.category__c AS AttackCategory,
- 574     c.value__c AS Score
- 575 FROM GenAIContentCategory__dlm c
- 576 JOIN GenAIGeneration__dlm g
- 577     ON g.generationId__c = c.parent__c
- 578 JOIN ssot__AiAgentInteractionStep__dlm st
- 579     ON st.ssot__GenerationId__c = g.generationId__c
- 580 JOIN ssot__AiAgentInteraction__dlm i
- 581     ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 582 WHERE c.detectorType__c = 'PROMPT_DEFENSE'
- 583   AND c.category__c = 'isPromptAttackDetected'
- 584   AND c.value__c = 'true'
- 585 LIMIT 100;
- 586 ```
- 587 
- 588 ### Hallucination Detection (UNGROUNDED Responses)
- 589 
- 590 Find responses flagged as ungrounded by the validation prompt:
- 591 
- 592 ```sql
- 593 -- Note: Uses JSON parsing functions
- 594 WITH llmResponses AS (
- 595     SELECT
- 596         i.ssot__AiAgentSessionId__c AS SessionId,
- 597         ssot__InputValueText__c::JSON->'messages'->-1->>'content' AS LastMessage,
- 598         ssot__OutputValueText__c::JSON->>'llmResponse' AS llmResponse,
- 599         st.ssot__StartTimestamp__c AS InteractionStepStartTime
- 600     FROM ssot__AiAgentInteractionStep__dlm st
- 601     JOIN ssot__AiAgentInteraction__dlm i
- 602         ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 603     WHERE
- 604         st.ssot__AiAgentInteractionStepType__c = 'LLM_STEP'
- 605         AND st.ssot__Name__c = 'AiCopilot__ReactValidationPrompt'
- 606         AND st.ssot__OutputValueText__c LIKE '%UNGROUNDED%'
- 607     LIMIT 100
- 608 )
- 609 SELECT
- 610     InteractionStepStartTime,
- 611     SessionId,
- 612     TRIM('"' FROM SPLIT_PART(SPLIT_PART(LastMessage, '"response": "', 2), '"', 1)) AS AgentResponse,
- 613     CAST(llmResponse AS JSON)->>'reason' AS UngroundedReason
- 614 FROM llmResponses
- 615 ORDER BY InteractionStepStartTime;
- 616 ```
- 617 
- 618 **Key Step Names for Analysis:**
- 619 
- 620 | Step Name | Purpose |
- 621 |-----------|---------|
- 622 | `AiCopilot__ReactTopicPrompt` | Topic routing decision |
- 623 | `AiCopilot__ReactInitialPrompt` | Initial planning/reasoning |
- 624 | `AiCopilot__ReactValidationPrompt` | Response validation (hallucination check) |
- 625 
- 626 ---
- 627 
- 628 ## GenAI Gateway Analysis ✅ NEW
- 629 
- 630 Query patterns for analyzing LLM usage, token consumption, and model performance.
- 631 
- 632 ### Token Usage by Model
- 633 
- 634 Analyze token consumption across different models:
- 635 
- 636 ```sql
- 637 SELECT
- 638     model__c AS Model,
- 639     COUNT(*) AS RequestCount,
- 640     SUM(promptTokens__c) AS TotalPromptTokens,
- 641     SUM(completionTokens__c) AS TotalCompletionTokens,
- 642     SUM(totalTokens__c) AS TotalTokens,
- 643     AVG(totalTokens__c) AS AvgTokensPerRequest
- 644 FROM GenAIGatewayRequest__dlm
- 645 WHERE timestamp__c >= current_date - INTERVAL '7' DAY
- 646 GROUP BY model__c
- 647 ORDER BY TotalTokens DESC;
- 648 ```
- 649 
- 650 ### Prompt Template Usage
- 651 
- 652 Find which prompt templates are most frequently used:
- 653 
- 654 ```sql
- 655 SELECT
- 656     promptTemplateDevName__c AS TemplateName,
- 657     promptTemplateVersionNo__c AS Version,
- 658     COUNT(*) AS UsageCount,
- 659     AVG(totalTokens__c) AS AvgTokens
- 660 FROM GenAIGatewayRequest__dlm
- 661 WHERE timestamp__c >= current_date - INTERVAL '30' DAY
- 662   AND promptTemplateDevName__c IS NOT NULL
- 663 GROUP BY promptTemplateDevName__c, promptTemplateVersionNo__c
- 664 ORDER BY UsageCount DESC;
- 665 ```
- 666 
- 667 ### Safety Configuration Analysis
- 668 
- 669 Analyze which safety features are enabled across requests:
- 670 
- 671 ```sql
- 672 SELECT
- 673     enableInputSafetyScoring__c AS InputSafety,
- 674     enableOutputSafetyScoring__c AS OutputSafety,
- 675     enablePiiMasking__c AS PiiMasking,
- 676     COUNT(*) AS RequestCount
- 677 FROM GenAIGatewayRequest__dlm
- 678 WHERE timestamp__c >= current_date - INTERVAL '7' DAY
- 679 GROUP BY enableInputSafetyScoring__c, enableOutputSafetyScoring__c, enablePiiMasking__c
- 680 ORDER BY RequestCount DESC;
- 681 ```
- 682 
- 683 ### User Feedback Summary
- 684 
- 685 Analyze user feedback distribution:
- 686 
- 687 ```sql
- 688 SELECT
- 689     feedback__c AS FeedbackType,
- 690     COUNT(*) AS FeedbackCount
- 691 FROM GenAIFeedback__dlm
- 692 WHERE timestamp__c >= current_date - INTERVAL '30' DAY
- 693 GROUP BY feedback__c
- 694 ORDER BY FeedbackCount DESC;
- 695 ```
- 696 
- 697 ### Feedback with Details
- 698 
- 699 Get detailed feedback with user comments:
- 700 
- 701 ```sql
- 702 SELECT
- 703     f.feedbackId__c,
- 704     f.feedback__c AS FeedbackType,
- 705     f.action__c AS UserAction,
- 706     fd.feedbackText__c AS UserComment,
- 707     f.timestamp__c
- 708 FROM GenAIFeedback__dlm f
- 709 LEFT JOIN GenAIFeedbackDetail__dlm fd
- 710     ON fd.parent__c = f.feedbackId__c
- 711 WHERE f.timestamp__c >= current_date - INTERVAL '7' DAY
- 712 ORDER BY f.timestamp__c DESC
- 713 LIMIT 100;
- 714 ```
- 715 
- 716 ### High-Cost Requests
- 717 
- 718 Find requests with unusually high token consumption:
- 719 
- 720 ```sql
- 721 SELECT
- 722     gatewayRequestId__c,
- 723     model__c AS Model,
- 724     promptTokens__c,
- 725     completionTokens__c,
- 726     totalTokens__c,
- 727     feature__c,
- 728     timestamp__c
- 729 FROM GenAIGatewayRequest__dlm
- 730 WHERE totalTokens__c > 4000
- 731   AND timestamp__c >= current_date - INTERVAL '7' DAY
- 732 ORDER BY totalTokens__c DESC
- 733 LIMIT 50;
- 734 ```
- 735 
- 736 ---
- 737 
- 738 ## Knowledge Retrieval Analysis
- 739 
- 740 ### Vector Search for Knowledge Gaps
- 741 
- 742 Query the knowledge search index to understand what chunks were retrieved for a user query:
- 743 
- 744 ```sql
- 745 SELECT
- 746     v.Score__c AS Score,
- 747     kav.Chat_Answer__c AS KnowledgeAnswer,
- 748     c.Chunk__c AS ChunkText,
- 749     c.SourceRecordId__c AS SourceRecordId,
- 750     c.DataSource__c AS DataSource
- 751 FROM vector_search(
- 752     TABLE("External_Knowledge_Search_Index_index__dlm"),
- 753     '{{USER_QUERY}}',
- 754     '{{FILTER_CLAUSE}}',
- 755     30
- 756 ) v
- 757 INNER JOIN "External_Knowledge_Search_Index_chunk__dlm" c
- 758     ON c.RecordId__c = v.RecordId__c
- 759 INNER JOIN "{{KNOWLEDGE_ARTICLE_DMO}}" kav
- 760     ON c.SourceRecordId__c = kav.Id__c
- 761 ORDER BY Score DESC
- 762 LIMIT 10;
- 763 ```
- 764 
- 765 **Parameters:**
- 766 - `{{USER_QUERY}}`: The search query text
- 767 - `{{FILTER_CLAUSE}}`: Optional filter like `'Country_Code__c=''US'''`
- 768 - `{{KNOWLEDGE_ARTICLE_DMO}}`: Your org's Knowledge DMO name (e.g., `Knowledge_kav_Prod_00D58000000JmkM__dlm`)
- 769 
- 770 ### Improving Knowledge Articles Workflow
- 771 
- 772 1. **Identify low-quality moments**: Agentforce Studio → Observe → Optimization → Insights
- 773 2. **Filter by topic and quality**: Topics includes `General_FAQ...`, Quality Score < Medium
- 774 3. **Get Session ID** from Moments view
- 775 4. **Query STDM** with session ID to inspect ACTION_STEP
- 776 5. **Examine actionName and actionInput** in step output
- 777 6. **Run vector_search** with the user query to see retrieved chunks
- 778 7. **Identify SourceRecordId** to find knowledge articles needing improvement
- 779 
- 780 ### Inspecting Action Steps for Knowledge Calls
- 781 
- 782 Find ACTION_STEP details for a session:
- 783 
- 784 ```sql
- 785 SELECT
- 786     st.ssot__Name__c AS ActionName,
- 787     st.ssot__AiAgentInteractionStepType__c AS StepType,
- 788     st.ssot__InputValueText__c AS InputValue,
- 789     st.ssot__OutputValueText__c AS OutputValue,
- 790     st.ssot__StartTimestamp__c AS StartTime
- 791 FROM ssot__AiAgentInteractionStep__dlm st
- 792 JOIN ssot__AiAgentInteraction__dlm i
- 793     ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 794 WHERE
- 795     i.ssot__AiAgentSessionId__c = '{{SESSION_ID}}'
- 796     AND st.ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
- 797 ORDER BY st.ssot__StartTimestamp__c;
- 798 ```
- 799 
- 800 **ACTION_STEP Output Contains:**
- 801 - `actionName`: The invoked action (e.g., `General_FAQ0_16jWi00000001...`)
- 802 - `actionInput`: Parameters passed to the action
- 803 - Retrieved knowledge chunks in the response
- 804 
- 805 ---
- 806 
- 807 ## Advanced CTE Patterns
- 808 
- 809 Complex CTE (Common Table Expression) patterns for advanced session analysis.
- 810 
- 811 ### CTE Pattern 1: Session Summary with Stats
- 812 
- 813 Aggregate turn counts and step counts per session:
- 814 
- 815 ```sql
- 816 WITH session_stats AS (
- 817     SELECT
- 818         s.ssot__Id__c,
- 819         s.ssot__AiAgentChannelType__c as channel_type,
- 820         s.ssot__AiAgentSessionEndType__c as end_type,
- 821         COUNT(DISTINCT i.ssot__Id__c) as turn_count,
- 822         COUNT(DISTINCT st.ssot__Id__c) as step_count
- 823     FROM ssot__AIAgentSession__dlm s
- 824     LEFT JOIN ssot__AIAgentInteraction__dlm i
- 825         ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
- 826     LEFT JOIN ssot__AIAgentInteractionStep__dlm st
- 827         ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 828     WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
- 829     GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c, s.ssot__AiAgentSessionEndType__c
- 830 )
- 831 SELECT * FROM session_stats WHERE turn_count > 5
- 832 ORDER BY step_count DESC;
- 833 ```
- 834 
- 835 ### CTE Pattern 2: Error Analysis by Topic
- 836 
- 837 Find which topics have the most action errors:
- 838 
- 839 ```sql
- 840 WITH topic_errors AS (
- 841     SELECT
- 842         i.ssot__TopicApiName__c as topic,
- 843         st.ssot__Name__c as action_name,
- 844         st.ssot__ErrorMessageText__c as error
- 845     FROM ssot__AIAgentInteractionStep__dlm st
- 846     JOIN ssot__AIAgentInteraction__dlm i
- 847         ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 848     WHERE length(st.ssot__ErrorMessageText__c) > 0
- 849       AND st.ssot__ErrorMessageText__c != 'NOT_SET'
- 850       AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
- 851 )
- 852 SELECT topic, action_name, COUNT(*) as error_count
- 853 FROM topic_errors
- 854 GROUP BY topic, action_name
- 855 ORDER BY error_count DESC;
- 856 ```
- 857 
- 858 ### CTE Pattern 3: Session Timeline Reconstruction
- 859 
- 860 Reconstruct the full timeline of events (messages + steps) for a session:
- 861 
- 862 ```sql
- 863 WITH
- 864   params AS (
- 865     SELECT '{{SESSION_ID}}' AS session_id
- 866   ),
- 867   session_events AS (
- 868     -- Messages
- 869     SELECT
- 870         'MESSAGE' as event_type,
- 871         im.ssot__MessageSentTimestamp__c as timestamp,
- 872         im.ssot__AiAgentInteractionMessageType__c as detail,
- 873         i.ssot__AiAgentSessionId__c as session_id
- 874     FROM ssot__AiAgentInteractionMessage__dlm im
- 875     JOIN ssot__AiAgentInteraction__dlm i
- 876         ON im.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 877     WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
- 878 
- 879     UNION ALL
- 880 
- 881     -- Steps
- 882     SELECT
- 883         st.ssot__AiAgentInteractionStepType__c as event_type,
- 884         st.ssot__StartTimestamp__c as timestamp,
- 885         st.ssot__Name__c as detail,
- 886         i.ssot__AiAgentSessionId__c as session_id
- 887     FROM ssot__AIAgentInteractionStep__dlm st
- 888     JOIN ssot__AiAgentInteraction__dlm i
- 889         ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
- 890     WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
- 891   )
- 892 SELECT event_type, timestamp, detail
- 893 FROM session_events
- 894 ORDER BY timestamp ASC;
- 895 ```
- 896 
- 897 ### CTE Pattern 4: Quality Metrics Dashboard
- 898 
- 899 Aggregate quality metrics by detector type:
- 900 
- 901 ```sql
- 902 WITH quality_summary AS (
- 903     SELECT
- 904         c.detectorType__c,
- 905         c.category__c,
- 906         COUNT(*) as count,
- 907         AVG(TRY_CAST(c.value__c AS DECIMAL)) as avg_score
- 908     FROM GenAIContentCategory__dlm c
- 909     GROUP BY c.detectorType__c, c.category__c
- 910 )
- 911 SELECT
- 912     detectorType__c as detector,
- 913     category__c as category,
- 914     count,
- 915     ROUND(avg_score, 3) as avg_confidence
- 916 FROM quality_summary
- 917 ORDER BY detector, count DESC;
- 918 ```
- 919 
- 920 **Note:** This query requires GenAI Trust Layer DMOs to be enabled.
- 921 
- 922 ### CTE Pattern 5: Topic Routing Analysis
- 923 
- 924 Analyze how users are routed between topics within sessions:
- 925 
- 926 ```sql
- 927 WITH topic_transitions AS (
- 928     SELECT
- 929         curr.ssot__AiAgentSessionId__c as session_id,
- 930         prev.ssot__TopicApiName__c as from_topic,
- 931         curr.ssot__TopicApiName__c as to_topic,
- 932         curr.ssot__StartTimestamp__c as transition_time
- 933     FROM ssot__AIAgentInteraction__dlm curr
- 934     JOIN ssot__AIAgentInteraction__dlm prev
- 935         ON curr.ssot__PrevInteractionId__c = prev.ssot__Id__c
- 936     WHERE curr.ssot__TopicApiName__c != prev.ssot__TopicApiName__c
- 937       AND curr.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
- 938 )
- 939 SELECT
- 940     from_topic,
- 941     to_topic,
- 942     COUNT(*) as transition_count
- 943 FROM topic_transitions
- 944 GROUP BY from_topic, to_topic
- 945 ORDER BY transition_count DESC;
- 946 ```
- 947 
- 948 **Use Cases:**
- 949 - Identify common topic escalation paths
- 950 - Find topics that frequently need fallback routing
- 951 - Understand user journey patterns
- 952 
- 953 ---
- 954 
- 955 ## Tag System Queries ✅ NEW
- 956 
- 957 Query the Agentforce tagging system for session categorization and analytics.
- 958 
- 959 ### Get Tag Definitions
- 960 
- 961 List all available tag definitions in the org:
- 962 
- 963 ```sql
- 964 SELECT
- 965     ssot__Id__c,
- 966     ssot__Name__c,
- 967     ssot__DeveloperName__c,
- 968     ssot__Description__c,
- 969     ssot__DataType__c,
- 970     ssot__SourceType__c
- 971 FROM ssot__AiAgentTagDefinition__dlm
- 972 ORDER BY ssot__CreatedDate__c DESC
- 973 LIMIT 50;
- 974 ```
- 975 
- 976 ### Get Tag Values for a Definition
- 977 
- 978 List all values for a specific tag definition:
- 979 
- 980 ```sql
- 981 SELECT
- 982     t.ssot__Id__c,
- 983     t.ssot__Description__c,
- 984     t.ssot__IsActive__c,
- 985     td.ssot__Name__c as TagDefinitionName
- 986 FROM ssot__AiAgentTag__dlm t
- 987 JOIN ssot__AiAgentTagDefinition__dlm td
- 988     ON t.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
- 989 WHERE td.ssot__DeveloperName__c = 'Escalation_Reason'
- 990   AND t.ssot__IsActive__c = true
- 991 ORDER BY t.ssot__CreatedDate__c DESC;
- 992 ```
- 993 
- 994 ### Sessions with Tag Associations
- 995 
- 996 Find sessions that have been tagged:
- 997 
- 998 ```sql
- 999 SELECT
+# Data Cloud Query Patterns
+
+Common query patterns for extracting and analyzing Agentforce session tracing data.
+
+> **Official Reference**: [Get Insights from Agent Session Tracing Data](https://help.salesforce.com/s/articleView?id=ai.generative_ai_session_trace_use.htm)
+
+## Basic Extraction Queries
+
+### All Sessions (Last 7 Days)
+
+```sql
+SELECT
+    ssot__Id__c,
+    ssot__AiAgentChannelType__c,
+    ssot__StartTimestamp__c,
+    ssot__EndTimestamp__c,
+    ssot__AiAgentSessionEndType__c
+FROM ssot__AIAgentSession__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-21T00:00:00.000Z'
+ORDER BY ssot__StartTimestamp__c DESC;
+```
+
+### Sessions by Agent (via Moment Join)
+
+> **Note:** Agent name is stored on the Moment table, not Session. Use a JOIN to filter by agent.
+
+```sql
+SELECT DISTINCT s.*
+FROM ssot__AIAgentSession__dlm s
+JOIN ssot__AiAgentMoment__dlm m
+    ON m.ssot__AiAgentSessionId__c = s.ssot__Id__c
+WHERE m.ssot__AiAgentApiName__c = 'Customer_Support_Agent'
+  AND s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+ORDER BY s.ssot__StartTimestamp__c DESC;
+```
+
+### Failed/Escalated Sessions
+
+```sql
+SELECT *
+FROM ssot__AIAgentSession__dlm
+WHERE ssot__AiAgentSessionEndType__c IN ('Escalated', 'Abandoned', 'Failed')
+  AND ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+ORDER BY ssot__StartTimestamp__c DESC;
+```
+
+---
+
+## Aggregation Queries
+
+### Session Count by Agent (via Moment)
+
+> **Note:** Agent name is on the Moment table. Query Moments and count distinct sessions.
+
+```sql
+SELECT
+    ssot__AiAgentApiName__c as agent,
+    COUNT(DISTINCT ssot__AiAgentSessionId__c) as session_count
+FROM ssot__AiAgentMoment__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+GROUP BY ssot__AiAgentApiName__c
+ORDER BY session_count DESC;
+```
+
+### End Type Distribution
+
+```sql
+SELECT
+    ssot__AiAgentSessionEndType__c as end_type,
+    COUNT(*) as count
+FROM ssot__AIAgentSession__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+GROUP BY ssot__AiAgentSessionEndType__c;
+```
+
+### Topic Usage
+
+```sql
+SELECT
+    ssot__TopicApiName__c as topic,
+    COUNT(*) as turn_count
+FROM ssot__AIAgentInteraction__dlm
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
+GROUP BY ssot__TopicApiName__c
+ORDER BY turn_count DESC;
+```
+
+### Action Invocation Frequency
+
+```sql
+SELECT
+    ssot__Name__c as action_name,
+    COUNT(*) as invocation_count
+FROM ssot__AIAgentInteractionStep__dlm
+WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
+GROUP BY ssot__Name__c
+ORDER BY invocation_count DESC;
+```
+
+---
+
+## Relationship Queries
+
+### Session with Turn Count
+
+```sql
+SELECT
+    s.ssot__Id__c,
+    s.ssot__AiAgentChannelType__c,
+    COUNT(i.ssot__Id__c) as turn_count
+FROM ssot__AIAgentSession__dlm s
+LEFT JOIN ssot__AIAgentInteraction__dlm i
+    ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
+    AND i.ssot__AiAgentInteractionType__c = 'TURN'
+WHERE s.ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c;
+```
+
+### Complete Session Tree
+
+```sql
+-- Step 1: Get session
+SELECT * FROM ssot__AIAgentSession__dlm
+WHERE ssot__Id__c = 'a0x1234567890ABC';
+
+-- Step 2: Get interactions
+SELECT * FROM ssot__AIAgentInteraction__dlm
+WHERE ssot__AiAgentSessionId__c = 'a0x1234567890ABC';
+
+-- Step 3: Get steps (using interaction IDs from step 2)
+SELECT * FROM ssot__AIAgentInteractionStep__dlm
+WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
+
+-- Step 4: Get messages (using interaction IDs from step 2)
+SELECT * FROM ssot__AIAgentMoment__dlm
+WHERE ssot__AiAgentInteractionId__c IN ('a0y...', 'a0y...');
+```
+
+---
+
+## Time-Based Queries
+
+### Daily Session Counts
+
+```sql
+SELECT
+    SUBSTRING(ssot__StartTimestamp__c, 1, 10) as date,
+    COUNT(*) as session_count
+FROM ssot__AIAgentSession__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+GROUP BY SUBSTRING(ssot__StartTimestamp__c, 1, 10)
+ORDER BY date;
+```
+
+### Hourly Distribution
+
+```sql
+SELECT
+    SUBSTRING(ssot__StartTimestamp__c, 12, 2) as hour,
+    COUNT(*) as session_count
+FROM ssot__AIAgentSession__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+GROUP BY SUBSTRING(ssot__StartTimestamp__c, 12, 2)
+ORDER BY hour;
+```
+
+---
+
+## Analysis Queries
+
+### Sessions with Topic Switches
+
+```sql
+SELECT
+    ssot__AiAgentSessionId__c,
+    COUNT(DISTINCT ssot__TopicApiName__c) as topic_count
+FROM ssot__AIAgentInteraction__dlm
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
+GROUP BY ssot__AiAgentSessionId__c
+HAVING COUNT(DISTINCT ssot__TopicApiName__c) > 1;
+```
+
+### Long Sessions (Many Turns)
+
+```sql
+SELECT
+    ssot__AiAgentSessionId__c,
+    COUNT(*) as turn_count
+FROM ssot__AIAgentInteraction__dlm
+WHERE ssot__AiAgentInteractionType__c = 'TURN'
+GROUP BY ssot__AiAgentSessionId__c
+HAVING COUNT(*) > 10
+ORDER BY turn_count DESC;
+```
+
+### Actions with High Failure Rate
+
+```sql
+-- Note: This requires output parsing for error detection
+SELECT
+    ssot__Name__c as action_name,
+    COUNT(*) as total_invocations,
+    COUNT(CASE WHEN ssot__OutputValueText__c LIKE '%error%' THEN 1 END) as errors
+FROM ssot__AIAgentInteractionStep__dlm
+WHERE ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
+GROUP BY ssot__Name__c;
+```
+
+---
+
+## Performance Tips
+
+### Use Date Filters Early
+
+```sql
+-- Good: Filter by date first
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+  AND ssot__AiAgentSessionEndType__c = 'Completed'
+
+-- Avoid: No date filter on large tables
+WHERE ssot__AiAgentSessionEndType__c = 'Completed'
+```
+
+### Limit Result Sets
+
+```sql
+-- Use LIMIT for exploration
+SELECT * FROM ssot__AIAgentSession__dlm
+WHERE ssot__StartTimestamp__c >= '2026-01-01T00:00:00.000Z'
+ORDER BY ssot__StartTimestamp__c DESC
+LIMIT 100;
+```
+
+### Select Only Needed Columns
+
+```sql
+-- Good: Select specific columns
+SELECT ssot__Id__c, ssot__AiAgentChannelType__c, ssot__StartTimestamp__c
+FROM ssot__AIAgentSession__dlm;
+
+-- Avoid: SELECT * on wide tables
+SELECT * FROM ssot__AIAgentInteractionStep__dlm;  -- Has large text fields
+```
+
+---
+
+## Official Example Queries (from Salesforce Help)
+
+These are official query patterns from the Salesforce documentation.
+
+### Full Session Join (All Entities)
+
+```sql
+SELECT *
+FROM "AiAgentSession__dlm"
+JOIN "AiAgentSessionParticipant__dlm"
+    ON "AiAgentSession__dlm"."id__c" = "AiAgentSessionParticipant__dlm"."aiAgentSessionId__c"
+JOIN "AiAgentInteraction__dlm"
+    ON "AiAgentSession__dlm"."id__c" = "AiAgentInteraction__dlm"."aiAgentSessionId__c"
+JOIN "AiAgentInteractionMessage__dlm"
+    ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionMessage__dlm"."aiAgentInteractionId__c"
+JOIN "AiAgentInteractionStep__dlm"
+    ON "AiAgentInteraction__dlm"."id__c" = "AiAgentInteractionStep__dlm"."aiAgentInteractionId__c"
+WHERE "AiAgentSession__dlm"."id__c" = '{{SESSION_ID}}'
+LIMIT 10;
+```
+
+### Recent Sessions (Last N Days)
+
+```sql
+SELECT
+    ssot__Id__c,
+    ssot__StartTimestamp__c
+FROM ssot__AiAgentSession__dlm s
+WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY s.ssot__StartTimestamp__c DESC;
+```
+
+### All Messages in an Interaction
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__AiAgentInteractionMessageType__c,     -- user or agent
+    ssot__AiAgentInteractionMsgContentType__c,  -- e.g., text
+    ssot__ContentText__c,
+    ssot__AiAgentSessionParticipantId__c AS SenderParticipantId,
+    ssot__ParentMessageId__c                    -- if part of a thread
+FROM "ssot__AiAgentInteractionMessage__dlm"
+WHERE ssot__AiAgentInteractionId__c = '{{INTERACTION_ID}}'
+ORDER BY ssot__MessageSentTimestamp__c ASC;
+```
+
+### Steps with Errors
+
+Find all interaction steps that encountered errors:
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__Id__c AS StepId,
+    ssot__Name__c AS StepName,
+    ssot__InputValueText__c AS Input,
+    ssot__ErrorMessageText__c AS StepErrorMessage
+FROM "ssot__AiAgentInteractionStep__dlm"
+WHERE length(ssot__ErrorMessageText__c) > 0
+  AND ssot__ErrorMessageText__c != 'NOT_SET'
+LIMIT 100;
+```
+
+### Join with GenAI Feedback Data
+
+Combine session tracing with feedback and guardrails metrics:
+
+```sql
+SELECT
+    ssot__AiAgentInteractionId__c AS InteractionId,
+    ssot__Name__c AS StepName,
+    GenAIGatewayRequest__dlm.prompt__c AS Input_Prompt,
+    GenAIGeneration__dlm.responseText__c AS LLM_Response,
+    GenAIFeedback__dlm.feedback__c AS Feedback
+FROM ssot__AiAgentInteractionStep__dlm
+LEFT JOIN GenAIGeneration__dlm
+    ON ssot__AiAgentInteractionStep__dlm.ssot__GenerationId__c = GenAIGeneration__dlm.generationId__c
+LEFT JOIN GenAIGatewayRequest__dlm
+    ON ssot__AiAgentInteractionStep__dlm.ssot__GenAiGatewayRequestId__c = GenAIGatewayRequest__dlm.gatewayRequestId__c
+LEFT JOIN GenAIGatewayResponse__dlm
+    ON GenAIGatewayRequest__dlm.gatewayRequestId__c = GenAIGatewayResponse__dlm.generationRequestId__c
+LEFT JOIN GenAIFeedback__dlm
+    ON GenAIGeneration__dlm.generationId__c = GenAIFeedback__dlm.generationId__c
+WHERE GenAIGatewayResponse__dlm.generationResponseId__c = GenAIGeneration__dlm.generationResponseId__c
+LIMIT 100;
+```
+
+---
+
+## Advanced Session Inspection
+
+### Full Session Details (All Related Entities)
+
+Join all session tracing entities for complete visibility:
+
+```sql
+SELECT *
+FROM ssot__AiAgentSession__dlm s
+JOIN ssot__AiAgentSessionParticipant__dlm sp
+    ON s.ssot__id__c = sp.ssot__AiAgentSessionId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON s.ssot__id__c = i.ssot__AiAgentSessionId__c
+JOIN ssot__AiAgentInteractionMessage__dlm im
+    ON i.ssot__id__c = im.ssot__AiAgentInteractionId__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON i.ssot__id__c = st.ssot__AiAgentInteractionId__c
+WHERE s.ssot__id__c = '{{SESSION_ID}}'
+LIMIT 100;
+```
+
+**Note:** This query includes `SessionParticipant` and `InteractionMessage` entities not in basic extraction.
+
+### Session Insights with CTEs
+
+Use CTEs for complex session analysis with messages and steps:
+
+```sql
+WITH
+  -- Store session ID for reuse
+  params AS (
+    SELECT '{{SESSION_ID}}' AS session_id
+  ),
+
+  -- Get interactions with their messages
+  interactionsWithMessages AS (
+    SELECT
+      i.ssot__Id__c AS InteractionId,
+      i.ssot__TopicApiName__c AS TopicName,
+      i.ssot__AiAgentInteractionType__c AS InteractionType,
+      i.ssot__StartTimestamp__c AS InteractionStartTime,
+      i.ssot__EndTimestamp__c AS InteractionEndTime,
+      im.ssot__SentTime__c AS MessageSentTime,
+      im.ssot__MessageType__c AS InteractionMessageType,
+      im.ssot__ContextText__c AS ContextText,
+      NULL AS InteractionStepType,
+      NULL AS Name,
+      NULL AS InputValueText,
+      NULL AS OutputValueText,
+      NULL AS PreStepVariableText,
+      NULL AS PostStepVariableText
+    FROM ssot__AiAgentInteraction__dlm i
+    JOIN ssot__AiAgentInteractionMessage__dlm im
+      ON i.ssot__Id__c = im.ssot__AiAgentInteractionId__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
+  ),
+
+  -- Get interactions with their steps
+  interactionsWithSteps AS (
+    SELECT
+      i.ssot__Id__c AS InteractionId,
+      i.ssot__TopicApiName__c AS TopicName,
+      i.ssot__AiAgentInteractionType__c AS InteractionType,
+      i.ssot__StartTimestamp__c AS InteractionStartTime,
+      i.ssot__EndTimestamp__c AS InteractionEndTime,
+      st.ssot__StartTimestamp__c AS MessageSentTime,
+      NULL AS InteractionMessageType,
+      NULL AS ContextText,
+      st.ssot__AiAgentInteractionStepType__c AS InteractionStepType,
+      st.ssot__Name__c AS Name,
+      st.ssot__InputValueText__c AS InputValueText,
+      st.ssot__OutputValueText__c AS OutputValueText,
+      st.ssot__PreStepVariableText__c AS PreStepVariableText,
+      st.ssot__PostStepVariableText__c AS PostStepVariableText
+    FROM ssot__AiAgentInteraction__dlm i
+    JOIN ssot__AiAgentInteractionStep__dlm st
+      ON i.ssot__Id__c = st.ssot__AiAgentInteractionId__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
+  ),
+
+  -- Combine messages and steps
+  combined AS (
+    SELECT * FROM interactionsWithMessages
+    UNION ALL
+    SELECT * FROM interactionsWithSteps
+  )
+
+-- Final output sorted chronologically
+SELECT
+  TopicName,
+  InteractionType,
+  InteractionStartTime,
+  InteractionEndTime,
+  MessageSentTime,
+  InteractionMessageType,
+  ContextText,
+  InteractionStepType,
+  Name,
+  InputValueText,
+  OutputValueText,
+  PreStepVariableText,
+  PostStepVariableText
+FROM combined
+ORDER BY MessageSentTime ASC;
+```
+
+**Tips for Finding Session IDs:**
+- For Service Agent: Use `ssot__RelatedMessagingSessionId__c` field on `ssot__AiAgentSession__dlm`
+- Use start/end timestamp fields to narrow down timeframes
+
+---
+
+## Quality Analysis Queries
+
+### Toxic Response Detection
+
+Find generations flagged as toxic and trace back to sessions:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    g.responseText__c AS ResponseText,
+    c.category__c AS ToxicityCategory,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentQuality__dlm AS q
+JOIN GenAIContentCategory__dlm AS c
+    ON c.parent__c = q.id__c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = q.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    q.isToxicityDetected__c = 'true'
+    AND TRY_CAST(c.value__c AS DECIMAL) >= 0.5
+LIMIT 100;
+```
+
+**Join Chain:** ContentQuality → ContentCategory → Generation → Step → Interaction → Session
+
+### Low Instruction Adherence Detection
+
+Find sessions where agent responses didn't follow instructions well:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    g.responseText__c AS ResponseText,
+    c.category__c AS AdherenceLevel,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentCategory__dlm AS c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    c.detectorType__c = 'InstructionAdherence'
+    AND c.category__c = 'Low'
+LIMIT 100;
+```
+
+**Detector Types (Live API Verified - T6 Discovery):**
+
+| Detector Type | Occurrences | Categories/Values |
+|---------------|-------------|-------------------|
+| `TOXICITY` | 627,603 | `hate`, `identity`, `physical`, `profanity`, `safety_score`, `sexual`, `toxicity`, `violence` |
+| `PROMPT_DEFENSE` | 119,050 | `aggregatePromptAttackScore`, `isPromptAttackDetected` |
+| `PII` | 27,805 | `CREDIT_CARD`, `EMAIL_ADDRESS`, `PERSON`, `US_PHONE_NUMBER` |
+| `InstructionAdherence` | 16,380 | `High`, `Low`, `Uncertain` |
+
+**Detection Thresholds:**
+- **Toxicity**: `value__c >= 0.5` indicates toxic content
+- **PII**: Any category present indicates PII detection
+- **PROMPT_DEFENSE**: `isPromptAttackDetected` = `true` indicates attack
+- **InstructionAdherence**: `Low` category indicates poor adherence
+
+### Unresolved Tasks Detection
+
+Find sessions where user requests weren't fully resolved:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    g.responseText__c AS ResponseText,
+    c.category__c AS ResolutionStatus,
+    c.value__c AS ConfidenceScore
+FROM GenAIContentCategory__dlm AS c
+JOIN GenAIGeneration__dlm AS g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    c.detectorType__c = 'TaskResolution'
+    AND c.category__c != 'FULLY_RESOLVED'
+LIMIT 100;
+```
+
+### PII Detection Analysis ✅ NEW
+
+Find sessions where PII was detected in user inputs or agent responses:
+
+```sql
+SELECT
+    c.category__c AS PiiType,
+    COUNT(*) AS DetectionCount
+FROM GenAIContentCategory__dlm c
+WHERE c.detectorType__c = 'PII'
+  AND c.timestamp__c >= current_date - INTERVAL '30' DAY
+GROUP BY c.category__c
+ORDER BY DetectionCount DESC;
+```
+
+**PII Categories:**
+| Category | Description |
+|----------|-------------|
+| `CREDIT_CARD` | Credit card numbers |
+| `EMAIL_ADDRESS` | Email addresses |
+| `PERSON` | Person names |
+| `US_PHONE_NUMBER` | US phone numbers |
+
+### Prompt Attack Detection ✅ NEW
+
+Find sessions with potential prompt injection attacks:
+
+```sql
+SELECT
+    i.ssot__AiAgentSessionId__c AS SessionId,
+    i.ssot__TopicApiName__c AS TopicName,
+    c.category__c AS AttackCategory,
+    c.value__c AS Score
+FROM GenAIContentCategory__dlm c
+JOIN GenAIGeneration__dlm g
+    ON g.generationId__c = c.parent__c
+JOIN ssot__AiAgentInteractionStep__dlm st
+    ON st.ssot__GenerationId__c = g.generationId__c
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE c.detectorType__c = 'PROMPT_DEFENSE'
+  AND c.category__c = 'isPromptAttackDetected'
+  AND c.value__c = 'true'
+LIMIT 100;
+```
+
+### Hallucination Detection (UNGROUNDED Responses)
+
+Find responses flagged as ungrounded by the validation prompt:
+
+```sql
+-- Note: Uses JSON parsing functions
+WITH llmResponses AS (
+    SELECT
+        i.ssot__AiAgentSessionId__c AS SessionId,
+        ssot__InputValueText__c::JSON->'messages'->-1->>'content' AS LastMessage,
+        ssot__OutputValueText__c::JSON->>'llmResponse' AS llmResponse,
+        st.ssot__StartTimestamp__c AS InteractionStepStartTime
+    FROM ssot__AiAgentInteractionStep__dlm st
+    JOIN ssot__AiAgentInteraction__dlm i
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE
+        st.ssot__AiAgentInteractionStepType__c = 'LLM_STEP'
+        AND st.ssot__Name__c = 'AiCopilot__ReactValidationPrompt'
+        AND st.ssot__OutputValueText__c LIKE '%UNGROUNDED%'
+    LIMIT 100
+)
+SELECT
+    InteractionStepStartTime,
+    SessionId,
+    TRIM('"' FROM SPLIT_PART(SPLIT_PART(LastMessage, '"response": "', 2), '"', 1)) AS AgentResponse,
+    CAST(llmResponse AS JSON)->>'reason' AS UngroundedReason
+FROM llmResponses
+ORDER BY InteractionStepStartTime;
+```
+
+**Key Step Names for Analysis:**
+
+| Step Name | Purpose |
+|-----------|---------|
+| `AiCopilot__ReactTopicPrompt` | Topic routing decision |
+| `AiCopilot__ReactInitialPrompt` | Initial planning/reasoning |
+| `AiCopilot__ReactValidationPrompt` | Response validation (hallucination check) |
+
+---
+
+## GenAI Gateway Analysis ✅ NEW
+
+Query patterns for analyzing LLM usage, token consumption, and model performance.
+
+### Token Usage by Model
+
+Analyze token consumption across different models:
+
+```sql
+SELECT
+    model__c AS Model,
+    COUNT(*) AS RequestCount,
+    SUM(promptTokens__c) AS TotalPromptTokens,
+    SUM(completionTokens__c) AS TotalCompletionTokens,
+    SUM(totalTokens__c) AS TotalTokens,
+    AVG(totalTokens__c) AS AvgTokensPerRequest
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '7' DAY
+GROUP BY model__c
+ORDER BY TotalTokens DESC;
+```
+
+### Prompt Template Usage
+
+Find which prompt templates are most frequently used:
+
+```sql
+SELECT
+    promptTemplateDevName__c AS TemplateName,
+    promptTemplateVersionNo__c AS Version,
+    COUNT(*) AS UsageCount,
+    AVG(totalTokens__c) AS AvgTokens
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '30' DAY
+  AND promptTemplateDevName__c IS NOT NULL
+GROUP BY promptTemplateDevName__c, promptTemplateVersionNo__c
+ORDER BY UsageCount DESC;
+```
+
+### Safety Configuration Analysis
+
+Analyze which safety features are enabled across requests:
+
+```sql
+SELECT
+    enableInputSafetyScoring__c AS InputSafety,
+    enableOutputSafetyScoring__c AS OutputSafety,
+    enablePiiMasking__c AS PiiMasking,
+    COUNT(*) AS RequestCount
+FROM GenAIGatewayRequest__dlm
+WHERE timestamp__c >= current_date - INTERVAL '7' DAY
+GROUP BY enableInputSafetyScoring__c, enableOutputSafetyScoring__c, enablePiiMasking__c
+ORDER BY RequestCount DESC;
+```
+
+### User Feedback Summary
+
+Analyze user feedback distribution:
+
+```sql
+SELECT
+    feedback__c AS FeedbackType,
+    COUNT(*) AS FeedbackCount
+FROM GenAIFeedback__dlm
+WHERE timestamp__c >= current_date - INTERVAL '30' DAY
+GROUP BY feedback__c
+ORDER BY FeedbackCount DESC;
+```
+
+### Feedback with Details
+
+Get detailed feedback with user comments:
+
+```sql
+SELECT
+    f.feedbackId__c,
+    f.feedback__c AS FeedbackType,
+    f.action__c AS UserAction,
+    fd.feedbackText__c AS UserComment,
+    f.timestamp__c
+FROM GenAIFeedback__dlm f
+LEFT JOIN GenAIFeedbackDetail__dlm fd
+    ON fd.parent__c = f.feedbackId__c
+WHERE f.timestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY f.timestamp__c DESC
+LIMIT 100;
+```
+
+### High-Cost Requests
+
+Find requests with unusually high token consumption:
+
+```sql
+SELECT
+    gatewayRequestId__c,
+    model__c AS Model,
+    promptTokens__c,
+    completionTokens__c,
+    totalTokens__c,
+    feature__c,
+    timestamp__c
+FROM GenAIGatewayRequest__dlm
+WHERE totalTokens__c > 4000
+  AND timestamp__c >= current_date - INTERVAL '7' DAY
+ORDER BY totalTokens__c DESC
+LIMIT 50;
+```
+
+---
+
+## Knowledge Retrieval Analysis
+
+### Vector Search for Knowledge Gaps
+
+Query the knowledge search index to understand what chunks were retrieved for a user query:
+
+```sql
+SELECT
+    v.Score__c AS Score,
+    kav.Chat_Answer__c AS KnowledgeAnswer,
+    c.Chunk__c AS ChunkText,
+    c.SourceRecordId__c AS SourceRecordId,
+    c.DataSource__c AS DataSource
+FROM vector_search(
+    TABLE("External_Knowledge_Search_Index_index__dlm"),
+    '{{USER_QUERY}}',
+    '{{FILTER_CLAUSE}}',
+    30
+) v
+INNER JOIN "External_Knowledge_Search_Index_chunk__dlm" c
+    ON c.RecordId__c = v.RecordId__c
+INNER JOIN "{{KNOWLEDGE_ARTICLE_DMO}}" kav
+    ON c.SourceRecordId__c = kav.Id__c
+ORDER BY Score DESC
+LIMIT 10;
+```
+
+**Parameters:**
+- `{{USER_QUERY}}`: The search query text
+- `{{FILTER_CLAUSE}}`: Optional filter like `'Country_Code__c=''US'''`
+- `{{KNOWLEDGE_ARTICLE_DMO}}`: Your org's Knowledge DMO name (e.g., `Knowledge_kav_Prod_00D58000000JmkM__dlm`)
+
+### Improving Knowledge Articles Workflow
+
+1. **Identify low-quality moments**: Agentforce Studio → Observe → Optimization → Insights
+2. **Filter by topic and quality**: Topics includes `General_FAQ...`, Quality Score < Medium
+3. **Get Session ID** from Moments view
+4. **Query STDM** with session ID to inspect ACTION_STEP
+5. **Examine actionName and actionInput** in step output
+6. **Run vector_search** with the user query to see retrieved chunks
+7. **Identify SourceRecordId** to find knowledge articles needing improvement
+
+### Inspecting Action Steps for Knowledge Calls
+
+Find ACTION_STEP details for a session:
+
+```sql
+SELECT
+    st.ssot__Name__c AS ActionName,
+    st.ssot__AiAgentInteractionStepType__c AS StepType,
+    st.ssot__InputValueText__c AS InputValue,
+    st.ssot__OutputValueText__c AS OutputValue,
+    st.ssot__StartTimestamp__c AS StartTime
+FROM ssot__AiAgentInteractionStep__dlm st
+JOIN ssot__AiAgentInteraction__dlm i
+    ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+WHERE
+    i.ssot__AiAgentSessionId__c = '{{SESSION_ID}}'
+    AND st.ssot__AiAgentInteractionStepType__c = 'ACTION_STEP'
+ORDER BY st.ssot__StartTimestamp__c;
+```
+
+**ACTION_STEP Output Contains:**
+- `actionName`: The invoked action (e.g., `General_FAQ0_16jWi00000001...`)
+- `actionInput`: Parameters passed to the action
+- Retrieved knowledge chunks in the response
+
+---
+
+## Advanced CTE Patterns
+
+Complex CTE (Common Table Expression) patterns for advanced session analysis.
+
+### CTE Pattern 1: Session Summary with Stats
+
+Aggregate turn counts and step counts per session:
+
+```sql
+WITH session_stats AS (
+    SELECT
+        s.ssot__Id__c,
+        s.ssot__AiAgentChannelType__c as channel_type,
+        s.ssot__AiAgentSessionEndType__c as end_type,
+        COUNT(DISTINCT i.ssot__Id__c) as turn_count,
+        COUNT(DISTINCT st.ssot__Id__c) as step_count
+    FROM ssot__AIAgentSession__dlm s
+    LEFT JOIN ssot__AIAgentInteraction__dlm i
+        ON i.ssot__AiAgentSessionId__c = s.ssot__Id__c
+    LEFT JOIN ssot__AIAgentInteractionStep__dlm st
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE s.ssot__StartTimestamp__c >= current_date - INTERVAL '7' DAY
+    GROUP BY s.ssot__Id__c, s.ssot__AiAgentChannelType__c, s.ssot__AiAgentSessionEndType__c
+)
+SELECT * FROM session_stats WHERE turn_count > 5
+ORDER BY step_count DESC;
+```
+
+### CTE Pattern 2: Error Analysis by Topic
+
+Find which topics have the most action errors:
+
+```sql
+WITH topic_errors AS (
+    SELECT
+        i.ssot__TopicApiName__c as topic,
+        st.ssot__Name__c as action_name,
+        st.ssot__ErrorMessageText__c as error
+    FROM ssot__AIAgentInteractionStep__dlm st
+    JOIN ssot__AIAgentInteraction__dlm i
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE length(st.ssot__ErrorMessageText__c) > 0
+      AND st.ssot__ErrorMessageText__c != 'NOT_SET'
+      AND st.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
+)
+SELECT topic, action_name, COUNT(*) as error_count
+FROM topic_errors
+GROUP BY topic, action_name
+ORDER BY error_count DESC;
+```
+
+### CTE Pattern 3: Session Timeline Reconstruction
+
+Reconstruct the full timeline of events (messages + steps) for a session:
+
+```sql
+WITH
+  params AS (
+    SELECT '{{SESSION_ID}}' AS session_id
+  ),
+  session_events AS (
+    -- Messages
+    SELECT
+        'MESSAGE' as event_type,
+        im.ssot__MessageSentTimestamp__c as timestamp,
+        im.ssot__AiAgentInteractionMessageType__c as detail,
+        i.ssot__AiAgentSessionId__c as session_id
+    FROM ssot__AiAgentInteractionMessage__dlm im
+    JOIN ssot__AiAgentInteraction__dlm i
+        ON im.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
+
+    UNION ALL
+
+    -- Steps
+    SELECT
+        st.ssot__AiAgentInteractionStepType__c as event_type,
+        st.ssot__StartTimestamp__c as timestamp,
+        st.ssot__Name__c as detail,
+        i.ssot__AiAgentSessionId__c as session_id
+    FROM ssot__AIAgentInteractionStep__dlm st
+    JOIN ssot__AiAgentInteraction__dlm i
+        ON st.ssot__AiAgentInteractionId__c = i.ssot__Id__c
+    WHERE i.ssot__AiAgentSessionId__c = (SELECT session_id FROM params)
+  )
+SELECT event_type, timestamp, detail
+FROM session_events
+ORDER BY timestamp ASC;
+```
+
+### CTE Pattern 4: Quality Metrics Dashboard
+
+Aggregate quality metrics by detector type:
+
+```sql
+WITH quality_summary AS (
+    SELECT
+        c.detectorType__c,
+        c.category__c,
+        COUNT(*) as count,
+        AVG(TRY_CAST(c.value__c AS DECIMAL)) as avg_score
+    FROM GenAIContentCategory__dlm c
+    GROUP BY c.detectorType__c, c.category__c
+)
+SELECT
+    detectorType__c as detector,
+    category__c as category,
+    count,
+    ROUND(avg_score, 3) as avg_confidence
+FROM quality_summary
+ORDER BY detector, count DESC;
+```
+
+**Note:** This query requires GenAI Trust Layer DMOs to be enabled.
+
+### CTE Pattern 5: Topic Routing Analysis
+
+Analyze how users are routed between topics within sessions:
+
+```sql
+WITH topic_transitions AS (
+    SELECT
+        curr.ssot__AiAgentSessionId__c as session_id,
+        prev.ssot__TopicApiName__c as from_topic,
+        curr.ssot__TopicApiName__c as to_topic,
+        curr.ssot__StartTimestamp__c as transition_time
+    FROM ssot__AIAgentInteraction__dlm curr
+    JOIN ssot__AIAgentInteraction__dlm prev
+        ON curr.ssot__PrevInteractionId__c = prev.ssot__Id__c
+    WHERE curr.ssot__TopicApiName__c != prev.ssot__TopicApiName__c
+      AND curr.ssot__StartTimestamp__c >= current_date - INTERVAL '30' DAY
+)
+SELECT
+    from_topic,
+    to_topic,
+    COUNT(*) as transition_count
+FROM topic_transitions
+GROUP BY from_topic, to_topic
+ORDER BY transition_count DESC;
+```
+
+**Use Cases:**
+- Identify common topic escalation paths
+- Find topics that frequently need fallback routing
+- Understand user journey patterns
+
+---
+
+## Tag System Queries ✅ NEW
+
+Query the Agentforce tagging system for session categorization and analytics.
+
+### Get Tag Definitions
+
+List all available tag definitions in the org:
+
+```sql
+SELECT
+    ssot__Id__c,
+    ssot__Name__c,
+    ssot__DeveloperName__c,
+    ssot__Description__c,
+    ssot__DataType__c,
+    ssot__SourceType__c
+FROM ssot__AiAgentTagDefinition__dlm
+ORDER BY ssot__CreatedDate__c DESC
+LIMIT 50;
+```
+
+### Get Tag Values for a Definition
+
+List all values for a specific tag definition:
+
+```sql
+SELECT
+    t.ssot__Id__c,
+    t.ssot__Description__c,
+    t.ssot__IsActive__c,
+    td.ssot__Name__c as TagDefinitionName
+FROM ssot__AiAgentTag__dlm t
+JOIN ssot__AiAgentTagDefinition__dlm td
+    ON t.ssot__AiAgentTagDefinitionId__c = td.ssot__Id__c
+WHERE td.ssot__DeveloperName__c = 'Escalation_Reason'
+  AND t.ssot__IsActive__c = true
+ORDER BY t.ssot__CreatedDate__c DESC;
+```
+
+### Sessions with Tag Associations
+
+Find sessions that have been tagged:
+
+```sql
+SELECT
 1000     s.ssot__Id__c AS SessionId,
 1001     s.ssot__StartTimestamp__c,
 1002     ta.ssot__AiAgentTagDefinitionAssociationId__c AS TagAssociation,

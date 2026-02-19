@@ -1,1003 +1,1003 @@
 <!-- Parent: sf-lwc/SKILL.md -->
-   1 # LWC Component Patterns
-   2 
-   3 Comprehensive code examples for common Lightning Web Component patterns.
-   4 
-   5 ---
-   6 
-   7 ## Table of Contents
-   8 
-   9 1. [PICKLES Framework Details](#pickles-framework-details)
-  10 2. [Wire Service Patterns](#wire-service-patterns)
-  11    - [Wire vs Imperative Apex Calls](#wire-vs-imperative-apex-calls)
-  12 3. [GraphQL Patterns](#graphql-patterns)
-  13 4. [Modal Component Pattern](#modal-component-pattern)
-  14 5. [Record Picker Pattern](#record-picker-pattern)
-  15 6. [Workspace API Pattern](#workspace-api-pattern)
-  16 7. [Parent-Child Communication](#parent-child-communication)
-  17 8. [Sibling Communication (via Parent)](#sibling-communication-via-parent)
-  18 9. [Navigation Patterns](#navigation-patterns)
-  19 10. [TypeScript Patterns](#typescript-patterns)
-  20 11. [Apex Controller Patterns](#apex-controller-patterns)
-  21 
-  22 ---
-  23 
-  24 ## PICKLES Framework Details
-  25 
-  26 ### P - Prototype
-  27 
-  28 **Purpose**: Validate ideas early before full implementation.
-  29 
-  30 | Action | Description |
-  31 |--------|-------------|
-  32 | Wireframe | Create high-level component sketches |
-  33 | Mock Data | Use sample data to test functionality |
-  34 | Stakeholder Review | Gather feedback before development |
-  35 | Separation of Concerns | Break into smaller functional pieces |
-  36 
-  37 ```javascript
-  38 // Mock data pattern for prototyping
-  39 const MOCK_ACCOUNTS = [
-  40     { Id: '001MOCK001', Name: 'Acme Corp', Industry: 'Technology' },
-  41     { Id: '001MOCK002', Name: 'Global Inc', Industry: 'Finance' }
-  42 ];
-  43 
-  44 export default class AccountPrototype extends LightningElement {
-  45     accounts = MOCK_ACCOUNTS; // Replace with wire/Apex later
-  46 }
-  47 ```
-  48 
-  49 ### I - Integrate
-  50 
-  51 **Purpose**: Determine how components interact with data systems.
-  52 
-  53 **Integration Checklist**:
-  54 - [ ] Implement error handling with clear user notifications
-  55 - [ ] Add loading spinners to prevent duplicate requests
-  56 - [ ] Use LDS for single-object operations (minimizes DML)
-  57 - [ ] Respect FLS and CRUD in Apex implementations
-  58 - [ ] Store `wiredResult` for `refreshApex()` support
-  59 
-  60 ### C - Composition
-  61 
-  62 **Purpose**: Structure how LWCs nest and communicate.
-  63 
-  64 **Best Practices**:
-  65 - Maintain shallow component hierarchies (max 3-4 levels)
-  66 - Single responsibility per component
-  67 - Clean up subscriptions in `disconnectedCallback()`
-  68 - Use custom events purposefully, not for every interaction
-  69 
-  70 ```javascript
-  71 // Parent-managed composition pattern
-  72 // parent.js
-  73 handleChildEvent(event) {
-  74     this.selectedId = event.detail.id;
-  75     // Update child via @api
-  76     this.template.querySelector('c-child').selectedId = this.selectedId;
-  77 }
-  78 ```
-  79 
-  80 ### K - Kinetics
-  81 
-  82 **Purpose**: Manage user interaction and event responsiveness.
-  83 
-  84 ```javascript
-  85 // Debounce pattern for search
-  86 delayTimeout;
-  87 
-  88 handleSearchChange(event) {
-  89     const searchTerm = event.target.value;
-  90     clearTimeout(this.delayTimeout);
-  91     this.delayTimeout = setTimeout(() => {
-  92         this.dispatchEvent(new CustomEvent('search', {
-  93             detail: { searchTerm }
-  94         }));
-  95     }, 300);
-  96 }
-  97 ```
-  98 
-  99 ### L - Libraries
- 100 
- 101 **Purpose**: Leverage Salesforce-provided and platform tools.
- 102 
- 103 **Recommended Platform Features**:
- 104 
- 105 | API/Module | Use Case |
- 106 |------------|----------|
- 107 | `lightning/navigation` | Page/record navigation |
- 108 | `lightning/uiRecordApi` | LDS operations (getRecord, updateRecord) |
- 109 | `lightning/platformShowToastEvent` | User notifications |
- 110 | `lightning/modal` | Native modal dialogs |
- 111 | Base Components | Pre-built UI (button, input, datatable) |
- 112 | `lightning/refresh` | Dispatch refresh events |
- 113 
- 114 **Avoid reinventing** what base components already provide!
- 115 
- 116 ### E - Execution
- 117 
- 118 **Purpose**: Optimize performance and resource efficiency.
- 119 
- 120 **Performance Checklist**:
- 121 - [ ] Lazy load with `if:true` / `lwc:if`
- 122 - [ ] Use `key` directive in iterations
- 123 - [ ] Cache computed values in getters
- 124 - [ ] Avoid property updates that trigger re-renders
- 125 - [ ] Use browser DevTools Performance tab
- 126 
- 127 ### S - Security
- 128 
- 129 **Purpose**: Enforce access control and data protection.
- 130 
- 131 ```apex
- 132 // Secure Apex pattern
- 133 @AuraEnabled(cacheable=true)
- 134 public static List<Account> getAccounts(String searchTerm) {
- 135     String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
- 136     return [
- 137         SELECT Id, Name, Industry
- 138         FROM Account
- 139         WHERE Name LIKE :searchKey
- 140         WITH SECURITY_ENFORCED
- 141         LIMIT 50
- 142     ];
- 143 }
- 144 ```
- 145 
- 146 ---
- 147 
- 148 ## Wire Service Patterns
- 149 
- 150 ### Wire vs Imperative Apex Calls
- 151 
- 152 LWC can interact with Apex in two ways: **@wire** (reactive/declarative) and **imperative calls** (manual/programmatic). Understanding when to use each is critical for building performant, maintainable components.
- 153 
- 154 #### Quick Comparison
- 155 
- 156 ```
- 157 ┌─────────────────────────────────────────────────────────────────────────────────────┐
- 158 │                    WIRE vs IMPERATIVE APEX CALLS                                     │
- 159 ├──────────────────┬──────────────────────────────┬────────────────────────────────────┤
- 160 │    Aspect        │      Wire (@wire)            │      Imperative Calls              │
- 161 ├──────────────────┼──────────────────────────────┼────────────────────────────────────┤
- 162 │ Execution        │ Automatic / Reactive         │ Manual / Programmatic              │
- 163 │ DML Operations   │ ❌ Read-Only                 │ ✅ Insert / Update / Delete        │
- 164 │ Data Updates     │ ✅ Auto on Parameter Change  │ ❌ Manual Refresh Required         │
- 165 │ Control          │ ⚠️ Low (framework decides)   │ ✅ Full (you decide when/how)      │
- 166 │ Error Handling   │ ✅ Framework Managed         │ ⚠️ Developer Managed               │
- 167 │ Supported Objects│ ⚠️ UI API Only               │ ✅ All Objects                     │
- 168 │ Caching          │ ✅ Built-in (cacheable=true) │ ❌ No automatic caching            │
- 169 └──────────────────┴──────────────────────────────┴────────────────────────────────────┘
- 170 ```
- 171 
- 172 #### Pros & Cons
- 173 
- 174 | Wire (@wire) | Imperative Calls |
- 175 |--------------|------------------|
- 176 | ✅ Auto UI sync & caching | ✅ Supports DML & all objects |
- 177 | ✅ Less boilerplate code | ✅ Full control over timing |
- 178 | ✅ Reactive to parameter changes | ✅ Can handle complex logic |
- 179 | ❌ Read-only, limited objects | ❌ Manual handling, no auto refresh |
- 180 | ❌ Can't control execution timing | ❌ More error handling code needed |
- 181 
- 182 #### When to Use Each
- 183 
- 184 **Use Wire (@wire) when:**
- 185 - 📌 Read-only data display
- 186 - 📌 Auto-refresh UI when parameters change
- 187 - 📌 Stable parameters (recordId, filter values)
- 188 - 📌 Working with UI API supported objects
- 189 
- 190 **Use Imperative Calls when:**
- 191 - 📌 User actions (clicks, form submissions)
- 192 - 📌 DML operations (Insert, Update, Delete)
- 193 - 📌 Dynamic parameters determined at runtime
- 194 - 📌 Custom objects or complex queries
- 195 - 📌 Need control over execution timing
- 196 
- 197 #### Side-by-Side Code Examples
- 198 
- 199 **Wire Example** - Data loads automatically when `selectedIndustry` changes:
- 200 
- 201 ```javascript
- 202 import { LightningElement, wire } from 'lwc';
- 203 import fetchAccounts from '@salesforce/apex/AccountController.fetchAccounts';
- 204 
- 205 export default class WireExample extends LightningElement {
- 206     selectedIndustry = 'Technology';
- 207     accounts;
- 208     error;
- 209 
- 210     // Automatically re-fetches when selectedIndustry changes
- 211     @wire(fetchAccounts, { industry: '$selectedIndustry' })
- 212     wiredAccounts({ data, error }) {
- 213         if (data) {
- 214             this.accounts = data;
- 215             this.error = undefined;
- 216         } else if (error) {
- 217             this.error = error;
- 218             this.accounts = undefined;
- 219         }
- 220     }
- 221 }
- 222 ```
- 223 
- 224 **Imperative Example** - Data loads only when user triggers action:
- 225 
- 226 ```javascript
- 227 import { LightningElement } from 'lwc';
- 228 import fetchAccounts from '@salesforce/apex/AccountController.fetchAccounts';
- 229 
- 230 export default class ImperativeExample extends LightningElement {
- 231     selectedIndustry = 'Technology';
- 232     accounts;
- 233     error;
- 234     isLoading = false;
- 235 
- 236     // Called explicitly when user clicks button or submits form
- 237     async fetchAccounts() {
- 238         this.isLoading = true;
- 239         try {
- 240             this.accounts = await fetchAccounts({
- 241                 industry: this.selectedIndustry
- 242             });
- 243             this.error = undefined;
- 244         } catch (error) {
- 245             this.error = error;
- 246             this.accounts = undefined;
- 247         } finally {
- 248             this.isLoading = false;
- 249         }
- 250     }
- 251 }
- 252 ```
- 253 
- 254 #### Decision Tree
- 255 
- 256 ```
- 257                     ┌─────────────────────────────┐
- 258                     │   Need to modify data?      │
- 259                     │   (Insert/Update/Delete)    │
- 260                     └─────────────┬───────────────┘
- 261                                   │
- 262                     ┌─────────────┴───────────────┐
- 263                     │                             │
- 264                    YES                            NO
- 265                     │                             │
- 266                     ▼                             ▼
- 267          ┌─────────────────┐        ┌─────────────────────────┐
- 268          │   IMPERATIVE    │        │  Should data auto-      │
- 269          │   (Use await)   │        │  refresh on param       │
- 270          └─────────────────┘        │  change?                │
- 271                                     └───────────┬─────────────┘
- 272                                                 │
- 273                                     ┌───────────┴───────────┐
- 274                                     │                       │
- 275                                    YES                      NO
- 276                                     │                       │
- 277                                     ▼                       ▼
- 278                          ┌─────────────────┐     ┌─────────────────┐
- 279                          │   @WIRE         │     │   IMPERATIVE    │
- 280                          │   (Reactive)    │     │   (On-demand)   │
- 281                          └─────────────────┘     └─────────────────┘
- 282 ```
- 283 
- 284 ---
- 285 
- 286 ### 1. Basic Data Display (Wire Service)
- 287 
- 288 ```javascript
- 289 // accountCard.js
- 290 import { LightningElement, api, wire } from 'lwc';
- 291 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
- 292 import NAME_FIELD from '@salesforce/schema/Account.Name';
- 293 import INDUSTRY_FIELD from '@salesforce/schema/Account.Industry';
- 294 
- 295 const FIELDS = [NAME_FIELD, INDUSTRY_FIELD];
- 296 
- 297 export default class AccountCard extends LightningElement {
- 298     @api recordId;
- 299 
- 300     @wire(getRecord, { recordId: '$recordId', fields: FIELDS })
- 301     account;
- 302 
- 303     get name() {
- 304         return getFieldValue(this.account.data, NAME_FIELD);
- 305     }
- 306 
- 307     get industry() {
- 308         return getFieldValue(this.account.data, INDUSTRY_FIELD);
- 309     }
- 310 
- 311     get isLoading() {
- 312         return !this.account.data && !this.account.error;
- 313     }
- 314 }
- 315 ```
- 316 
- 317 ```html
- 318 <!-- accountCard.html -->
- 319 <template>
- 320     <template lwc:if={isLoading}>
- 321         <lightning-spinner alternative-text="Loading"></lightning-spinner>
- 322     </template>
- 323     <template lwc:if={account.data}>
- 324         <div class="slds-box slds-theme_default">
- 325             <h2 class="slds-text-heading_medium">{name}</h2>
- 326             <p class="slds-text-color_weak">{industry}</p>
- 327         </div>
- 328     </template>
- 329     <template lwc:if={account.error}>
- 330         <p class="slds-text-color_error">{account.error.body.message}</p>
- 331     </template>
- 332 </template>
- 333 ```
- 334 
- 335 ### 2. Wire Service with Apex
- 336 
- 337 ```javascript
- 338 // contactList.js
- 339 import { LightningElement, api, wire } from 'lwc';
- 340 import getContacts from '@salesforce/apex/ContactController.getContacts';
- 341 import { refreshApex } from '@salesforce/apex';
- 342 
- 343 export default class ContactList extends LightningElement {
- 344     @api recordId;
- 345     contacts;
- 346     error;
- 347     wiredContactsResult;
- 348 
- 349     @wire(getContacts, { accountId: '$recordId' })
- 350     wiredContacts(result) {
- 351         this.wiredContactsResult = result; // Store for refreshApex
- 352         const { error, data } = result;
- 353         if (data) {
- 354             this.contacts = data;
- 355             this.error = undefined;
- 356         } else if (error) {
- 357             this.error = error;
- 358             this.contacts = undefined;
- 359         }
- 360     }
- 361 
- 362     async handleRefresh() {
- 363         await refreshApex(this.wiredContactsResult);
- 364     }
- 365 }
- 366 ```
- 367 
- 368 ---
- 369 
- 370 ## GraphQL Patterns
- 371 
- 372 > **Module Note**: `lightning/graphql` supersedes `lightning/uiGraphQLApi` and provides newer features like mutations, optional fields, and dynamic query construction.
- 373 
- 374 ### GraphQL Query (Wire Adapter)
- 375 
- 376 ```javascript
- 377 // graphqlContacts.js
- 378 import { LightningElement, wire } from 'lwc';
- 379 import { gql, graphql } from 'lightning/graphql';
- 380 
- 381 const CONTACTS_QUERY = gql`
- 382     query ContactsQuery($first: Int, $after: String) {
- 383         uiapi {
- 384             query {
- 385                 Contact(first: $first, after: $after) {
- 386                     edges {
- 387                         node {
- 388                             Id
- 389                             Name { value }
- 390                             Email { value }
- 391                             Account {
- 392                                 Name { value }
- 393                             }
- 394                         }
- 395                         cursor
- 396                     }
- 397                     pageInfo {
- 398                         hasNextPage
- 399                         endCursor
- 400                     }
- 401                 }
- 402             }
- 403         }
- 404     }
- 405 `;
- 406 
- 407 export default class GraphqlContacts extends LightningElement {
- 408     contacts;
- 409     pageInfo;
- 410     error;
- 411     _cursor;
- 412 
- 413     @wire(graphql, {
- 414         query: CONTACTS_QUERY,
- 415         variables: '$queryVariables'
- 416     })
- 417     wiredContacts({ data, error }) {
- 418         if (data) {
- 419             const result = data.uiapi.query.Contact;
- 420             this.contacts = result.edges.map(edge => ({
- 421                 id: edge.node.Id,
- 422                 name: edge.node.Name.value,
- 423                 email: edge.node.Email?.value,
- 424                 accountName: edge.node.Account?.Name?.value
- 425             }));
- 426             this.pageInfo = result.pageInfo;
- 427         } else if (error) {
- 428             this.error = error;
- 429         }
- 430     }
- 431 
- 432     get queryVariables() {
- 433         return { first: 10, after: this._cursor };
- 434     }
- 435 
- 436     loadMore() {
- 437         if (this.pageInfo?.hasNextPage) {
- 438             this._cursor = this.pageInfo.endCursor;
- 439         }
- 440     }
- 441 }
- 442 ```
- 443 
- 444 ### GraphQL Mutations (Spring '26 - GA in API 66.0)
- 445 
- 446 Mutations allow create, update, and delete operations via GraphQL. Use `executeMutation` for imperative operations.
- 447 
- 448 ```javascript
- 449 // graphqlAccountMutation.js
- 450 import { LightningElement, track } from 'lwc';
- 451 import { gql, executeMutation } from 'lightning/graphql';
- 452 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
- 453 
- 454 // Create mutation
- 455 const CREATE_ACCOUNT = gql`
- 456     mutation CreateAccount($name: String!, $industry: String) {
- 457         uiapi {
- 458             AccountCreate(input: {
- 459                 Account: {
- 460                     Name: $name
- 461                     Industry: $industry
- 462                 }
- 463             }) {
- 464                 Record {
- 465                     Id
- 466                     Name { value }
- 467                     Industry { value }
- 468                 }
- 469             }
- 470         }
- 471     }
- 472 `;
- 473 
- 474 // Update mutation
- 475 const UPDATE_ACCOUNT = gql`
- 476     mutation UpdateAccount($id: ID!, $name: String!) {
- 477         uiapi {
- 478             AccountUpdate(input: {
- 479                 Account: {
- 480                     Id: $id
- 481                     Name: $name
- 482                 }
- 483             }) {
- 484                 Record {
- 485                     Id
- 486                     Name { value }
- 487                 }
- 488             }
- 489         }
- 490     }
- 491 `;
- 492 
- 493 // Delete mutation
- 494 const DELETE_ACCOUNT = gql`
- 495     mutation DeleteAccount($id: ID!) {
- 496         uiapi {
- 497             AccountDelete(input: { Account: { Id: $id } }) {
- 498                 Id
- 499             }
- 500         }
- 501     }
- 502 `;
- 503 
- 504 export default class GraphqlAccountMutation extends LightningElement {
- 505     @track accountName = '';
- 506     @track industry = '';
- 507     isLoading = false;
- 508 
- 509     handleNameChange(event) {
- 510         this.accountName = event.target.value;
- 511     }
- 512 
- 513     handleIndustryChange(event) {
- 514         this.industry = event.target.value;
- 515     }
- 516 
- 517     async handleCreate() {
- 518         if (!this.accountName) return;
- 519 
- 520         this.isLoading = true;
- 521         try {
- 522             const result = await executeMutation(CREATE_ACCOUNT, {
- 523                 variables: {
- 524                     name: this.accountName,
- 525                     industry: this.industry || null
- 526                 }
- 527             });
- 528 
- 529             const newRecord = result.data.uiapi.AccountCreate.Record;
- 530             this.showToast('Success', `Account "${newRecord.Name.value}" created`, 'success');
- 531             this.resetForm();
- 532         } catch (error) {
- 533             this.handleError(error);
- 534         } finally {
- 535             this.isLoading = false;
- 536         }
- 537     }
- 538 
- 539     async handleUpdate(accountId, newName) {
- 540         try {
- 541             const result = await executeMutation(UPDATE_ACCOUNT, {
- 542                 variables: { id: accountId, name: newName }
- 543             });
- 544             this.showToast('Success', 'Account updated', 'success');
- 545             return result.data.uiapi.AccountUpdate.Record;
- 546         } catch (error) {
- 547             this.handleError(error);
- 548         }
- 549     }
- 550 
- 551     async handleDelete(accountId) {
- 552         try {
- 553             await executeMutation(DELETE_ACCOUNT, {
- 554                 variables: { id: accountId }
- 555             });
- 556             this.showToast('Success', 'Account deleted', 'success');
- 557         } catch (error) {
- 558             this.handleError(error);
- 559         }
- 560     }
- 561 
- 562     handleError(error) {
- 563         const message = error.graphQLErrors
- 564             ? error.graphQLErrors.map(e => e.message).join(', ')
- 565             : error.message || 'Unknown error';
- 566         this.showToast('Error', message, 'error');
- 567     }
- 568 
- 569     showToast(title, message, variant) {
- 570         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
- 571     }
- 572 
- 573     resetForm() {
- 574         this.accountName = '';
- 575         this.industry = '';
- 576     }
- 577 }
- 578 ```
- 579 
- 580 ### GraphQL Mutation Operations
- 581 
- 582 | Operation | Mutation Type | Notes |
- 583 |-----------|---------------|-------|
- 584 | **Create** | `{Object}Create` | Can request fields from newly created record |
- 585 | **Update** | `{Object}Update` | Cannot query fields in same request |
- 586 | **Delete** | `{Object}Delete` | Cannot query fields in same request |
- 587 
- 588 ### allOrNone Parameter
- 589 
- 590 Control transaction behavior with `allOrNone` (default: `true`):
- 591 
- 592 ```javascript
- 593 const BATCH_CREATE = gql`
- 594     mutation BatchCreate($allOrNone: Boolean = true) {
- 595         uiapi(allOrNone: $allOrNone) {
- 596             acc1: AccountCreate(input: { Account: { Name: "Account 1" } }) {
- 597                 Record { Id }
- 598             }
- 599             acc2: AccountCreate(input: { Account: { Name: "Account 2" } }) {
- 600                 Record { Id }
- 601             }
- 602         }
- 603     }
- 604 `;
- 605 
- 606 // If allOrNone=true: All rollback if any fails
- 607 // If allOrNone=false: Only failed operations rollback
- 608 ```
- 609 
- 610 ---
- 611 
- 612 ## Modal Component Pattern
- 613 
- 614 Based on [James Simone's composable modal pattern](https://www.jamessimone.net/blog/joys-of-apex/lwc-composable-modal/).
- 615 
- 616 ```javascript
- 617 // composableModal.js
- 618 import { LightningElement, api } from 'lwc';
- 619 
- 620 const OUTER_MODAL_CLASS = 'outerModalContent';
- 621 
- 622 export default class ComposableModal extends LightningElement {
- 623     @api modalHeader;
- 624     @api modalTagline;
- 625     @api modalSaveHandler;
- 626 
- 627     _isOpen = false;
- 628     _focusableElements = [];
- 629 
- 630     @api
- 631     toggleModal() {
- 632         this._isOpen = !this._isOpen;
- 633         if (this._isOpen) {
- 634             this._focusableElements = [...this.querySelectorAll('.focusable')];
- 635             this._focusFirstElement();
- 636             window.addEventListener('keyup', this._handleKeyUp);
- 637         } else {
- 638             window.removeEventListener('keyup', this._handleKeyUp);
- 639         }
- 640     }
- 641 
- 642     get modalAriaHidden() {
- 643         return !this._isOpen;
- 644     }
- 645 
- 646     get modalClass() {
- 647         return this._isOpen
- 648             ? 'slds-modal slds-visible slds-fade-in-open'
- 649             : 'slds-modal slds-hidden';
- 650     }
- 651 
- 652     get backdropClass() {
- 653         return this._isOpen ? 'slds-backdrop slds-backdrop_open' : 'slds-backdrop';
- 654     }
- 655 
- 656     _handleKeyUp = (event) => {
- 657         if (event.code === 'Escape') {
- 658             this.toggleModal();
- 659         } else if (event.code === 'Tab') {
- 660             this._handleTabNavigation(event);
- 661         }
- 662     }
- 663 
- 664     _handleTabNavigation(event) {
- 665         // Focus trap logic - keep focus within modal
- 666         const activeEl = this.template.activeElement;
- 667         const lastIndex = this._focusableElements.length - 1;
- 668         const currentIndex = this._focusableElements.indexOf(activeEl);
- 669 
- 670         if (event.shiftKey && currentIndex === 0) {
- 671             this._focusableElements[lastIndex]?.focus();
- 672         } else if (!event.shiftKey && currentIndex === lastIndex) {
- 673             this._focusFirstElement();
- 674         }
- 675     }
- 676 
- 677     _focusFirstElement() {
- 678         if (this._focusableElements.length > 0) {
- 679             this._focusableElements[0].focus();
- 680         }
- 681     }
- 682 
- 683     handleBackdropClick(event) {
- 684         if (event.target.classList.contains(OUTER_MODAL_CLASS)) {
- 685             this.toggleModal();
- 686         }
- 687     }
- 688 
- 689     handleSave() {
- 690         if (this.modalSaveHandler) {
- 691             this.modalSaveHandler();
- 692         }
- 693         this.toggleModal();
- 694     }
- 695 
- 696     disconnectedCallback() {
- 697         window.removeEventListener('keyup', this._handleKeyUp);
- 698     }
- 699 }
- 700 ```
- 701 
- 702 ```html
- 703 <!-- composableModal.html -->
- 704 <template>
- 705     <!-- Backdrop -->
- 706     <div class={backdropClass}></div>
- 707 
- 708     <!-- Modal -->
- 709     <div class={modalClass}
- 710          role="dialog"
- 711          aria-modal="true"
- 712          aria-hidden={modalAriaHidden}
- 713          aria-labelledby="modal-heading">
- 714 
- 715         <div class="slds-modal__container outerModalContent"
- 716              onclick={handleBackdropClick}>
- 717 
- 718             <div class="slds-modal__content slds-p-around_medium">
- 719                 <!-- Header -->
- 720                 <template lwc:if={modalHeader}>
- 721                     <h2 id="modal-heading" class="slds-text-heading_medium">
- 722                         {modalHeader}
- 723                     </h2>
- 724                 </template>
- 725                 <template lwc:if={modalTagline}>
- 726                     <p class="slds-m-top_x-small slds-text-color_weak">
- 727                         {modalTagline}
- 728                     </p>
- 729                 </template>
- 730 
- 731                 <!-- Slotted Content -->
- 732                 <div class="slds-m-top_medium">
- 733                     <slot name="modalContent"></slot>
- 734                 </div>
- 735 
- 736                 <!-- Footer -->
- 737                 <div class="slds-m-top_medium slds-text-align_right">
- 738                     <lightning-button
- 739                         label="Cancel"
- 740                         onclick={toggleModal}
- 741                         class="slds-m-right_x-small focusable">
- 742                     </lightning-button>
- 743                     <lightning-button
- 744                         variant="brand"
- 745                         label="Save"
- 746                         onclick={handleSave}
- 747                         class="focusable">
- 748                     </lightning-button>
- 749                 </div>
- 750             </div>
- 751         </div>
- 752     </div>
- 753 
- 754     <!-- Hidden background content -->
- 755     <div aria-hidden={_isOpen}>
- 756         <slot name="body"></slot>
- 757     </div>
- 758 </template>
- 759 ```
- 760 
- 761 ---
- 762 
- 763 ## Record Picker Pattern
- 764 
- 765 ```javascript
- 766 // recordPicker.js
- 767 import { LightningElement, api } from 'lwc';
- 768 
- 769 export default class RecordPicker extends LightningElement {
- 770     @api label = 'Select Record';
- 771     @api objectApiName = 'Account';
- 772     @api placeholder = 'Search...';
- 773     @api required = false;
- 774     @api multiSelect = false;
- 775 
- 776     _selectedIds = [];
- 777 
- 778     @api
- 779     get value() {
- 780         return this.multiSelect ? this._selectedIds : this._selectedIds[0];
- 781     }
- 782 
- 783     set value(val) {
- 784         this._selectedIds = Array.isArray(val) ? val : val ? [val] : [];
- 785     }
- 786 
- 787     handleChange(event) {
- 788         const recordId = event.detail.recordId;
- 789         if (this.multiSelect) {
- 790             if (!this._selectedIds.includes(recordId)) {
- 791                 this._selectedIds = [...this._selectedIds, recordId];
- 792             }
- 793         } else {
- 794             this._selectedIds = recordId ? [recordId] : [];
- 795         }
- 796 
- 797         this.dispatchEvent(new CustomEvent('select', {
- 798             detail: {
- 799                 recordId: this.value,
- 800                 recordIds: this._selectedIds
- 801             }
- 802         }));
- 803     }
- 804 
- 805     handleRemove(event) {
- 806         const idToRemove = event.target.dataset.id;
- 807         this._selectedIds = this._selectedIds.filter(id => id !== idToRemove);
- 808         this.dispatchEvent(new CustomEvent('select', {
- 809             detail: { recordIds: this._selectedIds }
- 810         }));
- 811     }
- 812 }
- 813 ```
- 814 
- 815 ```html
- 816 <!-- recordPicker.html -->
- 817 <template>
- 818     <lightning-record-picker
- 819         label={label}
- 820         placeholder={placeholder}
- 821         object-api-name={objectApiName}
- 822         onchange={handleChange}
- 823         required={required}>
- 824     </lightning-record-picker>
- 825 
- 826     <template lwc:if={multiSelect}>
- 827         <div class="slds-m-top_x-small">
- 828             <template for:each={_selectedIds} for:item="id">
- 829                 <lightning-pill
- 830                     key={id}
- 831                     label={id}
- 832                     data-id={id}
- 833                     onremove={handleRemove}>
- 834                 </lightning-pill>
- 835             </template>
- 836         </div>
- 837     </template>
- 838 </template>
- 839 ```
- 840 
- 841 ---
- 842 
- 843 ## Workspace API Pattern
- 844 
- 845 ```javascript
- 846 // workspaceTabManager.js
- 847 import { LightningElement, wire } from 'lwc';
- 848 import { IsConsoleNavigation, getFocusedTabInfo, openTab, closeTab,
- 849          setTabLabel, setTabIcon, refreshTab } from 'lightning/platformWorkspaceApi';
- 850 
- 851 export default class WorkspaceTabManager extends LightningElement {
- 852     @wire(IsConsoleNavigation) isConsole;
- 853 
- 854     async openRecordTab(recordId, objectApiName) {
- 855         if (!this.isConsole) return;
- 856 
- 857         await openTab({
- 858             recordId,
- 859             focus: true,
- 860             icon: `standard:${objectApiName.toLowerCase()}`,
- 861             label: 'Loading...'
- 862         });
- 863     }
- 864 
- 865     async openSubtab(parentTabId, recordId) {
- 866         if (!this.isConsole) return;
- 867 
- 868         await openTab({
- 869             parentTabId,
- 870             recordId,
- 871             focus: true
- 872         });
- 873     }
- 874 
- 875     async getCurrentTabInfo() {
- 876         if (!this.isConsole) return null;
- 877         return await getFocusedTabInfo();
- 878     }
- 879 
- 880     async updateTabLabel(tabId, label) {
- 881         if (!this.isConsole) return;
- 882         await setTabLabel(tabId, label);
- 883     }
- 884 
- 885     async updateTabIcon(tabId, iconName) {
- 886         if (!this.isConsole) return;
- 887         await setTabIcon(tabId, iconName);
- 888     }
- 889 
- 890     async refreshCurrentTab() {
- 891         if (!this.isConsole) return;
- 892         const tabInfo = await getFocusedTabInfo();
- 893         await refreshTab(tabInfo.tabId);
- 894     }
- 895 
- 896     async closeCurrentTab() {
- 897         if (!this.isConsole) return;
- 898         const tabInfo = await getFocusedTabInfo();
- 899         await closeTab(tabInfo.tabId);
- 900     }
- 901 }
- 902 ```
- 903 
- 904 ---
- 905 
- 906 ## Parent-Child Communication
- 907 
- 908 ```javascript
- 909 // parent.js
- 910 import { LightningElement } from 'lwc';
- 911 
- 912 export default class Parent extends LightningElement {
- 913     selectedAccountId;
- 914 
- 915     handleAccountSelected(event) {
- 916         this.selectedAccountId = event.detail.accountId;
- 917     }
- 918 }
- 919 ```
- 920 
- 921 ```html
- 922 <!-- parent.html -->
- 923 <template>
- 924     <c-account-list onaccountselected={handleAccountSelected}></c-account-list>
- 925     <template lwc:if={selectedAccountId}>
- 926         <c-account-detail account-id={selectedAccountId}></c-account-detail>
- 927     </template>
- 928 </template>
- 929 ```
- 930 
- 931 ```javascript
- 932 // child.js (accountList)
- 933 import { LightningElement } from 'lwc';
- 934 
- 935 export default class AccountList extends LightningElement {
- 936     handleRowAction(event) {
- 937         const accountId = event.detail.row.Id;
- 938 
- 939         // Dispatch event to parent
- 940         this.dispatchEvent(new CustomEvent('accountselected', {
- 941             detail: { accountId },
- 942             bubbles: true,
- 943             composed: false // Don't cross shadow DOM boundaries
- 944         }));
- 945     }
- 946 }
- 947 ```
- 948 
- 949 ---
- 950 
- 951 ## Sibling Communication (via Parent)
- 952 
- 953 When two child components need to communicate but share the same parent, use the **parent as middleware**. This is the recommended pattern for master-detail UIs.
- 954 
- 955 ```
- 956 ┌─────────────────────────────────────────────────────────────────────┐
- 957 │                    SIBLING COMMUNICATION FLOW                       │
- 958 ├─────────────────────────────────────────────────────────────────────┤
- 959 │                                                                     │
- 960 │                         ┌──────────┐                                │
- 961 │                         │  Parent  │  ← Manages state               │
- 962 │                         └────┬─────┘                                │
- 963 │                    ┌─────────┴─────────┐                            │
- 964 │                    │                   │                            │
- 965 │              CustomEvent          @api property                     │
- 966 │                (up)                 (down)                          │
- 967 │                    │                   │                            │
- 968 │              ┌─────┴─────┐       ┌─────┴─────┐                      │
- 969 │              │  Child A  │       │  Child B  │                      │
- 970 │              │  (List)   │       │  (Detail) │                      │
- 971 │              └───────────┘       └───────────┘                      │
- 972 │                                                                     │
- 973 └─────────────────────────────────────────────────────────────────────┘
- 974 ```
- 975 
- 976 **The flow**:
- 977 1. **Child A** dispatches a custom event (e.g., user selects an account)
- 978 2. **Parent** catches the event and updates its state
- 979 3. **Parent** passes data to **Child B** via `@api` property
- 980 
- 981 ### Complete Example: Account List → Account Detail
- 982 
- 983 ```javascript
- 984 // accountContainer.js - Parent orchestrates communication between siblings
- 985 import { LightningElement } from 'lwc';
- 986 
- 987 export default class AccountContainer extends LightningElement {
- 988     // State managed at parent level
- 989     selectedAccountId;
- 990     selectedAccountName;
- 991 
- 992     // Child A (accountList) fires this event
- 993     handleAccountSelect(event) {
- 994         this.selectedAccountId = event.detail.accountId;
- 995         this.selectedAccountName = event.detail.accountName;
- 996     }
- 997 
- 998     // Clear selection (triggered by Child B)
- 999     handleClearSelection() {
+# LWC Component Patterns
+
+Comprehensive code examples for common Lightning Web Component patterns.
+
+---
+
+## Table of Contents
+
+1. [PICKLES Framework Details](#pickles-framework-details)
+2. [Wire Service Patterns](#wire-service-patterns)
+   - [Wire vs Imperative Apex Calls](#wire-vs-imperative-apex-calls)
+3. [GraphQL Patterns](#graphql-patterns)
+4. [Modal Component Pattern](#modal-component-pattern)
+5. [Record Picker Pattern](#record-picker-pattern)
+6. [Workspace API Pattern](#workspace-api-pattern)
+7. [Parent-Child Communication](#parent-child-communication)
+8. [Sibling Communication (via Parent)](#sibling-communication-via-parent)
+9. [Navigation Patterns](#navigation-patterns)
+10. [TypeScript Patterns](#typescript-patterns)
+11. [Apex Controller Patterns](#apex-controller-patterns)
+
+---
+
+## PICKLES Framework Details
+
+### P - Prototype
+
+**Purpose**: Validate ideas early before full implementation.
+
+| Action | Description |
+|--------|-------------|
+| Wireframe | Create high-level component sketches |
+| Mock Data | Use sample data to test functionality |
+| Stakeholder Review | Gather feedback before development |
+| Separation of Concerns | Break into smaller functional pieces |
+
+```javascript
+// Mock data pattern for prototyping
+const MOCK_ACCOUNTS = [
+    { Id: '001MOCK001', Name: 'Acme Corp', Industry: 'Technology' },
+    { Id: '001MOCK002', Name: 'Global Inc', Industry: 'Finance' }
+];
+
+export default class AccountPrototype extends LightningElement {
+    accounts = MOCK_ACCOUNTS; // Replace with wire/Apex later
+}
+```
+
+### I - Integrate
+
+**Purpose**: Determine how components interact with data systems.
+
+**Integration Checklist**:
+- [ ] Implement error handling with clear user notifications
+- [ ] Add loading spinners to prevent duplicate requests
+- [ ] Use LDS for single-object operations (minimizes DML)
+- [ ] Respect FLS and CRUD in Apex implementations
+- [ ] Store `wiredResult` for `refreshApex()` support
+
+### C - Composition
+
+**Purpose**: Structure how LWCs nest and communicate.
+
+**Best Practices**:
+- Maintain shallow component hierarchies (max 3-4 levels)
+- Single responsibility per component
+- Clean up subscriptions in `disconnectedCallback()`
+- Use custom events purposefully, not for every interaction
+
+```javascript
+// Parent-managed composition pattern
+// parent.js
+handleChildEvent(event) {
+    this.selectedId = event.detail.id;
+    // Update child via @api
+    this.template.querySelector('c-child').selectedId = this.selectedId;
+}
+```
+
+### K - Kinetics
+
+**Purpose**: Manage user interaction and event responsiveness.
+
+```javascript
+// Debounce pattern for search
+delayTimeout;
+
+handleSearchChange(event) {
+    const searchTerm = event.target.value;
+    clearTimeout(this.delayTimeout);
+    this.delayTimeout = setTimeout(() => {
+        this.dispatchEvent(new CustomEvent('search', {
+            detail: { searchTerm }
+        }));
+    }, 300);
+}
+```
+
+### L - Libraries
+
+**Purpose**: Leverage Salesforce-provided and platform tools.
+
+**Recommended Platform Features**:
+
+| API/Module | Use Case |
+|------------|----------|
+| `lightning/navigation` | Page/record navigation |
+| `lightning/uiRecordApi` | LDS operations (getRecord, updateRecord) |
+| `lightning/platformShowToastEvent` | User notifications |
+| `lightning/modal` | Native modal dialogs |
+| Base Components | Pre-built UI (button, input, datatable) |
+| `lightning/refresh` | Dispatch refresh events |
+
+**Avoid reinventing** what base components already provide!
+
+### E - Execution
+
+**Purpose**: Optimize performance and resource efficiency.
+
+**Performance Checklist**:
+- [ ] Lazy load with `if:true` / `lwc:if`
+- [ ] Use `key` directive in iterations
+- [ ] Cache computed values in getters
+- [ ] Avoid property updates that trigger re-renders
+- [ ] Use browser DevTools Performance tab
+
+### S - Security
+
+**Purpose**: Enforce access control and data protection.
+
+```apex
+// Secure Apex pattern
+@AuraEnabled(cacheable=true)
+public static List<Account> getAccounts(String searchTerm) {
+    String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+    return [
+        SELECT Id, Name, Industry
+        FROM Account
+        WHERE Name LIKE :searchKey
+        WITH SECURITY_ENFORCED
+        LIMIT 50
+    ];
+}
+```
+
+---
+
+## Wire Service Patterns
+
+### Wire vs Imperative Apex Calls
+
+LWC can interact with Apex in two ways: **@wire** (reactive/declarative) and **imperative calls** (manual/programmatic). Understanding when to use each is critical for building performant, maintainable components.
+
+#### Quick Comparison
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                    WIRE vs IMPERATIVE APEX CALLS                                     │
+├──────────────────┬──────────────────────────────┬────────────────────────────────────┤
+│    Aspect        │      Wire (@wire)            │      Imperative Calls              │
+├──────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ Execution        │ Automatic / Reactive         │ Manual / Programmatic              │
+│ DML Operations   │ ❌ Read-Only                 │ ✅ Insert / Update / Delete        │
+│ Data Updates     │ ✅ Auto on Parameter Change  │ ❌ Manual Refresh Required         │
+│ Control          │ ⚠️ Low (framework decides)   │ ✅ Full (you decide when/how)      │
+│ Error Handling   │ ✅ Framework Managed         │ ⚠️ Developer Managed               │
+│ Supported Objects│ ⚠️ UI API Only               │ ✅ All Objects                     │
+│ Caching          │ ✅ Built-in (cacheable=true) │ ❌ No automatic caching            │
+└──────────────────┴──────────────────────────────┴────────────────────────────────────┘
+```
+
+#### Pros & Cons
+
+| Wire (@wire) | Imperative Calls |
+|--------------|------------------|
+| ✅ Auto UI sync & caching | ✅ Supports DML & all objects |
+| ✅ Less boilerplate code | ✅ Full control over timing |
+| ✅ Reactive to parameter changes | ✅ Can handle complex logic |
+| ❌ Read-only, limited objects | ❌ Manual handling, no auto refresh |
+| ❌ Can't control execution timing | ❌ More error handling code needed |
+
+#### When to Use Each
+
+**Use Wire (@wire) when:**
+- 📌 Read-only data display
+- 📌 Auto-refresh UI when parameters change
+- 📌 Stable parameters (recordId, filter values)
+- 📌 Working with UI API supported objects
+
+**Use Imperative Calls when:**
+- 📌 User actions (clicks, form submissions)
+- 📌 DML operations (Insert, Update, Delete)
+- 📌 Dynamic parameters determined at runtime
+- 📌 Custom objects or complex queries
+- 📌 Need control over execution timing
+
+#### Side-by-Side Code Examples
+
+**Wire Example** - Data loads automatically when `selectedIndustry` changes:
+
+```javascript
+import { LightningElement, wire } from 'lwc';
+import fetchAccounts from '@salesforce/apex/AccountController.fetchAccounts';
+
+export default class WireExample extends LightningElement {
+    selectedIndustry = 'Technology';
+    accounts;
+    error;
+
+    // Automatically re-fetches when selectedIndustry changes
+    @wire(fetchAccounts, { industry: '$selectedIndustry' })
+    wiredAccounts({ data, error }) {
+        if (data) {
+            this.accounts = data;
+            this.error = undefined;
+        } else if (error) {
+            this.error = error;
+            this.accounts = undefined;
+        }
+    }
+}
+```
+
+**Imperative Example** - Data loads only when user triggers action:
+
+```javascript
+import { LightningElement } from 'lwc';
+import fetchAccounts from '@salesforce/apex/AccountController.fetchAccounts';
+
+export default class ImperativeExample extends LightningElement {
+    selectedIndustry = 'Technology';
+    accounts;
+    error;
+    isLoading = false;
+
+    // Called explicitly when user clicks button or submits form
+    async fetchAccounts() {
+        this.isLoading = true;
+        try {
+            this.accounts = await fetchAccounts({
+                industry: this.selectedIndustry
+            });
+            this.error = undefined;
+        } catch (error) {
+            this.error = error;
+            this.accounts = undefined;
+        } finally {
+            this.isLoading = false;
+        }
+    }
+}
+```
+
+#### Decision Tree
+
+```
+                    ┌─────────────────────────────┐
+                    │   Need to modify data?      │
+                    │   (Insert/Update/Delete)    │
+                    └─────────────┬───────────────┘
+                                  │
+                    ┌─────────────┴───────────────┐
+                    │                             │
+                   YES                            NO
+                    │                             │
+                    ▼                             ▼
+         ┌─────────────────┐        ┌─────────────────────────┐
+         │   IMPERATIVE    │        │  Should data auto-      │
+         │   (Use await)   │        │  refresh on param       │
+         └─────────────────┘        │  change?                │
+                                    └───────────┬─────────────┘
+                                                │
+                                    ┌───────────┴───────────┐
+                                    │                       │
+                                   YES                      NO
+                                    │                       │
+                                    ▼                       ▼
+                         ┌─────────────────┐     ┌─────────────────┐
+                         │   @WIRE         │     │   IMPERATIVE    │
+                         │   (Reactive)    │     │   (On-demand)   │
+                         └─────────────────┘     └─────────────────┘
+```
+
+---
+
+### 1. Basic Data Display (Wire Service)
+
+```javascript
+// accountCard.js
+import { LightningElement, api, wire } from 'lwc';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+import NAME_FIELD from '@salesforce/schema/Account.Name';
+import INDUSTRY_FIELD from '@salesforce/schema/Account.Industry';
+
+const FIELDS = [NAME_FIELD, INDUSTRY_FIELD];
+
+export default class AccountCard extends LightningElement {
+    @api recordId;
+
+    @wire(getRecord, { recordId: '$recordId', fields: FIELDS })
+    account;
+
+    get name() {
+        return getFieldValue(this.account.data, NAME_FIELD);
+    }
+
+    get industry() {
+        return getFieldValue(this.account.data, INDUSTRY_FIELD);
+    }
+
+    get isLoading() {
+        return !this.account.data && !this.account.error;
+    }
+}
+```
+
+```html
+<!-- accountCard.html -->
+<template>
+    <template lwc:if={isLoading}>
+        <lightning-spinner alternative-text="Loading"></lightning-spinner>
+    </template>
+    <template lwc:if={account.data}>
+        <div class="slds-box slds-theme_default">
+            <h2 class="slds-text-heading_medium">{name}</h2>
+            <p class="slds-text-color_weak">{industry}</p>
+        </div>
+    </template>
+    <template lwc:if={account.error}>
+        <p class="slds-text-color_error">{account.error.body.message}</p>
+    </template>
+</template>
+```
+
+### 2. Wire Service with Apex
+
+```javascript
+// contactList.js
+import { LightningElement, api, wire } from 'lwc';
+import getContacts from '@salesforce/apex/ContactController.getContacts';
+import { refreshApex } from '@salesforce/apex';
+
+export default class ContactList extends LightningElement {
+    @api recordId;
+    contacts;
+    error;
+    wiredContactsResult;
+
+    @wire(getContacts, { accountId: '$recordId' })
+    wiredContacts(result) {
+        this.wiredContactsResult = result; // Store for refreshApex
+        const { error, data } = result;
+        if (data) {
+            this.contacts = data;
+            this.error = undefined;
+        } else if (error) {
+            this.error = error;
+            this.contacts = undefined;
+        }
+    }
+
+    async handleRefresh() {
+        await refreshApex(this.wiredContactsResult);
+    }
+}
+```
+
+---
+
+## GraphQL Patterns
+
+> **Module Note**: `lightning/graphql` supersedes `lightning/uiGraphQLApi` and provides newer features like mutations, optional fields, and dynamic query construction.
+
+### GraphQL Query (Wire Adapter)
+
+```javascript
+// graphqlContacts.js
+import { LightningElement, wire } from 'lwc';
+import { gql, graphql } from 'lightning/graphql';
+
+const CONTACTS_QUERY = gql`
+    query ContactsQuery($first: Int, $after: String) {
+        uiapi {
+            query {
+                Contact(first: $first, after: $after) {
+                    edges {
+                        node {
+                            Id
+                            Name { value }
+                            Email { value }
+                            Account {
+                                Name { value }
+                            }
+                        }
+                        cursor
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        }
+    }
+`;
+
+export default class GraphqlContacts extends LightningElement {
+    contacts;
+    pageInfo;
+    error;
+    _cursor;
+
+    @wire(graphql, {
+        query: CONTACTS_QUERY,
+        variables: '$queryVariables'
+    })
+    wiredContacts({ data, error }) {
+        if (data) {
+            const result = data.uiapi.query.Contact;
+            this.contacts = result.edges.map(edge => ({
+                id: edge.node.Id,
+                name: edge.node.Name.value,
+                email: edge.node.Email?.value,
+                accountName: edge.node.Account?.Name?.value
+            }));
+            this.pageInfo = result.pageInfo;
+        } else if (error) {
+            this.error = error;
+        }
+    }
+
+    get queryVariables() {
+        return { first: 10, after: this._cursor };
+    }
+
+    loadMore() {
+        if (this.pageInfo?.hasNextPage) {
+            this._cursor = this.pageInfo.endCursor;
+        }
+    }
+}
+```
+
+### GraphQL Mutations (Spring '26 - GA in API 66.0)
+
+Mutations allow create, update, and delete operations via GraphQL. Use `executeMutation` for imperative operations.
+
+```javascript
+// graphqlAccountMutation.js
+import { LightningElement, track } from 'lwc';
+import { gql, executeMutation } from 'lightning/graphql';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
+// Create mutation
+const CREATE_ACCOUNT = gql`
+    mutation CreateAccount($name: String!, $industry: String) {
+        uiapi {
+            AccountCreate(input: {
+                Account: {
+                    Name: $name
+                    Industry: $industry
+                }
+            }) {
+                Record {
+                    Id
+                    Name { value }
+                    Industry { value }
+                }
+            }
+        }
+    }
+`;
+
+// Update mutation
+const UPDATE_ACCOUNT = gql`
+    mutation UpdateAccount($id: ID!, $name: String!) {
+        uiapi {
+            AccountUpdate(input: {
+                Account: {
+                    Id: $id
+                    Name: $name
+                }
+            }) {
+                Record {
+                    Id
+                    Name { value }
+                }
+            }
+        }
+    }
+`;
+
+// Delete mutation
+const DELETE_ACCOUNT = gql`
+    mutation DeleteAccount($id: ID!) {
+        uiapi {
+            AccountDelete(input: { Account: { Id: $id } }) {
+                Id
+            }
+        }
+    }
+`;
+
+export default class GraphqlAccountMutation extends LightningElement {
+    @track accountName = '';
+    @track industry = '';
+    isLoading = false;
+
+    handleNameChange(event) {
+        this.accountName = event.target.value;
+    }
+
+    handleIndustryChange(event) {
+        this.industry = event.target.value;
+    }
+
+    async handleCreate() {
+        if (!this.accountName) return;
+
+        this.isLoading = true;
+        try {
+            const result = await executeMutation(CREATE_ACCOUNT, {
+                variables: {
+                    name: this.accountName,
+                    industry: this.industry || null
+                }
+            });
+
+            const newRecord = result.data.uiapi.AccountCreate.Record;
+            this.showToast('Success', `Account "${newRecord.Name.value}" created`, 'success');
+            this.resetForm();
+        } catch (error) {
+            this.handleError(error);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async handleUpdate(accountId, newName) {
+        try {
+            const result = await executeMutation(UPDATE_ACCOUNT, {
+                variables: { id: accountId, name: newName }
+            });
+            this.showToast('Success', 'Account updated', 'success');
+            return result.data.uiapi.AccountUpdate.Record;
+        } catch (error) {
+            this.handleError(error);
+        }
+    }
+
+    async handleDelete(accountId) {
+        try {
+            await executeMutation(DELETE_ACCOUNT, {
+                variables: { id: accountId }
+            });
+            this.showToast('Success', 'Account deleted', 'success');
+        } catch (error) {
+            this.handleError(error);
+        }
+    }
+
+    handleError(error) {
+        const message = error.graphQLErrors
+            ? error.graphQLErrors.map(e => e.message).join(', ')
+            : error.message || 'Unknown error';
+        this.showToast('Error', message, 'error');
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    }
+
+    resetForm() {
+        this.accountName = '';
+        this.industry = '';
+    }
+}
+```
+
+### GraphQL Mutation Operations
+
+| Operation | Mutation Type | Notes |
+|-----------|---------------|-------|
+| **Create** | `{Object}Create` | Can request fields from newly created record |
+| **Update** | `{Object}Update` | Cannot query fields in same request |
+| **Delete** | `{Object}Delete` | Cannot query fields in same request |
+
+### allOrNone Parameter
+
+Control transaction behavior with `allOrNone` (default: `true`):
+
+```javascript
+const BATCH_CREATE = gql`
+    mutation BatchCreate($allOrNone: Boolean = true) {
+        uiapi(allOrNone: $allOrNone) {
+            acc1: AccountCreate(input: { Account: { Name: "Account 1" } }) {
+                Record { Id }
+            }
+            acc2: AccountCreate(input: { Account: { Name: "Account 2" } }) {
+                Record { Id }
+            }
+        }
+    }
+`;
+
+// If allOrNone=true: All rollback if any fails
+// If allOrNone=false: Only failed operations rollback
+```
+
+---
+
+## Modal Component Pattern
+
+Based on [James Simone's composable modal pattern](https://www.jamessimone.net/blog/joys-of-apex/lwc-composable-modal/).
+
+```javascript
+// composableModal.js
+import { LightningElement, api } from 'lwc';
+
+const OUTER_MODAL_CLASS = 'outerModalContent';
+
+export default class ComposableModal extends LightningElement {
+    @api modalHeader;
+    @api modalTagline;
+    @api modalSaveHandler;
+
+    _isOpen = false;
+    _focusableElements = [];
+
+    @api
+    toggleModal() {
+        this._isOpen = !this._isOpen;
+        if (this._isOpen) {
+            this._focusableElements = [...this.querySelectorAll('.focusable')];
+            this._focusFirstElement();
+            window.addEventListener('keyup', this._handleKeyUp);
+        } else {
+            window.removeEventListener('keyup', this._handleKeyUp);
+        }
+    }
+
+    get modalAriaHidden() {
+        return !this._isOpen;
+    }
+
+    get modalClass() {
+        return this._isOpen
+            ? 'slds-modal slds-visible slds-fade-in-open'
+            : 'slds-modal slds-hidden';
+    }
+
+    get backdropClass() {
+        return this._isOpen ? 'slds-backdrop slds-backdrop_open' : 'slds-backdrop';
+    }
+
+    _handleKeyUp = (event) => {
+        if (event.code === 'Escape') {
+            this.toggleModal();
+        } else if (event.code === 'Tab') {
+            this._handleTabNavigation(event);
+        }
+    }
+
+    _handleTabNavigation(event) {
+        // Focus trap logic - keep focus within modal
+        const activeEl = this.template.activeElement;
+        const lastIndex = this._focusableElements.length - 1;
+        const currentIndex = this._focusableElements.indexOf(activeEl);
+
+        if (event.shiftKey && currentIndex === 0) {
+            this._focusableElements[lastIndex]?.focus();
+        } else if (!event.shiftKey && currentIndex === lastIndex) {
+            this._focusFirstElement();
+        }
+    }
+
+    _focusFirstElement() {
+        if (this._focusableElements.length > 0) {
+            this._focusableElements[0].focus();
+        }
+    }
+
+    handleBackdropClick(event) {
+        if (event.target.classList.contains(OUTER_MODAL_CLASS)) {
+            this.toggleModal();
+        }
+    }
+
+    handleSave() {
+        if (this.modalSaveHandler) {
+            this.modalSaveHandler();
+        }
+        this.toggleModal();
+    }
+
+    disconnectedCallback() {
+        window.removeEventListener('keyup', this._handleKeyUp);
+    }
+}
+```
+
+```html
+<!-- composableModal.html -->
+<template>
+    <!-- Backdrop -->
+    <div class={backdropClass}></div>
+
+    <!-- Modal -->
+    <div class={modalClass}
+         role="dialog"
+         aria-modal="true"
+         aria-hidden={modalAriaHidden}
+         aria-labelledby="modal-heading">
+
+        <div class="slds-modal__container outerModalContent"
+             onclick={handleBackdropClick}>
+
+            <div class="slds-modal__content slds-p-around_medium">
+                <!-- Header -->
+                <template lwc:if={modalHeader}>
+                    <h2 id="modal-heading" class="slds-text-heading_medium">
+                        {modalHeader}
+                    </h2>
+                </template>
+                <template lwc:if={modalTagline}>
+                    <p class="slds-m-top_x-small slds-text-color_weak">
+                        {modalTagline}
+                    </p>
+                </template>
+
+                <!-- Slotted Content -->
+                <div class="slds-m-top_medium">
+                    <slot name="modalContent"></slot>
+                </div>
+
+                <!-- Footer -->
+                <div class="slds-m-top_medium slds-text-align_right">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={toggleModal}
+                        class="slds-m-right_x-small focusable">
+                    </lightning-button>
+                    <lightning-button
+                        variant="brand"
+                        label="Save"
+                        onclick={handleSave}
+                        class="focusable">
+                    </lightning-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden background content -->
+    <div aria-hidden={_isOpen}>
+        <slot name="body"></slot>
+    </div>
+</template>
+```
+
+---
+
+## Record Picker Pattern
+
+```javascript
+// recordPicker.js
+import { LightningElement, api } from 'lwc';
+
+export default class RecordPicker extends LightningElement {
+    @api label = 'Select Record';
+    @api objectApiName = 'Account';
+    @api placeholder = 'Search...';
+    @api required = false;
+    @api multiSelect = false;
+
+    _selectedIds = [];
+
+    @api
+    get value() {
+        return this.multiSelect ? this._selectedIds : this._selectedIds[0];
+    }
+
+    set value(val) {
+        this._selectedIds = Array.isArray(val) ? val : val ? [val] : [];
+    }
+
+    handleChange(event) {
+        const recordId = event.detail.recordId;
+        if (this.multiSelect) {
+            if (!this._selectedIds.includes(recordId)) {
+                this._selectedIds = [...this._selectedIds, recordId];
+            }
+        } else {
+            this._selectedIds = recordId ? [recordId] : [];
+        }
+
+        this.dispatchEvent(new CustomEvent('select', {
+            detail: {
+                recordId: this.value,
+                recordIds: this._selectedIds
+            }
+        }));
+    }
+
+    handleRemove(event) {
+        const idToRemove = event.target.dataset.id;
+        this._selectedIds = this._selectedIds.filter(id => id !== idToRemove);
+        this.dispatchEvent(new CustomEvent('select', {
+            detail: { recordIds: this._selectedIds }
+        }));
+    }
+}
+```
+
+```html
+<!-- recordPicker.html -->
+<template>
+    <lightning-record-picker
+        label={label}
+        placeholder={placeholder}
+        object-api-name={objectApiName}
+        onchange={handleChange}
+        required={required}>
+    </lightning-record-picker>
+
+    <template lwc:if={multiSelect}>
+        <div class="slds-m-top_x-small">
+            <template for:each={_selectedIds} for:item="id">
+                <lightning-pill
+                    key={id}
+                    label={id}
+                    data-id={id}
+                    onremove={handleRemove}>
+                </lightning-pill>
+            </template>
+        </div>
+    </template>
+</template>
+```
+
+---
+
+## Workspace API Pattern
+
+```javascript
+// workspaceTabManager.js
+import { LightningElement, wire } from 'lwc';
+import { IsConsoleNavigation, getFocusedTabInfo, openTab, closeTab,
+         setTabLabel, setTabIcon, refreshTab } from 'lightning/platformWorkspaceApi';
+
+export default class WorkspaceTabManager extends LightningElement {
+    @wire(IsConsoleNavigation) isConsole;
+
+    async openRecordTab(recordId, objectApiName) {
+        if (!this.isConsole) return;
+
+        await openTab({
+            recordId,
+            focus: true,
+            icon: `standard:${objectApiName.toLowerCase()}`,
+            label: 'Loading...'
+        });
+    }
+
+    async openSubtab(parentTabId, recordId) {
+        if (!this.isConsole) return;
+
+        await openTab({
+            parentTabId,
+            recordId,
+            focus: true
+        });
+    }
+
+    async getCurrentTabInfo() {
+        if (!this.isConsole) return null;
+        return await getFocusedTabInfo();
+    }
+
+    async updateTabLabel(tabId, label) {
+        if (!this.isConsole) return;
+        await setTabLabel(tabId, label);
+    }
+
+    async updateTabIcon(tabId, iconName) {
+        if (!this.isConsole) return;
+        await setTabIcon(tabId, iconName);
+    }
+
+    async refreshCurrentTab() {
+        if (!this.isConsole) return;
+        const tabInfo = await getFocusedTabInfo();
+        await refreshTab(tabInfo.tabId);
+    }
+
+    async closeCurrentTab() {
+        if (!this.isConsole) return;
+        const tabInfo = await getFocusedTabInfo();
+        await closeTab(tabInfo.tabId);
+    }
+}
+```
+
+---
+
+## Parent-Child Communication
+
+```javascript
+// parent.js
+import { LightningElement } from 'lwc';
+
+export default class Parent extends LightningElement {
+    selectedAccountId;
+
+    handleAccountSelected(event) {
+        this.selectedAccountId = event.detail.accountId;
+    }
+}
+```
+
+```html
+<!-- parent.html -->
+<template>
+    <c-account-list onaccountselected={handleAccountSelected}></c-account-list>
+    <template lwc:if={selectedAccountId}>
+        <c-account-detail account-id={selectedAccountId}></c-account-detail>
+    </template>
+</template>
+```
+
+```javascript
+// child.js (accountList)
+import { LightningElement } from 'lwc';
+
+export default class AccountList extends LightningElement {
+    handleRowAction(event) {
+        const accountId = event.detail.row.Id;
+
+        // Dispatch event to parent
+        this.dispatchEvent(new CustomEvent('accountselected', {
+            detail: { accountId },
+            bubbles: true,
+            composed: false // Don't cross shadow DOM boundaries
+        }));
+    }
+}
+```
+
+---
+
+## Sibling Communication (via Parent)
+
+When two child components need to communicate but share the same parent, use the **parent as middleware**. This is the recommended pattern for master-detail UIs.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SIBLING COMMUNICATION FLOW                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│                         ┌──────────┐                                │
+│                         │  Parent  │  ← Manages state               │
+│                         └────┬─────┘                                │
+│                    ┌─────────┴─────────┐                            │
+│                    │                   │                            │
+│              CustomEvent          @api property                     │
+│                (up)                 (down)                          │
+│                    │                   │                            │
+│              ┌─────┴─────┐       ┌─────┴─────┐                      │
+│              │  Child A  │       │  Child B  │                      │
+│              │  (List)   │       │  (Detail) │                      │
+│              └───────────┘       └───────────┘                      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**The flow**:
+1. **Child A** dispatches a custom event (e.g., user selects an account)
+2. **Parent** catches the event and updates its state
+3. **Parent** passes data to **Child B** via `@api` property
+
+### Complete Example: Account List → Account Detail
+
+```javascript
+// accountContainer.js - Parent orchestrates communication between siblings
+import { LightningElement } from 'lwc';
+
+export default class AccountContainer extends LightningElement {
+    // State managed at parent level
+    selectedAccountId;
+    selectedAccountName;
+
+    // Child A (accountList) fires this event
+    handleAccountSelect(event) {
+        this.selectedAccountId = event.detail.accountId;
+        this.selectedAccountName = event.detail.accountName;
+    }
+
+    // Clear selection (triggered by Child B)
+    handleClearSelection() {
 1000         this.selectedAccountId = null;
 1001         this.selectedAccountName = null;
 1002     }
