@@ -44,16 +44,6 @@ class CursorAdapter(CLIAdapter):
         cwd = Path.cwd()
         return cwd / ".cursor" / "rules"
 
-    @property
-    def templates_dir_name(self) -> str:
-        """Cursor uses 'assets' for additional files."""
-        return "assets"
-
-    @property
-    def docs_dir_name(self) -> str:
-        """Cursor uses 'references' for documentation."""
-        return "references"
-
     def transform_skill_md(self, content: str, skill_name: str) -> str:
         """
         Transform SKILL.md into Cursor MDC rule format.
@@ -220,30 +210,21 @@ MCP server which bridges Agent Skills to Cursor.
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 
-        # Write templates/assets
-        if output.templates:
-            templates_dir = skill_subdir / self.templates_dir_name
-            templates_dir.mkdir(parents=True, exist_ok=True)
-            for rel_path, content in output.templates.items():
-                file_path = templates_dir / rel_path
+        # Write assets
+        if output.assets:
+            assets_dir = skill_subdir / self.assets_dir_name
+            assets_dir.mkdir(parents=True, exist_ok=True)
+            for rel_path, content in output.assets.items():
+                file_path = assets_dir / rel_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 
-        # Write docs/references
-        if output.docs:
-            docs_dir = skill_subdir / self.docs_dir_name
-            docs_dir.mkdir(parents=True, exist_ok=True)
-            for rel_path, content in output.docs.items():
-                file_path = docs_dir / rel_path
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content, encoding='utf-8')
-
-        # Write examples
-        if output.examples:
-            examples_dir = skill_subdir / "examples"
-            examples_dir.mkdir(parents=True, exist_ok=True)
-            for rel_path, content in output.examples.items():
-                file_path = examples_dir / rel_path
+        # Write references
+        if output.references:
+            references_dir = skill_subdir / self.references_dir_name
+            references_dir.mkdir(parents=True, exist_ok=True)
+            for rel_path, content in output.references.items():
+                file_path = references_dir / rel_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 

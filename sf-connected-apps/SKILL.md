@@ -64,8 +64,8 @@ Use **AskUserQuestion** to gather:
 ### Phase 3: Template Selection & Generation
 
 **Template Locations** (try in order):
-1. `~/.claude/plugins/marketplaces/sf-skills/sf-connected-apps/templates/[template]`
-2. `[project-root]/sf-connected-apps/templates/[template]`
+1. `~/.claude/plugins/marketplaces/sf-skills/sf-connected-apps/assets/[template]`
+2. `[project-root]/sf-connected-apps/assets/[template]`
 
 **Template Selection**:
 
@@ -141,7 +141,7 @@ Next Steps:
 | CLI/IoT | Device | N/A | No | `connected-app-basic.xml` |
 | Service Account | Client Credentials | N/A | Yes | `eca-oauth-settings.xml` (ECA only) |
 
-> 📘 **Detailed flows**: See [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) for implementation patterns, security checklists, and code examples.
+> 📘 **Detailed flows**: See [references/oauth-flows-reference.md](references/oauth-flows-reference.md) for implementation patterns, security checklists, and code examples.
 
 ---
 
@@ -239,7 +239,7 @@ Next Steps:
 | PKCE disabled (mobile) | Code interception | Enable PKCE | -10 points |
 | No IP restrictions | Unauthorized access | Configure IP ranges | -5 points |
 
-> 🔒 **Security details**: See [docs/security-checklist.md](docs/security-checklist.md) for comprehensive security review.
+> 🔒 **Security details**: See [references/security-checklist.md](references/security-checklist.md) for comprehensive security review.
 
 ---
 
@@ -288,7 +288,7 @@ sf project deploy start --source-dir force-app/main/default/connectedApps --targ
 
 **Scoring Benefit**: ECAs typically score 15-20 points higher.
 
-> 📘 **Detailed migration**: See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step process.
+> 📘 **Detailed migration**: See [references/migration-guide.md](references/migration-guide.md) for step-by-step process.
 
 ---
 
@@ -307,13 +307,13 @@ sf project deploy start --source-dir force-app/main/default/connectedApps --targ
 | Insight | Description | Reference |
 |---------|-------------|-----------|
 | **ECA vs Connected App** | ECAs provide better secret management and 2GP packaging | Phase 2 Decision Matrix |
-| **PKCE for Public Clients** | Always required for mobile/SPA apps | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
-| **JWT Bearer for CI/CD** | Server-to-server auth without user interaction | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
-| **Token Rotation** | Enable for SPAs to prevent token reuse | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
-| **Named Credentials** | Store secrets securely, automatic refresh | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **PKCE for Public Clients** | Always required for mobile/SPA apps | [references/oauth-flows-reference.md](references/oauth-flows-reference.md) |
+| **JWT Bearer for CI/CD** | Server-to-server auth without user interaction | [references/oauth-flows-reference.md](references/oauth-flows-reference.md) |
+| **Token Rotation** | Enable for SPAs to prevent token reuse | [references/oauth-flows-reference.md](references/oauth-flows-reference.md) |
+| **Named Credentials** | Store secrets securely, automatic refresh | [references/oauth-flows-reference.md](references/oauth-flows-reference.md) |
 | **Minimal Scopes** | Use least privilege (api instead of full) | Phase 4 Scoring |
 | **IP Restrictions** | Add when integration has known IP ranges | Phase 4 Scoring |
-| **Certificate Auth** | Stronger than username/password for JWT | [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md) |
+| **Certificate Auth** | Stronger than username/password for JWT | [references/oauth-flows-reference.md](references/oauth-flows-reference.md) |
 
 ---
 
@@ -330,20 +330,20 @@ sf project deploy start --source-dir force-app/main/default/connectedApps --targ
 ## Additional Resources
 
 ### Detailed References
-- **OAuth Flow Patterns**: [resources/oauth-flows-reference.md](resources/oauth-flows-reference.md)
+- **OAuth Flow Patterns**: [references/oauth-flows-reference.md](references/oauth-flows-reference.md)
   - Implementation examples (Node.js, Python, JavaScript)
   - Security checklists per flow
   - Error handling patterns
   - Named Credentials integration
 
 ### Documentation
-- **OAuth Flow Diagrams**: [docs/oauth-flows.md](docs/oauth-flows.md)
-- **Security Review**: [docs/security-checklist.md](docs/security-checklist.md)
-- **Migration Guide**: [docs/migration-guide.md](docs/migration-guide.md)
-- **Testing & Validation**: [docs/testing-validation-guide.md](docs/testing-validation-guide.md)
+- **OAuth Flow Diagrams**: [references/oauth-flows.md](references/oauth-flows.md)
+- **Security Review**: [references/security-checklist.md](references/security-checklist.md)
+- **Migration Guide**: [references/migration-guide.md](references/migration-guide.md)
+- **Testing & Validation**: [references/testing-validation-guide.md](references/testing-validation-guide.md)
 
 ### Examples
-- **Usage Examples**: [examples/example-usage.md](examples/example-usage.md)
+- **Usage Examples**: [references/example-usage.md](references/example-usage.md)
 
 ---
 

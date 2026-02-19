@@ -14,10 +14,10 @@ After generating the diagram, offer the user a localhost preview for real-time i
 2. Start preview server (runs in background):
    ```bash
    # From marketplace folder (always available):
-   python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/preview/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
+   python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/scripts/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
 
    # Or from project folder (if working locally):
-   python [project-root]/sf-diagram-mermaid/preview/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
+   python [project-root]/sf-diagram-mermaid/scripts/mermaid_preview.py start --file /tmp/mermaid-preview.mmd
    ```
 
 3. Provide URL to user:
@@ -37,7 +37,7 @@ After generating the diagram, offer the user a localhost preview for real-time i
 
 When user is done:
 ```bash
-python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/preview/mermaid_preview.py stop
+python ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/scripts/mermaid_preview.py stop
 ```
 
 ## Preview Server Features

@@ -26,15 +26,15 @@ Conversation design is the discipline of crafting agent interactions that feel n
 ## ⚡ Quick Start
 
 **New agent?** Start here:
-1. Design your persona → [Persona Design Guide](docs/persona-design-guide.md)
-2. Architect your topics → [Topic Architecture Guide](docs/topic-architecture-guide.md)
-3. Write instructions → [Instruction Writing Guide](docs/instruction-writing-guide.md)
-4. Score your design → [Quality Scorecard](templates/quality-scorecard.md)
+1. Design your persona → [Persona Design Guide](references/persona-design-guide.md)
+2. Architect your topics → [Topic Architecture Guide](references/topic-architecture-guide.md)
+3. Write instructions → [Instruction Writing Guide](references/instruction-writing-guide.md)
+4. Score your design → [Quality Scorecard](assets/quality-scorecard.md)
 
 **Existing agent needs improvement?** Start here:
-1. Run the [Quality Scorecard](templates/quality-scorecard.md) assessment
-2. Review [Anti-Patterns](resources/anti-patterns.md) for quick wins
-3. Build an [Improvement Plan](templates/improvement-plan.md)
+1. Run the [Quality Scorecard](assets/quality-scorecard.md) assessment
+2. Review [Anti-Patterns](references/anti-patterns.md) for quick wins
+3. Build an [Improvement Plan](assets/improvement-plan.md)
 
 ---
 
@@ -56,32 +56,32 @@ Conversation design is the discipline of crafting agent interactions that feel n
 ### Tier 2 — Design Guides
 | Document | Purpose |
 |----------|---------|
-| [Persona Design Guide](docs/persona-design-guide.md) | How to define agent personality, tone, and communication style |
-| [Topic Architecture Guide](docs/topic-architecture-guide.md) | Bottom-up topic design, classification descriptions, scope boundaries |
-| [Instruction Writing Guide](docs/instruction-writing-guide.md) | Three-level instruction framework with do's, don'ts, and examples |
+| [Persona Design Guide](references/persona-design-guide.md) | How to define agent personality, tone, and communication style |
+| [Topic Architecture Guide](references/topic-architecture-guide.md) | Bottom-up topic design, classification descriptions, scope boundaries |
+| [Instruction Writing Guide](references/instruction-writing-guide.md) | Three-level instruction framework with do's, don'ts, and examples |
 
 ### Tier 3 — Reference Resources
 | Document | Purpose |
 |----------|---------|
-| [Conversation Patterns](resources/conversation-patterns.md) | IBM's 5 patterns mapped to Agentforce implementation |
-| [Industry Frameworks](resources/industry-frameworks.md) | Google, IBM, PatternFly, Salesforce framework mappings |
-| [Anti-Patterns](resources/anti-patterns.md) | Common mistakes with examples and fixes |
-| [Guardrail Hierarchy](resources/guardrail-hierarchy.md) | Four-layer guardrail model for safety |
-| [Escalation Patterns](resources/escalation-patterns.md) | Trigger catalog and Omni-Channel routing |
-| [Quality Metrics](resources/quality-metrics.md) | KPI definitions, benchmarks, measurement methods |
+| [Conversation Patterns](references/conversation-patterns.md) | IBM's 5 patterns mapped to Agentforce implementation |
+| [Industry Frameworks](references/industry-frameworks.md) | Google, IBM, PatternFly, Salesforce framework mappings |
+| [Anti-Patterns](references/anti-patterns.md) | Common mistakes with examples and fixes |
+| [Guardrail Hierarchy](references/guardrail-hierarchy.md) | Four-layer guardrail model for safety |
+| [Escalation Patterns](references/escalation-patterns.md) | Trigger catalog and Omni-Channel routing |
+| [Quality Metrics](references/quality-metrics.md) | KPI definitions, benchmarks, measurement methods |
 
 ### Tier 4 — Templates & Examples
 | Document | Purpose |
 |----------|---------|
-| [Persona Document](templates/persona-document.md) | Fill-in persona template |
-| [Topic Architecture](templates/topic-architecture.md) | Topic mapping worksheet |
-| [Utterance Library](templates/utterance-library.csv) | Structured utterance collection template |
-| [Escalation Matrix](templates/escalation-matrix.md) | Escalation decision matrix |
-| [Quality Scorecard](templates/quality-scorecard.md) | 120-point assessment template |
-| [Improvement Plan](templates/improvement-plan.md) | Prioritized improvement template |
-| [Service Agent Persona](examples/service-agent-persona.md) | Example: SaaS customer service persona |
-| [Retail Topic Architecture](examples/retail-topic-architecture.md) | Example: retail agent topic hierarchy |
-| [Healthcare Escalation](examples/healthcare-escalation.md) | Example: healthcare escalation matrix |
+| [Persona Document](assets/persona-document.md) | Fill-in persona template |
+| [Topic Architecture](assets/topic-architecture.md) | Topic mapping worksheet |
+| [Utterance Library](assets/utterance-library.csv) | Structured utterance collection template |
+| [Escalation Matrix](assets/escalation-matrix.md) | Escalation decision matrix |
+| [Quality Scorecard](assets/quality-scorecard.md) | 120-point assessment template |
+| [Improvement Plan](assets/improvement-plan.md) | Prioritized improvement template |
+| [Service Agent Persona](references/service-agent-persona.md) | Example: SaaS customer service persona |
+| [Retail Topic Architecture](references/retail-topic-architecture.md) | Example: retail agent topic hierarchy |
+| [Healthcare Escalation](references/healthcare-escalation.md) | Example: healthcare escalation matrix |
 
 ---
 
@@ -138,7 +138,7 @@ Agent Builder → Channels → Welcome Message / Error Message
 
 The persona lives primarily in **agent-level instructions**. Write them like training a new employee on Day 1 — focus on who they are and how they communicate, not on specific task procedures.
 
-> **Deep Dive:** [Persona Design Guide](docs/persona-design-guide.md) | **Template:** [Persona Document](templates/persona-document.md) | **Example:** [Service Agent Persona](examples/service-agent-persona.md)
+> **Deep Dive:** [Persona Design Guide](references/persona-design-guide.md) | **Template:** [Persona Document](assets/persona-document.md) | **Example:** [Service Agent Persona](references/service-agent-persona.md)
 
 ---
 
@@ -169,7 +169,7 @@ requests. It does NOT handle new order placement or returns."
 
 > **Test:** Can you read two descriptions and immediately tell which utterance belongs where?
 
-> **Deep Dive:** [Topic Architecture Guide](docs/topic-architecture-guide.md) | **Template:** [Topic Architecture](templates/topic-architecture.md) | **Example:** [Retail Topic Architecture](examples/retail-topic-architecture.md)
+> **Deep Dive:** [Topic Architecture Guide](references/topic-architecture-guide.md) | **Template:** [Topic Architecture](assets/topic-architecture.md) | **Example:** [Retail Topic Architecture](references/retail-topic-architecture.md)
 
 ---
 
@@ -184,7 +184,7 @@ Instructions operate at three levels: **Agent-level** (persona, global rules, 20
 3. **Business principles, not decision trees** — If your instruction contains `if...then...else` with thresholds, it belongs in Flow/Apex.
 4. **Knowledge over hard-coding** — Use Knowledge actions (RAG) for policies, don't inline policy text in instructions.
 
-> **Deep Dive:** [Instruction Writing Guide](docs/instruction-writing-guide.md)
+> **Deep Dive:** [Instruction Writing Guide](references/instruction-writing-guide.md)
 
 ---
 
@@ -216,7 +216,7 @@ Utterances are test cases for your topic architecture — they validate that cla
 
 **Process:** Start with real data (CRM cases, chat logs) → brainstorm synonyms → add edge cases → include adversarial → test in Testing Center → iterate on failures.
 
-> **Template:** [Utterance Library](templates/utterance-library.csv)
+> **Template:** [Utterance Library](assets/utterance-library.csv)
 
 ---
 
@@ -237,7 +237,7 @@ Escalation is not failure — it's a safety net ensuring customers always reach 
 
 When escalating, pass: conversation transcript, customer identity, issue summary, actions taken, and escalation reason. Agentforce provides a pre-built Escalation Topic that routes via Omni-Channel.
 
-> **Deep Dive:** [Escalation Patterns](resources/escalation-patterns.md) | **Template:** [Escalation Matrix](templates/escalation-matrix.md)
+> **Deep Dive:** [Escalation Patterns](references/escalation-patterns.md) | **Template:** [Escalation Matrix](assets/escalation-matrix.md)
 
 ---
 
@@ -247,7 +247,7 @@ Safety operates through four layers: **Einstein Trust Layer** (platform — toxi
 
 > **Critical Rule:** Never rely on instructions alone for safety-critical decisions. Instructions are probabilistic. Financial limits, compliance checks, and approval gates MUST be in Flow or Apex.
 
-> **Deep Dive:** [Guardrail Hierarchy](resources/guardrail-hierarchy.md)
+> **Deep Dive:** [Guardrail Hierarchy](references/guardrail-hierarchy.md)
 
 ---
 
@@ -274,7 +274,7 @@ Safety operates through four layers: **Einstein Trust Layer** (platform — toxi
 | 9 | **Ignoring context** | Repetitive re-asking | Leverage conversation state |
 | 10 | **Happy-path-only testing** | Fragile in production | Test edge cases and adversarial |
 
-> **Deep Dive:** [Anti-Patterns](resources/anti-patterns.md) — Full examples with before/after fixes.
+> **Deep Dive:** [Anti-Patterns](references/anti-patterns.md) — Full examples with before/after fixes.
 
 ---
 

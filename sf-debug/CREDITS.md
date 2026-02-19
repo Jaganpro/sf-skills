@@ -13,7 +13,7 @@ This skill incorporates knowledge, patterns, and insights from the Salesforce de
   - String concatenation: 11,767ms for 1,750 rows (then CPU limit hit)
   - String.join(): 539ms for 7,500 rows and still running
   - Heap allocation patterns and memory ceiling behavior
-- **Integrated into**: `templates/cpu-heap-optimization.cls`, `docs/benchmarking-guide.md`
+- **Integrated into**: `assets/cpu-heap-optimization.cls`, `references/benchmarking-guide.md`
 
 ### James Simone
 - **Source**: [Joys of Apex - Benchmarking Matters](https://www.jamessimone.net/blog/joys-of-apex/benchmarking-matters/)
@@ -23,7 +23,7 @@ This skill incorporates knowledge, patterns, and insights from the Salesforce de
   - Run multiple iterations to average out variance
   - System.currentTimeMillis() for accurate timing
   - Importance of testing with production-scale data
-- **Integrated into**: `templates/benchmarking-template.cls`, `docs/benchmarking-guide.md`
+- **Integrated into**: `assets/benchmarking-template.cls`, `references/benchmarking-guide.md`
 
 ### Beyond the Cloud
 - **Source**: [Beyond the Cloud - CPU Benchmarking](https://blog.beyondthecloud.dev/)
@@ -32,7 +32,7 @@ This skill incorporates knowledge, patterns, and insights from the Salesforce de
   - While loop outperforms enhanced for-loop at scale
   - Iterator caching reduces overhead
   - 10,000+ iteration benchmark data
-- **Integrated into**: `docs/benchmarking-guide.md`
+- **Integrated into**: `references/benchmarking-guide.md`
 
 ### Apex Log Analyzer
 - **Source**: [VS Code Marketplace - Apex Log Analyzer](https://marketplace.visualstudio.com/items?itemName=FinancialForce.lana)
@@ -42,13 +42,13 @@ This skill incorporates knowledge, patterns, and insights from the Salesforce de
   - Call tree analysis
   - Database operation highlighting
   - Free and open-source
-- **Integrated into**: `docs/log-analysis-tools.md`, SKILL.md recommendations
+- **Integrated into**: `references/log-analysis-tools.md`, SKILL.md recommendations
 
 ### Dan Appleman (Advanced Apex Programming)
 - **Source**: Advanced Apex Programming for Salesforce.com and Force.com (Book)
 - **Contribution**: Foundational benchmarking methodology
 - **Note**: Techniques referenced via James Simone's blog adaptation
-- **Integrated into**: `templates/benchmarking-template.cls`
+- **Integrated into**: `assets/benchmarking-template.cls`
 
 ---
 
@@ -57,12 +57,12 @@ This skill incorporates knowledge, patterns, and insights from the Salesforce de
 ### Apex Developer Guide
 - **Source**: [Salesforce Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/)
 - **Contribution**: Governor limit values, debug log event types
-- **Integrated into**: `docs/debug-log-reference.md`, SKILL.md
+- **Integrated into**: `references/debug-log-reference.md`, SKILL.md
 
 ### Debug Log Reference
 - **Source**: [Salesforce Debug Log Reference](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm)
 - **Contribution**: Official log event specifications
-- **Integrated into**: `docs/debug-log-reference.md`
+- **Integrated into**: `references/debug-log-reference.md`
 
 ---
 

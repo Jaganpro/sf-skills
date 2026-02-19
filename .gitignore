@@ -79,6 +79,9 @@ node_modules/
 force-app/*/
 !force-app/main/
 
+# Skill runtime artifacts (keep local, don't track)
+validation/
+
 # Test files (keep examples, ignore test outputs)
 test-output/
 coverage/
@@ -151,6 +154,6 @@ coverage.xml
 # Keep skill structure files
 !SKILL.md
 !skills/
-!templates/
-!examples/
-!docs/
+!assets/
+!references/
+!scripts/

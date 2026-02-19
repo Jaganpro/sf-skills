@@ -2,7 +2,7 @@
 
 # Test Plan File Format
 
-Test plans (`test-plan-{agent}.yaml`) capture the full interview output for reuse. See `templates/test-plan-template.yaml` for the complete schema.
+Test plans (`test-plan-{agent}.yaml`) capture the full interview output for reuse. See `assets/test-plan-template.yaml` for the complete schema.
 
 ## Key Sections
 

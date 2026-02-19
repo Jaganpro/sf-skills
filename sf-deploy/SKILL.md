@@ -44,7 +44,7 @@ Expert Salesforce DevOps engineer specializing in deployment automation, CI/CD p
 | 4 | Flows (as Draft) | Flows reference fields and Apex |
 | 5 | Activate Flows | Safe to activate after validation |
 
-See `docs/orchestration.md` for detailed deployment workflows and agent deployment patterns.
+See `references/orchestration.md` for detailed deployment workflows and agent deployment patterns.
 
 ---
 
@@ -163,7 +163,7 @@ Verify components, run smoke tests, check coverage.
 
 Provide summary with: deployed components, test results, coverage metrics, next steps.
 
-See [examples/deployment-report-template.md](examples/deployment-report-template.md) for output format.
+See [references/deployment-report-template.md](references/deployment-report-template.md) for output format.
 
 **Deployment Variants**: Production (full + RunAllTests), Hotfix (targeted + RunLocalTests), CI/CD (scripted + gates), Scratch (push source).
 
@@ -219,7 +219,7 @@ See [examples/deployment-report-template.md](examples/deployment-report-template
 
 ## Trigger Deployment Safety
 
-> 💡 *See `docs/trigger-deployment-safety.md` for comprehensive guide.*
+> 💡 *See `references/trigger-deployment-safety.md` for comprehensive guide.*
 
 ### Pre-Deployment Guardrails
 
@@ -282,7 +282,7 @@ Standard pipeline workflow:
 6. Deploy if validation passes
 7. Notify
 
-See [examples/deployment-workflows.md](examples/deployment-workflows.md) for scripts.
+See [references/deployment-workflows.md](references/deployment-workflows.md) for scripts.
 
 ## Edge Cases
 
@@ -315,7 +315,7 @@ See [examples/deployment-workflows.md](examples/deployment-workflows.md) for scr
 
 ### sf-ai-agentscript Integration (Agent DevOps)
 
-**Complete DevOps guide**: See `docs/agent-deployment-guide.md` for comprehensive agent deployment documentation.
+**Complete DevOps guide**: See `references/agent-deployment-guide.md` for comprehensive agent deployment documentation.
 
 #### Agent Metadata Types
 
@@ -448,7 +448,7 @@ sf agent activate --api-name [AgentName] --target-org target-org --json
 
 ## Deployment Script Template
 
-Reusable multi-step deployment script: **[examples/deploy.sh](examples/deploy.sh)**
+Reusable multi-step deployment script: **[references/deploy.sh](references/deploy.sh)**
 
 Deploys in order: Objects → Permission Sets → Apex (with tests) → Flows (Draft)
 

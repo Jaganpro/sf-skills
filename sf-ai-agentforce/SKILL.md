@@ -253,7 +253,7 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org MyOrg
 - **Apex**: `ConnectApi.EinsteinLlm.generateMessagesForPromptTemplate()`
 - **Flow**: Use the "Prompt Template" action element
 
-> **Full reference**: See [docs/prompt-templates.md](docs/prompt-templates.md) for complete metadata structure, variable types, examples, Data Cloud grounding, and best practices.
+> **Full reference**: See [references/prompt-templates.md](references/prompt-templates.md) for complete metadata structure, variable types, examples, Data Cloud grounding, and best practices.
 
 ---
 
@@ -274,7 +274,7 @@ The **Einstein Models API** (`aiplatform.ModelsAPI`) enables native LLM access f
 
 **Prerequisites:** Einstein Generative AI enabled, API v61.0+, Einstein Generative AI User permission set assigned.
 
-> **Full reference**: See [docs/models-api.md](docs/models-api.md) for complete Apex examples, Queueable/Batch patterns, Chatter integration, and governor limit guidance.
+> **Full reference**: See [references/models-api.md](references/models-api.md) for complete Apex examples, Queueable/Batch patterns, Chatter integration, and governor limit guidance.
 
 ---
 
@@ -297,7 +297,7 @@ force-app/main/default/lightningTypeBundles/OrderDetails/
 └── OrderDetails.lightningTypeBundle-meta.xml
 ```
 
-> **Full reference**: See [docs/custom-lightning-types.md](docs/custom-lightning-types.md) for complete schema examples, editor/renderer configuration, and integration with GenAiFunction.
+> **Full reference**: See [references/custom-lightning-types.md](references/custom-lightning-types.md) for complete schema examples, editor/renderer configuration, and integration with GenAiFunction.
 
 ---
 
@@ -417,9 +417,9 @@ Issues:
 
 | Document | Description | Read When |
 |----------|-------------|-----------|
-| [docs/prompt-templates.md](docs/prompt-templates.md) | Complete PromptTemplate metadata, variable types, Data Cloud grounding | Authoring reusable AI prompts |
-| [docs/models-api.md](docs/models-api.md) | `aiplatform.ModelsAPI` Apex patterns, Queueable/Batch integration | Building custom AI logic in Apex |
-| [docs/custom-lightning-types.md](docs/custom-lightning-types.md) | LightningTypeBundle schema/editor/renderer configuration | Creating rich action input/output UIs |
+| [references/prompt-templates.md](references/prompt-templates.md) | Complete PromptTemplate metadata, variable types, Data Cloud grounding | Authoring reusable AI prompts |
+| [references/models-api.md](references/models-api.md) | `aiplatform.ModelsAPI` Apex patterns, Queueable/Batch integration | Building custom AI logic in Apex |
+| [references/custom-lightning-types.md](references/custom-lightning-types.md) | LightningTypeBundle schema/editor/renderer configuration | Creating rich action input/output UIs |
 
 **Cross-Skill References**
 

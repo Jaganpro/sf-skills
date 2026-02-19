@@ -35,12 +35,12 @@ Expert in extracting and analyzing Agentforce session tracing data from Salesfor
 | Need | Document | Description |
 |------|----------|-------------|
 | **Quick start** | [README.md](README.md) | Installation & basic usage |
-| **Data model** | [resources/data-model-reference.md](resources/data-model-reference.md) | Full STDM schema documentation |
-| **Query patterns** | [resources/query-patterns.md](resources/query-patterns.md) | Data Cloud SQL examples |
-| **Analysis recipes** | [resources/analysis-cookbook.md](resources/analysis-cookbook.md) | Common Polars patterns |
-| **CLI reference** | [docs/cli-reference.md](docs/cli-reference.md) | Complete command documentation |
-| **Auth setup** | [docs/auth-setup.md](docs/auth-setup.md) | JWT Bearer configuration |
-| **Troubleshooting** | [resources/troubleshooting.md](resources/troubleshooting.md) | Common issues & fixes |
+| **Data model** | [references/data-model-reference.md](references/data-model-reference.md) | Full STDM schema documentation |
+| **Query patterns** | [references/query-patterns.md](references/query-patterns.md) | Data Cloud SQL examples |
+| **Analysis recipes** | [references/analysis-cookbook.md](references/analysis-cookbook.md) | Common Polars patterns |
+| **CLI reference** | [references/cli-reference.md](references/cli-reference.md) | Complete command documentation |
+| **Auth setup** | [references/auth-setup.md](references/auth-setup.md) | JWT Bearer configuration |
+| **Troubleshooting** | [references/troubleshooting.md](references/troubleshooting.md) | Common issues & fixes |
 | **Analysis examples** | [references/analysis-examples.md](references/analysis-examples.md) | Session summary & debug timeline output |
 | **Billing & issues** | [references/billing-and-troubleshooting.md](references/billing-and-troubleshooting.md) | Credit consumption & common errors |
 
@@ -75,7 +75,7 @@ openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 \
 # 3. Secure the private key
 chmod 600 ~/.sf/jwt/myorg-agentforce-observability.key
 
-# 4. Create External Client App in Salesforce (see docs/auth-setup.md)
+# 4. Create External Client App in Salesforce (see references/auth-setup.md)
 # Required scopes: cdp_query_api, refresh_token/offline_access
 ```
 
@@ -84,7 +84,7 @@ chmod 600 ~/.sf/jwt/myorg-agentforce-observability.key
 2. App-specific: `~/.sf/jwt/{org}-agentforce-observability.key`
 3. Generic fallback: `~/.sf/jwt/{org}.key`
 
-See [docs/auth-setup.md](docs/auth-setup.md) for detailed instructions.
+See [references/auth-setup.md](references/auth-setup.md) for detailed instructions.
 
 ---
 
@@ -109,7 +109,7 @@ See [docs/auth-setup.md](docs/auth-setup.md) for detailed instructions.
 
 ## Session Tracing Data Model (STDM)
 
-> See [resources/data-model-reference.md](resources/data-model-reference.md) for the complete field-level schema of all 5 core DMOs + 13 GenAI Audit DMOs.
+> See [references/data-model-reference.md](references/data-model-reference.md) for the complete field-level schema of all 5 core DMOs + 13 GenAI Audit DMOs.
 
 **5 Core DMOs** — all field names use `AiAgent` prefix (lowercase 'i'):
 
@@ -270,7 +270,7 @@ Based on analysis findings:
 | `--output` | Output directory | `./stdm_data` |
 | `--verbose` | Detailed logging | False |
 
-See [docs/cli-reference.md](docs/cli-reference.md) for complete documentation.
+See [references/cli-reference.md](references/cli-reference.md) for complete documentation.
 
 ---
 

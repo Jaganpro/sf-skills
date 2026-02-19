@@ -52,7 +52,7 @@ Automation scripts for configuring Salesforce integrations without manual UI ste
 
 ## Templates
 
-The `templates/` directory contains customizable scripts for new integrations:
+The `assets/` directory contains customizable scripts for new integrations:
 
 | Template | Purpose |
 |----------|---------|
@@ -62,7 +62,7 @@ The `templates/` directory contains customizable scripts for new integrations:
 
 ```bash
 # Copy template for your integration
-cp templates/setup-credentials-with-csp.sh my-integration-setup.sh
+cp assets/setup-credentials-with-csp.sh my-integration-setup.sh
 
 # Edit configuration variables
 # - SKILL_NAME
@@ -93,6 +93,6 @@ When you create credential metadata files, Claude will automatically suggest run
 
 ## Related Documentation
 
-- [Named Credentials Automation Guide](../docs/named-credentials-automation.md)
-- [Named Credentials Template Reference](../docs/named-credentials-guide.md)
-- [Security Best Practices](../docs/security-best-practices.md)
+- [Named Credentials Automation Guide](../references/named-credentials-automation.md)
+- [Named Credentials Template Reference](../references/named-credentials-guide.md)
+- [Security Best Practices](../references/security-best-practices.md)

@@ -116,7 +116,7 @@ subjectName: My_Agent
 
 **Mitigation**:
 1. Use `localDeveloperName` for standard topics (framework resolves automatically)
-2. For promoted topics, re-run the [discovery workflow](../docs/topic-name-resolution.md#discovery-workflow) after each agent publish
+2. For promoted topics, re-run the [discovery workflow](../references/topic-name-resolution.md#discovery-workflow) after each agent publish
 3. Keep a topic name mapping file that gets updated as part of the publish-and-test cycle
 
 ## INFO: API vs CLI Action Visibility Gap

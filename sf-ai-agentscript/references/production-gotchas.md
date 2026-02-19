@@ -182,7 +182,7 @@ process_order: @actions.create_order
 
 **KNOWN BUG**: Chained actions with Prompt Templates don't properly map inputs using `Input:Query` format.
 
-> **📖 For prompt template action definitions, input binding syntax, and grounded data patterns**, see [resources/action-prompt-templates.md](../resources/action-prompt-templates.md).
+> **📖 For prompt template action definitions, input binding syntax, and grounded data patterns**, see [references/action-prompt-templates.md](../references/action-prompt-templates.md).
 
 ## Latch Variable Pattern for Topic Re-entry
 

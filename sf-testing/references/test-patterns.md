@@ -4,7 +4,7 @@
 
 ## Pattern 1: Basic Test Class
 
-Use template: `templates/basic-test.cls`
+Use template: `assets/basic-test.cls`
 
 ```apex
 @IsTest
@@ -54,7 +54,7 @@ private class AccountServiceTest {
 
 ## Pattern 2: Bulk Test (251+ Records)
 
-Use template: `templates/bulk-test.cls`
+Use template: `assets/bulk-test.cls`
 
 ```apex
 @IsTest
@@ -79,7 +79,7 @@ static void testBulkInsert_251Records() {
 
 ## Pattern 3: Mock Callout Test
 
-Use template: `templates/mock-callout-test.cls`
+Use template: `assets/mock-callout-test.cls`
 
 ```apex
 @IsTest
@@ -113,7 +113,7 @@ private class ExternalAPIServiceTest {
 
 ## Pattern 4: Test Data Factory
 
-Use template: `templates/test-data-factory.cls`
+Use template: `assets/test-data-factory.cls`
 
 ```apex
 @IsTest

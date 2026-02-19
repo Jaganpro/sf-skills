@@ -33,17 +33,17 @@ Expert frontend engineer specializing in Lightning Web Components for Salesforce
 
 | Need | Document | Description |
 |------|----------|-------------|
-| **Component patterns** | [resources/component-patterns.md](resources/component-patterns.md) | Wire, GraphQL, Modal, Navigation, TypeScript |
-| **LMS guide** | [resources/lms-guide.md](resources/lms-guide.md) | Lightning Message Service deep dive |
-| **Jest testing** | [resources/jest-testing.md](resources/jest-testing.md) | Advanced testing patterns |
-| **Accessibility** | [resources/accessibility-guide.md](resources/accessibility-guide.md) | WCAG compliance, ARIA, focus management |
-| **Performance** | [resources/performance-guide.md](resources/performance-guide.md) | Dark mode migration, lazy loading, optimization |
+| **Component patterns** | [references/component-patterns.md](references/component-patterns.md) | Wire, GraphQL, Modal, Navigation, TypeScript |
+| **LMS guide** | [references/lms-guide.md](references/lms-guide.md) | Lightning Message Service deep dive |
+| **Jest testing** | [references/jest-testing.md](references/jest-testing.md) | Advanced testing patterns |
+| **Accessibility** | [references/accessibility-guide.md](references/accessibility-guide.md) | WCAG compliance, ARIA, focus management |
+| **Performance** | [references/performance-guide.md](references/performance-guide.md) | Dark mode migration, lazy loading, optimization |
 | **Scoring & testing** | [references/scoring-and-testing.md](references/scoring-and-testing.md) | 165-point SLDS 2 scoring, dark mode checklist, Jest patterns |
 | **Advanced features** | [references/advanced-features.md](references/advanced-features.md) | Flow Screen integration, TypeScript, Dashboards, Agentforce |
-| **State management** | [docs/state-management.md](docs/state-management.md) | @track, Singleton Store, @lwc/state |
-| **Template anti-patterns** | [docs/template-anti-patterns.md](docs/template-anti-patterns.md) | LLM template mistakes |
-| **Async notifications** | [docs/async-notification-patterns.md](docs/async-notification-patterns.md) | Platform Events + empApi |
-| **Flow integration** | [docs/flow-integration-guide.md](docs/flow-integration-guide.md) | Flow-LWC communication |
+| **State management** | [references/state-management.md](references/state-management.md) | @track, Singleton Store, @lwc/state |
+| **Template anti-patterns** | [references/template-anti-patterns.md](references/template-anti-patterns.md) | LLM template mistakes |
+| **Async notifications** | [references/async-notification-patterns.md](references/async-notification-patterns.md) | Platform Events + empApi |
+| **Flow integration** | [references/flow-integration-guide.md](references/flow-integration-guide.md) | Flow-LWC communication |
 
 ---
 
@@ -73,7 +73,7 @@ Expert frontend engineer specializing in Lightning Web Components for Salesforce
 | **E - Execution** | Lazy load with `lwc:if`, cache computed values, avoid infinite loops |
 | **S - Security** | `WITH SECURITY_ENFORCED`, input validation, FLS/CRUD checks |
 
-**For detailed PICKLES implementation patterns, see [resources/component-patterns.md](resources/component-patterns.md)**
+**For detailed PICKLES implementation patterns, see [references/component-patterns.md](references/component-patterns.md)**
 
 ---
 
@@ -143,7 +143,7 @@ WCAG compliance is mandatory for all components.
 | **Live Regions** | `aria-live="polite"` for dynamic content |
 | **Contrast** | 4.5:1 minimum for text |
 
-**For comprehensive guide, see [resources/accessibility-guide.md](resources/accessibility-guide.md)**
+**For comprehensive guide, see [references/accessibility-guide.md](references/accessibility-guide.md)**
 
 ---
 
@@ -180,7 +180,7 @@ WCAG compliance is mandatory for all components.
 
 > See [references/advanced-features.md](references/advanced-features.md) for Flow Screen integration (FlowAttributeChangeEvent, FlowNavigationFinishEvent), TypeScript support (API 66.0 GA), LWC in Dashboards (Beta), and Agentforce discoverability.
 
-**Flow Screen quick reference**: `@api` inputs → `FlowAttributeChangeEvent` outputs → `FlowNavigationFinishEvent` for navigation. See also [docs/flow-integration-guide.md](docs/flow-integration-guide.md).
+**Flow Screen quick reference**: `@api` inputs → `FlowAttributeChangeEvent` outputs → `FlowNavigationFinishEvent` for navigation. See also [references/flow-integration-guide.md](references/flow-integration-guide.md).
 
 ---
 

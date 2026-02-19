@@ -20,8 +20,8 @@ Expert integration architect specializing in secure callout patterns, event-driv
 1. **Named Credential Generation**: OAuth 2.0, JWT Bearer, Certificate, or Custom authentication
 2. **External Credential Generation**: Modern External Credentials (API 61+) with Named Principals
 3. **External Service Registration**: Generate ExternalServiceRegistration from OpenAPI/Swagger specs
-4. **REST/SOAP Callout Patterns**: Sync and async implementations ([details](resources/callout-patterns.md))
-5. **Platform Events & CDC**: Event definitions, publishers, subscribers ([details](resources/event-patterns.md))
+4. **REST/SOAP Callout Patterns**: Sync and async implementations ([details](references/callout-patterns.md))
+5. **Platform Events & CDC**: Event definitions, publishers, subscribers ([details](references/event-patterns.md))
 6. **Validation & Scoring**: Score integrations against 6 categories (0-120 points)
 
 ## Key Insights
@@ -56,13 +56,13 @@ Use `AskUserQuestion` to gather: integration type (outbound REST/SOAP, inbound, 
 
 | Integration Need | Template | Location |
 |-----------------|----------|----------|
-| Named Credentials | `oauth-client-credentials.namedCredential-meta.xml` | `templates/named-credentials/` |
-| External Credentials | `oauth-external-credential.externalCredential-meta.xml` | `templates/external-credentials/` |
-| External Services | `openapi-registration.externalServiceRegistration-meta.xml` | `templates/external-services/` |
-| REST Callouts | `rest-sync-callout.cls`, `rest-queueable-callout.cls` | `templates/callouts/` |
-| SOAP Callouts | `soap-callout-service.cls` | `templates/soap/` |
-| Platform Events | `platform-event-definition.object-meta.xml` | `templates/platform-events/` |
-| CDC Subscribers | `cdc-subscriber-trigger.trigger` | `templates/cdc/` |
+| Named Credentials | `oauth-client-credentials.namedCredential-meta.xml` | `assets/named-credentials/` |
+| External Credentials | `oauth-external-credential.externalCredential-meta.xml` | `assets/external-credentials/` |
+| External Services | `openapi-registration.externalServiceRegistration-meta.xml` | `assets/external-services/` |
+| REST Callouts | `rest-sync-callout.cls`, `rest-queueable-callout.cls` | `assets/callouts/` |
+| SOAP Callouts | `soap-callout-service.cls` | `assets/soap/` |
+| Platform Events | `platform-event-definition.object-meta.xml` | `assets/platform-events/` |
+| CDC Subscribers | `cdc-subscriber-trigger.trigger` | `assets/cdc/` |
 
 ### Phase 3: Generation & Validation
 
@@ -104,7 +104,7 @@ Use sf-deploy skill: `Skill(skill="sf-deploy")`
 | **Certificate (Mutual TLS)** | High-security | `certificate-auth.namedCredential-meta.xml` |
 | **Custom (API Key/Basic)** | Simple APIs | `custom-auth.namedCredential-meta.xml` |
 
-Templates in `templates/named-credentials/`. **NEVER hardcode credentials.**
+Templates in `assets/named-credentials/`. **NEVER hardcode credentials.**
 
 ---
 
@@ -123,7 +123,7 @@ ExternalService.Stripe_createCustomer_Response resp = stripe.createCustomer(req)
 
 ## Callout Patterns
 
-> See [resources/callout-patterns.md](resources/callout-patterns.md) for complete REST and SOAP implementations.
+> See [references/callout-patterns.md](references/callout-patterns.md) for complete REST and SOAP implementations.
 
 | Pattern | Use Case | Template |
 |---------|----------|----------|
@@ -138,7 +138,7 @@ ExternalService.Stripe_createCustomer_Response resp = stripe.createCustomer(req)
 
 ## Event-Driven Patterns
 
-> See [resources/event-patterns.md](resources/event-patterns.md) for complete Platform Event and CDC implementations.
+> See [references/event-patterns.md](references/event-patterns.md) for complete Platform Event and CDC implementations.
 
 **Platform Events**: Standard Volume (~2K events/hour, 3-day retention) or High Volume (millions/day, 24-hour retention). Publish via `EventBus.publish()`, subscribe via triggers.
 
@@ -190,9 +190,9 @@ ExternalService.Stripe_createCustomer_Response resp = stripe.createCustomer(req)
 
 ## Additional Resources
 
-- [Callout Patterns](resources/callout-patterns.md) — REST and SOAP implementations
-- [Event Patterns](resources/event-patterns.md) — Platform Events and CDC
-- [Messaging API v2](docs/messaging-api-v2.md) — MIAW custom client architecture (Agentforce external chat)
+- [Callout Patterns](references/callout-patterns.md) — REST and SOAP implementations
+- [Event Patterns](references/event-patterns.md) — Platform Events and CDC
+- [Messaging API v2](references/messaging-api-v2.md) — MIAW custom client architecture (Agentforce external chat)
 - [Scoring Rubric](references/scoring-rubric.md) — 120-point scoring details
 - [CLI Reference](references/cli-reference.md) — CLI commands and helper scripts
 

@@ -90,9 +90,9 @@ sf-metadata → sf-flow → sf-deploy → sf-data
 
 ## Documentation
 
-- [Deployment Patterns](docs/deployment-patterns.md)
-- [CI/CD Guide](docs/cicd-guide.md)
-- [Troubleshooting](docs/troubleshooting.md)
+- [Deployment Patterns](references/deployment-patterns.md)
+- [CI/CD Guide](references/cicd-guide.md)
+- [Troubleshooting](references/troubleshooting.md)
 
 ## Requirements
 

@@ -91,4 +91,4 @@ sf project deploy start --metadata ExternalCredential:WeatherAPI \
 - **Authenticated org**: `sf org login web -a <alias>`
 - **Deployed metadata**: External Credential and Named Credential deployed
 
-See [docs/named-credentials-automation.md](../docs/named-credentials-automation.md) for complete guide.
+See [references/named-credentials-automation.md](../references/named-credentials-automation.md) for complete guide.

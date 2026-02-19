@@ -37,18 +37,18 @@ Expert testing engineer specializing in Agentforce agent testing via **dual-trac
 
 | Need | Document | Description |
 |------|----------|-------------|
-| **Agent Runtime API** | [agent-api-reference.md](docs/agent-api-reference.md) | REST endpoints for multi-turn testing |
-| **ECA Setup** | [eca-setup-guide.md](docs/eca-setup-guide.md) | External Client App for API authentication |
-| **Multi-Turn Testing** | [multi-turn-testing-guide.md](docs/multi-turn-testing-guide.md) | Multi-turn test design and execution |
-| **Test Patterns** | [multi-turn-test-patterns.md](resources/multi-turn-test-patterns.md) | 6 multi-turn test patterns with examples |
-| **CLI commands** | [cli-commands.md](docs/cli-commands.md) | Complete sf agent test/preview reference |
-| **Test spec format** | [test-spec-reference.md](resources/test-spec-reference.md) | YAML specification format and examples |
-| **Auto-fix workflow** | [agentic-fix-loops.md](resources/agentic-fix-loops.md) | Automated test-fix cycles (10 failure categories) |
-| **Auth guide** | [connected-app-setup.md](docs/connected-app-setup.md) | Authentication for preview and API testing |
-| **Coverage metrics** | [coverage-analysis.md](docs/coverage-analysis.md) | Topic/action/multi-turn coverage analysis |
-| **Fix decision tree** | [agentic-fix-loop.md](docs/agentic-fix-loop.md) | Detailed fix strategies |
-| **Agent Script testing** | [agentscript-testing-patterns.md](docs/agentscript-testing-patterns.md) | 5 patterns for testing Agent Script agents |
-| **Deep conversation history** | [deep-conversation-history-patterns.md](docs/deep-conversation-history-patterns.md) | 5 patterns for protocol-stage testing via CLI `conversationHistory` |
+| **Agent Runtime API** | [agent-api-reference.md](references/agent-api-reference.md) | REST endpoints for multi-turn testing |
+| **ECA Setup** | [eca-setup-guide.md](references/eca-setup-guide.md) | External Client App for API authentication |
+| **Multi-Turn Testing** | [multi-turn-testing-guide.md](references/multi-turn-testing-guide.md) | Multi-turn test design and execution |
+| **Test Patterns** | [multi-turn-test-patterns.md](references/multi-turn-test-patterns.md) | 6 multi-turn test patterns with examples |
+| **CLI commands** | [cli-commands.md](references/cli-commands.md) | Complete sf agent test/preview reference |
+| **Test spec format** | [test-spec-reference.md](references/test-spec-reference.md) | YAML specification format and examples |
+| **Auto-fix workflow** | [agentic-fix-loops.md](references/agentic-fix-loops.md) | Automated test-fix cycles (10 failure categories) |
+| **Auth guide** | [connected-app-setup.md](references/connected-app-setup.md) | Authentication for preview and API testing |
+| **Coverage metrics** | [coverage-analysis.md](references/coverage-analysis.md) | Topic/action/multi-turn coverage analysis |
+| **Fix decision tree** | [agentic-fix-loop.md](references/agentic-fix-loop.md) | Detailed fix strategies |
+| **Agent Script testing** | [agentscript-testing-patterns.md](references/agentscript-testing-patterns.md) | 5 patterns for testing Agent Script agents |
+| **Deep conversation history** | [deep-conversation-history-patterns.md](references/deep-conversation-history-patterns.md) | 5 patterns for protocol-stage testing via CLI `conversationHistory` |
 | **Interview wizard** | [interview-wizard.md](references/interview-wizard.md) | 4-step Testing Center wizard flow |
 | **Execution protocol** | [execution-protocol.md](references/execution-protocol.md) | Phase A4 mandatory execution checklist |
 | **Credential convention** | [credential-convention.md](references/credential-convention.md) | ~/.sfagent/ persistent ECA storage |
@@ -191,7 +191,7 @@ Use **AskUserQuestion** to gather agent name, org alias, and test type. Then:
 
 > See [credential-convention.md](references/credential-convention.md) for ~/.sfagent/ directory structure and CLI reference.
 
-If user has ECA credentials → collect and validate via `credential_manager.py validate`. If not → delegate to `Skill(skill="sf-connected-apps")`. See [ECA Setup Guide](docs/eca-setup-guide.md).
+If user has ECA credentials → collect and validate via `credential_manager.py validate`. If not → delegate to `Skill(skill="sf-connected-apps")`. See [ECA Setup Guide](references/eca-setup-guide.md).
 
 ### A2: Agent Discovery & Metadata Retrieval
 
@@ -205,7 +205,7 @@ Claude reads the GenAiPlannerBundle to understand topics, actions, system instru
 
 ### A3: Test Scenario Planning
 
-Auto-generate multi-turn scenarios tailored to the specific agent based on metadata from A2. Available templates in `templates/` — see [references/test-templates.md](references/test-templates.md).
+Auto-generate multi-turn scenarios tailored to the specific agent based on metadata from A2. Available templates in `assets/` — see [references/test-templates.md](references/test-templates.md).
 
 ### A4: Multi-Turn Execution
 
@@ -215,7 +215,7 @@ Auto-generate multi-turn scenarios tailored to the specific agent based on metad
 **Quick start:**
 ```bash
 python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --agent-id "${AGENT_ID}" --output results.json --verbose
 ```
 
@@ -257,7 +257,7 @@ testCases:
     expectedOutcome: "Agent should provide order status information"
 ```
 
-See [Test Spec Reference](resources/test-spec-reference.md) for complete YAML format guide.
+See [Test Spec Reference](references/test-spec-reference.md) for complete YAML format guide.
 
 ### CLI Testing Details (B1.5–B1.9)
 
@@ -299,7 +299,7 @@ When tests fail (either Phase A or Phase B), automatically fix via sf-ai-agentsc
 
 **Fix flow:** Test Failed → Analyze category → Apply fix via `Skill(skill="sf-ai-agentscript")` → Re-publish → Re-test → Pass or retry (max 3) → Escalate to human.
 
-See [Agentic Fix Loops Guide](resources/agentic-fix-loops.md) for complete decision tree and 10 fix strategies.
+See [Agentic Fix Loops Guide](references/agentic-fix-loops.md) for complete decision tree and 10 fix strategies.
 
 ---
 
@@ -307,7 +307,7 @@ See [Agentic Fix Loops Guide](resources/agentic-fix-loops.md) for complete decis
 
 > See [references/coverage-improvement.md](references/coverage-improvement.md) for the full coverage dimensions table and thresholds.
 
-**Quick summary:** 8 dimensions (topic selection, action invocation, re-matching, context preservation, completion, guardrails, escalation, phrasing diversity). Iterate: identify gaps → add tests → re-run → repeat until thresholds met. See [Coverage Analysis](docs/coverage-analysis.md).
+**Quick summary:** 8 dimensions (topic selection, action invocation, re-matching, context preservation, completion, guardrails, escalation, phrasing diversity). Iterate: identify gaps → add tests → re-run → repeat until thresholds met. See [Coverage Analysis](references/coverage-analysis.md).
 
 ---
 
@@ -386,7 +386,7 @@ AGENT_ID=$(sf data query --use-tooling-api \
 # 2. Run multi-turn tests
 python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --agent-id "${AGENT_ID}" \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --output results.json --verbose
 ```
 

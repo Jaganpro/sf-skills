@@ -1,10 +1,9 @@
 """
 OpenAI Codex CLI adapter for sf-skills.
 
-Codex CLI follows the Agent Skills standard with some naming conventions:
+Codex CLI follows the Agent Skills standard:
 - Skills location: .codex/skills/{name}/
-- templates/ → assets/ (Codex convention)
-- docs/ → references/ (Codex convention)
+- Uses spec directories: assets/, references/, scripts/
 
 Codex CLI has built-in skill creator and installer support.
 """
@@ -20,9 +19,8 @@ class CodexAdapter(CLIAdapter):
     """
     Adapter for OpenAI Codex CLI.
 
-    Codex follows Agent Skills standard but uses different directory names:
-    - assets/ instead of templates/
-    - references/ instead of docs/
+    Codex follows the Agent Skills standard with spec directories
+    (assets/, references/, scripts/) — same as our source layout.
     """
 
     @property
@@ -42,23 +40,12 @@ class CodexAdapter(CLIAdapter):
         cwd = Path.cwd()
         return cwd / ".codex" / "skills"
 
-    @property
-    def templates_dir_name(self) -> str:
-        """Codex uses 'assets' instead of 'templates'."""
-        return "assets"
-
-    @property
-    def docs_dir_name(self) -> str:
-        """Codex uses 'references' instead of 'docs'."""
-        return "references"
-
     def transform_skill_md(self, content: str, skill_name: str) -> str:
         """
         Transform SKILL.md for Codex CLI compatibility.
 
         Changes:
         - Remove Claude Code-specific syntax
-        - Update directory references (templates → assets, docs → references)
         - Replace Claude references and hook sections in body
         - Add Codex-specific usage section
         """
@@ -67,12 +54,6 @@ class CodexAdapter(CLIAdapter):
 
         # Replace Claude Code references in body
         content = self._replace_claude_references(content)
-
-        # Update directory references
-        content = content.replace("templates/", "assets/")
-        content = content.replace("docs/", "references/")
-        content = content.replace("`templates`", "`assets`")
-        content = content.replace("`docs`", "`references`")
 
         # Normalize slash invocation to Codex @skill syntax
         content = re.sub(r'/(sf-[\w-]+)\b', r'@\1', content)
@@ -101,9 +82,9 @@ python validate_*.py path/to/your/file
 
 ### Directory Structure
 
-Codex CLI uses slightly different directory names:
-- `assets/` - Code templates (called `templates/` in Claude Code)
-- `references/` - Documentation (called `docs/` in Claude Code)
+Follows the Agent Skills spec:
+- `assets/` - Code templates and static resources
+- `references/` - Documentation and guides
 - `scripts/` - Validation scripts
 
 See `scripts/README.md` for validation script usage.
@@ -154,10 +135,6 @@ See `scripts/README.md` for validation script usage.
             text = content
             text = self._common_skill_md_transforms(text)
             text = self._replace_claude_references(text)
-            text = text.replace("templates/", "assets/")
-            text = text.replace("docs/", "references/")
-            text = text.replace("`templates`", "`assets`")
-            text = text.replace("`docs`", "`references`")
             text = re.sub(r'/(sf-[\w-]+)\b', r'@\1', text)
             # Replace Skill(...) invocations in examples/scripts (handles escaped quotes)
             text = re.sub(
@@ -182,9 +159,8 @@ See `scripts/README.md` for validation script usage.
 
         # Apply Codex transforms to bundled text files
         output.scripts = self._transform_text_files(output.scripts)
-        output.templates = self._transform_text_files(output.templates)
-        output.docs = self._transform_text_files(output.docs)
-        output.examples = self._transform_text_files(output.examples)
+        output.assets = self._transform_text_files(output.assets)
+        output.references = self._transform_text_files(output.references)
 
         # Bundle shared modules if scripts reference them
         if self._needs_shared_modules(output.scripts):

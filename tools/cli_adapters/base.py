@@ -19,9 +19,8 @@ class SkillOutput:
 
     skill_md: str                              # Transformed SKILL.md content
     scripts: Dict[str, str] = field(default_factory=dict)      # {filename: content}
-    templates: Dict[str, str] = field(default_factory=dict)    # {filename: content}
-    docs: Dict[str, str] = field(default_factory=dict)         # {filename: content}
-    examples: Dict[str, str] = field(default_factory=dict)     # {filename: content}
+    assets: Dict[str, str] = field(default_factory=dict)       # {filename: content}
+    references: Dict[str, str] = field(default_factory=dict)   # {filename: content}
     cli_specific: Dict[str, str] = field(default_factory=dict) # CLI-specific files
 
 
@@ -33,7 +32,7 @@ class CLIAdapter(ABC):
     1. Path resolution for the target CLI
     2. SKILL.md transformation (removing Claude Code-specific syntax)
     3. Script bundling (including shared modules)
-    4. Directory structure mapping (templates → assets, etc.)
+    4. Directory structure mapping (assets/, references/, scripts/ per spec)
     """
 
     def __init__(self, repo_root: Path):
@@ -59,14 +58,14 @@ class CLIAdapter(ABC):
         pass
 
     @property
-    def templates_dir_name(self) -> str:
-        """Name of templates directory in output (can be overridden)."""
-        return "templates"
+    def assets_dir_name(self) -> str:
+        """Name of assets directory in output (spec: assets/)."""
+        return "assets"
 
     @property
-    def docs_dir_name(self) -> str:
-        """Name of docs directory in output (can be overridden)."""
-        return "docs"
+    def references_dir_name(self) -> str:
+        """Name of references directory in output (spec: references/)."""
+        return "references"
 
     @abstractmethod
     def transform_skill_md(self, content: str, skill_name: str) -> str:
@@ -108,21 +107,17 @@ class CLIAdapter(ABC):
         # Generate scripts README
         scripts["README.md"] = self._generate_scripts_readme(source_dir)
 
-        # Copy templates
-        templates = self._copy_directory_contents(source_dir / "templates")
+        # Copy assets (spec directory)
+        assets = self._copy_directory_contents(source_dir / "assets")
 
-        # Copy docs
-        docs = self._copy_directory_contents(source_dir / "docs")
-
-        # Copy examples
-        examples = self._copy_directory_contents(source_dir / "examples")
+        # Copy references (spec directory)
+        references = self._copy_directory_contents(source_dir / "references")
 
         return SkillOutput(
             skill_md=skill_md,
             scripts=scripts,
-            templates=templates,
-            docs=docs,
-            examples=examples,
+            assets=assets,
+            references=references,
         )
 
     def _copy_scripts(self, source_dir: Path) -> Dict[str, str]:
@@ -310,30 +305,21 @@ They accept file paths as command-line arguments for manual use.
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 
-        # Write templates
-        if output.templates:
-            templates_dir = target_dir / self.templates_dir_name
-            templates_dir.mkdir(exist_ok=True)
-            for rel_path, content in output.templates.items():
-                file_path = templates_dir / rel_path
+        # Write assets
+        if output.assets:
+            assets_dir = target_dir / self.assets_dir_name
+            assets_dir.mkdir(exist_ok=True)
+            for rel_path, content in output.assets.items():
+                file_path = assets_dir / rel_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 
-        # Write docs
-        if output.docs:
-            docs_dir = target_dir / self.docs_dir_name
-            docs_dir.mkdir(exist_ok=True)
-            for rel_path, content in output.docs.items():
-                file_path = docs_dir / rel_path
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content, encoding='utf-8')
-
-        # Write examples
-        if output.examples:
-            examples_dir = target_dir / "examples"
-            examples_dir.mkdir(exist_ok=True)
-            for rel_path, content in output.examples.items():
-                file_path = examples_dir / rel_path
+        # Write references
+        if output.references:
+            references_dir = target_dir / self.references_dir_name
+            references_dir.mkdir(exist_ok=True)
+            for rel_path, content in output.references.items():
+                file_path = references_dir / rel_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding='utf-8')
 

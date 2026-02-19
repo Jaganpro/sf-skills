@@ -65,4 +65,4 @@ screens → start → status → subflows → textTemplates → variables → wa
 - **Element Names**: PascalCase_With_Underscores (e.g., `Check_Account_Type`)
 - **Button Names (v2.0.0)**: `Action_[Verb]_[Object]` (e.g., `Action_Save_Contact`)
 - **System vs User Mode**: Understand implications, validate FLS for sensitive fields
-- See `docs/flow-best-practices.md` for comprehensive guidance
+- See `references/flow-best-practices.md` for comprehensive guidance

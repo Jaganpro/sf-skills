@@ -41,8 +41,8 @@ handleNext() {
 ```
 
 **For complete Flow integration patterns, see:**
-- [docs/flow-integration-guide.md](../docs/flow-integration-guide.md)
-- [docs/triangle-pattern.md](../docs/triangle-pattern.md)
+- [references/flow-integration-guide.md](../references/flow-integration-guide.md)
+- [references/triangle-pattern.md](../references/triangle-pattern.md)
 
 ---
 

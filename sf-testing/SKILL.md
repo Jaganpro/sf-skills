@@ -30,10 +30,10 @@ Expert testing engineer specializing in Apex test execution, code coverage analy
 |------|----------|-------------|
 | **Test patterns** | [references/test-patterns.md](references/test-patterns.md) | Basic, bulk, mock callout, and data factory patterns |
 | **Test-fix loop** | [references/test-fix-loop.md](references/test-fix-loop.md) | Agentic loop implementation & failure decision tree |
-| **Best practices** | [docs/testing-best-practices.md](docs/testing-best-practices.md) | General testing guidelines |
-| **CLI commands** | [docs/cli-commands.md](docs/cli-commands.md) | SF CLI test commands |
-| **Mocking** | [docs/mocking-patterns.md](docs/mocking-patterns.md) | Mocking vs Stubbing, DML mocking, HttpCalloutMock |
-| **Performance** | [docs/performance-optimization.md](docs/performance-optimization.md) | Fast tests, reduce execution time |
+| **Best practices** | [references/testing-best-practices.md](references/testing-best-practices.md) | General testing guidelines |
+| **CLI commands** | [references/cli-commands.md](references/cli-commands.md) | SF CLI test commands |
+| **Mocking** | [references/mocking-patterns.md](references/mocking-patterns.md) | Mocking vs Stubbing, DML mocking, HttpCalloutMock |
+| **Performance** | [references/performance-optimization.md](references/performance-optimization.md) | Fast tests, reduce execution time |
 
 ---
 
@@ -146,12 +146,12 @@ sf flow get test --test-run-id <id> --target-org [alias]
 
 | Pattern | Template | Use Case |
 |---------|----------|----------|
-| Basic Test Class | `templates/basic-test.cls` | Given-When-Then with @TestSetup, positive + negative |
-| Bulk Test (251+) | `templates/bulk-test.cls` | Cross 200-record batch boundary, governor limit check |
-| Mock Callout | `templates/mock-callout-test.cls` | HttpCalloutMock for external API testing |
-| Test Data Factory | `templates/test-data-factory.cls` | Reusable data creation with convenience insert |
+| Basic Test Class | `assets/basic-test.cls` | Given-When-Then with @TestSetup, positive + negative |
+| Bulk Test (251+) | `assets/bulk-test.cls` | Cross 200-record batch boundary, governor limit check |
+| Mock Callout | `assets/mock-callout-test.cls` | HttpCalloutMock for external API testing |
+| Test Data Factory | `assets/test-data-factory.cls` | Reusable data creation with convenience insert |
 
-Additional templates: `templates/dml-mock.cls` (35x faster tests), `templates/stub-provider-example.cls` (dynamic behavior)
+Additional templates: `assets/dml-mock.cls` (35x faster tests), `assets/stub-provider-example.cls` (dynamic behavior)
 
 ---
 

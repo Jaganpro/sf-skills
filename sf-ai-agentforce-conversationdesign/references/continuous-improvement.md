@@ -52,4 +52,4 @@ Conversation design is never "done." Production usage reveals gaps that testing 
 5. **Deploy** — Push updated agent configuration
 6. **Schedule** — Repeat weekly for first month, then bi-weekly
 
-> **Deep Dive:** [Quality Metrics](../resources/quality-metrics.md) | **Template:** [Improvement Plan](../templates/improvement-plan.md)
+> **Deep Dive:** [Quality Metrics](../references/quality-metrics.md) | **Template:** [Improvement Plan](../assets/improvement-plan.md)

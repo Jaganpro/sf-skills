@@ -43,9 +43,9 @@ Request: "Set up a GenAiFunction for my Apex discount calculator"
 | Document | Description |
 |----------|-------------|
 | [SKILL.md](SKILL.md) | Entry point — full skill reference |
-| [docs/prompt-templates.md](docs/prompt-templates.md) | PromptTemplate metadata and Einstein Prompt Builder |
-| [docs/models-api.md](docs/models-api.md) | Einstein Models API (`aiplatform.ModelsAPI`) |
-| [docs/custom-lightning-types.md](docs/custom-lightning-types.md) | LightningTypeBundle for custom agent UIs |
+| [references/prompt-templates.md](references/prompt-templates.md) | PromptTemplate metadata and Einstein Prompt Builder |
+| [references/models-api.md](references/models-api.md) | Einstein Models API (`aiplatform.ModelsAPI`) |
+| [references/custom-lightning-types.md](references/custom-lightning-types.md) | LightningTypeBundle for custom agent UIs |
 
 ## Orchestration
 

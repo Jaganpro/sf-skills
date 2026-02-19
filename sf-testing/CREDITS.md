@@ -65,12 +65,12 @@ Referenced articles:
 
 | Pattern | Source | Integration |
 |---------|--------|-------------|
-| DML Mocking | James Simone | templates/dml-mock.cls |
-| Mocking vs Stubbing | Beyond the Cloud | docs/mocking-patterns.md |
-| Test Data Factory | Beyond the Cloud | docs/test-data-factory-guide.md |
-| HttpCalloutMock | Apex Hours | templates/http-mock-response.cls |
-| StubProvider | Salesforce Docs | templates/stub-provider-example.cls |
-| Performant Tests | James Simone | docs/performance-optimization.md |
+| DML Mocking | James Simone | assets/dml-mock.cls |
+| Mocking vs Stubbing | Beyond the Cloud | references/mocking-patterns.md |
+| Test Data Factory | Beyond the Cloud | references/test-data-factory-guide.md |
+| HttpCalloutMock | Apex Hours | assets/http-mock-response.cls |
+| StubProvider | Salesforce Docs | assets/stub-provider-example.cls |
+| Performant Tests | James Simone | references/performance-optimization.md |
 
 ---
 

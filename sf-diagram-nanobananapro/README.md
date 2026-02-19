@@ -76,7 +76,7 @@ Images are displayed inline using Kitty graphics protocol (Ghostty) or via Claud
 
 ## Documentation
 
-- [Gemini CLI Setup](docs/gemini-cli-setup.md)
+- [Gemini CLI Setup](references/gemini-cli-setup.md)
 
 ## Security Notes
 

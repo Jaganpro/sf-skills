@@ -38,7 +38,7 @@ python3 ~/.claude/plugins/marketplaces/sf-skills/sf-flow-builder/hooks/scripts/v
 
 **sf-metadata → sf-flow → sf-deploy → sf-data** (you are here: sf-flow)
 
-Flow references custom object/fields? Create with sf-metadata FIRST. Deploy objects BEFORE flows. See `docs/orchestration.md` for extended patterns including Agentforce.
+Flow references custom object/fields? Create with sf-metadata FIRST. Deploy objects BEFORE flows. See `references/orchestration.md` for extended patterns including Agentforce.
 
 ---
 
@@ -49,7 +49,7 @@ Flow references custom object/fields? Create with sf-metadata FIRST. Deploy obje
 | **Before vs After Save** | Before-Save: same-record updates (no DML), validation. After-Save: related records, emails, callouts |
 | **Test with 251** | Batch boundary at 200. Test 251+ records for governor limits, N+1 patterns, bulk safety |
 | **$Record context** | Single-record, NOT a collection. Platform handles batching. Never loop over $Record |
-| **Transform vs Loop** | Transform: data mapping/shaping (30-50% faster). Loop: per-record decisions, counters, varying logic. See `docs/transform-vs-loop-guide.md` |
+| **Transform vs Loop** | Transform: data mapping/shaping (30-50% faster). Loop: per-record decisions, counters, varying logic. See `references/transform-vs-loop-guide.md` |
 
 ---
 
@@ -57,11 +57,11 @@ Flow references custom object/fields? Create with sf-metadata FIRST. Deploy obje
 
 ### Phase 1: Requirements Gathering
 
-**Before building, evaluate alternatives**: See `docs/flow-best-practices.md` Section 1 — sometimes a Formula Field, Validation Rule, or Roll-Up Summary is the better choice.
+**Before building, evaluate alternatives**: See `references/flow-best-practices.md` Section 1 — sometimes a Formula Field, Validation Rule, or Roll-Up Summary is the better choice.
 
 Use **AskUserQuestion** to gather: flow type, primary purpose, trigger object/conditions, target org alias.
 
-**Then**: Check existing flows (`Glob: **/*.flow-meta.xml`), offer reusable subflows from `docs/subflow-library.md`, reference `docs/governance-checklist.md` for complex automation.
+**Then**: Check existing flows (`Glob: **/*.flow-meta.xml`), offer reusable subflows from `references/subflow-library.md`, reference `references/governance-checklist.md` for complex automation.
 
 ### Phase 2: Flow Design & Template Selection
 
@@ -74,13 +74,13 @@ Use **AskUserQuestion** to gather: flow type, primary purpose, trigger object/co
 | Platform Event | `platform-event-flow-template.xml` | `Event_` |
 | Autolaunched | `autolaunched-flow-template.xml` | `Sub_` or `Util_` |
 
-**Element Pattern Templates** in `templates/elements/`: loop-pattern.xml, get-records-pattern.xml, record-delete-pattern.xml
+**Element Pattern Templates** in `assets/elements/`: loop-pattern.xml, get-records-pattern.xml, record-delete-pattern.xml
 
 **Format**: `[Prefix]_Object_Action` using PascalCase (e.g., `Auto_Lead_Priority_Assignment`)
 
 **Screen Flow Buttons**: `allowFinish="true"` required on all screens. Connector present → "Next", absent → "Finish".
 
-**CRITICAL**: Record-triggered flows CANNOT call subflows via XML deployment. See `docs/xml-gotchas.md` and `docs/orchestration-guide.md`.
+**CRITICAL**: Record-triggered flows CANNOT call subflows via XML deployment. See `references/xml-gotchas.md` and `references/orchestration-guide.md`.
 
 ### Phase 3: Flow Generation & Validation
 
@@ -128,7 +128,7 @@ Score: 92/110 ⭐⭐⭐⭐ Very Good
 
 ### Phase 5: Testing & Documentation
 
-See `docs/testing-guide.md` | `docs/testing-checklist.md` | `docs/wait-patterns.md`
+See `references/testing-guide.md` | `references/testing-checklist.md` | `references/wait-patterns.md`
 
 Quick: Screen → Run + test all paths. Record-Triggered → Debug Logs + **bulk test 200+ records**. Autolaunched → Apex test class. Scheduled → Verify schedule + manual Run.
 
@@ -150,7 +150,7 @@ Quick: Screen → Run + test all paths. Record-Triggered → Debug Logs + **bulk
 | `$Record__Prior` in Create-only | Only valid for Update/CreateAndUpdate triggers |
 | "Parent.Field doesn't exist" | Use TWO Get Records (child then parent) |
 
-See `docs/xml-gotchas.md` for XML-specific issues.
+See `references/xml-gotchas.md` for XML-specific issues.
 
 ---
 

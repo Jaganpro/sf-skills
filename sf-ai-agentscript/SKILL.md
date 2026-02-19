@@ -80,9 +80,9 @@ label        → label_text, display_label, label_field
 
 > See [references/complex-data-types.md](references/complex-data-types.md) for the `complex_data_type_name` mapping table and Agent Script → Lightning type mapping.
 
-> **Canvas View** can silently corrupt syntax (`==` → `{! OPERATOR.EQUAL }`, missing colons, de-indentation). Always use **Script view** for structural edits. **Preview Mode** has known bugs with linked variables and output property access — see [resources/known-issues.md](resources/known-issues.md) for workarounds.
+> **Canvas View** can silently corrupt syntax (`==` → `{! OPERATOR.EQUAL }`, missing colons, de-indentation). Always use **Script view** for structural edits. **Preview Mode** has known bugs with linked variables and output property access — see [references/known-issues.md](references/known-issues.md) for workarounds.
 
-> **Conditional nesting**: `else if` is NOT valid, nested `if` inside `if`/`else:` is NOT valid (TDD disproved). Use compound `if A and B:` or flatten to sequential ifs. `...` is slot-filling only (for `with param=...`). Post-action `set`/`run` only works on `@actions.*`, NOT `@utils.*`. See [resources/syntax-reference.md](resources/syntax-reference.md) for detailed examples.
+> **Conditional nesting**: `else if` is NOT valid, nested `if` inside `if`/`else:` is NOT valid (TDD disproved). Use compound `if A and B:` or flatten to sequential ifs. `...` is slot-filling only (for `with param=...`). Post-action `set`/`run` only works on `@actions.*`, NOT `@utils.*`. See [references/syntax-reference.md](references/syntax-reference.md) for detailed examples.
 
 ---
 
@@ -175,7 +175,7 @@ config:
 | `mutable` | Read/write state | `string`, `number`, `boolean`, `object`, `date`, `timestamp`, `currency`, `id`, `list[T]` | ✅ Yes |
 | `linked` | Read-only from source | `string`, `number`, `boolean`, `date`, `timestamp`, `currency`, `id` | ❌ No (has `source:`) |
 
-> ⚠️ **Linked variables CANNOT use `object` or `list` types**. `datetime`, `time`, `integer`, `long` are valid for action I/O only — NOT for variables. See [resources/actions-reference.md](resources/actions-reference.md) for the full type matrix.
+> ⚠️ **Linked variables CANNOT use `object` or `list` types**. `datetime`, `time`, `integer`, `long` are valid for action I/O only — NOT for variables. See [references/actions-reference.md](references/actions-reference.md) for the full type matrix.
 
 ### Connection Block (Escalation Routing)
 
@@ -207,7 +207,7 @@ Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
    → Specifies HOW to call it (with/set clauses)
 ```
 
-> For AiAuthoringBundle (Agent Script): `flow://` and `apex://` targets work **directly** — no GenAiFunction registration needed. I/O schemas (`inputs:` + `outputs:`) are REQUIRED for publish — omitting them causes "Internal Error." See [resources/actions-reference.md](resources/actions-reference.md) for complete action types, target protocols, I/O name matching rules, and the Bare @InvocableMethod pattern.
+> For AiAuthoringBundle (Agent Script): `flow://` and `apex://` targets work **directly** — no GenAiFunction registration needed. I/O schemas (`inputs:` + `outputs:`) are REQUIRED for publish — omitting them causes "Internal Error." See [references/actions-reference.md](references/actions-reference.md) for complete action types, target protocols, I/O name matching rules, and the Bare @InvocableMethod pattern.
 
 ---
 
@@ -250,7 +250,7 @@ Batch testing (up to 100 cases), quality metrics (Completeness, Coherence, Topic
 
 ### Phase 6: CLI Operations
 
-> See [docs/cli-guide.md](docs/cli-guide.md) for retrieve, validate, publish, and generate commands. Always use `--json` to suppress spinner output.
+> See [references/cli-guide.md](references/cli-guide.md) for retrieve, validate, publish, and generate commands. Always use `--json` to suppress spinner output.
 
 ### Bundle Structure
 ```
@@ -295,7 +295,7 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 
 ## 🐛 DEBUGGING & COMMON ISSUES
 
-> See [resources/debugging-guide.md](resources/debugging-guide.md) for the 6 span types (topic_enter, before_reasoning, reasoning, action_call, transition, after_reasoning), trace analysis workflow, and forensic debugging patterns.
+> See [references/debugging-guide.md](references/debugging-guide.md) for the 6 span types (topic_enter, before_reasoning, reasoning, action_call, transition, after_reasoning), trace analysis workflow, and forensic debugging patterns.
 
 ### Common Issues Quick Reference
 
@@ -311,15 +311,15 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 | `Required fields missing: [BundleType]` | Wrong deploy command | Use `sf agent publish authoring-bundle` |
 | `Cannot find a bundle-meta.xml file` | Wrong file naming | Use `AgentName.bundle-meta.xml` |
 
-> **Full issue catalog**: See [resources/known-issues.md](resources/known-issues.md) for 17+ platform bugs and workarounds.
+> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 17+ platform bugs and workarounds.
 
 ### Verification Protocol
 
-When something fails, fetch the relevant canonical URL from [resources/official-sources.md](resources/official-sources.md) and verify. See the diagnostic decision tree mapping 6 error categories to specific doc pages.
+When something fails, fetch the relevant canonical URL from [references/official-sources.md](references/official-sources.md) and verify. See the diagnostic decision tree mapping 6 error categories to specific doc pages.
 
 ### Self-Improvement
 
-This skill's resource files are editable. When you discover errors, new patterns, or platform bugs during a session — fix them in place. See [resources/known-issues.md](resources/known-issues.md) for the issue template.
+This skill's resource files are editable. When you discover errors, new patterns, or platform bugs during a session — fix them in place. See [references/known-issues.md](references/known-issues.md) for the issue template.
 
 ---
 
@@ -359,34 +359,34 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 ### Tier 2: Resource Guides (Comprehensive)
 | Need | Document | Description |
 |------|----------|-------------|
-| Syntax reference | [resources/syntax-reference.md](resources/syntax-reference.md) | Complete block & expression syntax |
-| FSM design | [resources/fsm-architecture.md](resources/fsm-architecture.md) | State machine patterns & examples |
-| Instruction resolution | [resources/instruction-resolution.md](resources/instruction-resolution.md) | Three-phase execution model |
-| Data & multi-agent | [resources/grounding-multiagent.md](resources/grounding-multiagent.md) | Retriever actions & SOMA patterns |
-| Debugging | [resources/debugging-guide.md](resources/debugging-guide.md) | Trace analysis & forensics |
-| Testing | [resources/testing-guide.md](resources/testing-guide.md) | Batch testing & quality metrics |
-| Prompt template actions | [resources/action-prompt-templates.md](resources/action-prompt-templates.md) | `generatePromptResponse://` binding, grounded data |
-| Advanced action patterns | [resources/action-patterns.md](resources/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` refs |
-| Actions reference | [resources/actions-reference.md](resources/actions-reference.md) | Complete action types, GenAiFunction, I/O matching |
-| Official sources | [resources/official-sources.md](resources/official-sources.md) | Canonical SF docs + diagnostic decision tree |
-| Known issues | [resources/known-issues.md](resources/known-issues.md) | Platform bugs & workarounds |
-| Migration guide | [resources/migration-guide.md](resources/migration-guide.md) | Builder UI → Agent Script DSL mapping |
+| Syntax reference | [references/syntax-reference.md](references/syntax-reference.md) | Complete block & expression syntax |
+| FSM design | [references/fsm-architecture.md](references/fsm-architecture.md) | State machine patterns & examples |
+| Instruction resolution | [references/instruction-resolution.md](references/instruction-resolution.md) | Three-phase execution model |
+| Data & multi-agent | [references/grounding-multiagent.md](references/grounding-multiagent.md) | Retriever actions & SOMA patterns |
+| Debugging | [references/debugging-guide.md](references/debugging-guide.md) | Trace analysis & forensics |
+| Testing | [references/testing-guide.md](references/testing-guide.md) | Batch testing & quality metrics |
+| Prompt template actions | [references/action-prompt-templates.md](references/action-prompt-templates.md) | `generatePromptResponse://` binding, grounded data |
+| Advanced action patterns | [references/action-patterns.md](references/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` refs |
+| Actions reference | [references/actions-reference.md](references/actions-reference.md) | Complete action types, GenAiFunction, I/O matching |
+| Official sources | [references/official-sources.md](references/official-sources.md) | Canonical SF docs + diagnostic decision tree |
+| Known issues | [references/known-issues.md](references/known-issues.md) | Platform bugs & workarounds |
+| Migration guide | [references/migration-guide.md](references/migration-guide.md) | Builder UI → Agent Script DSL mapping |
 
 ### Tier 3: Quick References (Docs)
 | Need | Document | Description |
 |------|----------|-------------|
-| CLI commands | [docs/cli-guide.md](docs/cli-guide.md) | sf project retrieve/agent validate/deploy |
-| Patterns | [docs/patterns-quick-ref.md](docs/patterns-quick-ref.md) | Decision tree for pattern selection |
+| CLI commands | [references/cli-guide.md](references/cli-guide.md) | sf project retrieve/agent validate/deploy |
+| Patterns | [references/patterns-quick-ref.md](references/patterns-quick-ref.md) | Decision tree for pattern selection |
 
 ### Tier 4: Templates
 | Category | Directory | Contents |
 |----------|-----------|----------|
-| Root templates | [templates/](templates/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
-| Complete agents | [templates/agents/](templates/agents/) | 4 full agent examples |
-| Components | [templates/components/](templates/components/) | 6 component fragments |
-| Advanced patterns | [templates/patterns/](templates/patterns/) | 11 pattern templates |
-| Metadata XML | [templates/metadata/](templates/metadata/) | 6 XML templates |
-| Apex | [templates/apex/](templates/apex/) | Models API queueable class |
+| Root templates | [assets/](assets/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
+| Complete agents | [assets/agents/](assets/agents/) | 4 full agent examples |
+| Components | [assets/components/](assets/components/) | 6 component fragments |
+| Advanced patterns | [assets/patterns/](assets/patterns/) | 11 pattern templates |
+| Metadata XML | [assets/metadata/](assets/metadata/) | 6 XML templates |
+| Apex | [assets/apex/](assets/apex/) | Models API queueable class |
 
 ---
 
@@ -484,7 +484,7 @@ start_agent entry:
 - [Agent Script Recipes](https://github.com/trailheadapps/agent-script-recipes) — Official examples
 - [Atlas Reasoning Engine](https://developer.salesforce.com/docs/einstein/genai/guide/atlas-reasoning-engine.html) — Reasoning internals
 
-**Full Registry:** See [resources/official-sources.md](resources/official-sources.md) for 14 primary doc URLs, 8 recipe URLs, diagnostic decision tree, and fallback search patterns.
+**Full Registry:** See [references/official-sources.md](references/official-sources.md) for 14 primary doc URLs, 8 recipe URLs, diagnostic decision tree, and fallback search patterns.
 
 ---
 

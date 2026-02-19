@@ -22,4 +22,4 @@ If coverage < threshold:
 | Escalation | ✅ | ✅ | 100% |
 | Phrasing Diversity | ✅ | ✅ | 3+ per topic |
 
-See [Coverage Analysis](../docs/coverage-analysis.md) for complete metrics and improvement guide.
+See [Coverage Analysis](../references/coverage-analysis.md) for complete metrics and improvement guide.

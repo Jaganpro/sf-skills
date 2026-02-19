@@ -41,4 +41,4 @@ Example:
 | `Memory error` | Loading all data | Use Polars lazy frames |
 | `Missing DMO` | Wrong API version | Use API v60.0+ |
 
-See [resources/troubleshooting.md](../resources/troubleshooting.md) for detailed solutions.
+See [references/troubleshooting.md](../references/troubleshooting.md) for detailed solutions.

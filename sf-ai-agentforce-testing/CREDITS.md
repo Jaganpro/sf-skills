@@ -53,9 +53,9 @@ This skill builds upon patterns established in:
 
 | Pattern | Source | Integration |
 |---------|--------|-------------|
-| Test Spec YAML | SF Agent CLI | templates/basic-test-spec.yaml |
-| Agentic Fix Loop | sf-testing skill | docs/agentic-fix-loop.md |
-| Coverage Analysis | SF Testing Center | docs/coverage-analysis.md |
+| Test Spec YAML | SF Agent CLI | assets/basic-test-spec.yaml |
+| Agentic Fix Loop | sf-testing skill | references/agentic-fix-loop.md |
+| Coverage Analysis | SF Testing Center | references/coverage-analysis.md |
 | Cross-Skill Orchestration | sf-skills architecture | hooks/scripts/ |
 
 ---

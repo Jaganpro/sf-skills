@@ -30,8 +30,8 @@ Expert Salesforce administrator specializing in metadata architecture, security 
 | **PermSet auto-gen** | [references/permset-auto-generation.md](references/permset-auto-generation.md) | Phase 3.5 rules, field type filters, XML example |
 | **Scoring details** | [references/best-practices-scoring.md](references/best-practices-scoring.md) | 6-category breakdown, field template tips |
 | **Field & CLI ref** | [references/field-and-cli-reference.md](references/field-and-cli-reference.md) | Field types, relationships, validation patterns, CLI commands |
-| **Naming** | [docs/naming-conventions.md](docs/naming-conventions.md) | API name conventions |
-| **Orchestration** | [docs/orchestration.md](docs/orchestration.md) | Extended orchestration patterns |
+| **Naming** | [references/naming-conventions.md](references/naming-conventions.md) | API name conventions |
+| **Orchestration** | [references/orchestration.md](references/orchestration.md) | Extended orchestration patterns |
 
 ---
 
@@ -66,18 +66,18 @@ Use **AskUserQuestion** to gather:
 
 | Metadata Type | Template |
 |---------------|----------|
-| Custom Object | `templates/objects/custom-object.xml` |
-| Text/Number/Currency/Date/Checkbox Field | `templates/fields/[type]-field.xml` |
-| Picklist / Multi-Select Picklist | `templates/fields/picklist-field.xml` / `multi-select-picklist.xml` |
-| Lookup / Master-Detail | `templates/fields/lookup-field.xml` / `master-detail-field.xml` |
-| Formula / Roll-Up Summary | `templates/fields/formula-field.xml` / `rollup-summary-field.xml` |
-| Email/Phone/URL/Text Area | `templates/fields/[type]-field.xml` |
-| Profile / Permission Set | `templates/profiles/profile.xml` / `templates/permission-sets/permission-set.xml` |
-| Validation Rule / Record Type / Layout | `templates/[type]/` |
+| Custom Object | `assets/objects/custom-object.xml` |
+| Text/Number/Currency/Date/Checkbox Field | `assets/fields/[type]-field.xml` |
+| Picklist / Multi-Select Picklist | `assets/fields/picklist-field.xml` / `multi-select-picklist.xml` |
+| Lookup / Master-Detail | `assets/fields/lookup-field.xml` / `master-detail-field.xml` |
+| Formula / Roll-Up Summary | `assets/fields/formula-field.xml` / `rollup-summary-field.xml` |
+| Email/Phone/URL/Text Area | `assets/fields/[type]-field.xml` |
+| Profile / Permission Set | `assets/profiles/profile.xml` / `assets/permission-sets/permission-set.xml` |
+| Validation Rule / Record Type / Layout | `assets/[type]/` |
 
 **Template Path Resolution** (try in order):
-1. Marketplace: `~/.claude/plugins/marketplaces/sf-skills/sf-metadata/templates/[path]`
-2. Project: `[project-root]/sf-metadata/templates/[path]`
+1. Marketplace: `~/.claude/plugins/marketplaces/sf-skills/sf-metadata/assets/[path]`
+2. Project: `[project-root]/sf-metadata/assets/[path]`
 
 #### For Querying (sf CLI v2)
 
@@ -199,5 +199,5 @@ python3 ~/.claude/plugins/marketplaces/sf-skills/sf-metadata/hooks/scripts/valid
 
 ## Dependencies
 
-**Docs**: `docs/` folder — metadata-types-reference, field-types-guide, fls-best-practices, naming-conventions
+**Docs**: `references/` folder — metadata-types-reference, field-types-guide, fls-best-practices, naming-conventions
 **Required**: sf-deploy (optional) for deployment | API 65.0 | Block if score < 72

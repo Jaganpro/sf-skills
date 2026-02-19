@@ -17,7 +17,7 @@ python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --consumer-key "${CONSUMER_KEY}" \
   --consumer-secret "${CONSUMER_SECRET}" \
   --agent-id "${AGENT_ID}" \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --verbose
 
 # Run specific scenario within a suite
@@ -26,7 +26,7 @@ python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --consumer-key "${CONSUMER_KEY}" \
   --consumer-secret "${CONSUMER_SECRET}" \
   --agent-id "${AGENT_ID}" \
-  --scenarios templates/multi-turn-topic-routing.yaml \
+  --scenarios assets/multi-turn-topic-routing.yaml \
   --scenario-filter topic_switch_natural \
   --verbose
 
@@ -36,7 +36,7 @@ python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --consumer-key "${CONSUMER_KEY}" \
   --consumer-secret "${CONSUMER_SECRET}" \
   --agent-id "${AGENT_ID}" \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --var '$Context.AccountId=001XXXXXXXXXXXX' \
   --var '$Context.EndUserLanguage=en_US' \
   --output results.json \
@@ -55,7 +55,7 @@ export SF_AGENT_ID="0XxRM0000004ABC"
 
 # Now run without credential flags
 python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --verbose
 ```
 
@@ -117,4 +117,4 @@ The test runner automatically evaluates each turn against expectations defined i
 | 7 | Escalation triggered? | `escalation_triggered: true` | Checks for `Escalation` message type |
 | 8 | Response excludes? | `response_not_contains: "error"` | Substring exclusion check |
 
-See [Agent API Reference](../docs/agent-api-reference.md) for complete response format.
+See [Agent API Reference](../references/agent-api-reference.md) for complete response format.

@@ -73,7 +73,7 @@ Or install via plugin:
 
 ## Color Palette
 
-Tailwind-inspired pastel colors with dark borders (see [docs/color-palette.md](docs/color-palette.md)):
+Tailwind-inspired pastel colors with dark borders (see [references/color-palette.md](references/color-palette.md)):
 
 | Component | Fill (200) | Stroke (700+) |
 |-----------|------------|---------------|
@@ -124,9 +124,9 @@ sequenceDiagram
 
 ## Documentation
 
-- [Color Palette](docs/color-palette.md) - Styling guide
-- [Mermaid Reference](docs/mermaid-reference.md) - Syntax quick reference
-- [Diagram Conventions](docs/diagram-conventions.md) - Consistency rules
+- [Color Palette](references/color-palette.md) - Styling guide
+- [Mermaid Reference](references/mermaid-reference.md) - Syntax quick reference
+- [Diagram Conventions](references/diagram-conventions.md) - Consistency rules
 
 ## Contributing
 

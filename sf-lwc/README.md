@@ -100,10 +100,10 @@ S → Security     │ Enforce permissions, FLS, and data protection
 
 ## Documentation
 
-- [Best Practices](docs/lwc-best-practices.md)
-- [Flow Integration](docs/flow-integration-guide.md)
-- [Accessibility Guide](docs/accessibility-guide.md)
-- [Jest Testing](docs/jest-testing-guide.md)
+- [Best Practices](references/lwc-best-practices.md)
+- [Flow Integration](references/flow-integration-guide.md)
+- [Accessibility Guide](references/accessibility-guide.md)
+- [Jest Testing](references/jest-testing-guide.md)
 
 ## Requirements
 

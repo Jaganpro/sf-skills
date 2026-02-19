@@ -99,12 +99,12 @@ Always deploy custom objects/fields BEFORE flows that reference them.
 
 ## Documentation
 
-- [Transform vs Loop Guide](docs/transform-vs-loop-guide.md) - When to use each element
-- [Flow Quick Reference](docs/flow-quick-reference.md) - Comprehensive cheat sheet
-- [Flow Best Practices](docs/flow-best-practices.md) - Performance and design patterns
-- [LWC Integration](docs/lwc-integration-guide.md) - Screen components
-- [Wait Patterns](docs/wait-patterns.md) - Delay and scheduling
-- [Testing Guide](docs/testing-guide.md) - Validation strategies
+- [Transform vs Loop Guide](references/transform-vs-loop-guide.md) - When to use each element
+- [Flow Quick Reference](references/flow-quick-reference.md) - Comprehensive cheat sheet
+- [Flow Best Practices](references/flow-best-practices.md) - Performance and design patterns
+- [LWC Integration](references/lwc-integration-guide.md) - Screen components
+- [Wait Patterns](references/wait-patterns.md) - Delay and scheduling
+- [Testing Guide](references/testing-guide.md) - Validation strategies
 
 ## Requirements
 

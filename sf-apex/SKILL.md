@@ -46,21 +46,21 @@ Use **AskUserQuestion** to gather:
 **Select template**:
 | Class Type | Template |
 |------------|----------|
-| Trigger | `templates/trigger.trigger` |
-| Trigger Action | `templates/trigger-action.cls` |
-| Service | `templates/service.cls` |
-| Selector | `templates/selector.cls` |
-| Batch | `templates/batch.cls` |
-| Queueable | `templates/queueable.cls` |
-| Test | `templates/test-class.cls` |
-| Test Data Factory | `templates/test-data-factory.cls` |
-| Standard Class | `templates/apex-class.cls` |
+| Trigger | `assets/trigger.trigger` |
+| Trigger Action | `assets/trigger-action.cls` |
+| Service | `assets/service.cls` |
+| Selector | `assets/selector.cls` |
+| Batch | `assets/batch.cls` |
+| Queueable | `assets/queueable.cls` |
+| Test | `assets/test-class.cls` |
+| Test Data Factory | `assets/test-data-factory.cls` |
+| Standard Class | `assets/apex-class.cls` |
 
 **Template Path Resolution** (try in order):
-1. **Marketplace folder**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/templates/[template]`
-2. **Project folder**: `[project-root]/sf-apex/templates/[template]`
+1. **Marketplace folder**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/assets/[template]`
+2. **Project folder**: `[project-root]/sf-apex/assets/[template]`
 
-**Example**: `Read: ~/.claude/plugins/marketplaces/sf-skills/sf-apex/templates/apex-class.cls`
+**Example**: `Read: ~/.claude/plugins/marketplaces/sf-skills/sf-apex/assets/apex-class.cls`
 
 ---
 
@@ -68,7 +68,7 @@ Use **AskUserQuestion** to gather:
 
 **For Generation**:
 1. Create class file in `force-app/main/default/classes/`
-2. Apply naming conventions (see [docs/naming-conventions.md](docs/naming-conventions.md))
+2. Apply naming conventions (see [references/naming-conventions.md](references/naming-conventions.md))
 3. Include ApexDoc comments
 4. Create corresponding test class
 
@@ -113,8 +113,8 @@ If ANY of these patterns would be generated, **STOP and ask the user**:
 
 **DO NOT generate anti-patterns even if explicitly requested.** Ask user to confirm the exception with documented justification.
 
-**See**: [resources/security-guide.md](resources/security-guide.md) for detailed security patterns
-**See**: [resources/anti-patterns.md](resources/anti-patterns.md) for complete anti-pattern catalog
+**See**: [references/security-guide.md](references/security-guide.md) for detailed security patterns
+**See**: [references/anti-patterns.md](references/anti-patterns.md) for complete anti-pattern catalog
 
 ---
 
@@ -130,7 +130,7 @@ Skill(skill="sf-deploy", args="Deploy classes at force-app/main/default/classes/
 Skill(skill="sf-deploy", args="Proceed with actual deployment to [target-org]")
 ```
 
-**See**: [resources/troubleshooting.md](resources/troubleshooting.md#cross-skill-dependency-checklist) for deployment prerequisites
+**See**: [references/troubleshooting.md](references/troubleshooting.md#cross-skill-dependency-checklist) for deployment prerequisites
 
 ---
 
@@ -165,10 +165,10 @@ Next Steps: Run tests, verify behavior, monitor logs
 **Thresholds**: ✅ 90+ (Deploy) | ⚠️ 67-89 (Review) | ❌ <67 (Block - fix required)
 
 **Deep Dives**:
-- [resources/bulkification-guide.md](resources/bulkification-guide.md) - Governor limits, collection handling
-- [resources/security-guide.md](resources/security-guide.md) - CRUD/FLS, sharing, injection prevention
-- [resources/testing-patterns.md](resources/testing-patterns.md) - Exception types, mocking, coverage
-- [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md) - TAF, @InvocableMethod, async patterns
+- [references/bulkification-guide.md](references/bulkification-guide.md) - Governor limits, collection handling
+- [references/security-guide.md](references/security-guide.md) - CRUD/FLS, sharing, injection prevention
+- [references/testing-patterns.md](references/testing-patterns.md) - Exception types, mocking, coverage
+- [references/patterns-deep-dive.md](references/patterns-deep-dive.md) - TAF, @InvocableMethod, async patterns
 
 ---
 
@@ -205,9 +205,9 @@ public class TA_Account_SetDefaults implements TriggerAction.BeforeInsert {
 sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10
 ```
 
-**Fallback**: If TAF is NOT installed, use standard trigger pattern (see [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#standard-trigger-pattern))
+**Fallback**: If TAF is NOT installed, use standard trigger pattern (see [references/patterns-deep-dive.md](references/patterns-deep-dive.md#standard-trigger-pattern))
 
-**See**: [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#trigger-actions-framework-taf) for complete TAF patterns and Custom Metadata setup
+**See**: [references/patterns-deep-dive.md](references/patterns-deep-dive.md#trigger-actions-framework-taf) for complete TAF patterns and Custom Metadata setup
 
 ---
 
@@ -221,7 +221,7 @@ sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10
 | Scheduled/recurring job | `Schedulable` |
 | Post-queueable cleanup | `Queueable Finalizer` |
 
-**See**: [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#async-patterns) for detailed async patterns
+**See**: [references/patterns-deep-dive.md](references/patterns-deep-dive.md#async-patterns) for detailed async patterns
 
 ---
 
@@ -234,7 +234,7 @@ sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10
 
 **Breaking Change (API 62.0)**: Cannot modify Set while iterating - throws `System.FinalException`
 
-**See**: [resources/bulkification-guide.md](resources/bulkification-guide.md#collection-handling-best-practices) for collection usage
+**See**: [references/bulkification-guide.md](references/bulkification-guide.md#collection-handling-best-practices) for collection usage
 
 ---
 
@@ -273,12 +273,12 @@ public with sharing class RecordProcessor {
 }
 ```
 
-**Template**: Use `templates/invocable-method.cls` for complete pattern
+**Template**: Use `assets/invocable-method.cls` for complete pattern
 
 **See**:
-- [resources/patterns-deep-dive.md](resources/patterns-deep-dive.md#flow-integration-invocablemethod) - Complete @InvocableMethod guide
-- [docs/flow-integration.md](docs/flow-integration.md) - Advanced Flow-Apex patterns
-- [docs/triangle-pattern.md](docs/triangle-pattern.md) - Flow-LWC-Apex triangle
+- [references/patterns-deep-dive.md](references/patterns-deep-dive.md#flow-integration-invocablemethod) - Complete @InvocableMethod guide
+- [references/flow-integration.md](references/flow-integration.md) - Advanced Flow-Apex patterns
+- [references/triangle-pattern.md](references/triangle-pattern.md) - Flow-LWC-Apex triangle
 
 ---
 
@@ -322,8 +322,8 @@ static void testBulk() {
 ```
 
 **See**:
-- [resources/testing-patterns.md](resources/testing-patterns.md) - Exception types, mocking, Test Data Factory
-- [docs/testing-guide.md](docs/testing-guide.md) - Complete testing reference
+- [references/testing-patterns.md](references/testing-patterns.md) - Exception types, mocking, Test Data Factory
+- [references/testing-guide.md](references/testing-guide.md) - Complete testing reference
 
 ---
 
@@ -354,7 +354,7 @@ static void testExceptionHandling() {
 }
 ```
 
-**See**: [resources/testing-patterns.md](resources/testing-patterns.md#common-exception-types) for complete reference
+**See**: [references/testing-patterns.md](references/testing-patterns.md#common-exception-types) for complete reference
 
 ---
 
@@ -379,7 +379,7 @@ For LSP validation to work, users must have:
 
 **Graceful Degradation**: If LSP is unavailable, validation silently skips - the skill continues to work with only 150-point semantic validation.
 
-**See**: [resources/troubleshooting.md](resources/troubleshooting.md#lsp-based-validation-auto-fix-loop) for complete LSP guide
+**See**: [references/troubleshooting.md](references/troubleshooting.md#lsp-based-validation-auto-fix-loop) for complete LSP guide
 
 ---
 
@@ -397,17 +397,17 @@ For LSP validation to work, users must have:
 
 ## Reference Documentation
 
-### Quick Guides (resources/)
+### Quick Guides (references/)
 | Guide | Description |
 |-------|-------------|
-| [patterns-deep-dive.md](resources/patterns-deep-dive.md) | TAF, @InvocableMethod, async patterns, service layer |
-| [security-guide.md](resources/security-guide.md) | CRUD/FLS, sharing, SOQL injection, guardrails |
-| [bulkification-guide.md](resources/bulkification-guide.md) | Governor limits, collections, monitoring |
-| [testing-patterns.md](resources/testing-patterns.md) | Exception types, mocking, Test Data Factory, coverage |
-| [anti-patterns.md](resources/anti-patterns.md) | Code smells, red flags, refactoring patterns |
-| [troubleshooting.md](resources/troubleshooting.md) | LSP validation, deployment errors, debug logs |
+| [patterns-deep-dive.md](references/patterns-deep-dive.md) | TAF, @InvocableMethod, async patterns, service layer |
+| [security-guide.md](references/security-guide.md) | CRUD/FLS, sharing, SOQL injection, guardrails |
+| [bulkification-guide.md](references/bulkification-guide.md) | Governor limits, collections, monitoring |
+| [testing-patterns.md](references/testing-patterns.md) | Exception types, mocking, Test Data Factory, coverage |
+| [anti-patterns.md](references/anti-patterns.md) | Code smells, red flags, refactoring patterns |
+| [troubleshooting.md](references/troubleshooting.md) | LSP validation, deployment errors, debug logs |
 
-### Full Documentation (docs/)
+### Full Documentation (references/)
 | Document | Description |
 |----------|-------------|
 | `best-practices.md` | Bulkification, collections, null safety, guard clauses, DML performance |
@@ -423,7 +423,7 @@ For LSP validation to work, users must have:
 | `triangle-pattern.md` | Flow-LWC-Apex integration |
 | `llm-anti-patterns.md` | **NEW**: Common LLM code generation mistakes (Java types, non-existent methods, Map patterns) |
 
-**Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/docs/`
+**Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-apex/references/`
 
 ---
 

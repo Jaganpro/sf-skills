@@ -59,7 +59,7 @@ sf apex tail log --target-org [alias] --color
 **Set Debug Level** (via TraceFlag records, not CLI flags):
 ```bash
 # Debug levels are configured via TraceFlag records in Setup
-# See "Debug Level Configuration" section in docs/cli-commands.md
+# See "Debug Level Configuration" section in references/cli-commands.md
 sf data query -q "SELECT Id, MasterLabel FROM DebugLevel" -o [alias] --json
 ```
 
@@ -460,20 +460,20 @@ When enabled, sf-debug will automatically:
 
 | Document | Description |
 |----------|-------------|
-| [debug-log-reference.md](docs/debug-log-reference.md) | Complete debug log event reference |
-| [cli-commands.md](docs/cli-commands.md) | SF CLI debugging commands |
-| [benchmarking-guide.md](docs/benchmarking-guide.md) | Dan Appleman's technique, real-world benchmarks |
-| [log-analysis-tools.md](docs/log-analysis-tools.md) | Apex Log Analyzer, manual analysis patterns |
+| [debug-log-reference.md](references/debug-log-reference.md) | Complete debug log event reference |
+| [cli-commands.md](references/cli-commands.md) | SF CLI debugging commands |
+| [benchmarking-guide.md](references/benchmarking-guide.md) | Dan Appleman's technique, real-world benchmarks |
+| [log-analysis-tools.md](references/log-analysis-tools.md) | Apex Log Analyzer, manual analysis patterns |
 
 ## Templates
 
 | Template | Description |
 |----------|-------------|
-| [cpu-heap-optimization.cls](templates/cpu-heap-optimization.cls) | CPU and heap optimization patterns |
-| [benchmarking-template.cls](templates/benchmarking-template.cls) | Ready-to-run benchmark comparisons |
-| [soql-in-loop-fix.cls](templates/soql-in-loop-fix.cls) | SOQL bulkification pattern |
-| [dml-in-loop-fix.cls](templates/dml-in-loop-fix.cls) | DML bulkification pattern |
-| [null-pointer-fix.cls](templates/null-pointer-fix.cls) | Null-safe patterns |
+| [cpu-heap-optimization.cls](assets/cpu-heap-optimization.cls) | CPU and heap optimization patterns |
+| [benchmarking-template.cls](assets/benchmarking-template.cls) | Ready-to-run benchmark comparisons |
+| [soql-in-loop-fix.cls](assets/soql-in-loop-fix.cls) | SOQL bulkification pattern |
+| [dml-in-loop-fix.cls](assets/dml-in-loop-fix.cls) | DML bulkification pattern |
+| [null-pointer-fix.cls](assets/null-pointer-fix.cls) | Null-safe patterns |
 
 ---
 

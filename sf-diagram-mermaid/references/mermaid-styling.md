@@ -78,4 +78,4 @@ Keep labels short (icon + name only). Avoid `<br/>` and `<small>` tags:
 ["🔐 sf-connected-apps"]
 ```
 
-**Full reference**: See `docs/color-palette.md`
+**Full reference**: See `references/color-palette.md`

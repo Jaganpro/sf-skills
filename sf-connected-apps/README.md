@@ -75,7 +75,7 @@ sf-connected-apps/
 ├── skills/
 │   └── sf-connected-apps/
 │       └── SKILL.md          # Main skill definition
-├── templates/
+├── assets/
 │   ├── connected-app-basic.xml
 │   ├── connected-app-oauth.xml
 │   ├── connected-app-jwt.xml
@@ -84,9 +84,9 @@ sf-connected-apps/
 │   ├── eca-global-oauth.xml
 │   ├── eca-oauth-settings.xml
 │   └── eca-policies.xml
-├── examples/
+├── references/
 │   └── example-usage.md
-├── docs/
+├── references/
 │   ├── oauth-flows.md
 │   ├── security-checklist.md
 │   └── migration-guide.md

@@ -110,7 +110,7 @@ All ERD diagrams now default to the **official Salesforce architect.salesforce.c
 | **Relationship Lines** | Labeled ("child of", "parent of") |
 | **Footer** | Copyright + Last modified date |
 
-See `resources/architect-aesthetic-guide.md` for full specification.
+See `references/architect-aesthetic-guide.md` for full specification.
 
 ---
 
@@ -272,7 +272,7 @@ Quick mode uses: Professional style, 1K resolution, legend included.
 
 ### Full Question Reference
 
-See `docs/interview-questions.md` for:
+See `references/interview-questions.md` for:
 - Complete question sets for all image types
 - Answer-to-prompt mapping tables
 - Default values for skip mode
@@ -312,7 +312,7 @@ open ~/nanobanana-output/[generated-file].png
 
 **Workflow**:
 0. **Run Interview** (unless "quick" mode) - Ask about component type, object, context, style
-1. Load appropriate template from `templates/lwc/`
+1. Load appropriate template from `assets/lwc/`
 2. Customize prompt using interview answers + template
 3. Execute via Nano Banana
 4. Open in Preview app
@@ -393,19 +393,19 @@ open ~/nanobanana-output/$(ls -t ~/nanobanana-output/*.png | head -1)
 
 ## Template Usage
 
-### ERD Templates (`templates/erd/`)
+### ERD Templates (`assets/erd/`)
 - `core-objects.md` - Standard CRM objects
 - `custom-objects.md` - Custom data model
 
-### LWC Templates (`templates/lwc/`)
+### LWC Templates (`assets/lwc/`)
 - `data-table.md` - Lightning datatable mockups
 - `record-form.md` - Record form mockups
 - `dashboard-card.md` - Dashboard card mockups
 
-### Architecture Templates (`templates/architecture/`)
+### Architecture Templates (`assets/architecture/`)
 - `integration-flow.md` - Integration architecture diagrams
 
-### Review Templates (`templates/review/`)
+### Review Templates (`assets/review/`)
 - `apex-review.md` - Apex code review prompts
 - `lwc-review.md` - LWC review prompts
 

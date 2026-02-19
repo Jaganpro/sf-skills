@@ -67,13 +67,13 @@ Use **AskUserQuestion** to gather:
 | Agentforce Flow | `agentforce/agent-flow.md` |
 
 **Template Path Resolution** (try in order):
-1. **Marketplace folder** (always available): `~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/templates/[template]`
-2. **Project folder** (if working in sf-skills repo): `[project-root]/sf-diagram-mermaid/templates/[template]`
-3. **Cache folder** (if installed individually): `~/.claude/plugins/cache/sf-diagram-mermaid/*/sf-diagram-mermaid/templates/[template]`
+1. **Marketplace folder** (always available): `~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/assets/[template]`
+2. **Project folder** (if working in sf-skills repo): `[project-root]/sf-diagram-mermaid/assets/[template]`
+3. **Cache folder** (if installed individually): `~/.claude/plugins/cache/sf-diagram-mermaid/*/sf-diagram-mermaid/assets/[template]`
 
 **Example**: To load JWT Bearer template:
 ```
-Read: ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/templates/oauth/jwt-bearer.md
+Read: ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/assets/oauth/jwt-bearer.md
 ```
 
 ### Phase 3: Data Collection
@@ -100,7 +100,7 @@ Read: ~/.claude/plugins/marketplaces/sf-skills/sf-diagram-mermaid/templates/oaut
 ### Phase 4: Diagram Generation
 
 **Generate Mermaid code**:
-1. Apply color scheme from `docs/color-palette.md`
+1. Apply color scheme from `references/color-palette.md`
 2. Add annotations and notes where helpful
 3. Include autonumber for sequence diagrams
 4. For data models: Use `flowchart LR` with object-type color coding
@@ -187,7 +187,7 @@ style A fill:#fbcfe8,stroke:#be185d,color:#1f2937
 | **Device Authorization** | CLI, IoT, Smart TVs | Poll for token after user auth | `oauth/device-authorization.md` |
 | **Refresh Token** | Extend access | Reuse existing tokens | `oauth/refresh-token.md` |
 
-Templates in `templates/oauth/`.
+Templates in `assets/oauth/`.
 
 ---
 
@@ -259,24 +259,24 @@ In flowchart format:
 
 | Template | Objects | Path |
 |----------|---------|------|
-| **Core** | Account, Contact, Opportunity, Case | `templates/datamodel/salesforce-erd.md` |
-| **Sales Cloud** | Account, Contact, Lead, Opportunity, Product, Campaign | `templates/datamodel/sales-cloud-erd.md` |
-| **Service Cloud** | Case, Entitlement, Knowledge, ServiceContract | `templates/datamodel/service-cloud-erd.md` |
-| **Campaigns** | Campaign, CampaignMember, CampaignInfluence | `templates/datamodel/campaigns-erd.md` |
-| **Territory Management** | Territory2, Territory2Model, UserTerritory2Association | `templates/datamodel/territory-management-erd.md` |
-| **Party Model** | AccountContactRelation, ContactContactRelation | `templates/datamodel/party-model-erd.md` |
-| **Quote & Order** | Quote, QuoteLineItem, Order, OrderItem | `templates/datamodel/quote-order-erd.md` |
-| **Forecasting** | ForecastingItem, ForecastingQuota, OpportunitySplit | `templates/datamodel/forecasting-erd.md` |
-| **Consent (GDPR)** | Individual, ContactPointEmail, DataUsePurpose | `templates/datamodel/consent-erd.md` |
-| **Files** | ContentDocument, ContentVersion, ContentDocumentLink | `templates/datamodel/files-erd.md` |
-| **Scheduler** | ServiceAppointment, ServiceResource, ServiceTerritory | `templates/datamodel/scheduler-erd.md` |
-| **Field Service** | WorkOrder, ServiceAppointment, TimeSheet | `templates/datamodel/fsl-erd.md` |
-| **B2B Commerce** | WebStore, WebCart, BuyerGroup, BuyerAccount | `templates/datamodel/b2b-commerce-erd.md` |
-| **Revenue Cloud** | ProductCatalog, ProductSellingModel, PriceAdjustment | `templates/datamodel/revenue-cloud-erd.md` |
+| **Core** | Account, Contact, Opportunity, Case | `assets/datamodel/salesforce-erd.md` |
+| **Sales Cloud** | Account, Contact, Lead, Opportunity, Product, Campaign | `assets/datamodel/sales-cloud-erd.md` |
+| **Service Cloud** | Case, Entitlement, Knowledge, ServiceContract | `assets/datamodel/service-cloud-erd.md` |
+| **Campaigns** | Campaign, CampaignMember, CampaignInfluence | `assets/datamodel/campaigns-erd.md` |
+| **Territory Management** | Territory2, Territory2Model, UserTerritory2Association | `assets/datamodel/territory-management-erd.md` |
+| **Party Model** | AccountContactRelation, ContactContactRelation | `assets/datamodel/party-model-erd.md` |
+| **Quote & Order** | Quote, QuoteLineItem, Order, OrderItem | `assets/datamodel/quote-order-erd.md` |
+| **Forecasting** | ForecastingItem, ForecastingQuota, OpportunitySplit | `assets/datamodel/forecasting-erd.md` |
+| **Consent (GDPR)** | Individual, ContactPointEmail, DataUsePurpose | `assets/datamodel/consent-erd.md` |
+| **Files** | ContentDocument, ContentVersion, ContentDocumentLink | `assets/datamodel/files-erd.md` |
+| **Scheduler** | ServiceAppointment, ServiceResource, ServiceTerritory | `assets/datamodel/scheduler-erd.md` |
+| **Field Service** | WorkOrder, ServiceAppointment, TimeSheet | `assets/datamodel/fsl-erd.md` |
+| **B2B Commerce** | WebStore, WebCart, BuyerGroup, BuyerAccount | `assets/datamodel/b2b-commerce-erd.md` |
+| **Revenue Cloud** | ProductCatalog, ProductSellingModel, PriceAdjustment | `assets/datamodel/revenue-cloud-erd.md` |
 
 ### ERD Conventions Documentation
 
-See `docs/erd-conventions.md` for complete documentation of:
+See `references/erd-conventions.md` for complete documentation of:
 - Object type indicators (`[STD]`, `[CUST]`, `[EXT]`)
 - LDV display format
 - OWD display format
@@ -338,7 +338,7 @@ See `docs/erd-conventions.md` for complete documentation of:
 User: "Create a JWT Bearer OAuth flow diagram"
 
 You should:
-1. Load templates/oauth/jwt-bearer.md
+1. Load assets/oauth/jwt-bearer.md
 2. Generate Mermaid sequenceDiagram
 3. Generate ASCII fallback
 4. Score and deliver
@@ -350,7 +350,7 @@ User: "Create an ERD for Account, Contact, Opportunity, and Case"
 
 You should:
 1. If org connected: Query record counts via query-org-metadata.py
-2. Load templates/datamodel/salesforce-erd.md (or cloud-specific template)
+2. Load assets/datamodel/salesforce-erd.md (or cloud-specific template)
 3. Generate Mermaid flowchart LR with:
    - Object nodes (name + record count, no fields)
    - Color coding by object type (Standard=Blue, Custom=Orange)
@@ -365,7 +365,7 @@ User: "Diagram our Salesforce to SAP integration flow"
 
 You should:
 1. Ask clarifying questions (sync/async, trigger, protocol)
-2. Load templates/integration/api-sequence.md
+2. Load assets/integration/api-sequence.md
 3. Generate Mermaid sequenceDiagram
 4. Generate ASCII fallback
 5. Score and deliver

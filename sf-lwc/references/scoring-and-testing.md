@@ -113,4 +113,4 @@ describe('c-my-component', () => {
 });
 ```
 
-**For complete testing patterns (ResizeObserver polyfill, advanced mocks, event testing), see [resources/jest-testing.md](../resources/jest-testing.md)**
+**For complete testing patterns (ResizeObserver polyfill, advanced mocks, event testing), see [references/jest-testing.md](../references/jest-testing.md)**

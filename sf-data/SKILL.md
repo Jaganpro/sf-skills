@@ -67,7 +67,7 @@ The sf-data skill provides comprehensive data management capabilities:
 | `INVALID_FIELD: No such column 'Field__c'` | Field not deployed OR FLS issue | Deploy field + Permission Set |
 | `REQUIRED_FIELD_MISSING` | Validation rule requires field | Include all required fields |
 
-See `docs/orchestration.md` for the 251-record pattern and cleanup sequences.
+See `references/orchestration.md` for the 251-record pattern and cleanup sequences.
 
 ---
 
@@ -86,9 +86,9 @@ See `docs/orchestration.md` for the 251-record pattern and cleanup sequences.
 
 **Phase 1: Gather** → AskUserQuestion (operation type, object, org alias, record count) | Check existing: `Glob: **/*factory*.apex`
 
-**Phase 2: Template** → Select from `templates/` folder (factories/, bulk/, soql/, cleanup/)
-- Marketplace: `~/.claude/plugins/marketplaces/sf-skills/sf-data/templates/`
-- Project: `[project-root]/sf-data/templates/`
+**Phase 2: Template** → Select from `assets/` folder (factories/, bulk/, soql/, cleanup/)
+- Marketplace: `~/.claude/plugins/marketplaces/sf-skills/sf-data/assets/`
+- Project: `[project-root]/sf-data/assets/`
 
 **Phase 3: Execute** → Run sf CLI command | Capture JSON output | Track record IDs
 
@@ -135,7 +135,7 @@ See `docs/orchestration.md` for the 251-record pattern and cleanup sequences.
 | **Semi-Join** | `WHERE Id IN (SELECT ParentId FROM ...)` | Records WITH related |
 | **Anti-Join** | `WHERE Id NOT IN (SELECT ...)` | Records WITHOUT related |
 
-See `templates/soql/` folder for complete examples (use marketplace or project path).
+See `assets/soql/` folder for complete examples (use marketplace or project path).
 
 ---
 
@@ -299,10 +299,10 @@ See [Salesforce Governor Limits](https://developer.salesforce.com/docs/atlas.en-
 
 ## Reference & Templates
 
-**Docs**: `docs/` folder (in sf-data) - soql-relationship-guide, bulk-operations-guide, test-data-patterns, cleanup-rollback-guide
+**Docs**: `references/` folder (in sf-data) - soql-relationship-guide, bulk-operations-guide, test-data-patterns, cleanup-rollback-guide
 
-**Templates**: `templates/factories/` (Account, Contact, Opportunity, hierarchy) | `templates/soql/` (parent-child, polymorphic) | `templates/bulk/` | `templates/cleanup/`
-- **Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-data/templates/[subfolder]/`
+**Templates**: `assets/factories/` (Account, Contact, Opportunity, hierarchy) | `assets/soql/` (parent-child, polymorphic) | `assets/bulk/` | `assets/cleanup/`
+- **Path**: `~/.claude/plugins/marketplaces/sf-skills/sf-data/assets/[subfolder]/`
 
 ---
 

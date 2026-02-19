@@ -55,7 +55,7 @@ openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 \
 # Required scopes: cdp_query_api, cdp_profile_api
 ```
 
-See [docs/auth-setup.md](docs/auth-setup.md) for detailed instructions.
+See [references/auth-setup.md](references/auth-setup.md) for detailed instructions.
 
 ### 3. Extract Session Data
 
@@ -146,7 +146,7 @@ GenAIGatewayRequest (30 fields) - LLM call details, token usage
 
 **Important**: Data Cloud uses `AiAgent` (lowercase 'i') in field names, not `AIAgent`.
 
-See [resources/data-model-reference.md](resources/data-model-reference.md) for full schema.
+See [references/data-model-reference.md](references/data-model-reference.md) for full schema.
 
 ## Output Format
 
@@ -179,7 +179,7 @@ stdm_data/
 | `topics` | Topic routing analysis |
 | `count` | Count records per DMO |
 
-See [docs/cli-reference.md](docs/cli-reference.md) for all options.
+See [references/cli-reference.md](references/cli-reference.md) for all options.
 
 ## Validation
 
@@ -224,10 +224,10 @@ pytest scenarios/ -v --org YourOrgAlias
 
 ## Resources
 
-- [Data Model Reference](resources/data-model-reference.md) - Full STDM schema
-- [Query Patterns](resources/query-patterns.md) - SQL examples for Data Cloud
-- [Analysis Cookbook](resources/analysis-cookbook.md) - Polars analysis patterns
-- [Polars Cheatsheet](docs/polars-cheatsheet.md) - Quick reference
+- [Data Model Reference](references/data-model-reference.md) - Full STDM schema
+- [Query Patterns](references/query-patterns.md) - SQL examples for Data Cloud
+- [Analysis Cookbook](references/analysis-cookbook.md) - Polars analysis patterns
+- [Polars Cheatsheet](references/polars-cheatsheet.md) - Quick reference
 
 ## License
 

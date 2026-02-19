@@ -33,7 +33,7 @@ python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --consumer-key YOUR_KEY \
   --consumer-secret YOUR_SECRET \
   --agent-id 0XxRM0000004ABC \
-  --scenarios templates/multi-turn-comprehensive.yaml \
+  --scenarios assets/multi-turn-comprehensive.yaml \
   --output results.json --verbose
 
 # Or set env vars and omit credential flags
@@ -42,7 +42,7 @@ export SF_CONSUMER_KEY=YOUR_KEY
 export SF_CONSUMER_SECRET=YOUR_SECRET
 python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
   --agent-id 0XxRM0000004ABC \
-  --scenarios templates/multi-turn-topic-routing.yaml \
+  --scenarios assets/multi-turn-topic-routing.yaml \
   --var '$Context.AccountId=001XXXXXXXXXXXX' \
   --verbose
 
@@ -93,7 +93,7 @@ CLAUDE CODE:
 1. Phase A: Run multi-turn scenarios via Python test runner
    python3 {SKILL_PATH}/hooks/scripts/multi_turn_test_runner.py \
      --agent-id ${AGENT_ID} \
-     --scenarios templates/multi-turn-comprehensive.yaml \
+     --scenarios assets/multi-turn-comprehensive.yaml \
      --output results.json --verbose
 2. Analyze failures from results.json (10 categories)
 3. If fixable: Skill(skill="sf-ai-agentscript", args="Fix...")

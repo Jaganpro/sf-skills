@@ -22,7 +22,7 @@ Topic name format in `expectedTopic` depends on the topic type:
 4. Update spec with actual runtime names
 5. Re-deploy with `--force-overwrite` and re-run
 
-See [topic-name-resolution.md](../docs/topic-name-resolution.md) for the complete guide.
+See [topic-name-resolution.md](../references/topic-name-resolution.md) for the complete guide.
 
 ## B1.6: Known CLI Gotchas
 
@@ -71,7 +71,7 @@ sf data query --query "SELECT Id FROM Case ORDER BY CreatedDate DESC LIMIT 1" --
 
 > **Note:** Standard context variables (`RoutableId`, `CaseId`) do NOT unlock authentication-gated topics. Injecting them does not satisfy `User_Authentication` flows. However, **custom boolean auth-state variables** (e.g., `Verified_Check`) CAN bypass the authentication flow — inject the boolean variable as `true` via `contextVariables` to test post-auth business topics directly.
 
-See [context-vars-test-spec.yaml](../templates/context-vars-test-spec.yaml) for a dedicated template.
+See [context-vars-test-spec.yaml](../assets/context-vars-test-spec.yaml) for a dedicated template.
 
 ## B1.8: Metrics
 
@@ -129,4 +129,4 @@ customEvaluations:
 
 > **⚠️ BLOCKED — Spring '26 Platform Bug:** Custom evaluations with `isReference: true` cause the server to return "RETRY" status. The results API crashes with `INTERNAL_SERVER_ERROR`. This is server-side (confirmed via direct `curl`). **Workaround:** Use `expectedOutcome` (LLM-as-judge) or the Testing Center UI until patched.
 
-See [custom-eval-test-spec.yaml](../templates/custom-eval-test-spec.yaml) for a dedicated template.
+See [custom-eval-test-spec.yaml](../assets/custom-eval-test-spec.yaml) for a dedicated template.

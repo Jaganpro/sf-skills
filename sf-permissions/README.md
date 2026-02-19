@@ -60,9 +60,9 @@ python scripts/cli.py users Sales_Manager  # List users with this PS
 ## Documentation
 
 - [SKILL.md](SKILL.md) - Full skill definition and SOQL reference
-- [docs/permission-model.md](docs/permission-model.md) - How Salesforce permissions work
-- [docs/soql-reference.md](docs/soql-reference.md) - Permission-related SOQL queries
-- [examples/usage-examples.md](examples/usage-examples.md) - CLI and Python API examples
+- [references/permission-model.md](references/permission-model.md) - How Salesforce permissions work
+- [references/soql-reference.md](references/soql-reference.md) - Permission-related SOQL queries
+- [references/usage-examples.md](references/usage-examples.md) - CLI and Python API examples
 
 ## Credits
 

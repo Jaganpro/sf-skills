@@ -82,11 +82,11 @@ The skill generates:
 
 ## Documentation
 
-- [Naming Conventions](docs/naming-conventions.md)
-- [Best Practices](docs/best-practices.md)
-- [Testing Guide](docs/testing-guide.md)
-- [Flow Integration](docs/flow-integration.md)
-- [Design Patterns](docs/design-patterns.md)
+- [Naming Conventions](references/naming-conventions.md)
+- [Best Practices](references/best-practices.md)
+- [Testing Guide](references/testing-guide.md)
+- [Flow Integration](references/flow-integration.md)
+- [Design Patterns](references/design-patterns.md)
 
 ## Requirements
 

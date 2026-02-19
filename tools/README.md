@@ -115,9 +115,8 @@ Each installed skill contains:
 │   ├── README.md      # Manual run instructions
 │   ├── validate_*.py  # Validation scripts
 │   └── shared/        # Bundled shared modules
-├── templates/         # Code templates (or assets/ for Codex)
-├── docs/              # Documentation (or references/ for Codex)
-└── examples/          # Example files
+├── assets/            # Code templates and static resources (spec)
+└── references/        # Documentation and guides (spec)
 ```
 
 ### Key Transformations
@@ -127,11 +126,11 @@ Each installed skill contains:
 | `SKILL.md` | `SKILL.md` | `SKILL.md` | `SKILL.md` | `SKILL.md` | `{name}.mdc` | `{nn}-{name}.md` |
 | `.claude-plugin/*` | (skipped) | (skipped) | (skipped) | (skipped) | (skipped) | (skipped) |
 | `hooks/scripts/*.py` | `scripts/*.py` | `scripts/*.py` | `scripts/*.py` | `scripts/*.py` | `scripts/*.py` | (skipped) |
-| `templates/` | `templates/` | `assets/` | `templates/` | `templates/` | `assets/` | (inlined) |
-| `docs/` | `docs/` | `references/` | `docs/` | `docs/` | `references/` | (skipped) |
+| `assets/` | `assets/` | `assets/` | `assets/` | `assets/` | `assets/` | (inlined) |
+| `references/` | `references/` | `references/` | `references/` | `references/` | `references/` | (skipped) |
 | `shared/*` | `scripts/shared/` | `scripts/shared/` | `scripts/shared/` | `scripts/shared/` | `scripts/shared/` | (skipped) |
 
-> **Note for Agentforce Vibes:** Templates are inlined into the markdown rules. Scripts and docs are not included since automatic validation hooks are not supported.
+> **Note for Agentforce Vibes:** Assets are inlined into the markdown rules. Scripts and references are not included since automatic validation hooks are not supported.
 
 ## Running Validation Scripts
 
@@ -159,7 +158,7 @@ python validate_flow.py /path/to/MyFlow.flow-meta.xml
 
 ### Codex CLI
 
-- Uses different directory names: `assets/` instead of `templates/`, `references/` instead of `docs/`
+- Follows the Agent Skills spec (assets/, references/, scripts/)
 - Enable skills with `codex --enable skills`
 - Looks in `.codex/skills/` (project) or `~/.codex/skills/` (global)
 

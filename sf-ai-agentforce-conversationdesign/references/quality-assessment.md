@@ -2,7 +2,7 @@
 
 # Quality Assessment
 
-Use the [Quality Scorecard](../templates/quality-scorecard.md) to assess any Agentforce agent against the 120-point rubric.
+Use the [Quality Scorecard](../assets/quality-scorecard.md) to assess any Agentforce agent against the 120-point rubric.
 
 ## Assessment Process
 

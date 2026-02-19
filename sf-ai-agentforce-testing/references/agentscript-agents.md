@@ -39,7 +39,7 @@ testCases:
 ## Key Rules for Agent Script CLI Tests
 
 - `expectedActions` uses the **Level 1 definition name** (e.g., `get_order_status`), NOT the Level 2 invocation name (e.g., `check_status`)
-- Agent Script topic names may differ in org — use the [topic name discovery workflow](../docs/topic-name-resolution.md)
+- Agent Script topic names may differ in org — use the [topic name discovery workflow](../references/topic-name-resolution.md)
 - Agents with `WITH USER_MODE` Apex require the Einstein Agent User to have object permissions — missing permissions cause **silent failures** (0 rows, no error)
 - `subjectName` in the YAML spec maps to `config.developer_name` in the `.agent` file
 
@@ -56,9 +56,9 @@ This means:
 
 ## Templates & Docs
 
-- Template: [agentscript-test-spec.yaml](../templates/agentscript-test-spec.yaml) — 5 test patterns (CLI)
-- Template: [multi-turn-agentscript-comprehensive.yaml](../templates/multi-turn-agentscript-comprehensive.yaml) — 6 multi-turn API scenarios
-- Guide: [agentscript-testing-patterns.md](../docs/agentscript-testing-patterns.md) — detailed patterns with worked examples
+- Template: [agentscript-test-spec.yaml](../assets/agentscript-test-spec.yaml) — 5 test patterns (CLI)
+- Template: [multi-turn-agentscript-comprehensive.yaml](../assets/multi-turn-agentscript-comprehensive.yaml) — 6 multi-turn API scenarios
+- Guide: [agentscript-testing-patterns.md](../references/agentscript-testing-patterns.md) — detailed patterns with worked examples
 
 ## Automated Test Spec Generation
 

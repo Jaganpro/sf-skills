@@ -68,9 +68,9 @@ Referenced articles:
 
 | Pattern | Source | Integration |
 |---------|--------|-------------|
-| Selector Layer | Beyond the Cloud | docs/selector-patterns.md |
-| Bulkification | Apex Hours, Medium | templates/bulkified-query-pattern.cls |
-| Anti-patterns | Multiple sources | docs/anti-patterns.md |
+| Selector Layer | Beyond the Cloud | references/selector-patterns.md |
+| Bulkification | Apex Hours, Medium | assets/bulkified-query-pattern.cls |
+| Anti-patterns | Multiple sources | references/anti-patterns.md |
 | Query Plan Analysis | Salesforce Docs | SKILL.md, optimization-patterns.soql |
 
 ---

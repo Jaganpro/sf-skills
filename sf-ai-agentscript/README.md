@@ -97,9 +97,9 @@ actions:
 | Document | Description |
 |----------|-------------|
 | [SKILL.md](SKILL.md) | Main entry point with scoring system |
-| [resources/](resources/) | Comprehensive guides per topic |
-| [docs/](docs/) | Quick reference guides |
-| [templates/](templates/) | Example .agent files |
+| [references/](references/) | Comprehensive guides per topic |
+| [references/](references/) | Quick reference guides |
+| [assets/](assets/) | Example .agent files |
 
 ## Cross-Skill Workflow
 
