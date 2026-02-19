@@ -47,7 +47,6 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 - **[sf-deploy](skills/sf-deploy/)** — CI/CD automation (sf CLI v2)
 - **[sf-diagram-mermaid](skills/sf-diagram-mermaid/)** — Mermaid diagrams & ERD
 - **[sf-diagram-nanobananapro](skills/sf-diagram-nanobananapro/)** — Visual ERD, LWC mockups
-- **[skill-builder](skills/skill-builder/)** — Skill creation wizard
 
 ## 🤖 Agent Team
 
@@ -205,7 +204,7 @@ Each skill includes validation hooks that run automatically on **Write** and **E
 | 🔐 | sf-connected-apps | `*.connectedApp-meta.xml` | OAuth security validation |
 | 🔗 | sf-integration | `*.namedCredential-meta.xml` | 120-pt scoring + callout patterns |
 | 📸 | sf-diagram-nanobananapro | Generated images | Prerequisites check |
-| 🛠️ | skill-builder | `SKILL.md` | YAML frontmatter validation |
+
 
 <details>
 <summary><b>Validator Dispatcher Architecture</b></summary>
@@ -226,7 +225,7 @@ All PostToolUse validations are routed through a central dispatcher (`shared/hoo
 | `*.permissionset-meta.xml` | sf-metadata | validate_metadata.py |
 | `*.namedCredential-meta.xml` | sf-integration | validate_integration.py |
 | `*.soql` | sf-soql | post-tool-validate.py |
-| `SKILL.md` | skill-builder | validate_skill.py |
+| `SKILL.md` | (removed) | — |
 
 </details>
 
@@ -326,9 +325,6 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 *LWC Testing & Linting:*
 - **@salesforce/sfdx-lwc-jest** — Jest testing for LWC (`npm install @salesforce/sfdx-lwc-jest --save-dev`)
 - **@salesforce-ux/slds-linter** — SLDS validation (`npm install -g @salesforce-ux/slds-linter`)
-
-*Skill validation:*
-- **PyYAML** — Required for skill-builder validator (`pip3 install pyyaml`)
 
 *LSP real-time validation (auto-fix loops):*
 - **LWC Language Server** — `npm install -g @salesforce/lwc-language-server` (standalone, no VS Code needed)

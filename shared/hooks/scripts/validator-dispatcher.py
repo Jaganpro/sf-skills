@@ -160,13 +160,6 @@ VALIDATOR_REGISTRY: List[tuple] = [
         "sf-integration/hooks/scripts/validate_integration.py"
     ),
 
-    # SKILL.md files (for skill-builder)
-    (
-        r"SKILL\.md$",
-        "skill-builder",
-        "skill-builder/hooks/scripts/validate_skill.py"
-    ),
-
 ]
 
 

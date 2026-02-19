@@ -42,7 +42,6 @@ SKILL_DIRS = [
     "sf-permissions",
     "sf-soql",
     "sf-testing",
-    "skill-builder",
 ]
 
 

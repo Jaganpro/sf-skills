@@ -20,7 +20,6 @@
         "./skills/sf-metadata",
         "./skills/sf-data",
         "./skills/sf-deploy",
-        "./skills/skill-builder",
         "./skills/sf-ai-agentforce",
         "./skills/sf-diagram-mermaid",
         "./skills/sf-integration",
@@ -34,8 +33,7 @@
         "./skills/sf-ai-agentscript",
         "./skills/sf-ai-agentforce-observability",
         "./skills/sf-permissions",
-        "./skills/sf-ai-agentforce-conversationdesign",
-        "./skills/util-youtube-analyzer"
+        "./skills/sf-ai-agentforce-conversationdesign"
       ]
     },
     {
@@ -102,19 +100,6 @@
       "category": "devops",
       "tags": ["salesforce", "deployment", "ci-cd", "sfdx"],
       "keywords": ["deploy", "sfdx", "validation", "ci-cd"]
-    },
-    {
-      "name": "skill-builder",
-      "description": "Interactive wizard for creating Claude Code skills",
-      "source": "./skills/skill-builder",
-      "version": "2.0.0",
-      "author": {
-        "name": "Jag Valaiyapathy",
-        "url": "https://github.com/Jaganpro"
-      },
-      "category": "utilities",
-      "tags": ["claude-code", "skills", "generator", "templates"],
-      "keywords": ["skill", "generator", "template", "wizard"]
     },
     {
       "name": "sf-ai-agentforce",
@@ -297,19 +282,6 @@
       "category": "ai",
       "tags": ["salesforce", "agentforce", "conversation-design", "persona"],
       "keywords": ["persona", "utterance", "guardrail", "topic-architecture", "escalation"]
-    },
-    {
-      "name": "util-youtube-analyzer",
-      "description": "Analyze YouTube videos by extracting transcripts for learning from Dreamforce talks and Salesforce tutorials",
-      "source": "./skills/util-youtube-analyzer",
-      "version": "1.0.0",
-      "author": {
-        "name": "Jag Valaiyapathy",
-        "url": "https://github.com/Jaganpro"
-      },
-      "category": "utilities",
-      "tags": ["youtube", "transcript", "analysis", "learning"],
-      "keywords": ["youtube", "transcript", "dreamforce", "trailhead", "whisper"]
     }
   ]
 }

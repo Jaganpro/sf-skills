@@ -724,32 +724,6 @@
       "priority": "low",
       "description": "Agentforce agent test automation"
     },
-    "skill-builder": {
-      "keywords": [
-        "create skill",
-        "new skill",
-        "skill template",
-        "build skill",
-        "skill development",
-        "custom skill",
-        "plugin",
-        "hook development"
-      ],
-      "intentPatterns": [
-        "create.*skill",
-        "build.*new.*skill",
-        "develop.*plugin",
-        "new.*sf.*skill",
-        "skill.*template"
-      ],
-      "filePatterns": [
-        "SKILL\\.md$",
-        "plugin\\.json$",
-        "hooks\\.json$"
-      ],
-      "priority": "low",
-      "description": "Create new sf-skills modules"
-    },
     "sf-ai-agentscript": {
       "keywords": [
         "agent script",

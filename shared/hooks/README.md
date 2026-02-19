@@ -191,7 +191,6 @@ All skills have been migrated from `hooks/hooks.json` to frontmatter:
 | sf-ai-agentforce | 2.0.0 | (standard) |
 | sf-ai-agentforce-testing | 1.1.0 | parse-agent-test-results.py (Bash) |
 | sf-permissions | 1.1.0 | (standard) |
-| skill-builder | 2.1.0 | post-write-validate.py |
 
 ---
 

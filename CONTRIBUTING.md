@@ -86,15 +86,8 @@ git checkout -b fix/bug-description
 Before submitting changes:
 
 ```bash
-# Validate all skills
-cd skills/skill-builder/scripts
-python3 bulk_validate.py
-
-# Check specific skill
-python3 validate_yaml.py path/to/SKILL.md
-
-# Check dependencies
-python3 dependency_manager.py validate --all
+# Run validate-sync to check plugin.json ↔ SKILL.md consistency
+./scripts/validate-sync.sh
 ```
 
 ### Code Style
