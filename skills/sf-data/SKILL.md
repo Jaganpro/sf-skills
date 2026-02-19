@@ -84,7 +84,7 @@ See `references/orchestration.md` for the 251-record pattern and cleanup sequenc
 
 ## Workflow (5-Phase)
 
-**Phase 1: Gather** → AskUserQuestion (operation type, object, org alias, record count) | Check existing: `Glob: **/*factory*.apex`
+**Phase 1: Gather** → Ask the user (operation type, object, org alias, record count) | Check existing: `Glob: **/*factory*.apex`
 
 **Phase 2: Template** → Select from `assets/` folder (factories/, bulk/, soql/, cleanup/)
 - Marketplace: `~/.claude/plugins/marketplaces/sf-skills/sf-data/assets/`

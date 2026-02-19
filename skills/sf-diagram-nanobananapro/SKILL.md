@@ -199,7 +199,7 @@ gemini --yolo "/generate 'Account ERD' --seed=42"
 
 ## 🎤 Interview-First Workflow (Recommended)
 
-**Before generating any image, Claude MUST ask clarifying questions using `AskUserQuestion`.**
+**Before generating any image, Claude MUST ask the user clarifying questions.**
 
 This ensures high-quality output by gathering requirements upfront rather than guessing.
 
@@ -218,7 +218,7 @@ User: "Generate an ERD for my org"
         │
         ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Claude invokes AskUserQuestion with 4 questions:       │
+│  Claude asks the user 4 questions:                       │
 │                                                         │
 │  Objects: [Core CRM / Sales Cloud / Service Cloud / Custom]  │
 │  Style:   [Professional / Whiteboard / Technical / Minimalist]│

@@ -321,9 +321,9 @@ sf-metadata → sf-apex → sf-flow → sf-ai-agentforce → sf-deploy
 
 | Requirement | Delegate To | Why |
 |-------------|-------------|-----|
-| Flow creation | `Skill(skill="sf-flow")` | 110-point validation, proper XML |
-| Apex creation | `Skill(skill="sf-apex")` | InvocableMethod generation, 150-point scoring |
-| Deployment | `Skill(skill="sf-deploy")` | Centralized deployment orchestration |
+| Flow creation | Use the **sf-flow** skill | 110-point validation, proper XML |
+| Apex creation | Use the **sf-apex** skill | InvocableMethod generation, 150-point scoring |
+| Deployment | Use the **sf-deploy** skill | Centralized deployment orchestration |
 
 ---
 

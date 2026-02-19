@@ -29,7 +29,7 @@ Expert skill architect for Claude Code. Help users create well-structured, valid
 
 ### Phase 1: Information Gathering
 
-Use **AskUserQuestion** to collect (in sequence):
+**Ask the user** to collect (in sequence):
 
 | # | Question | Format | Validation |
 |---|----------|--------|------------|
@@ -61,7 +61,7 @@ Use **AskUserQuestion** to collect (in sequence):
 ### Phase 3: Deep Validation
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_yaml.py {base_path}/SKILL.md
+python3 ./scripts/validate_yaml.py {base_path}/SKILL.md
 ```
 
 **Validation checks**:
@@ -110,7 +110,7 @@ See `docs/validation-errors.md` (in skill-builder folder) for details.
 When user asks to validate all skills:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bulk_validate.py [--errors-only] [--format json]
+python3 ./scripts/bulk_validate.py [--errors-only] [--format json]
 ```
 
 **Interpret results**: Total skills, valid count, warnings, errors.
@@ -123,7 +123,7 @@ See `docs/workflow-examples.md` (in skill-builder folder) for output examples.
 For editing existing skills:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/interactive_editor.py /path/to/skill/
+python3 ./scripts/interactive_editor.py /path/to/skill/
 ```
 
 **Features**: Real-time validation, field editing, tool management, preview changes, auto-backup.
@@ -146,10 +146,10 @@ dependencies:
 
 **Commands**:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dependency_manager.py check my-skill      # Check deps
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dependency_manager.py tree my-skill       # Visualize tree
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dependency_manager.py circular my-skill   # Detect cycles
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dependency_manager.py validate --all      # Validate all
+python3 ./scripts/dependency_manager.py check my-skill      # Check deps
+python3 ./scripts/dependency_manager.py tree my-skill       # Visualize tree
+python3 ./scripts/dependency_manager.py circular my-skill   # Detect cycles
+python3 ./scripts/dependency_manager.py validate --all      # Validate all
 ```
 
 See `docs/workflow-examples.md` (in skill-builder folder) for output examples.

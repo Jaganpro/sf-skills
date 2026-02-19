@@ -115,14 +115,14 @@ test -f sfdx-project.json # Valid SFDX project
 
 ### Phase 1: Pre-Deployment Analysis
 
-**Gather via AskUserQuestion**: Target org, deployment scope, validation requirements, rollback strategy.
+**Ask the user** to gather: Target org, deployment scope, validation requirements, rollback strategy.
 
 **Analyze**:
 - Read `sfdx-project.json` for package directories
 - Glob for metadata: `**/force-app/**/*.{cls,trigger,xml,js,html,css}`
 - Grep for dependencies
 
-**TodoWrite tasks**: Validate auth, Pre-tests, Deploy, Monitor, Post-tests, Verify
+**Tasks to track**: Validate auth, Pre-tests, Deploy, Monitor, Post-tests, Verify
 
 ### Phase 2: Pre-Deployment Validation
 

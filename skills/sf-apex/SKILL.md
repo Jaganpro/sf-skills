@@ -28,7 +28,7 @@ Expert Apex developer specializing in clean code, SOLID principles, and 2025 bes
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - Class type (Trigger, Service, Selector, Batch, Queueable, Test, Controller)
 - Primary purpose (one sentence)
 - Target object(s)
@@ -37,7 +37,7 @@ Use **AskUserQuestion** to gather:
 **Then**:
 1. Check existing code: `Glob: **/*.cls`, `Glob: **/*.trigger`
 2. Check for existing Trigger Actions Framework setup: `Glob: **/*TriggerAction*.cls`
-3. Create TodoWrite tasks
+3. Create a task list
 
 ---
 
@@ -121,14 +121,10 @@ If ANY of these patterns would be generated, **STOP and ask the user**:
 ### Phase 4: Deployment
 
 **Step 1: Validation**
-```
-Skill(skill="sf-deploy", args="Deploy classes at force-app/main/default/classes/ to [target-org] with --dry-run")
-```
+Use the **sf-deploy** skill: "Deploy classes at force-app/main/default/classes/ to [target-org] with --dry-run"
 
 **Step 2: Deploy** (only if validation succeeds)
-```
-Skill(skill="sf-deploy", args="Proceed with actual deployment to [target-org]")
-```
+Use the **sf-deploy** skill: "Proceed with actual deployment to [target-org]"
 
 **See**: [references/troubleshooting.md](references/troubleshooting.md#cross-skill-dependency-checklist) for deployment prerequisites
 
@@ -387,9 +383,9 @@ For LSP validation to work, users must have:
 
 | Skill | When to Use | Example |
 |-------|-------------|---------|
-| sf-metadata | Discover object/fields before coding | `Skill(skill="sf-metadata")` → "Describe Invoice__c" |
-| sf-data | Generate 251+ test records after deploy | `Skill(skill="sf-data")` → "Create 251 Accounts for bulk testing" |
-| sf-deploy | Deploy to org - see Phase 4 | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
+| sf-metadata | Discover object/fields before coding | Use the **sf-metadata** skill: "Describe Invoice__c" |
+| sf-data | Generate 251+ test records after deploy | Use the **sf-data** skill: "Create 251 Accounts for bulk testing" |
+| sf-deploy | Deploy to org - see Phase 4 | Use the **sf-deploy** skill: "Deploy to [org]" |
 | sf-flow | Create Flow that calls your Apex | See @InvocableMethod section above |
 | sf-lwc | Create LWC that calls your Apex | `@AuraEnabled` controller patterns |
 

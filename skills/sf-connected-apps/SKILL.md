@@ -30,7 +30,7 @@ Expert in creating and managing Salesforce Connected Apps and External Client Ap
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 
 | # | Question | Key Options |
 |---|----------|-------------|
@@ -42,7 +42,7 @@ Use **AskUserQuestion** to gather:
 
 **Then**:
 1. Check existing: `Glob: **/*.connectedApp-meta.xml`, `Glob: **/*.eca-meta.xml`
-2. Create TodoWrite tasks
+2. Create a task list
 
 ### Phase 2: App Type Selection
 
@@ -110,7 +110,7 @@ Score: XX/120 ⭐⭐⭐⭐
 
 **Deploy**:
 ```
-Skill(skill="sf-deploy", args="Deploy connected apps to [target-org] with --dry-run")
+Use the **sf-deploy** skill: "Deploy connected apps to [target-org] with --dry-run"
 ```
 
 **Completion Output**:
@@ -296,9 +296,9 @@ sf project deploy start --source-dir force-app/main/default/connectedApps --targ
 
 | Skill | Use Case | Example |
 |-------|----------|---------|
-| sf-metadata | Named Credentials for callouts | `Skill(skill="sf-metadata")` → "Create Named Credential" |
-| sf-deploy | Deploy to org | `Skill(skill="sf-deploy", args="Deploy to [org]")` |
-| sf-apex | OAuth token handling | `Skill(skill="sf-apex")` → "Create token refresh service" |
+| sf-metadata | Named Credentials for callouts | Use the **sf-metadata** skill: "Create Named Credential" |
+| sf-deploy | Deploy to org | Use the **sf-deploy** skill: "Deploy to [org]" |
+| sf-apex | OAuth token handling | Use the **sf-apex** skill: "Create token refresh service" |
 
 ---
 

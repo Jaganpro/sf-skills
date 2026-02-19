@@ -137,7 +137,7 @@ See [references/auth-setup.md](references/auth-setup.md) for detailed instructio
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 
 | # | Question | Options |
 |---|----------|---------|
@@ -164,10 +164,7 @@ token = auth.get_token()
 print(f"Auth successful: {token[:20]}...")
 ```
 
-If auth fails, invoke:
-```
-Skill(skill="sf-connected-apps", args="Setup JWT Bearer for Data 360")
-```
+If auth fails, use the **sf-connected-apps** skill: "Setup JWT Bearer for Data 360"
 
 ### Phase 3: Extraction
 
@@ -288,10 +285,10 @@ See [references/cli-reference.md](references/cli-reference.md) for complete docu
 
 | Skill | When | How to Invoke |
 |-------|------|---------------|
-| `sf-connected-apps` | Auth setup | `Skill(skill="sf-connected-apps", args="JWT Bearer for Data Cloud")` |
-| `sf-ai-agentscript` | Fix topic routing issues | `Skill(skill="sf-ai-agentscript", args="Fix topic: [issue]")` |
-| `sf-flow` / `sf-debug` | Debug action failures | `Skill(skill="sf-debug", args="Analyze agent action failure")` |
-| `sf-ai-agentforce-testing` | Create test cases from patterns | `Skill(skill="sf-ai-agentforce-testing", args="Add test cases")` |
+| `sf-connected-apps` | Auth setup | Use the **sf-connected-apps** skill: "JWT Bearer for Data Cloud" |
+| `sf-ai-agentscript` | Fix topic routing issues | Use the **sf-ai-agentscript** skill: "Fix topic: [issue]" |
+| `sf-flow` / `sf-debug` | Debug action failures | Use the **sf-debug** skill: "Analyze agent action failure" |
+| `sf-ai-agentforce-testing` | Create test cases from patterns | Use the **sf-ai-agentforce-testing** skill: "Add test cases" |
 
 ---
 

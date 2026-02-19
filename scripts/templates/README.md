@@ -202,20 +202,7 @@ When creating a new integration skill, include:
 
 ## 🌟 Real-World Examples
 
-### Bland.ai Integration
-```
-bland-ai-calls/
-├── assets/
-│   ├── BlandAPI.cspTrustedSite-meta.xml     ✅
-│   ├── BlandAPI.remoteSite-meta.xml          ✅
-│   └── BlandAICalloutService.cls
-├── scripts/
-│   ├── setup-credentials.sh                  ✅
-│   └── README.md
-└── SKILL.md
-```
-
-### Hypothetical Stripe Integration
+### Example: Stripe Integration
 ```
 sf-stripe/
 ├── assets/
@@ -294,7 +281,7 @@ In your skill's README, document:
 
 ## 📚 Further Reading
 
-- **Bland.ai Example:** `bland-ai-calls/scripts/README.md`
+- **Integration Skill:** `skills/sf-integration/`
 - **Generic Scripts:** `scripts/README.md`
 - **Salesforce CSP Docs:** https://help.salesforce.com/s/articleView?id=sf.csp_trusted_sites.htm
 - **Remote Site Settings:** https://help.salesforce.com/s/articleView?id=sf.configuring_remoteproxy.htm

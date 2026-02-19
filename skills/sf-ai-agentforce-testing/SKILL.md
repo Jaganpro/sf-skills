@@ -89,7 +89,7 @@ All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. *
 | `parse-agent-test-results.py` | `{SKILL_PATH}/hooks/scripts/parse-agent-test-results.py` |
 | `rich_test_report.py` | `{SKILL_PATH}/hooks/scripts/rich_test_report.py` |
 
-> **Variable resolution:** At runtime, resolve `SKILL_PATH` from the `${SKILL_HOOKS}` environment variable (strip `/hooks` suffix). Hardcoded fallback: `~/.claude/skills/sf-ai-agentforce-testing`.
+> **Variable resolution:** At runtime, resolve `SKILL_PATH` to the skill's installation directory. Hardcoded fallback: `~/.claude/skills/sf-ai-agentforce-testing`.
 
 ---
 
@@ -104,10 +104,10 @@ All Python scripts live at absolute paths under `{SKILL_PATH}/hooks/scripts/`. *
 4. Test data (via sf-data) should exist before testing actions
 
 **⚠️ MANDATORY Delegation:**
-- **Fixes**: ALWAYS use `Skill(skill="sf-ai-agentscript")` for agent script fixes
-- **Test Data**: Use `Skill(skill="sf-data")` for action test data
-- **OAuth Setup** (multi-turn API testing only): Use `Skill(skill="sf-connected-apps")` for ECA — NOT needed for `sf agent preview` or CLI tests
-- **Observability**: Use `Skill(skill="sf-ai-agentforce-observability")` for STDM analysis of test sessions
+- **Fixes**: ALWAYS use the **sf-ai-agentscript** skill for agent script fixes
+- **Test Data**: Use the **sf-data** skill for action test data
+- **OAuth Setup** (multi-turn API testing only): Use the **sf-connected-apps** skill for ECA — NOT needed for `sf agent preview` or CLI tests
+- **Observability**: Use the **sf-ai-agentforce-observability** skill for STDM analysis of test sessions
 
 ---
 
@@ -158,7 +158,7 @@ Phase E: Observability Integration (STDM analysis)
 
 ## 4-Step Interview Flow
 
-> See [references/interview-wizard.md](references/interview-wizard.md) for the full 4-step wizard with AskUserQuestion prompts and auto-run steps.
+> See [references/interview-wizard.md](references/interview-wizard.md) for the full 4-step wizard with interview prompts and auto-run steps.
 
 **Quick summary:** Mirrors the Testing Center "New Test" wizard — Step 1: Basic Info (agent, org, test type), Step 2: Conditions (context vars, record IDs), Step 3: Test Data (generate + review), Step 4: Evaluations & Deploy. Skip if `test-plan-{agent}.yaml` provided.
 
@@ -166,7 +166,7 @@ Phase E: Observability Integration (STDM analysis)
 
 ## Phase 0: Prerequisites & Agent Discovery
 
-Use **AskUserQuestion** to gather agent name, org alias, and test type. Then:
+**Ask the user** to gather agent name, org alias, and test type. Then:
 
 1. **Agent Discovery**: `sf data query --use-tooling-api --query "SELECT Id, DeveloperName, MasterLabel FROM BotDefinition WHERE IsActive=true" --result-format json --target-org [alias]`
 2. **Metadata Retrieval**: `sf project retrieve start --metadata "GenAiPlannerBundle:[AgentName]" --output-dir retrieve-temp --target-org [alias]`
@@ -191,7 +191,7 @@ Use **AskUserQuestion** to gather agent name, org alias, and test type. Then:
 
 > See [credential-convention.md](references/credential-convention.md) for ~/.sfagent/ directory structure and CLI reference.
 
-If user has ECA credentials → collect and validate via `credential_manager.py validate`. If not → delegate to `Skill(skill="sf-connected-apps")`. See [ECA Setup Guide](references/eca-setup-guide.md).
+If user has ECA credentials → collect and validate via `credential_manager.py validate`. If not → use the **sf-connected-apps** skill. See [ECA Setup Guide](references/eca-setup-guide.md).
 
 ### A2: Agent Discovery & Metadata Retrieval
 
@@ -297,7 +297,7 @@ When tests fail (either Phase A or Phase B), automatically fix via sf-ai-agentsc
 | `MULTI_TURN_ESCALATION_FAILURE` | A | ✅ | Add frustration detection triggers |
 | `ACTION_CHAIN_FAILURE` | A | ✅ | Fix action output variable mappings |
 
-**Fix flow:** Test Failed → Analyze category → Apply fix via `Skill(skill="sf-ai-agentscript")` → Re-publish → Re-test → Pass or retry (max 3) → Escalate to human.
+**Fix flow:** Test Failed → Analyze category → Apply fix via the **sf-ai-agentscript** skill → Re-publish → Re-test → Pass or retry (max 3) → Escalate to human.
 
 See [Agentic Fix Loops Guide](references/agentic-fix-loops.md) for complete decision tree and 10 fix strategies.
 
@@ -315,9 +315,7 @@ See [Agentic Fix Loops Guide](references/agentic-fix-loops.md) for complete deci
 
 After test execution, guide user to analyze agent behavior with session-level observability:
 
-```
-Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for agent [AgentName] in org [alias] - focus on test session behavior patterns")
-```
+Use the **sf-ai-agentforce-observability** skill: "Analyze STDM sessions for agent [AgentName] in org [alias] - focus on test session behavior patterns"
 
 **What observability adds to testing:** STDM session analysis, latency profiling, error pattern detection, action execution traces.
 
@@ -363,13 +361,13 @@ Skill(skill="sf-ai-agentforce-observability", args="Analyze STDM sessions for ag
 
 | Scenario | Skill to Call | Command |
 |----------|---------------|---------|
-| Fix agent script | sf-ai-agentscript | `Skill(skill="sf-ai-agentscript", args="Fix...")` |
+| Fix agent script | sf-ai-agentscript | Use the **sf-ai-agentscript** skill: "Fix..." |
 | Agent Script agents | sf-ai-agentscript | Parse `.agent` for topic/action discovery |
-| Create test data | sf-data | `Skill(skill="sf-data", args="Create...")` |
-| Fix failing Flow | sf-flow | `Skill(skill="sf-flow", args="Fix...")` |
-| Setup ECA or OAuth | sf-connected-apps | `Skill(skill="sf-connected-apps", args="Create...")` |
-| Analyze debug logs | sf-debug | `Skill(skill="sf-debug", args="Analyze...")` |
-| Session observability | sf-ai-agentforce-observability | `Skill(skill="sf-ai-agentforce-observability", args="Analyze...")` |
+| Create test data | sf-data | Use the **sf-data** skill: "Create..." |
+| Fix failing Flow | sf-flow | Use the **sf-flow** skill: "Fix..." |
+| Setup ECA or OAuth | sf-connected-apps | Use the **sf-connected-apps** skill: "Create..." |
+| Analyze debug logs | sf-debug | Use the **sf-debug** skill: "Analyze..." |
+| Session observability | sf-ai-agentforce-observability | Use the **sf-ai-agentforce-observability** skill: "Analyze..." |
 
 ---
 

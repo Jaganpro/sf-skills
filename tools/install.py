@@ -89,7 +89,6 @@ GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}"
 GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main"
 
 # Files to install (source layout paths)
-SKILLS_GLOB = "sf-*"  # All skill directories
 HOOKS_SRC_DIR = "shared/hooks"
 LSP_ENGINE_SRC_DIR = "shared/lsp-engine"
 SKILLS_REGISTRY = "shared/hooks/skills-registry.json"
@@ -1277,7 +1276,7 @@ def copy_skills(source_dir: Path, target_dir: Path, dry_run: bool = False) -> in
     Copy skill directories and prune orphans.
 
     Args:
-        source_dir: Source directory containing sf-* folders
+        source_dir: Source directory containing sf-* folders (e.g., repo/skills/)
         target_dir: Target skills directory
         dry_run: If True, report what would happen without making changes
 
@@ -1858,7 +1857,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         # Show what will be installed
         print("""
   📦 WHAT WILL BE INSTALLED:
-     • 18 Salesforce skills (sf-apex, sf-flow, sf-metadata, ...)
+     • 19 Salesforce skills (sf-apex, sf-flow, sf-metadata, ...)
      • 14 hook scripts (guardrails, auto-approval, validation)
      • LSP engine (Apex, LWC, AgentScript language servers)
      • Automatic validation, guardrails, and org preflight checks
@@ -1964,7 +1963,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
 
         # Copy skills and agents outside the dry_run guard so orphan
         # detection works in both live and dry-run modes.
-        skill_count = copy_skills(source_dir, SKILLS_DIR, dry_run=dry_run)
+        skill_count = copy_skills(source_dir / "skills", SKILLS_DIR, dry_run=dry_run)
         agents_target = CLAUDE_DIR / "agents"
         agent_count = copy_agents(source_dir, agents_target, dry_run=dry_run)
 

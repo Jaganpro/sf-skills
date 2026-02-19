@@ -15,30 +15,33 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./sf-apex",
-        "./sf-flow",
-        "./sf-metadata",
-        "./sf-data",
-        "./sf-deploy",
-        "./skill-builder",
-        "./sf-ai-agentforce",
-        "./sf-diagram-mermaid",
-        "./sf-integration",
-        "./sf-connected-apps",
-        "./sf-lwc",
-        "./sf-debug",
-        "./sf-soql",
-        "./sf-testing",
-        "./sf-diagram-nanobananapro",
-        "./sf-ai-agentforce-testing",
-        "./sf-ai-agentscript",
-        "./sf-ai-agentforce-observability"
+        "./skills/sf-apex",
+        "./skills/sf-flow",
+        "./skills/sf-metadata",
+        "./skills/sf-data",
+        "./skills/sf-deploy",
+        "./skills/skill-builder",
+        "./skills/sf-ai-agentforce",
+        "./skills/sf-diagram-mermaid",
+        "./skills/sf-integration",
+        "./skills/sf-connected-apps",
+        "./skills/sf-lwc",
+        "./skills/sf-debug",
+        "./skills/sf-soql",
+        "./skills/sf-testing",
+        "./skills/sf-diagram-nanobananapro",
+        "./skills/sf-ai-agentforce-testing",
+        "./skills/sf-ai-agentscript",
+        "./skills/sf-ai-agentforce-observability",
+        "./skills/sf-permissions",
+        "./skills/sf-ai-agentforce-conversationdesign",
+        "./skills/util-youtube-analyzer"
       ]
     },
     {
       "name": "sf-apex",
       "description": "Apex code generation and review with 150-point scoring and TAF patterns",
-      "source": "./sf-apex",
+      "source": "./skills/sf-apex",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -51,7 +54,7 @@
     {
       "name": "sf-flow",
       "description": "Salesforce Flow creation and validation with 110-point scoring",
-      "source": "./sf-flow",
+      "source": "./skills/sf-flow",
       "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -64,7 +67,7 @@
     {
       "name": "sf-metadata",
       "description": "Salesforce metadata generation and org querying with 120-point scoring",
-      "source": "./sf-metadata",
+      "source": "./skills/sf-metadata",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -77,7 +80,7 @@
     {
       "name": "sf-data",
       "description": "Salesforce data operations with SOQL expertise, test data factories, and 130-point validation",
-      "source": "./sf-data",
+      "source": "./skills/sf-data",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -90,7 +93,7 @@
     {
       "name": "sf-deploy",
       "description": "Salesforce DevOps automation using sf CLI v2",
-      "source": "./sf-deploy",
+      "source": "./skills/sf-deploy",
       "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -103,7 +106,7 @@
     {
       "name": "skill-builder",
       "description": "Interactive wizard for creating Claude Code skills",
-      "source": "./skill-builder",
+      "source": "./skills/skill-builder",
       "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -116,7 +119,7 @@
     {
       "name": "sf-ai-agentforce",
       "description": "Standard Agentforce platform skill for Setup UI agent building, PromptTemplate metadata, Einstein Models API, GenAiFunction/GenAiPlugin setup, and custom Lightning types.",
-      "source": "./sf-ai-agentforce",
+      "source": "./skills/sf-ai-agentforce",
       "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -129,7 +132,7 @@
     {
       "name": "sf-diagram-mermaid",
       "description": "Mermaid diagrams for OAuth flows, ERDs, integrations, and Agentforce architecture with 80-point scoring",
-      "source": "./sf-diagram-mermaid",
+      "source": "./skills/sf-diagram-mermaid",
       "version": "1.1.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -142,7 +145,7 @@
     {
       "name": "sf-integration",
       "description": "Named Credentials, External Services, REST/SOAP callouts, Platform Events, and CDC with 120-point scoring. Includes automation scripts for credential configuration.",
-      "source": "./sf-integration",
+      "source": "./skills/sf-integration",
       "version": "1.1.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -155,7 +158,7 @@
     {
       "name": "sf-connected-apps",
       "description": "Connected Apps and External Client Apps with OAuth configuration and 120-point scoring",
-      "source": "./sf-connected-apps",
+      "source": "./skills/sf-connected-apps",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -168,7 +171,7 @@
     {
       "name": "sf-lwc",
       "description": "Lightning Web Components development with SLDS 2 validation and 140-point scoring",
-      "source": "./sf-lwc",
+      "source": "./skills/sf-lwc",
       "version": "2.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -181,7 +184,7 @@
     {
       "name": "sf-debug",
       "description": "Salesforce debugging with log analysis, governor limits, and agentic fix suggestions",
-      "source": "./sf-debug",
+      "source": "./skills/sf-debug",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -194,7 +197,7 @@
     {
       "name": "sf-soql",
       "description": "SOQL query generation, optimization, and 100-point validation",
-      "source": "./sf-soql",
+      "source": "./skills/sf-soql",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -207,7 +210,7 @@
     {
       "name": "sf-testing",
       "description": "Apex test execution, coverage analysis, and agentic test-fix loops with 120-point scoring",
-      "source": "./sf-testing",
+      "source": "./skills/sf-testing",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -220,7 +223,7 @@
     {
       "name": "sf-diagram-nanobananapro",
       "description": "AI-powered visual content generation for Salesforce using Nano Banana Pro (Gemini 3 Pro Image)",
-      "source": "./sf-diagram-nanobananapro",
+      "source": "./skills/sf-diagram-nanobananapro",
       "version": "1.1.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -233,7 +236,7 @@
     {
       "name": "sf-ai-agentforce-testing",
       "description": "Agentforce agent testing with test execution, coverage analysis, and agentic fix loops",
-      "source": "./sf-ai-agentforce-testing",
+      "source": "./skills/sf-ai-agentforce-testing",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -246,7 +249,7 @@
     {
       "name": "sf-ai-agentscript",
       "description": "Agent Script DSL authoring with 100-point scoring, instruction resolution patterns, and FSM architecture",
-      "source": "./sf-ai-agentscript",
+      "source": "./skills/sf-ai-agentscript",
       "version": "1.0.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -259,7 +262,7 @@
     {
       "name": "sf-ai-agentforce-observability",
       "description": "Extract and analyze Agentforce session tracing data from Data Cloud. 24 DMOs verified, 260+ tests, GenAI Trust Layer support.",
-      "source": "./sf-ai-agentforce-observability",
+      "source": "./skills/sf-ai-agentforce-observability",
       "version": "1.1.0",
       "author": {
         "name": "Jag Valaiyapathy",
@@ -268,6 +271,45 @@
       "category": "ai",
       "tags": ["salesforce", "agentforce", "observability", "data-cloud", "analytics", "genai"],
       "keywords": ["session-tracing", "data-cloud", "polars", "parquet", "genai-quality", "trust-layer", "toxicity", "pii-detection"]
+    },
+    {
+      "name": "sf-permissions",
+      "description": "Permission Set analysis, hierarchy viewer, and 'Who has X?' auditing",
+      "source": "./skills/sf-permissions",
+      "version": "1.1.0",
+      "author": {
+        "name": "Jag Valaiyapathy",
+        "url": "https://github.com/Jaganpro"
+      },
+      "category": "metadata",
+      "tags": ["salesforce", "permissions", "security", "auditing"],
+      "keywords": ["permission-set", "permission-set-group", "hierarchy", "field-access"]
+    },
+    {
+      "name": "sf-ai-agentforce-conversationdesign",
+      "description": "Conversation design for Agentforce with persona docs, utterance libraries, guardrails, and 120-point scoring",
+      "source": "./skills/sf-ai-agentforce-conversationdesign",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jag Valaiyapathy",
+        "url": "https://github.com/Jaganpro"
+      },
+      "category": "ai",
+      "tags": ["salesforce", "agentforce", "conversation-design", "persona"],
+      "keywords": ["persona", "utterance", "guardrail", "topic-architecture", "escalation"]
+    },
+    {
+      "name": "util-youtube-analyzer",
+      "description": "Analyze YouTube videos by extracting transcripts for learning from Dreamforce talks and Salesforce tutorials",
+      "source": "./skills/util-youtube-analyzer",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jag Valaiyapathy",
+        "url": "https://github.com/Jaganpro"
+      },
+      "category": "utilities",
+      "tags": ["youtube", "transcript", "analysis", "learning"],
+      "keywords": ["youtube", "transcript", "dreamforce", "trailhead", "whisper"]
     }
   ]
 }

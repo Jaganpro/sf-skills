@@ -8,9 +8,9 @@ echo "🔄 Validating plugin.json ↔ SKILL.md sync..."
 
 mismatches=0
 
-for skill in sf-apex sf-flow sf-diagram-mermaid sf-diagram-nanobananapro sf-metadata sf-data sf-deploy sf-ai-agentforce sf-ai-agentforce-testing sf-ai-agentscript sf-connected-apps sf-integration sf-lwc sf-debug sf-soql sf-testing skill-builder; do
-  plugin_file="./$skill/.claude-plugin/plugin.json"
-  skill_file="./$skill/SKILL.md"
+for skill in sf-apex sf-flow sf-diagram-mermaid sf-diagram-nanobananapro sf-metadata sf-data sf-deploy sf-ai-agentforce sf-ai-agentforce-testing sf-ai-agentforce-observability sf-ai-agentforce-conversationdesign sf-ai-agentscript sf-connected-apps sf-integration sf-lwc sf-debug sf-soql sf-testing sf-permissions skill-builder util-youtube-analyzer; do
+  plugin_file="./skills/$skill/.claude-plugin/plugin.json"
+  skill_file="./skills/$skill/SKILL.md"
 
   if [ ! -f "$plugin_file" ]; then
     echo "⚠️  $skill: No plugin.json found"

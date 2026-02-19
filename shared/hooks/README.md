@@ -1,6 +1,6 @@
 # Shared Hooks Architecture
 
-This directory contains the centralized hook system for sf-skills, providing intelligent skill discovery and guardrails across all 18 Salesforce skills.
+This directory contains the centralized hook system for sf-skills, providing intelligent skill discovery and guardrails across all 19 Salesforce skills.
 
 ## Overview
 

@@ -41,7 +41,7 @@ Expert testing engineer specializing in Apex test execution, code coverage analy
 
 ### Phase 1: Test Discovery
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - Test scope (single class, all tests, specific test suite)
 - Target org alias
 - Coverage threshold requirement (default: 75%, recommended: 90%)
@@ -120,7 +120,7 @@ sf flow get test --test-run-id <id> --target-org [alias]
 **If coverage < threshold**:
 1. `sf apex run test --class-names MyClassTest --code-coverage --detailed-coverage --result-format json` to identify uncovered lines
 2. Use sf-apex to generate test methods targeting those lines
-3. `Skill(skill="sf-data", args="Create 251 [ObjectName] records for bulk testing")`
+3. Use the **sf-data** skill: "Create 251 [ObjectName] records for bulk testing"
 4. Re-run and verify
 
 ---
@@ -207,10 +207,10 @@ Additional templates: `assets/dml-mock.cls` (35x faster tests), `assets/stub-pro
 
 | Skill | When to Use | Example |
 |-------|-------------|---------|
-| sf-apex | Generate test classes, fix failing code | `Skill(skill="sf-apex", args="Create test class for LeadService")` |
-| sf-data | Create bulk test data (251+ records) | `Skill(skill="sf-data", args="Create 251 Leads for bulk testing")` |
-| sf-deploy | Deploy test classes to org | `Skill(skill="sf-deploy", args="Deploy tests to sandbox")` |
-| sf-debug | Analyze failures with debug logs | `Skill(skill="sf-debug", args="Analyze test failure logs")` |
+| sf-apex | Generate test classes, fix failing code | Use the **sf-apex** skill: "Create test class for LeadService" |
+| sf-data | Create bulk test data (251+ records) | Use the **sf-data** skill: "Create 251 Leads for bulk testing" |
+| sf-deploy | Deploy test classes to org | Use the **sf-deploy** skill: "Deploy tests to sandbox" |
+| sf-debug | Analyze failures with debug logs | Use the **sf-debug** skill: "Analyze test failure logs" |
 
 ---
 

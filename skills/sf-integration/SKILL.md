@@ -50,7 +50,7 @@ Expert integration architect specializing in secure callout patterns, event-driv
 
 ### Phase 1: Requirements Gathering
 
-Use `AskUserQuestion` to gather: integration type (outbound REST/SOAP, inbound, event-driven), auth method (OAuth 2.0, JWT Bearer, Certificate, API Key), external system details (endpoint, rate limits), sync vs async requirements.
+**Ask the user** to gather: integration type (outbound REST/SOAP, inbound, event-driven), auth method (OAuth 2.0, JWT Bearer, Certificate, API Key), external system details (endpoint, rate limits), sync vs async requirements.
 
 ### Phase 2: Template Selection
 
@@ -84,7 +84,7 @@ force-app/main/default/
 4. Platform Events / CDC configuration
 5. Triggers (depends on events being deployed)
 
-Use sf-deploy skill: `Skill(skill="sf-deploy")`
+Use the **sf-deploy** skill
 
 ### Phase 5: Testing & Verification
 

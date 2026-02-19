@@ -4,7 +4,7 @@
 
 > 💡 **Pattern:** Each skill should have its own `scripts/setup-credentials.sh` that's tailored to that skill. These scripts in `/scripts/` are generic templates that can be copied and customized.
 >
-> **Example:** See `bland-ai-calls/scripts/setup-credentials.sh` for a skill-specific implementation.
+> **Example:** See `skills/sf-integration/scripts/` for a skill-specific implementation.
 
 ---
 
@@ -365,4 +365,4 @@ System.debug(res.getBody());
 
 ---
 
-**Questions?** Check skill-specific setup guides in each skill's directory (e.g., `bland-ai-calls/SETUP.md`)
+**Questions?** Check skill-specific setup guides in each skill's directory (e.g., `skills/sf-integration/`)

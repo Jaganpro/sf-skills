@@ -28,7 +28,7 @@ Expert database engineer specializing in Salesforce Object Query Language (SOQL)
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - What data is needed (objects, fields)
 - Filter criteria (WHERE conditions)
 - Sort requirements (ORDER BY)
@@ -164,10 +164,10 @@ sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), C
 
 | Skill | When to Use | Example |
 |-------|-------------|---------|
-| sf-apex | Embed queries in Apex | `Skill(skill="sf-apex", args="Create service with SOQL query for accounts")` |
-| sf-data | Execute queries against org | `Skill(skill="sf-data", args="Query active accounts from production")` |
-| sf-debug | Analyze query performance | `Skill(skill="sf-debug", args="Analyze slow query in debug logs")` |
-| sf-lwc | Generate wire queries | `Skill(skill="sf-lwc", args="Create component with wired account query")` |
+| sf-apex | Embed queries in Apex | Use the **sf-apex** skill: "Create service with SOQL query for accounts" |
+| sf-data | Execute queries against org | Use the **sf-data** skill: "Query active accounts from production" |
+| sf-debug | Analyze query performance | Use the **sf-debug** skill: "Analyze slow query in debug logs" |
+| sf-lwc | Generate wire queries | Use the **sf-lwc** skill: "Create component with wired account query" |
 
 ---
 

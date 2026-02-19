@@ -5,7 +5,7 @@
 #
 # Creates a new release of sf-skills by:
 # 1. Validating version format (v*.*.*)
-# 2. Updating version in marketplace.json
+# 2. Updating version in .claude-plugin/marketplace.json
 # 3. Updating version in skills-registry.json
 # 4. Creating annotated git tag
 # 5. Pushing tag to origin (triggers GitHub Actions release workflow)
@@ -34,7 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Files to update
-MARKETPLACE_JSON="$REPO_ROOT/marketplace.json"
+MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 REGISTRY_JSON="$REPO_ROOT/shared/hooks/skills-registry.json"
 
 # ============================================================================
@@ -235,7 +235,7 @@ commit_version_updates() {
     git commit -m "chore: bump version to $version
 
 Updated:
-- marketplace.json
+- .claude-plugin/marketplace.json
 - shared/hooks/skills-registry.json
 
 [automated by scripts/create-release.sh]"

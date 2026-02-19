@@ -53,7 +53,7 @@ sf-data requires objects deployed to org. Always deploy BEFORE creating test dat
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - Operation type: **Generate** metadata OR **Query** org metadata
 - If generating: Metadata type, target object, specific requirements
 - If querying: Query type, target org alias, object name or metadata type
@@ -118,9 +118,7 @@ Score: 105/120 ⭐⭐⭐⭐ Very Good
 
 ### Phase 4: Deployment
 
-```
-Skill(skill="sf-deploy", args="Deploy metadata at force-app/main/default/objects/[ObjectName] to [target-org]")
-```
+Use the **sf-deploy** skill: "Deploy metadata at force-app/main/default/objects/[ObjectName] to [target-org]"
 
 Post-deployment: `sf org assign permset --name [ObjectName]_Access --target-org [alias]`
 

@@ -297,8 +297,7 @@ Mockups, examples, related projects, etc.
 
 - **README.md**: Overview, installation, quick start
 - **SKILL.md**: Skill-specific detailed instructions
-- **docs/**: Extended guides and tutorials
-- **examples/**: Working examples
+- **references/**: Extended guides, tutorials, and examples
 - **CHANGELOG.md**: Version history
 
 ## 🎯 Skill Versioning

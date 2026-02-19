@@ -18,7 +18,7 @@ Expert Salesforce Flow Builder with deep knowledge of best practices, bulkificat
 ## Quick Reference: Validation Script
 
 ```bash
-python3 ~/.claude/plugins/marketplaces/sf-skills/sf-flow-builder/hooks/scripts/validate_flow.py <flow-file.xml>
+python3 ~/.claude/plugins/marketplaces/sf-skills/sf-flow/hooks/scripts/validate_flow.py <flow-file.xml>
 ```
 
 **Scoring**: 110 points across 6 categories. Minimum 88 (80%) for deployment.
@@ -59,7 +59,7 @@ Flow references custom object/fields? Create with sf-metadata FIRST. Deploy obje
 
 **Before building, evaluate alternatives**: See `references/flow-best-practices.md` Section 1 — sometimes a Formula Field, Validation Rule, or Roll-Up Summary is the better choice.
 
-Use **AskUserQuestion** to gather: flow type, primary purpose, trigger object/conditions, target org alias.
+**Ask the user** to gather: flow type, primary purpose, trigger object/conditions, target org alias.
 
 **Then**: Check existing flows (`Glob: **/*.flow-meta.xml`), offer reusable subflows from `references/subflow-library.md`, reference `references/governance-checklist.md` for complex automation.
 
@@ -121,9 +121,9 @@ Score: 92/110 ⭐⭐⭐⭐ Very Good
 
 ### Phase 4: Deployment & Integration
 
-1. `Skill(skill="sf-deploy", args="Deploy flow [path] to [org] with --dry-run")`
+1. Use the **sf-deploy** skill: "Deploy flow [path] to [org] with --dry-run"
 2. Review validation results
-3. `Skill(skill="sf-deploy", args="Proceed with actual deployment")`
+3. Use the **sf-deploy** skill: "Proceed with actual deployment"
 4. Edit `<status>Draft</status>` → `Active`, redeploy
 
 ### Phase 5: Testing & Documentation

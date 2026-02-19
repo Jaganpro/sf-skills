@@ -38,7 +38,7 @@ Expert diagram creator specializing in Salesforce architecture visualization. Ge
 
 ### Phase 1: Requirements Gathering
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - Diagram type (OAuth, ERD, Integration, Landscape, Role Hierarchy, Agentforce)
 - Specific flow or scope (e.g., "JWT Bearer flow" or "Account-Contact-Opportunity model")
 - Output preference (Mermaid only, ASCII only, or Both)
@@ -46,7 +46,7 @@ Use **AskUserQuestion** to gather:
 
 **Then**:
 1. If ERD requested, check for sf-metadata availability
-2. Create TodoWrite tasks for multi-diagram requests
+2. Create a task list for multi-diagram requests
 
 ### Phase 2: Template Selection
 
@@ -320,7 +320,7 @@ See `references/erd-conventions.md` for complete documentation of:
 
 | Skill | When to Use | Example |
 |-------|-------------|---------|
-| sf-metadata | Get real object/field definitions for ERD | `Skill(skill="sf-metadata")` → "Describe Lead object" |
+| sf-metadata | Get real object/field definitions for ERD | Use the **sf-metadata** skill: "Describe Lead object" |
 | sf-connected-apps | Link OAuth flow to Connected App setup | "Generate JWT Bearer diagram for this Connected App" |
 | sf-ai-agentscript | Visualize Agentforce agent architecture | "Create flow diagram for FAQ Agent" |
 | sf-flow | Document Flow logic as flowchart | "Diagram the approval process flow" |

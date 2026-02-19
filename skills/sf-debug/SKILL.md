@@ -28,7 +28,7 @@ Expert debugging engineer specializing in Apex debug log analysis, governor limi
 
 ### Phase 1: Log Collection
 
-Use **AskUserQuestion** to gather:
+**Ask the user** to gather:
 - Debug context (deployment failure, test failure, runtime error, performance issue)
 - Target org alias
 - User/Transaction ID if known
@@ -37,7 +37,7 @@ Use **AskUserQuestion** to gather:
 **Then**:
 1. List available logs: `sf apex list log --target-org [alias]`
 2. Fetch specific log or tail real-time
-3. Create TodoWrite tasks
+3. Create a task list
 
 ### Phase 2: Log Retrieval
 
@@ -120,7 +120,7 @@ Parse the debug log and analyze:
 
 **Auto-Fix Command**:
 ```
-Skill(skill="sf-apex", args="Fix [issue type] in [ClassName] at line [lineNumber]")
+Use the **sf-apex** skill: "Fix [issue type] in [ClassName] at line [lineNumber]"
 ```
 
 ### Phase 5: Fix Implementation
@@ -427,10 +427,10 @@ When enabled, sf-debug will automatically:
 
 | Skill | When to Use | Example |
 |-------|-------------|---------|
-| sf-apex | Generate fixes for identified issues | `Skill(skill="sf-apex", args="Fix NullPointerException in ContactService line 67")` |
-| sf-testing | Run tests to reproduce issues | `Skill(skill="sf-testing", args="Run AccountServiceTest to generate debug logs")` |
-| sf-deploy | Deploy fixes | `Skill(skill="sf-deploy", args="Deploy ContactService.cls to sandbox")` |
-| sf-data | Create test data for debugging | `Skill(skill="sf-data", args="Create Account with specific conditions")` |
+| sf-apex | Generate fixes for identified issues | Use the **sf-apex** skill: "Fix NullPointerException in ContactService line 67" |
+| sf-testing | Run tests to reproduce issues | Use the **sf-testing** skill: "Run AccountServiceTest to generate debug logs" |
+| sf-deploy | Deploy fixes | Use the **sf-deploy** skill: "Deploy ContactService.cls to sandbox" |
+| sf-data | Create test data for debugging | Use the **sf-data** skill: "Create Account with specific conditions" |
 
 ---
 
