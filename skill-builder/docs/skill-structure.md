@@ -10,15 +10,13 @@ A skill is a directory containing at minimum a `SKILL.md` file:
 skill-name/
 ├── SKILL.md              # Required: Core skill definition
 ├── README.md             # Recommended: Usage documentation
-├── examples/             # Optional: Example invocations
+├── references/           # Optional: Examples & extended docs
 │   ├── example-1.md
-│   └── example-2.md
-├── templates/            # Optional: Reusable templates
+│   └── guide.md
+├── assets/               # Optional: Reusable templates
 │   └── template.txt
-├── scripts/              # Optional: Helper scripts
-│   └── helper.py
-└── docs/                 # Optional: Extended documentation
-    └── guide.md
+└── scripts/              # Optional: Helper scripts
+    └── helper.py
 ```
 
 ## SKILL.md Structure

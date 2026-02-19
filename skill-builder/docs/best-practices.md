@@ -399,17 +399,18 @@ Every skill should have a README.md:
 [Usage tips, gotchas, best practices]
 ```
 
-### When to Add Examples Directory
+### When to Add References Directory
 
-Add `examples/` when:
+Add `references/` when:
 - Skill has multiple usage modes
 - Output format needs demonstration
 - Common patterns should be shown
 - Skill is complex or novel
+- Extended documentation needed
 
-### When to Add Templates Directory
+### When to Add Assets Directory
 
-Add `templates/` when:
+Add `assets/` when:
 - Skill generates files from templates
 - Multiple output formats supported
 - Reusable boilerplate provided

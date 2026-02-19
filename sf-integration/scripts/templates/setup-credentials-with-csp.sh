@@ -10,7 +10,7 @@
 # How to use this template:
 # 1. Copy to your skill: cp scripts/templates/setup-credentials-with-csp.sh my-skill/scripts/setup-credentials.sh
 # 2. Replace all {{PLACEHOLDERS}} with your values
-# 3. Create corresponding .cspTrustedSite-meta.xml and .remoteSite-meta.xml in templates/
+# 3. Create corresponding .cspTrustedSite-meta.xml and .remoteSite-meta.xml in assets/
 # 4. Test with your API
 #
 
@@ -123,7 +123,7 @@ if echo "$CSP_CHECK" | grep -q "sObject type 'CspTrustedSite' is not supported";
         SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
         sf project deploy start \
-            --source-dir "$SKILL_DIR/templates/${CSP_NAME}.remoteSite-meta.xml" \
+            --source-dir "$SKILL_DIR/assets/${CSP_NAME}.remoteSite-meta.xml" \
             --target-org "$ORG_ALIAS" \
             --wait 5 > /dev/null 2>&1 || true
 
@@ -139,7 +139,7 @@ else
         SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
         sf project deploy start \
-            --source-dir "$SKILL_DIR/templates/${CSP_NAME}.cspTrustedSite-meta.xml" \
+            --source-dir "$SKILL_DIR/assets/${CSP_NAME}.cspTrustedSite-meta.xml" \
             --target-org "$ORG_ALIAS" \
             --wait 5 > /dev/null 2>&1 || true
 

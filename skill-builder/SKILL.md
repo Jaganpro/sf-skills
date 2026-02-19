@@ -37,7 +37,7 @@ Use **AskUserQuestion** to collect (in sequence):
 | 2 | Description | Text | One clear sentence |
 | 3 | Author | Text | Optional |
 | 4 | Tools needed | Multi-select | From valid tools list |
-| 5 | Optional components | Multi-select | README, examples/, templates/, scripts/, docs/ |
+| 5 | Optional components | Multi-select | README, references/, assets/, scripts/ |
 | 6 | Tags | Text | Comma-separated |
 | 7 | Location | Choice | Global (~/.claude/skills/) or Project (.claude/skills/) |
 
@@ -50,13 +50,13 @@ Use **AskUserQuestion** to collect (in sequence):
 3. **Create structure**:
    ```bash
    mkdir -p {base_path}
-   # Create optional dirs based on selection: examples/, templates/, scripts/, docs/
+   # Create optional dirs based on selection: references/, assets/, scripts/
    ```
 4. **Load template**:
    - Marketplace: `Read: ~/.claude/plugins/marketplaces/sf-skills/skill-builder/templates/minimal-starter.md`
    - Project: `Read: [project-root]/skill-builder/templates/minimal-starter.md`
 5. **Replace placeholders**: {{SKILL_NAME}}, {{SKILL_DESCRIPTION}}, {{VERSION}}, {{AUTHOR}}, {{TAGS}}, {{ALLOWED_TOOLS}}
-6. **Write files**: SKILL.md + optional README.md, examples/example-usage.md
+6. **Write files**: SKILL.md + optional README.md, references/example-usage.md
 
 ### Phase 3: Deep Validation
 

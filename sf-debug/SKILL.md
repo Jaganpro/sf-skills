@@ -494,5 +494,5 @@ Install: `/plugin install github:Jaganpro/sf-skills/sf-debug`
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) file.
+MIT License.
 Copyright (c) 2024-2025 Jag Valaiyapathy

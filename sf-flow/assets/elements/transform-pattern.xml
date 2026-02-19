@@ -38,7 +38,7 @@
     │ • Business rules vary from record to record                               │
     └─────────────────────────────────────────────────────────────────────────────┘
 
-    See: docs/transform-vs-loop-guide.md for detailed decision criteria
+    See: references/transform-vs-loop-guide.md for detailed decision criteria
 
     ═══════════════════════════════════════════════════════════════════════════════
     TRANSFORM ELEMENT STRUCTURE
@@ -313,7 +313,7 @@
     • get-records-pattern.xml - Query source data before Transform
     • record-delete-pattern.xml - Delete records with proper error handling
 
-    See docs/transform-vs-loop-guide.md for detailed decision criteria.
+    See references/transform-vs-loop-guide.md for detailed decision criteria.
     ═══════════════════════════════════════════════════════════════════════════════
     -->
 

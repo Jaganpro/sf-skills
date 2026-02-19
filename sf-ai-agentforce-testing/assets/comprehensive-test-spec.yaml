@@ -243,7 +243,7 @@ testCases:
 # Topic Name Resolution:
 #   Standard topics (Escalation, Off_Topic) → use localDeveloperName
 #   Promoted topics (p_16j... prefix) → use FULL runtime developerName with hash
-#   See docs/topic-name-resolution.md for details
+#   See references/topic-name-resolution.md for details
 #
 # Action Assertions (superset matching):
 #   Expected: [ActionA] / Actual: [ActionA, ActionB] → PASS

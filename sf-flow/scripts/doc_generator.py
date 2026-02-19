@@ -501,10 +501,10 @@ class FlowDocGenerator:
     def _get_related_docs(self) -> str:
         """Get related documentation links."""
         docs = [
-            "- [Subflow Library](../docs/subflow-library.md)",
-            "- [Orchestration Guide](../docs/orchestration-guide.md)",
-            "- [Flow Best Practices](../docs/flow-best-practices.md)",
-            "- [Governance Checklist](../docs/governance-checklist.md)"
+            "- [Subflow Library](../references/subflow-library.md)",
+            "- [Orchestration Guide](../references/orchestration-guide.md)",
+            "- [Flow Best Practices](../references/flow-best-practices.md)",
+            "- [Governance Checklist](../references/governance-checklist.md)"
         ]
         return '\n'.join(docs)
 

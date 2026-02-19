@@ -15,7 +15,7 @@
     - Future-proof
 
     Setup:
-    1. Copy this file to your skill's templates/ directory
+    1. Copy this file to your skill's assets/ directory
     2. Replace {{placeholders}} with your values
     3. Deploy to org OR let setup script deploy automatically
 

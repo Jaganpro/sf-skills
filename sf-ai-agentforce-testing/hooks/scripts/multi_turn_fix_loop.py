@@ -9,7 +9,7 @@ fix instructions for the agentic fix loop.
 Usage:
     python3 multi_turn_fix_loop.py \
         --runner hooks/scripts/multi_turn_test_runner.py \
-        --scenarios templates/multi-turn-comprehensive.yaml \
+        --scenarios assets/multi-turn-comprehensive.yaml \
         --agent-id 0XxABC... \
         --max-attempts 5 \
         --output fix-loop-results.json
@@ -17,7 +17,7 @@ Usage:
     # With extra runner args:
     python3 multi_turn_fix_loop.py \
         --runner hooks/scripts/multi_turn_test_runner.py \
-        --scenarios templates/my-scenarios.yaml \
+        --scenarios assets/my-scenarios.yaml \
         --agent-id 0XxABC... \
         --max-attempts 3 \
         --runner-args '--verbose --var $Context.AccountId=001XXX'
@@ -234,13 +234,13 @@ def main():
 Examples:
   python3 multi_turn_fix_loop.py \\
       --runner hooks/scripts/multi_turn_test_runner.py \\
-      --scenarios templates/multi-turn-comprehensive.yaml \\
+      --scenarios assets/multi-turn-comprehensive.yaml \\
       --agent-id 0XxABC... \\
       --max-attempts 5
 
   python3 multi_turn_fix_loop.py \\
       --runner hooks/scripts/multi_turn_test_runner.py \\
-      --scenarios templates/my-tests.yaml \\
+      --scenarios assets/my-tests.yaml \\
       --agent-id 0XxABC... \\
       --max-attempts 3 \\
       --output results.json \\

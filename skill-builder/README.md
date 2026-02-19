@@ -97,7 +97,7 @@ The wizard will guide you through:
 2. **Description** - One-line summary of what it does
 3. **Author** - Your name (optional)
 4. **Tools needed** - Which Claude Code tools your skill will use
-5. **Optional components** - README, examples, templates, scripts, docs
+5. **Optional components** - README, references, assets, scripts
 6. **Tags** - Categorization keywords
 7. **Location** - Global or project-specific
 
@@ -130,10 +130,9 @@ When you create a skill, skill-builder generates:
 ~/.claude/skills/your-skill-name/
 ├── SKILL.md              # Required: Your skill definition
 ├── README.md             # Optional: Usage documentation
-├── examples/             # Optional: Example invocations
-├── templates/            # Optional: Reusable templates
-├── scripts/              # Optional: Helper scripts
-└── docs/                 # Optional: Extended documentation
+├── references/           # Optional: Examples & extended docs
+├── assets/               # Optional: Reusable templates
+└── scripts/              # Optional: Helper scripts
 ```
 
 ### SKILL.md Structure
@@ -559,9 +558,9 @@ Planned for v2.1+:
 Want to improve skill-builder? It's a skill itself:
 - Location: `~/.claude/skills/skill-builder/`
 - Edit SKILL.md to modify wizard logic
-- Add templates to `templates/` directory
+- Add templates to `assets/` directory
 - Improve scripts in `scripts/` directory
-- Enhance docs in `docs/` directory
+- Enhance docs in `references/` directory
 
 ## Support
 

@@ -536,7 +536,7 @@ System.debug(LoggingLevel.FINE, 'Detailed trace info');
 - Cardinality mismatch (estimated vs actual rows)
 - Missing indexes on WHERE clause fields
 
-**See Also**: [Live SOQL Query Plan Analyzer](../shared/code_analyzer/live_query_plan.py) for automated analysis.
+**See Also**: [Live SOQL Query Plan Analyzer](../../shared/code_analyzer/live_query_plan.py) for automated analysis.
 
 ---
 

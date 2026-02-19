@@ -1,6 +1,6 @@
 <!-- Parent: sf-ai-agentforce/SKILL.md -->
 <!-- TIER: 3 | DETAILED REFERENCE -->
-<!-- Read after: SKILL.md, agent-script-reference.md -->
+<!-- Read after: SKILL.md -->
 <!-- Purpose: Native AI API (aiplatform.ModelsAPI) patterns for Apex -->
 
 # Agentforce Models API

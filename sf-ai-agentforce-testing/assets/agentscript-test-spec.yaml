@@ -20,7 +20,7 @@
 #   2. Create: sf agent test create --spec this-file.yaml --api-name <Test_Name> --target-org <alias>
 #   3. Run:    sf agent test run --api-name <Test_Name> --wait 10 --result-format json --target-org <alias>
 #
-# See also: docs/agentscript-testing-patterns.md for 5 detailed test patterns.
+# See also: references/agentscript-testing-patterns.md for 5 detailed test patterns.
 
 # Required: Display name for the test (MasterLabel)
 name: "<Agent_Name> Agent Script Tests"
@@ -192,7 +192,7 @@ testCases:
 # TOPIC NAME DISCOVERY:
 #   Agent Script topic names in CLI test results may differ from the .agent file.
 #   Run one test, check generatedData.topic in results, and update expectedTopic.
-#   See docs/topic-name-resolution.md for details.
+#   See references/topic-name-resolution.md for details.
 #
 # PERMISSION REQUIREMENTS:
 #   If the agent action uses WITH USER_MODE in Apex, the Einstein Agent User

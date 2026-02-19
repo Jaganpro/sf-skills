@@ -103,7 +103,7 @@ S → Security     │ Enforce permissions, FLS, and data protection
 - [Best Practices](references/lwc-best-practices.md)
 - [Flow Integration](references/flow-integration-guide.md)
 - [Accessibility Guide](references/accessibility-guide.md)
-- [Jest Testing](references/jest-testing-guide.md)
+- [Jest Testing](references/jest-testing.md)
 
 ## Requirements
 

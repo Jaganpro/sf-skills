@@ -1,6 +1,6 @@
 <!-- Parent: sf-ai-agentforce/SKILL.md -->
 <!-- TIER: 3 | DETAILED REFERENCE -->
-<!-- Read after: SKILL.md, agent-script-reference.md, actions-guide.md -->
+<!-- Read after: SKILL.md -->
 <!-- Purpose: LightningTypeBundle for custom agent action UIs (API 64.0+) -->
 
 # Custom Lightning Types for Agentforce

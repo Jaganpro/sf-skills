@@ -96,8 +96,6 @@ When enabled, the skill will:
 ## Documentation
 
 - [Testing Best Practices](references/testing-best-practices.md)
-- [Coverage Patterns](references/coverage-patterns.md)
-- [Bulk Testing Guide](references/bulk-testing.md)
 
 ## Requirements
 

@@ -82,8 +82,8 @@ testCases:
 # invocation name (Level 2). E.g., use get_order_status, not check_status.
 #
 # For Agent Script test patterns, see:
-#   templates/agentscript-test-spec.yaml
-#   docs/agentscript-testing-patterns.md
+#   assets/agentscript-test-spec.yaml
+#   references/agentscript-testing-patterns.md
 # ═══════════════════════════════════════════════════════════════════════
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -105,5 +105,5 @@ testCases:
 #   2. Check results JSON: .testCases[].generatedData.topic
 #   3. Update expectedTopic with the actual value
 #
-# See docs/topic-name-resolution.md for complete reference.
+# See references/topic-name-resolution.md for complete reference.
 # ═══════════════════════════════════════════════════════════════════════

@@ -74,7 +74,7 @@ sf apex tail log --target-org [alias] --color
 ## Documentation
 
 - [Benchmarking Guide](references/benchmarking-guide.md)
-- [Debug Patterns](references/debug-patterns.md)
+
 
 ## Requirements
 

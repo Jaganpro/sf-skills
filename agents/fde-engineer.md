@@ -63,7 +63,7 @@ When given a task:
 - Write descriptive metadata labels and descriptions.
 - Include `masterLabel` and `description` on all metadata components.
 - Apex: follow trigger handler patterns, use dependency injection where established.
-- Agent Scripts: use templates from `sf-ai-agentscript/templates/agents/` as references.
+- Agent Scripts: use templates from `sf-ai-agentscript/assets/agents/` as references.
 
 ## Constraints
 

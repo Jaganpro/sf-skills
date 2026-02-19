@@ -340,7 +340,7 @@ def format_output(results: Dict) -> str:
         output_parts.append(f"   ... and {remaining} more issues")
 
     output_parts.append("─" * 50)
-    output_parts.append("📚 See: sf-apex/docs/llm-anti-patterns.md")
+    output_parts.append("📚 See: sf-apex/references/llm-anti-patterns.md")
 
     return "\n".join(output_parts)
 

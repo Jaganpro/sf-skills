@@ -10,7 +10,7 @@ Template for creating CSP Trusted Sites (modern approach, API 48+)
 
 **Use for:** Allowing outbound HTTP callouts to external APIs
 
-**Copy to:** `my-skill/templates/MyAPI.cspTrustedSite-meta.xml`
+**Copy to:** `my-skill/assets/MyAPI.cspTrustedSite-meta.xml`
 
 **Example:**
 ```xml
@@ -31,7 +31,7 @@ Template for creating Remote Site Settings (works in all API versions)
 
 **Use for:** Backward compatibility with older orgs (pre-API 48)
 
-**Copy to:** `my-skill/templates/MyAPI.remoteSite-meta.xml`
+**Copy to:** `my-skill/assets/MyAPI.remoteSite-meta.xml`
 
 **Example:**
 ```xml
@@ -63,14 +63,14 @@ Template for creating skill-specific setup scripts that handle:
 
 ```bash
 # Create skill directory structure
-mkdir -p my-stripe-skill/{templates,scripts,docs}
+mkdir -p my-stripe-skill/{assets,scripts,references}
 
 # Copy endpoint security templates
 cp scripts/templates/example.cspTrustedSite-meta.xml \
-   my-stripe-skill/templates/StripeAPI.cspTrustedSite-meta.xml
+   my-stripe-skill/assets/StripeAPI.cspTrustedSite-meta.xml
 
 cp scripts/templates/example.remoteSite-meta.xml \
-   my-stripe-skill/templates/StripeAPI.remoteSite-meta.xml
+   my-stripe-skill/assets/StripeAPI.remoteSite-meta.xml
 
 # Copy setup script template
 cp scripts/templates/setup-credentials-with-csp.sh \
@@ -190,13 +190,13 @@ The setup script **automatically chooses** the right one:
 
 When creating a new integration skill, include:
 
-- [ ] `templates/MyAPI.cspTrustedSite-meta.xml` (modern approach)
-- [ ] `templates/MyAPI.remoteSite-meta.xml` (fallback)
+- [ ] `assets/MyAPI.cspTrustedSite-meta.xml` (modern approach)
+- [ ] `assets/MyAPI.remoteSite-meta.xml` (fallback)
 - [ ] `scripts/setup-credentials.sh` (automated setup)
 - [ ] `scripts/README.md` (usage documentation)
 - [ ] `SKILL.md` (skill definition)
 - [ ] `QUICKSTART.md` (quick start guide)
-- [ ] `templates/MyCalloutService.cls` (Apex integration code)
+- [ ] `assets/MyCalloutService.cls` (Apex integration code)
 
 ---
 
@@ -205,7 +205,7 @@ When creating a new integration skill, include:
 ### Bland.ai Integration
 ```
 bland-ai-calls/
-├── templates/
+├── assets/
 │   ├── BlandAPI.cspTrustedSite-meta.xml     ✅
 │   ├── BlandAPI.remoteSite-meta.xml          ✅
 │   └── BlandAICalloutService.cls
@@ -218,7 +218,7 @@ bland-ai-calls/
 ### Hypothetical Stripe Integration
 ```
 sf-stripe/
-├── templates/
+├── assets/
 │   ├── StripeAPI.cspTrustedSite-meta.xml
 │   ├── StripeAPI.remoteSite-meta.xml
 │   └── StripeCalloutService.cls
@@ -255,8 +255,8 @@ sf-stripe/
 
 ```bash
 # Even if you only target modern orgs, include both:
-my-skill/templates/MyAPI.cspTrustedSite-meta.xml  # Primary
-my-skill/templates/MyAPI.remoteSite-meta.xml      # Fallback
+my-skill/assets/MyAPI.cspTrustedSite-meta.xml  # Primary
+my-skill/assets/MyAPI.remoteSite-meta.xml      # Fallback
 ```
 
 **Why:** Users might have older orgs, and the script handles fallback automatically.

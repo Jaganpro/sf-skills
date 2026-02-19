@@ -13,7 +13,7 @@ Usage:
         --consumer-key YOUR_KEY \
         --consumer-secret YOUR_SECRET \
         --agent-id 0XxRM0000004ABC \
-        --scenarios templates/multi-turn-comprehensive.yaml
+        --scenarios assets/multi-turn-comprehensive.yaml
 
     # With context variables:
     python3 multi_turn_test_runner.py \
@@ -21,14 +21,14 @@ Usage:
         --consumer-key YOUR_KEY \
         --consumer-secret YOUR_SECRET \
         --agent-id 0XxRM0000004ABC \
-        --scenarios templates/multi-turn-topic-routing.yaml \
+        --scenarios assets/multi-turn-topic-routing.yaml \
         --var '$Context.AccountId=001XXXXXXXXXXXX' \
         --var '$Context.EndUserLanguage=en_US'
 
     # With JSON output for fix loop:
     python3 multi_turn_test_runner.py \
         --agent-id 0XxRM0000004ABC \
-        --scenarios templates/multi-turn-comprehensive.yaml \
+        --scenarios assets/multi-turn-comprehensive.yaml \
         --output results.json \
         --verbose
 
@@ -37,7 +37,7 @@ Usage:
     export SF_CONSUMER_KEY=YOUR_KEY
     export SF_CONSUMER_SECRET=YOUR_SECRET
     export SF_AGENT_ID=0XxRM0000004ABC
-    python3 multi_turn_test_runner.py --scenarios templates/multi-turn-comprehensive.yaml
+    python3 multi_turn_test_runner.py --scenarios assets/multi-turn-comprehensive.yaml
 
 Exit Codes:
     0 = All scenarios passed
@@ -1515,16 +1515,16 @@ def main():
 Examples:
   # Run comprehensive tests:
   python3 multi_turn_test_runner.py \\
-      --scenarios templates/multi-turn-comprehensive.yaml
+      --scenarios assets/multi-turn-comprehensive.yaml
 
   # With context variables:
   python3 multi_turn_test_runner.py \\
-      --scenarios templates/multi-turn-topic-routing.yaml \\
+      --scenarios assets/multi-turn-topic-routing.yaml \\
       --var '$Context.AccountId=001XXXXXXXXXXXX'
 
   # Save JSON results:
   python3 multi_turn_test_runner.py \\
-      --scenarios templates/multi-turn-comprehensive.yaml \\
+      --scenarios assets/multi-turn-comprehensive.yaml \\
       --output results.json
 
 Environment Variables:

@@ -444,5 +444,5 @@ For LSP validation to work, users must have:
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) file.
+MIT License.
 Copyright (c) 2024-2025 Jag Valaiyapathy

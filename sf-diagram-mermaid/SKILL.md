@@ -384,5 +384,5 @@ You should:
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) file.
+MIT License.
 Copyright (c) 2024-2025 Jag Valaiyapathy
