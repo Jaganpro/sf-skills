@@ -5,10 +5,9 @@
 #
 # Creates a new release of sf-skills by:
 # 1. Validating version format (v*.*.*)
-# 2. Updating version in .claude-plugin/marketplace.json
-# 3. Updating version in skills-registry.json
-# 4. Creating annotated git tag
-# 5. Pushing tag to origin (triggers GitHub Actions release workflow)
+# 2. Updating version in skills-registry.json
+# 3. Creating annotated git tag
+# 4. Pushing tag to origin (triggers GitHub Actions release workflow)
 #
 # Usage:
 #     ./scripts/create-release.sh v1.2.0
@@ -34,7 +33,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Files to update
-MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 REGISTRY_JSON="$REPO_ROOT/shared/hooks/skills-registry.json"
 
 # ============================================================================
@@ -135,39 +133,6 @@ get_current_version() {
 # UPDATE FUNCTIONS
 # ============================================================================
 
-update_marketplace_json() {
-    local version="$1"
-    local version_no_v="${version#v}"  # Remove 'v' prefix
-
-    if [ ! -f "$MARKETPLACE_JSON" ]; then
-        print_warning "marketplace.json not found, skipping"
-        return 0
-    fi
-
-    # Update version in all plugin entries
-    local temp_file
-    temp_file=$(mktemp)
-
-    # This jq command updates the version field in the root and in any plugins array
-    jq --arg v "$version_no_v" '
-        .version = $v |
-        if .plugins then
-            .plugins |= map(
-                if .skills then
-                    .version = $v
-                else
-                    .
-                end
-            )
-        else
-            .
-        end
-    ' "$MARKETPLACE_JSON" > "$temp_file"
-
-    mv "$temp_file" "$MARKETPLACE_JSON"
-    print_success "Updated marketplace.json to v$version_no_v"
-}
-
 update_registry_json() {
     local version="$1"
     local version_no_v="${version#v}"  # Remove 'v' prefix
@@ -224,7 +189,7 @@ commit_version_updates() {
     local version="$1"
 
     # Stage version file changes
-    git add "$MARKETPLACE_JSON" "$REGISTRY_JSON" 2>/dev/null || true
+    git add "$REGISTRY_JSON" 2>/dev/null || true
 
     # Check if there are changes to commit
     if git diff --staged --quiet; then
@@ -235,7 +200,6 @@ commit_version_updates() {
     git commit -m "chore: bump version to $version
 
 Updated:
-- .claude-plugin/marketplace.json
 - shared/hooks/skills-registry.json
 
 [automated by scripts/create-release.sh]"
@@ -290,7 +254,6 @@ main() {
 
     # Step 5: Update version files
     print_step 4 "Updating version files"
-    update_marketplace_json "$new_version"
     update_registry_json "$new_version"
 
     # Step 6: Commit version changes

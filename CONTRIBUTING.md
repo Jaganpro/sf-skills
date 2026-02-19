@@ -81,15 +81,6 @@ git checkout -b fix/bug-description
 4. **Test Thoroughly**: Test with real Salesforce orgs if applicable
 5. **Validate**: Run validation scripts before committing
 
-### Validation Checklist
-
-Before submitting changes:
-
-```bash
-# Run validate-sync to check plugin.json ↔ SKILL.md consistency
-./scripts/validate-sync.sh
-```
-
 ### Code Style
 
 - **YAML**: Use 2 spaces for indentation
@@ -107,8 +98,6 @@ name: skill-name              # Required: kebab-case
 description: Clear description of what this skill does and when Claude should use it. Can be multiple sentences for detailed context.
 ---
 ```
-
-**Note**: Metadata like `author`, `version`, `license` is now defined in `.claude-plugin/plugin.json` at the plugin level, not per-skill.
 
 ## 🧪 Testing
 
