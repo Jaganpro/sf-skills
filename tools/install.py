@@ -54,7 +54,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # CONFIGURATION
 # ============================================================================
 
-VERSION = "1.2.0"  # Installer version
+VERSION = "1.3.0"  # Installer version
 
 # Installation paths (Claude Code native layout)
 CLAUDE_DIR = Path.home() / ".claude"
@@ -1272,34 +1272,45 @@ def upsert_hooks(existing: Dict[str, Any], new_hooks: Dict[str, Any]) -> Tuple[D
     return result, status
 
 
-def copy_skills(source_dir: Path, target_dir: Path) -> int:
+def copy_skills(source_dir: Path, target_dir: Path, dry_run: bool = False) -> int:
     """
-    Copy skill directories.
+    Copy skill directories and prune orphans.
 
     Args:
         source_dir: Source directory containing sf-* folders
         target_dir: Target skills directory
+        dry_run: If True, report what would happen without making changes
 
     Returns:
         Number of skills copied
     """
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    source_skill_names: set[str] = set()
     count = 0
     for skill_dir in source_dir.glob("sf-*"):
         if skill_dir.is_dir():
-            target_skill = target_dir / skill_dir.name
-            if target_skill.exists() or target_skill.is_symlink():
-                safe_rmtree(target_skill)
-            shutil.copytree(skill_dir, target_skill)
+            source_skill_names.add(skill_dir.name)
+            if not dry_run:
+                target_skill = target_dir / skill_dir.name
+                if target_skill.exists() or target_skill.is_symlink():
+                    safe_rmtree(target_skill)
+                shutil.copytree(skill_dir, target_skill)
             count += 1
+
+    # Prune orphaned skill directories (removed from repo but still installed)
+    for existing in sorted(target_dir.glob("sf-*")):
+        if existing.is_dir() and existing.name not in source_skill_names:
+            if not dry_run:
+                safe_rmtree(existing)
+            print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned skill: {existing.name}")
 
     return count
 
 
-def copy_agents(source_dir: Path, target_dir: Path) -> int:
+def copy_agents(source_dir: Path, target_dir: Path, dry_run: bool = False) -> int:
     """
-    Copy agent .md files from agents/ to target directory.
+    Copy agent .md files from agents/ to target directory and prune orphans.
 
     Only copies files matching known prefixes (fde-*, ps-*) to avoid
     overwriting user's custom agents.
@@ -1307,6 +1318,7 @@ def copy_agents(source_dir: Path, target_dir: Path) -> int:
     Args:
         source_dir: Root source directory containing agents/ subfolder
         target_dir: Target directory (e.g., ~/.claude/agents/)
+        dry_run: If True, report what would happen without making changes
 
     Returns:
         Number of agent files copied
@@ -1317,12 +1329,23 @@ def copy_agents(source_dir: Path, target_dir: Path) -> int:
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    source_agent_names: set[str] = set()
     count = 0
     for prefix in AGENT_PREFIXES:
         for agent_file in agents_source.glob(f"{prefix}*.md"):
             if agent_file.is_file():
-                shutil.copy2(agent_file, target_dir / agent_file.name)
+                source_agent_names.add(agent_file.name)
+                if not dry_run:
+                    shutil.copy2(agent_file, target_dir / agent_file.name)
                 count += 1
+
+    # Prune orphaned agent files (renamed/removed from repo but still installed)
+    for prefix in AGENT_PREFIXES:
+        for existing in sorted(target_dir.glob(f"{prefix}*.md")):
+            if existing.is_file() and existing.name not in source_agent_names:
+                if not dry_run:
+                    existing.unlink()
+                print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned agent: {existing.name}")
 
     return count
 
@@ -1939,10 +1962,13 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         # Step 3: Install skills, hooks, and LSP engine
         print_step(3, 5, "Installing skills, hooks, and LSP engine...", "...")
 
-        if not dry_run:
-            # Copy skills to native discovery path
-            skill_count = copy_skills(source_dir, SKILLS_DIR)
+        # Copy skills and agents outside the dry_run guard so orphan
+        # detection works in both live and dry-run modes.
+        skill_count = copy_skills(source_dir, SKILLS_DIR, dry_run=dry_run)
+        agents_target = CLAUDE_DIR / "agents"
+        agent_count = copy_agents(source_dir, agents_target, dry_run=dry_run)
 
+        if not dry_run:
             # Copy hooks
             hooks_source = source_dir / "shared" / "hooks"
             hook_count = copy_hooks(hooks_source, HOOKS_DIR)
@@ -1950,10 +1976,6 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             # Copy LSP engine (wrapper scripts for Apex, LWC, AgentScript LSPs)
             lsp_source = source_dir / "shared" / "lsp-engine"
             lsp_count = copy_lsp_engine(lsp_source, LSP_DIR)
-
-            # Copy FDE + PS agents to ~/.claude/agents/
-            agents_target = CLAUDE_DIR / "agents"
-            agent_count = copy_agents(source_dir, agents_target)
 
             # Copy installer for self-updates
             installer_source = source_dir / "tools" / "install.py"
@@ -2002,6 +2024,9 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
                 print_substep(f"{agent_count} agents installed (FDE + PS)")
         else:
             print_step(3, 5, "Would install skills, hooks, and LSP engine", "skip")
+            print_substep(f"{skill_count} skills would be installed")
+            if agent_count > 0:
+                print_substep(f"{agent_count} agents would be installed (FDE + PS)")
 
         # Step 4: Configure Claude Code
         print_step(4, 5, "Configuring Claude Code...", "...")
