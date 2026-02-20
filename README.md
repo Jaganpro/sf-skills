@@ -89,21 +89,25 @@ The strategist spawns up to 4 concurrent workers via `Task()`. PS agents have `W
 
 ### Any AI Coding Agent
 
+> Requires [Node.js 18+](https://nodejs.org/) (provides the `npx` command)
+
 ```bash
-npx skills add github:Jaganpro/sf-skills --copy
+npx skills add github:Jaganpro/sf-skills
 ```
 
 Works with Claude Code, Codex, Gemini CLI, OpenCode, Amp, and [40+ agents](https://agentskills.io).
 
 ```bash
 # Install a single skill
-npx skills add github:Jaganpro/sf-skills --skill sf-apex --copy
+npx skills add github:Jaganpro/sf-skills --skill sf-apex
 
 # List available skills before installing
 npx skills add github:Jaganpro/sf-skills --list
 ```
 
 ### Claude Code (Full Experience)
+
+> **Using Claude Code?** This path is recommended — npx installs skills only, while install.py adds hooks, agents, LSP, and guardrails.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
@@ -542,7 +546,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 All skills follow the [Agent Skills open standard](https://agentskills.io). Install with `npx skills add` for any supported agent:
 
 ```bash
-npx skills add github:Jaganpro/sf-skills --copy
+npx skills add github:Jaganpro/sf-skills
 ```
 
 | Tool | Status | Install Method | |
