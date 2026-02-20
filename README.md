@@ -87,70 +87,64 @@ The strategist spawns up to 4 concurrent workers via `Task()`. PS agents have `W
 
 ## 🚀 Installation
 
-### Any AI Coding Agent (Recommended)
+### Any AI Coding Agent
 
 ```bash
-npx skills add github:Jaganpro/sf-skills
+npx skills add github:Jaganpro/sf-skills --copy
 ```
 
-Works with Claude Code, Codex, Gemini CLI, OpenCode, Amp, and any agent that supports the [Agent Skills open standard](https://agentskills.io).
+Works with Claude Code, Codex, Gemini CLI, OpenCode, Amp, and [40+ agents](https://agentskills.io).
 
-### Claude Code (Full Experience with Hooks + Validation)
+```bash
+# Install a single skill
+npx skills add github:Jaganpro/sf-skills --skill sf-apex --copy
+
+# List available skills before installing
+npx skills add github:Jaganpro/sf-skills --list
+```
+
+### Claude Code (Full Experience)
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-The Claude Code installer provides additional features beyond skills:
-- **19 skills** + 7 specialized agents + 14 hook scripts
-- **Automatic validation** on Write/Edit (150-point Apex rubric, Flow scoring, LWC checks)
-- **LSP integration** with auto-fix loops (Apex, LWC, Agent Script)
-- **Guardrails** that block dangerous DML and auto-fix unbounded SOQL
+Adds 19 skills + 7 agents + 11 hook scripts + LSP engine. Includes guardrails, auto-validation on Write/Edit, and org preflight checks.
 
-**Restart Claude Code** after installation to activate hooks.
+**Restart Claude Code** after installation.
 
-### Managing Your Installation
+### Updating
+
+| Install Method | Check for Updates | Update |
+|----------------|-------------------|--------|
+| **npx** | `npx skills check` | `npx skills update` |
+| **install.py** | `python3 ~/.claude/sf-skills-install.py --status` | `python3 ~/.claude/sf-skills-install.py --update` |
+
+### Managing install.py
 
 ```bash
-# Check installation status
-python3 ~/.claude/sf-skills-install.py --status
-
-# Update to latest version
-python3 ~/.claude/sf-skills-install.py --update
-
-# Uninstall completely
-python3 ~/.claude/sf-skills-install.py --uninstall
-
-# Clean up legacy artifacts (marketplace, npx, .claude-plugin)
-python3 ~/.claude/sf-skills-install.py --cleanup --dry-run   # preview first
-python3 ~/.claude/sf-skills-install.py --cleanup              # apply
-
-# Preview changes without applying (dry run)
-python3 ~/.claude/sf-skills-install.py --dry-run
+python3 ~/.claude/sf-skills-install.py --status       # Check version
+python3 ~/.claude/sf-skills-install.py --update        # Update to latest
+python3 ~/.claude/sf-skills-install.py --uninstall     # Remove everything
+python3 ~/.claude/sf-skills-install.py --cleanup       # Clean legacy artifacts
+python3 ~/.claude/sf-skills-install.py --dry-run       # Preview without applying
 ```
 
-#### Upgrade Paths
+> **Upgrading from npx to install.py?** Just run the curl command above — it auto-detects and migrates.
 
-| From | To | Command |
-|------|----|---------|
-| **npx** (skills only) | **install.py** (full experience) | `curl -sSL .../install.sh \| bash` — auto-detects npx, migrates to managed |
-| **Old marketplace** | **install.py** | `curl -sSL .../install.sh \| bash` — removes marketplace artifacts |
-| **Already using install.py** | Latest version | `python3 ~/.claude/sf-skills-install.py --update` |
-| **npx only** | Latest skills | `npx skills check` / `npx skills update` |
-
-#### What Gets Installed
+### What Gets Installed (install.py only)
 
 ```
 ~/.claude/
-├── skills/                    # 21 Salesforce skills (native Claude Code discovery)
+├── skills/                    # 19 Salesforce skills
 │   ├── sf-apex/SKILL.md
 │   ├── sf-flow/SKILL.md
-│   └── ... (19 more)
+│   └── ... (17 more)
 ├── agents/                    # 7 FDE + PS agents
 │   ├── fde-strategist.md
 │   ├── fde-engineer.md
 │   └── ... (5 more)
-├── hooks/                     # Hook scripts
+├── hooks/                     # 11 hook scripts
 │   ├── scripts/
 │   └── skills-registry.json
 ├── lsp-engine/                # LSP wrappers (Apex, LWC, AgentScript)
@@ -163,7 +157,7 @@ python3 ~/.claude/sf-skills-install.py --dry-run
 | Hook | Function |
 |------|----------|
 | **SessionStart** | Initializes session, preflights org connection, warms LSP servers |
-| **PreToolUse** | Guardrails - blocks dangerous DML, auto-fixes unbounded SOQL |
+| **PreToolUse** | Guardrails — blocks dangerous DML, auto-fixes unbounded SOQL |
 | **PostToolUse** | Validates Apex/Flow/LWC on save |
 | **PermissionRequest** | Auto-approves safe operations (read queries, scratch deploys) |
 
@@ -548,7 +542,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 All skills follow the [Agent Skills open standard](https://agentskills.io). Install with `npx skills add` for any supported agent:
 
 ```bash
-npx skills add github:Jaganpro/sf-skills
+npx skills add github:Jaganpro/sf-skills --copy
 ```
 
 | Tool | Status | Install Method | |

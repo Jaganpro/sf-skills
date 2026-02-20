@@ -2087,7 +2087,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         print("""
   📦 WHAT WILL BE INSTALLED:
      • 19 Salesforce skills (sf-apex, sf-flow, sf-metadata, ...)
-     • 14 hook scripts (guardrails, auto-approval, validation)
+     • 11 hook scripts (guardrails, auto-approval, validation)
      • LSP engine (Apex, LWC, AgentScript language servers)
      • Automatic validation, guardrails, and org preflight checks
 
