@@ -11,6 +11,7 @@ Usage:
     python3 install.py --force-update # Force reinstall even if up-to-date
     python3 install.py --uninstall    # Remove sf-skills
     python3 install.py --status       # Show installation status
+    python3 install.py --cleanup      # Remove legacy artifacts
     python3 install.py --diagnose    # Run diagnostic checks
     python3 install.py --restore-settings  # Restore settings.json from backup
     python3 install.py --dry-run      # Preview changes
@@ -82,6 +83,10 @@ LEGACY_INSTALL_DIR = CLAUDE_DIR / "sf-skills"
 LEGACY_HOOKS_DIR = CLAUDE_DIR / "sf-skills-hooks"
 MARKETPLACE_DIR = CLAUDE_DIR / "plugins" / "marketplaces" / "sf-skills"
 
+# npx skills paths (for cross-installer detection)
+NPX_SKILL_LOCK = Path.home() / ".agents" / ".skill-lock.json"
+NPX_SKILLS_DIR = Path.home() / ".agents" / "skills"
+
 # GitHub repository info
 GITHUB_OWNER = "Jaganpro"
 GITHUB_REPO = "sf-skills"
@@ -113,6 +118,7 @@ class InstallState:
     MARKETPLACE = "marketplace"  # Old marketplace install
     LEGACY = "legacy"            # Old sf-skills-hooks install
     CORRUPTED = "corrupted"      # Exists but missing fingerprint
+    NPX = "npx"                  # npx skills add (lock file present, no .sf-skills.json)
 
 
 # ============================================================================
@@ -282,6 +288,16 @@ def detect_state() -> Tuple[str, Optional[str]]:
         # Directory exists but no fingerprint - corrupted
         if (LEGACY_INSTALL_DIR / "VERSION").exists() or (LEGACY_INSTALL_DIR / "skills").exists():
             return InstallState.CORRUPTED, None
+
+    # Check for npx skills installation (lock file with sf-skills entries)
+    if NPX_SKILL_LOCK.exists():
+        try:
+            lock_data = json.loads(NPX_SKILL_LOCK.read_text())
+            skills = lock_data.get("skills", [])
+            if any(s.get("source", "").startswith("Jaganpro/sf-skills") for s in skills):
+                return InstallState.NPX, None
+        except (json.JSONDecodeError, IOError):
+            pass
 
     # No installation found
     return InstallState.FRESH, None
@@ -543,6 +559,19 @@ UPDATE_REASON_UP_TO_DATE = "up_to_date"
 UPDATE_REASON_ERROR = "error"
 
 
+def semver_tuple(v: str) -> Tuple[int, ...]:
+    """Parse a version string like '1.3.0' into a tuple of ints for correct comparison.
+
+    Handles 'v' prefix and non-numeric suffixes (e.g., '1.0.0-beta' → (1, 0, 0)).
+    """
+    parts = []
+    for segment in v.split("."):
+        # Strip non-numeric suffixes (e.g., "0-beta" → "0")
+        digits = re.match(r'(\d+)', segment)
+        parts.append(int(digits.group(1)) if digits else 0)
+    return tuple(parts)
+
+
 def needs_update() -> Tuple[bool, str, Dict[str, Any]]:
     """
     Check both version AND commit SHA to determine if update is needed.
@@ -578,16 +607,16 @@ def needs_update() -> Tuple[bool, str, Dict[str, Any]]:
     if not remote_version:
         return False, UPDATE_REASON_ERROR, details
 
-    # Compare versions (strip 'v' prefix for comparison)
+    # Compare versions (strip 'v' prefix, use tuple for correct numeric ordering)
     local_v = (current_version or "0.0.0").lstrip('v')
     remote_v = remote_version.lstrip('v')
 
-    # Case 1: Version bump
-    if remote_v > local_v:
+    # Case 1: Version bump (tuple comparison handles v10.0.0 > v9.0.0 correctly)
+    if semver_tuple(remote_v) > semver_tuple(local_v):
         return True, UPDATE_REASON_VERSION_BUMP, details
 
     # Case 2: Same version, check SHA
-    if remote_v == local_v:
+    if semver_tuple(remote_v) == semver_tuple(local_v):
         # Legacy install without SHA tracking
         if local_sha is None:
             return True, UPDATE_REASON_ENABLE_SHA_TRACKING, details
@@ -812,6 +841,106 @@ def cleanup_temp_files(dry_run: bool = False) -> int:
                     removed += 1
                 except IOError:
                     pass
+
+    return removed
+
+
+def cleanup_npx(dry_run: bool = False) -> int:
+    """
+    Remove npx-installed sf-skills canonical copies and lock file entries.
+
+    When a user installed via `npx skills add`, skills live in two places:
+    - Symlinks in ~/.claude/skills/sf-* → ~/.agents/skills/sf-*
+    - Canonical copies in ~/.agents/skills/sf-*
+    - Lock entries in ~/.agents/.skill-lock.json
+
+    This function cleans the canonical copies and lock entries so the
+    managed installer can take over cleanly.
+
+    Returns:
+        Number of entries cleaned from lock file
+    """
+    if not NPX_SKILL_LOCK.exists():
+        return 0
+
+    try:
+        lock_data = json.loads(NPX_SKILL_LOCK.read_text())
+    except (json.JSONDecodeError, IOError):
+        return 0
+
+    skills = lock_data.get("skills", [])
+    sf_entries = [s for s in skills if s.get("source", "").startswith("Jaganpro/sf-skills")]
+
+    if not sf_entries:
+        return 0
+
+    cleaned = 0
+    for entry in sf_entries:
+        skill_name = entry.get("name", "")
+        if not skill_name:
+            continue
+
+        # Remove canonical copy from ~/.agents/skills/
+        canonical = NPX_SKILLS_DIR / skill_name
+        if canonical.exists() or canonical.is_symlink():
+            if dry_run:
+                print_info(f"Would remove npx canonical: {canonical}")
+            else:
+                safe_rmtree(canonical)
+        cleaned += 1
+
+    if not dry_run:
+        # Remove sf-skills entries from lock file, preserve others
+        remaining = [s for s in skills if not s.get("source", "").startswith("Jaganpro/sf-skills")]
+        if remaining:
+            lock_data["skills"] = remaining
+            NPX_SKILL_LOCK.write_text(json.dumps(lock_data, indent=2))
+        else:
+            # Lock file is now empty — remove it
+            NPX_SKILL_LOCK.unlink()
+            # Remove ~/.agents/skills/ if empty
+            if NPX_SKILLS_DIR.exists() and not any(NPX_SKILLS_DIR.iterdir()):
+                NPX_SKILLS_DIR.rmdir()
+            # Remove ~/.agents/ if empty
+            agents_dir = NPX_SKILLS_DIR.parent
+            if agents_dir.exists() and not any(agents_dir.iterdir()):
+                agents_dir.rmdir()
+
+    if cleaned > 0:
+        action = "Would clean" if dry_run else "Cleaned"
+        print_substep(f"{action} {cleaned} npx skill entries")
+
+    return cleaned
+
+
+def cleanup_plugin_dirs(dry_run: bool = False) -> int:
+    """
+    Remove .claude-plugin/ directories inside installed skills.
+
+    Belt-and-suspenders cleanup for the transition period after removing
+    .claude-plugin/ from the repo (commit 34dcfac). Nuke-and-replace
+    handles this automatically on full updates, but partial updates or
+    manual copies could leave these behind.
+
+    Returns:
+        Number of .claude-plugin/ directories removed
+    """
+    if not SKILLS_DIR.exists():
+        return 0
+
+    removed = 0
+    for skill_dir in sorted(SKILLS_DIR.glob("sf-*")):
+        plugin_dir = skill_dir / ".claude-plugin"
+        if plugin_dir.exists():
+            if dry_run:
+                print_info(f"Would remove: {plugin_dir}")
+            else:
+                safe_rmtree(plugin_dir)
+            removed += 1
+
+    if removed > 0:
+        action = "Would remove" if dry_run else "Removed"
+        print_substep(f"{action} {removed} .claude-plugin/ dir(s) from installed skills")
 
     return removed
 
@@ -1826,6 +1955,98 @@ def verify_installation() -> Tuple[bool, List[str]]:
 # MAIN COMMANDS
 # ============================================================================
 
+def cmd_cleanup(dry_run: bool = False) -> int:
+    """
+    Run all cleanup functions to remove legacy artifacts.
+
+    Useful for users who want to clean up without doing a full reinstall.
+    Runs each cleanup independently and reports results.
+
+    Returns:
+        Exit code (0 = success)
+    """
+    print_banner()
+    print("sf-skills Cleanup")
+    print("════════════════════════════════════════\n")
+
+    if dry_run:
+        print_info("DRY RUN — no changes will be made\n")
+
+    total_cleaned = 0
+
+    # 1. Marketplace artifacts
+    print(c("1. Marketplace artifacts", Colors.BOLD))
+    if MARKETPLACE_DIR.exists():
+        cleanup_marketplace(dry_run)
+        total_cleaned += 1
+        print_success(f"{'Would remove' if dry_run else 'Removed'}: {MARKETPLACE_DIR}")
+    else:
+        print_info("None found")
+
+    # 2. Legacy hooks directory
+    print(f"\n{c('2. Legacy hooks directory', Colors.BOLD)}")
+    if LEGACY_HOOKS_DIR.exists():
+        cleanup_legacy(dry_run)
+        total_cleaned += 1
+        print_success(f"{'Would remove' if dry_run else 'Removed'}: {LEGACY_HOOKS_DIR}")
+    else:
+        print_info("None found")
+
+    # 3. npx canonical copies + lock entries
+    print(f"\n{c('3. npx skills artifacts', Colors.BOLD)}")
+    npx_cleaned = cleanup_npx(dry_run)
+    if npx_cleaned > 0:
+        total_cleaned += npx_cleaned
+    else:
+        print_info("None found")
+
+    # 4. .claude-plugin/ dirs inside installed skills
+    print(f"\n{c('4. .claude-plugin/ directories', Colors.BOLD)}")
+    plugin_cleaned = cleanup_plugin_dirs(dry_run)
+    if plugin_cleaned > 0:
+        total_cleaned += plugin_cleaned
+    else:
+        print_info("None found")
+
+    # 5. Stale hooks referencing missing scripts
+    print(f"\n{c('5. Stale hooks in settings.json', Colors.BOLD)}")
+    stale_cleaned = cleanup_stale_hooks(dry_run)
+    if stale_cleaned > 0:
+        total_cleaned += stale_cleaned
+        print_success(f"{'Would remove' if dry_run else 'Removed'} {stale_cleaned} stale hook(s)")
+    else:
+        print_info("None found")
+
+    # 6. Temp files
+    print(f"\n{c('6. Temp files', Colors.BOLD)}")
+    temp_cleaned = cleanup_temp_files(dry_run)
+    if temp_cleaned > 0:
+        total_cleaned += temp_cleaned
+        print_success(f"{'Would remove' if dry_run else 'Removed'} {temp_cleaned} temp file(s)")
+    else:
+        print_info("None found")
+
+    # 7. Legacy command symlinks
+    print(f"\n{c('7. Legacy command symlinks', Colors.BOLD)}")
+    cmds_cleaned = unregister_skills_from_commands(dry_run)
+    if cmds_cleaned > 0:
+        total_cleaned += cmds_cleaned
+        print_success(f"{'Would remove' if dry_run else 'Removed'} {cmds_cleaned} command symlink(s)")
+    else:
+        print_info("None found")
+
+    # Summary
+    print("\n════════════════════════════════════════")
+    if total_cleaned > 0:
+        action = "would be cleaned" if dry_run else "cleaned"
+        print(f"{c(f'✅ {total_cleaned} artifact(s) {action}', Colors.GREEN)}")
+    else:
+        print(f"{c('✅ No legacy artifacts found — installation is clean', Colors.GREEN)}")
+    print()
+
+    return 0
+
+
 def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bool = False) -> int:
     """
     Install sf-skills.
@@ -1888,6 +2109,9 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         print_warning(f"Found legacy installation (v{current_version}, will be removed)")
     elif state == InstallState.CORRUPTED:
         print_warning("Found corrupted installation (will be reinstalled)")
+    elif state == InstallState.NPX:
+        print_info("Detected previous npx skills installation. Migrating to managed install "
+                    "(adds hooks, agents, LSP engine, and auto-updates).")
 
     # Confirm
     if not force and not dry_run:
@@ -1945,11 +2169,18 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
             if (LEGACY_INSTALL_DIR.exists() or LEGACY_INSTALL_DIR.is_symlink()) and not dry_run:
                 safe_rmtree(LEGACY_INSTALL_DIR)
             cleanups.append(("Corrupted install", lambda: True))
+        if state == InstallState.NPX:
+            cleanups.append(("npx skills", lambda: cleanup_npx(dry_run)))
 
         # Remove old hooks from settings.json
         hooks_removed = cleanup_settings_hooks(dry_run)
         if hooks_removed > 0:
             cleanups.append((f"{hooks_removed} old hooks", lambda: True))
+
+        # Belt-and-suspenders: remove .claude-plugin/ dirs inside installed skills
+        plugin_dirs_removed = cleanup_plugin_dirs(dry_run)
+        if plugin_dirs_removed > 0:
+            cleanups.append((f"{plugin_dirs_removed} .claude-plugin/ dirs", lambda: True))
 
         if cleanups:
             for name, cleanup_fn in cleanups:
@@ -2339,10 +2570,18 @@ def cmd_uninstall(dry_run: bool = False, force: bool = False) -> int:
     if hooks_removed > 0:
         print_success(f"Removed {hooks_removed} hooks from settings.json")
 
+    # Remove .claude-plugin/ dirs from skills (belt-and-suspenders)
+    cleanup_plugin_dirs(dry_run)
+
     # Remove all installed files (skills, hooks, lsp, metadata, installer)
     if not dry_run:
         cleanup_installed_files()
         print_success("Removed sf-skills files from native layout")
+
+    # Remove npx canonical copies if present
+    npx_cleaned = cleanup_npx(dry_run)
+    if npx_cleaned > 0:
+        print_success(f"Cleaned {npx_cleaned} npx skill entries")
 
     # Remove legacy command symlinks
     skills_removed = unregister_skills_from_commands(dry_run)
@@ -2409,6 +2648,13 @@ def cmd_status() -> int:
         print(f"\nTo install:")
         print(f"  curl -sSL https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main/tools/install.py | python3")
         return 1
+
+    if state == InstallState.NPX:
+        print(f"Status:      {c('⚠️ NPX INSTALL (skills only)', Colors.YELLOW)}")
+        print(f"Method:      npx skills add (no hooks, agents, or LSP)")
+        print(f"\nTo upgrade to full experience:")
+        print(f"  curl -sSL https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main/tools/install.sh | bash")
+        return 0
 
     if state == InstallState.UNIFIED:
         print(f"Status:      {c('✅ INSTALLED', Colors.GREEN)}")
@@ -3037,6 +3283,8 @@ Examples:
   python3 install.py --force-update  # Force reinstall even if up-to-date
   python3 install.py --uninstall   # Remove sf-skills
   python3 install.py --status      # Show installation status
+  python3 install.py --cleanup     # Remove legacy artifacts
+  python3 install.py --cleanup --dry-run  # Preview cleanup
   python3 install.py --diagnose    # Run diagnostic checks
   python3 install.py --restore-settings  # Restore settings.json from backup
   python3 install.py --dry-run     # Preview changes
@@ -3064,6 +3312,8 @@ Curl one-liner:
                         help="Remove sf-skills installation")
     parser.add_argument("--status", action="store_true",
                         help="Show installation status")
+    parser.add_argument("--cleanup", action="store_true",
+                        help="Remove legacy artifacts (marketplace, npx, .claude-plugin, stale hooks)")
     parser.add_argument("--diagnose", action="store_true",
                         help="Run diagnostic checks on installation health")
     parser.add_argument("--restore-settings", action="store_true",
@@ -3124,6 +3374,8 @@ Curl one-liner:
             force=args.force,
             called_from_bash=args.called_from_bash
         ))
+    elif args.cleanup:
+        sys.exit(cmd_cleanup(dry_run=args.dry_run))
     elif args.profile is not None:
         sys.exit(cmd_profile(args.profile, dry_run=args.dry_run, force=args.force))
     elif args.diagnose:

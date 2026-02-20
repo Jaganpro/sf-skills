@@ -121,9 +121,22 @@ python3 ~/.claude/sf-skills-install.py --update
 # Uninstall completely
 python3 ~/.claude/sf-skills-install.py --uninstall
 
+# Clean up legacy artifacts (marketplace, npx, .claude-plugin)
+python3 ~/.claude/sf-skills-install.py --cleanup --dry-run   # preview first
+python3 ~/.claude/sf-skills-install.py --cleanup              # apply
+
 # Preview changes without applying (dry run)
 python3 ~/.claude/sf-skills-install.py --dry-run
 ```
+
+#### Upgrade Paths
+
+| From | To | Command |
+|------|----|---------|
+| **npx** (skills only) | **install.py** (full experience) | `curl -sSL .../install.sh \| bash` — auto-detects npx, migrates to managed |
+| **Old marketplace** | **install.py** | `curl -sSL .../install.sh \| bash` — removes marketplace artifacts |
+| **Already using install.py** | Latest version | `python3 ~/.claude/sf-skills-install.py --update` |
+| **npx only** | Latest skills | `npx skills check` / `npx skills update` |
 
 #### What Gets Installed
 
