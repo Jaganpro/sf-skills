@@ -53,7 +53,7 @@ Generate a YAML test specification **interactively** (no batch/scripted mode ava
 sf agent generate test-spec [--output-file <path>]
 ```
 
-**⚠️ Important:** This command is **interactive only**. There is no `--api-name` flag to auto-generate from an existing agent. You must manually input test cases through the prompts.
+**⚠️ Important:** This command is **interactive only** when run without arguments. There is no `--api-name` flag to auto-generate from an existing agent. You must manually input test cases through the prompts.
 
 **Flags:**
 
@@ -61,6 +61,17 @@ sf agent generate test-spec [--output-file <path>]
 |------|-------------|
 | `--output-file` | Path for generated YAML (default: `specs/agentTestSpec.yaml`) |
 | `--api-version` | Override API version |
+| `--from-definition` | Path to existing XML `AiEvaluationDefinition` file — converts to YAML test spec format |
+| `--force-overwrite` | Overwrite output file without confirmation prompt |
+
+**Converting XML to YAML:**
+
+```bash
+# Convert existing XML test definition to YAML test spec
+sf agent generate test-spec --from-definition force-app/main/default/aiEvaluationDefinitions/MyTest.aiEvaluationDefinition-meta.xml --force-overwrite
+```
+
+> **Note:** `--from-definition` converts an existing XML-based test definition to the newer YAML test spec format. Useful when migrating from manually-created XML metadata to the YAML-based workflow.
 
 **⛔ Non-existent flags (DO NOT USE):**
 - `--api-name` - Does NOT exist (common misconception)
@@ -235,7 +246,7 @@ Retrieve results from a completed test run.
 sf agent test results --job-id <id> --target-org <alias> [--result-format <format>]
 ```
 
-**⚠️ CRITICAL BUG:** The `--use-most-recent` flag is documented in `--help` but **NOT IMPLEMENTED**. You will get "Nonexistent flag" error. **ALWAYS use `--job-id` explicitly.**
+**⚠️ CRITICAL BUG:** The `--use-most-recent` flag is documented in `--help` but **NOT IMPLEMENTED** as of v2.123.1. The flag appears in the help text description and examples, but the actual flag parser does NOT accept it — you get a "Nonexistent flag" error. This is a confirmed Salesforce CLI bug. **ALWAYS use `--job-id` explicitly, or use `sf agent test resume --use-most-recent` instead (that command's flag works).**
 
 **Flags:**
 
@@ -245,10 +256,10 @@ sf agent test results --job-id <id> --target-org <alias> [--result-format <forma
 | `-o, --target-org` | Target org alias or username |
 | `-r, --result-format` | Output format: `human`, `json`, `junit`, `tap` |
 | `-d, --output-dir` | Directory to save results |
-| `--verbose` | Include generated data (actions, objects touched) |
+| `--verbose` | Show generated data including `invokedActions` with action inputs, outputs, and latency |
 
 **⛔ Non-working flags (DO NOT USE):**
-- `--use-most-recent` - Documented but NOT implemented as of Jan 2026
+- `--use-most-recent` - Documented in help text but NOT implemented as of v2.123.1 (confirmed still broken since v2.108.6). Use `test resume --use-most-recent` or `--job-id` instead.
 
 **Example:**
 
@@ -287,16 +298,26 @@ sf agent test resume --job-id <id> --target-org <alias> [--wait <minutes>]
 | Flag | Description |
 |------|-------------|
 | `-i, --job-id` | Job ID to resume |
+| `-r, --use-most-recent` | Use the job ID of the most recent agent test run (alternative to `--job-id`) |
 | `-o, --target-org` | Target org alias or username |
 | `-w, --wait` | Minutes to wait for completion |
-| `--result-format` | Output format |
-| `--output-dir` | Directory to save results |
+| `-r, --result-format` | Output format: `human`, `json`, `junit`, `tap` |
+| `-d, --output-dir` | Directory to save results |
+| `--verbose` | Show generated data including `invokedActions` with action inputs, outputs, and latency |
+
+> **Note:** `--use-most-recent` works on `test resume` (verified on v2.123.1) but is broken on `test results`. Use `test resume --use-most-recent` as a workaround when you don't have the job ID handy.
 
 **Example:**
 
 ```bash
 # Resume specific job
 sf agent test resume --job-id 0Ah7X0000000001 --wait 5 --target-org dev
+
+# Resume most recent test run (works on test resume, unlike test results)
+sf agent test resume --use-most-recent --wait 5 --target-org dev
+
+# Resume with verbose output to see action details
+sf agent test resume --job-id 0Ah7X0000000001 --wait 5 --verbose --target-org dev
 ```
 
 ---
@@ -708,7 +729,7 @@ cat ./debug/apex-debug.log | grep ERROR
 | "401 Unauthorized" | Org auth expired | Re-authenticate: `sf org login web` |
 | "Job ID not found" | Test timed out | Use `sf agent test resume` |
 | "No results" | Test still running | Wait longer or use `--wait` |
-| **"Nonexistent flag: --use-most-recent"** | CLI bug | Use `--job-id` explicitly instead |
+| **"Nonexistent flag: --use-most-recent"** | `test results` CLI bug (confirmed v2.123.1) | Use `--job-id` explicitly, or use `test resume --use-most-recent` instead |
 | **Topic assertion fails** | Expected topic doesn't match actual | Standard copilots use `MigrationDefaultTopic` - update test expectations |
 | **"No matching records"** | Test data doesn't exist | Verify utterances reference actual org data |
 | **Test exists confirmation hangs** | Interactive prompt in script | Use `echo "y" \| sf agent test create...` |

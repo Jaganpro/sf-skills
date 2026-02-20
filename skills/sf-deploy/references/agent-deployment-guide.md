@@ -450,6 +450,42 @@ sf project deploy start --metadata GenAiPlannerBundle,BotVersion --target-org my
 
 ---
 
+## ISV Packaging (BotTemplate)
+
+Use `sf agent generate template` to package an agent for distribution via managed packages on AppExchange.
+
+### Generate a BotTemplate
+
+```bash
+sf agent generate template \
+    --agent-file force-app/main/default/bots/My_Agent/My_Agent.bot-meta.xml \
+    --agent-version 1
+```
+
+### What Gets Generated
+
+The command generates a `BotTemplate` metadata type that wraps:
+- `Bot` — Top-level agent definition
+- `BotVersion` — Version configuration
+- `GenAiPlannerBundle` — Reasoning engine and topic/action bindings
+
+### Packaging Workflow
+
+1. **Generate template**: Run `sf agent generate template` as shown above
+2. **Include in package**: Add the `BotTemplate` and `GenAiPlannerBundle` metadata to your managed package directory
+3. **Create package version**: `sf package version create --package <name> --installation-key <key> --wait 20`
+4. **Install in subscriber org**: `sf package install --package <version-id> --target-org <alias> --wait 10`
+5. **Publish agent in subscriber org**: `sf agent publish authoring-bundle --api-name <name> --target-org <alias>`
+
+### Key Considerations
+
+- The BotTemplate is designed for ISV distribution — it allows subscribers to install and customize the agent
+- Subscribers can modify topics, actions, and instructions after installation
+- The `--agent-version` flag specifies which BotVersion to template (typically `1` for new agents)
+- The `--agent-file` must point to the `.bot-meta.xml` file in your local project
+
+---
+
 ## Troubleshooting
 
 ### "Internal Error, try again later"

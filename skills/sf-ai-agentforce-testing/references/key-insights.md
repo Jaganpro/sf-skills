@@ -14,6 +14,6 @@
 | Empty API response | Agent not activated | Activate and publish agent |
 | Context lost between turns | Agent re-asks for known info | Add context retention instructions to topic |
 | Topic doesn't switch | Agent stays on old topic | Add transition phrases to target topic |
-| **⚠️ `--use-most-recent` broken** | **"Nonexistent flag" error** | **Use `--job-id` explicitly** |
+| **⚠️ `--use-most-recent` broken on `test results`** | **"Nonexistent flag" error (confirmed v2.123.1)** | **Use `--job-id` explicitly, or use `test resume --use-most-recent` (works)** |
 | **Topic name mismatch** | **Expected `GeneralCRM`, got `MigrationDefaultTopic`** | **Verify actual topic names from first test run** |
 | **Action superset matching** | **Expected `[A]`, actual `[A,B]` but PASS** | **CLI uses SUPERSET logic** |

@@ -517,7 +517,8 @@ sf agent test create --spec ./tests/agent-spec.yaml --api-name My_Agent_Tests --
 # Run tests
 sf agent test run --api-name My_Agent_Tests --wait 10 --result-format json --json --target-org dev
 
-# Get results (ALWAYS use --job-id, NOT --use-most-recent)
+# Get results (ALWAYS use --job-id — --use-most-recent is broken on test results as of v2.123.1)
+# Alternative: sf agent test resume --use-most-recent --wait 5 (that command's flag works)
 sf agent test results --job-id <JOB_ID> --result-format json --json --target-org dev
 ```
 
@@ -531,7 +532,7 @@ sf agent test results --job-id <JOB_ID> --result-format json --json --target-org
 | `expectedActions` is flat strings | `- action_name` NOT `- name: action_name, invoked: true` |
 | Empty `expectedActions: []` | Means "not testing" — passes even when actions are invoked |
 | Missing `expectedOutcome` | `output_validation` reports ERROR — this is harmless |
-| `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
+| `--use-most-recent` broken on `test results` | Confirmed broken on v2.123.1. Use `--job-id` for `test results`, or use `test resume --use-most-recent` (works) |
 | No MessagingSession context | CLI tests have no session — flows needing `recordId` error at runtime. Use `contextVariables` with `RoutableId` to inject a real session ID. |
 | Promoted topic names | Must use full runtime `developerName` with hash suffix |
 | contextVariables `name` format | Both `$Context.RoutableId` and bare `RoutableId` work — runtime resolves both. `$Context.` prefix recommended. |

@@ -53,9 +53,15 @@ subjectName: My_Agent
 
 **Fix**: `agent_discovery.py live` now has automatic fallback — if the Tooling API returns no results for BotDefinition, it retries with the regular API.
 
-## LOW: `--use-most-recent` Not Implemented
+## LOW: `--use-most-recent` Not Implemented on `test results`
 
-**Status**: Flag documented but NOT functional. Always use `--job-id` explicitly.
+**Status**: 🟡 Confirmed broken on v2.123.1 (also broken on v2.108.6)
+
+**Issue**: The `--use-most-recent` flag is documented in `sf agent test results --help` (appears in description and examples) but the flag parser does NOT accept it — returns "Nonexistent flag" error. This is a Salesforce CLI bug where the help text advertises a flag that was never wired into the command.
+
+**Workaround**: Use `--job-id` explicitly with `test results`, or use `sf agent test resume --use-most-recent` instead (that command's flag works correctly as of v2.123.1).
+
+**Scope**: Only affects `sf agent test results`. The `--use-most-recent` flag works correctly on `sf agent test resume`.
 
 ## CRITICAL: Custom Evaluations RETRY Bug (Spring '26)
 

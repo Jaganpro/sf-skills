@@ -102,7 +102,7 @@ curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/instal
 ```
 
 The Claude Code installer provides additional features beyond skills:
-- **21 skills** + 7 specialized agents + 14 hook scripts
+- **19 skills** + 7 specialized agents + 14 hook scripts
 - **Automatic validation** on Write/Edit (150-point Apex rubric, Flow scoring, LWC checks)
 - **LSP integration** with auto-fix loops (Apex, LWC, Agent Script)
 - **Guardrails** that block dangerous DML and auto-fix unbounded SOQL
@@ -536,7 +536,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Total: 31 skills** (21 skills ✅ live, 10 planned 📋)
+**Total: 29 skills** (19 skills ✅ live, 10 planned 📋)
 
 </details>
 

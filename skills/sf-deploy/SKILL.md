@@ -6,7 +6,7 @@ description: >
   deployment errors.
 license: MIT
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
   author: "Jag Valaiyapathy"
 ---
 
@@ -219,57 +219,9 @@ See [references/deployment-report-template.md](references/deployment-report-temp
 
 ## Trigger Deployment Safety
 
-> 💡 *See `references/trigger-deployment-safety.md` for comprehensive guide.*
+Triggers require special deployment care: deactivation before modification, proper ordering, and rollback planning.
 
-### Pre-Deployment Guardrails
-
-Before deploying triggers, verify:
-
-| Check | Command/Action |
-|-------|---------------|
-| Trigger chain analysis | Map all triggers firing together |
-| Cascade failure review | Identify atomic vs independent processes |
-| Async decoupling | Use Queueable/Events for external calls |
-| Savepoint usage | Verify explicit atomicity where needed |
-| Test coverage | Include cascade success/failure tests |
-
-### Common Trigger Cascade Risks
-
-| Risk | Symptom | Solution |
-|------|---------|----------|
-| External callout in trigger | Cascade failure from HTTP timeout | Move to Queueable |
-| Shared exception handling | One failure rolls back all | Isolate with try-catch or async |
-| Recursive triggers | Stack overflow or DML errors | Use static flag recursion guard |
-| Order-dependent triggers | Inconsistent behavior | Document and test trigger order |
-
-### Pre-Deployment Checklist
-
-```
-TRIGGER SAFETY CHECKLIST:
-□ Identify all triggers in deployment
-□ Map trigger chains (which triggers fire together)
-□ Verify cascade behavior is intentional
-□ Check for external callouts → should be async
-□ Confirm savepoint usage for atomic operations
-□ Test both success and failure cascade scenarios
-□ Validate with --dry-run before production deploy
-```
-
-### Recommended Async Patterns
-
-```apex
-// BAD: Synchronous external call in trigger
-trigger AccountTrigger on Account (after insert) {
-    ExternalService.sync(Trigger.new);  // Failure cascades
-}
-
-// GOOD: Async decoupling
-trigger AccountTrigger on Account (after insert) {
-    if (canEnqueueJob()) {
-        System.enqueueJob(new AccountSyncQueueable(Trigger.newMap.keySet()));
-    }
-}
-```
+> **Full guide**: See [references/trigger-deployment-safety.md](references/trigger-deployment-safety.md) for deactivation strategies, safe deployment sequences, and rollback procedures.
 
 ## CI/CD Integration
 
@@ -425,11 +377,12 @@ sf agent activate --api-name [AgentName] --target-org target-org --json
 | `sf agent activate --api-name X --json` | Activate published agent |
 | `sf agent deactivate --api-name X --json` | Deactivate agent for changes |
 | `sf agent preview --api-name X` | Preview agent behavior (interactive — no `--json`) |
+| `sf agent preview --authoring-bundle <path>` | Preview from local authoring bundle (interactive — no `--json`) |
 | `sf agent validate authoring-bundle --api-name X --json` | Validate Agent Script syntax |
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
-| `sf agent generate authoring-bundle --api-name X` | Generate authoring bundle scaffolding |
 | `sf agent generate authoring-bundle --api-name X --target-org <alias> --json` | Generate authoring bundle scaffolding |
+| `sf agent generate template --agent-file <path> --agent-version <ver>` | Generate BotTemplate for ISV packaging (AppExchange) |
 | `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |
 | `sf project deploy start --metadata Agent:X` | Deploy agent metadata |
 

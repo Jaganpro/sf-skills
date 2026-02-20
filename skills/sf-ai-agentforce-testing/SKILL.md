@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires API v65.0+ (Winter '26) and Agentforce enabled org"
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 7 categories"
 ---
@@ -16,7 +16,7 @@ metadata:
 <!-- TIER: 1 | ENTRY POINT -->
 <!-- This is the starting document - read this FIRST -->
 <!-- Pattern: Follows sf-testing for agentic test-fix loops -->
-<!-- v2.0.0: Dual-track workflow with multi-turn API testing as primary -->
+<!-- v2.1.0: Dual-track workflow with multi-turn API testing as primary -->
 
 # sf-ai-agentforce-testing: Agentforce Test Execution & Coverage Analysis
 
@@ -271,6 +271,10 @@ sf agent test run --api-name MyAgentTest --wait 10 --result-format json --json -
 ```
 
 **Interactive Preview:** `sf agent preview --api-name AgentName --target-org [alias]` (no ECA required)
+
+### Debugging with `--verbose`
+
+The `--verbose` flag on `test results` and `test resume` exposes `generatedData.invokedActions` — the full action invocation detail including inputs, outputs, and latency per action. This is critical for debugging action I/O failures and building JSONPath expressions for custom evaluations. See [cli-commands.md](references/cli-commands.md#verbose-output---verbose) for the full `generatedData` structure.
 
 ### B3: Results Analysis
 

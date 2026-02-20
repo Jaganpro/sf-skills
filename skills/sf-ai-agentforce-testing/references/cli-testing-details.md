@@ -33,7 +33,7 @@ See [topic-name-resolution.md](../references/topic-name-resolution.md) for the c
 | Empty `expectedActions: []` | Means "not testing" — PASS even when actions invoked |
 | Missing `expectedOutcome` | `output_validation` reports ERROR — harmless |
 | No MessagingSession context | Flows needing `recordId` error (agent handles gracefully) |
-| `--use-most-recent` broken | Always use `--job-id` for `sf agent test results` |
+| `--use-most-recent` broken on `test results` | Confirmed broken on v2.123.1. Use `--job-id` for `test results`, or use `test resume --use-most-recent` (works) |
 | contextVariables `name` format | Both `RoutableId` and `$Context.RoutableId` work — runtime resolves both. Prefer `$Context.` prefix for clarity. |
 | customEvaluations RETRY bug | **⚠️ Spring '26:** Server returns RETRY → REST API 500. See [Known Issues](known-issues.md). |
 | `conciseness` metric broken | Returns score=0, empty explanation — platform bug |

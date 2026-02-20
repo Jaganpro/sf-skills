@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires API v65.0+ (Winter '26)"
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   author: "Jag Valaiyapathy"
 ---
 
@@ -130,6 +130,32 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org MyOrg
 # Publish (skip metadata retrieve for CI/CD pipelines, v2.122.6+)
 sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve --target-org MyOrg
 ```
+
+### CLI Agent Lifecycle
+
+Manage agent state via CLI (requires agent to be published first):
+
+| Command | Purpose |
+|---------|---------|
+| `sf agent activate --api-name X --target-org Y --json` | Activate a published agent |
+| `sf agent deactivate --api-name X --target-org Y --json` | Deactivate an active agent |
+
+> **Note**: `sf agent create --spec <file>` exists but is NOT recommended — agents created this way don't use Agent Script and are less flexible. Use the authoring-bundle workflow instead.
+
+Full lifecycle: Validate → Deploy → Publish → Activate → (Deactivate → Re-publish → Re-activate)
+
+Cross-references: [sf-deploy](../sf-deploy/SKILL.md) for deployment orchestration, [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) for Agent Script development.
+
+### Agent Spec Generation
+
+Generate an agent spec YAML with `sf agent generate agent-spec`. Key flags:
+- `--type customer|internal` — Agent type
+- `--role`, `--company-name`, `--company-description` — Core identity
+- `--tone formal|casual|neutral` — Conversational style
+- `--full-interview` — Interactive prompt for all properties
+- `--spec <existing.yaml>` — Iterative refinement of an existing spec
+
+> **Full flag reference**: See [references/cli-commands.md](references/cli-commands.md) for the complete `generate agent-spec` workflow with all 15+ flags.
 
 ---
 
@@ -417,6 +443,7 @@ Issues:
 
 | Document | Description | Read When |
 |----------|-------------|-----------|
+| [references/cli-commands.md](references/cli-commands.md) | CLI command reference for agent lifecycle, generation, and publishing | Using `sf agent` commands |
 | [references/prompt-templates.md](references/prompt-templates.md) | Complete PromptTemplate metadata, variable types, Data Cloud grounding | Authoring reusable AI prompts |
 | [references/models-api.md](references/models-api.md) | `aiplatform.ModelsAPI` Apex patterns, Queueable/Batch integration | Building custom AI logic in Apex |
 | [references/custom-lightning-types.md](references/custom-lightning-types.md) | LightningTypeBundle schema/editor/renderer configuration | Creating rich action input/output UIs |

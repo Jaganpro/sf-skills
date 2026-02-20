@@ -525,7 +525,7 @@ Each spec is deployed independently via `sf agent test create`, then executed in
 | **Empty `expectedActions: []` means "not testing"** | Will PASS even if actions are invoked |
 | **Missing `expectedOutcome` causes harmless ERROR** | `output_validation` reports ERROR but topic/action assertions still work |
 | **CLI has NO MessagingSession context** | Flows that need `recordId` will error at runtime (agent handles gracefully) |
-| **`--use-most-recent` flag is broken** | Always use `--job-id` explicitly for `sf agent test results` |
+| **`--use-most-recent` broken on `test results`** | Confirmed broken on v2.123.1. Use `--job-id` explicitly for `test results`, or use `test resume --use-most-recent` (works) |
 | **Promoted topics need full runtime name** | `localDeveloperName` only resolves for standard topics |
 | **`instruction_following` crashes Testing Center UI** | `No enum constant AiEvaluationMetricType.INSTRUCTION_FOLLOWING_EVALUATION` — CLI works fine but UI breaks. Remove this metric if users need Testing Center UI access. |
 | **Standard platform topics intercept before custom routing** | `Inappropriate_Content`, `Prompt_Injection`, `Reverse_Engineering` fire BEFORE the custom planner. Don't use custom topic names for these guardrail tests. See [topic-name-resolution.md](topic-name-resolution.md#standard-platform-topics-intercept-before-custom-routing). |

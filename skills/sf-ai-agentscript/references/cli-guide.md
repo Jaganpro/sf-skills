@@ -15,9 +15,12 @@
 | `sf agent test run` | Run batch tests | `sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json` |
 | `sf agent create` | Create agent from spec file | `sf agent create --api-name MyAgent --spec agent-spec.yaml -o TARGET_ORG --json` |
 | `sf agent generate agent-spec` | Generate agent specification | `sf agent generate agent-spec --type customer --role "Service Rep" --output-file agent-spec.yaml` |
+| `sf agent generate authoring-bundle` | Scaffold authoring bundle | `sf agent generate authoring-bundle --no-spec --name "My Agent" -o TARGET_ORG --json` |
 | `sf agent generate template` | Generate agent template (ISV packaging) | `sf agent generate template --agent-file MyAgent.agent --agent-version 1.0 --json` |
-| `sf agent preview start` | Start programmatic preview session | `sf agent preview start --api-name MyAgent -o TARGET_ORG --json` |
-| `sf agent preview send` | Send utterance to preview session | `sf agent preview send --session-id <id> --message "Hello" --json` |
+| `sf agent activate` | Activate agent (make live) | `sf agent activate --api-name MyAgent -o TARGET_ORG --json` |
+| `sf agent deactivate` | Deactivate agent (take offline) | `sf agent deactivate --api-name MyAgent -o TARGET_ORG --json` |
+| `sf agent preview start` | Start programmatic preview session | `sf agent preview start --api-name MyAgent -o TARGET_ORG --json` (or `--authoring-bundle`) |
+| `sf agent preview send` | Send utterance to preview session | `sf agent preview send --session-id <id> --utterance "Hello" --json` |
 | `sf agent preview end` | End preview session | `sf agent preview end --session-id <id> --json` |
 | `sf org open agent` | Open Agent Builder in browser | `sf org open agent --api-name MyAgent -o TARGET_ORG` |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view | `sf org open authoring-bundle -o TARGET_ORG` |
@@ -251,16 +254,123 @@ sf agent generate template \
 SESSION_ID=$(sf agent preview start --api-name MyAgent -o TARGET_ORG --json | jq -r '.result.sessionId')
 
 # 2. Send utterances programmatically
-sf agent preview send --session-id $SESSION_ID --message "I need a refund" --json
+sf agent preview send --session-id $SESSION_ID --utterance "I need a refund" --json
 
 # 3. Send follow-up messages
-sf agent preview send --session-id $SESSION_ID --message "Order #12345" --json
+sf agent preview send --session-id $SESSION_ID --utterance "Order #12345" --json
 
 # 4. End the session
 sf agent preview end --session-id $SESSION_ID --json
 
 # List active preview sessions
 sf agent preview sessions -o TARGET_ORG --json
+```
+
+### Preview Modes
+
+| Mode | Flag | Behavior |
+|------|------|----------|
+| **Simulated** (default) | *(none)* | AI simulates/mocks action responses — no real data changes |
+| **Live** | `--use-live-actions` | Executes real actions in the org (Flows, Apex, APIs) |
+
+Additional preview flags:
+
+| Flag | Purpose |
+|------|---------|
+| `--apex-debug` | Enable Apex debug logging during preview session |
+| `--output-dir <path>` | Save conversation transcripts to directory |
+| `--authoring-bundle` | Specify authoring bundle name instead of `--api-name` |
+
+```bash
+# Live preview with Apex debug logging and transcript saving
+SESSION_ID=$(sf agent preview start --api-name MyAgent --use-live-actions --apex-debug --output-dir ./transcripts -o TARGET_ORG --json | jq -r '.result.sessionId')
+
+# Preview using authoring bundle name instead of api-name
+SESSION_ID=$(sf agent preview start --authoring-bundle MyBundle -o TARGET_ORG --json | jq -r '.result.sessionId')
+
+# End session (also supports --authoring-bundle)
+sf agent preview end --session-id $SESSION_ID --json
+```
+
+---
+
+## Activate / Deactivate Agent
+
+After publishing, activate the agent to make it live. Deactivate before re-publishing updates.
+
+```bash
+# Activate agent (makes it live for end users)
+sf agent activate --api-name MyAgent -o TARGET_ORG --json
+
+# Deactivate agent (takes it offline — required before re-publishing)
+sf agent deactivate --api-name MyAgent -o TARGET_ORG --json
+```
+
+**Full update lifecycle**: Deactivate → Re-publish → Re-activate
+
+```bash
+# Update an already-active agent:
+sf agent deactivate --api-name MyAgent -o TARGET_ORG --json
+sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --json
+sf agent activate --api-name MyAgent -o TARGET_ORG --json
+```
+
+---
+
+## Generate Authoring Bundle (`--no-spec`)
+
+The `--no-spec` flag skips requiring an agent spec YAML file and uses default Agent Script boilerplate:
+
+```bash
+# Scaffold a new authoring bundle without an agent spec
+sf agent generate authoring-bundle --no-spec --name "My Agent" -o TARGET_ORG --json
+
+# With a spec file (standard flow)
+sf agent generate authoring-bundle --spec agent-spec.yaml --name "My Agent" -o TARGET_ORG --json
+```
+
+---
+
+## Generate Agent Spec — Full Flag Reference
+
+| Flag | Values / Type | Description |
+|------|---------------|-------------|
+| `--type` | `customer \| internal` | **Required.** Agent audience type |
+| `--role` | string | **Required.** Agent's role description |
+| `--company-name` | string | Company name for context |
+| `--company-description` | string | Company description for context |
+| `--company-website` | URL | Company website URL for grounding |
+| `--tone` | `formal \| casual \| neutral` | Conversational style |
+| `--enrich-logs` | `true \| false` | Add agent conversation data to event logs |
+| `--max-topics` | number | Maximum topics to generate (default: 5) |
+| `--agent-user` | username | Einstein Agent User to assign |
+| `--output-file` | path | Output path (default: `specs/agentSpec.yaml`) |
+| `--full-interview` | *(flag)* | Prompt for both required AND optional flags |
+| `--spec` | file path | Use existing spec for iterative refinement |
+| `--prompt-template` | API name | Custom prompt template reference |
+| `--grounding-context` | string | Context value for custom prompt template |
+| `--force-overwrite` | *(flag)* | Overwrite existing spec without confirmation |
+
+```bash
+# Full example with optional flags
+sf agent generate agent-spec \
+  --type customer \
+  --role "Customer Service Representative" \
+  --company-name "Acme Corp" \
+  --company-description "E-commerce platform" \
+  --company-website "https://acme.example.com" \
+  --tone formal \
+  --enrich-logs true \
+  --max-topics 8 \
+  --agent-user "agent_user@00dxx000001234.ext" \
+  --output-file specs/my-agent-spec.yaml
+
+# Iterative refinement — feed existing spec back in
+sf agent generate agent-spec \
+  --spec specs/my-agent-spec.yaml \
+  --max-topics 3 \
+  --tone casual \
+  --force-overwrite
 ```
 
 ---

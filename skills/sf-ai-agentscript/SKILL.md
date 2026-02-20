@@ -8,7 +8,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v65.0+, Einstein Agent User"
 metadata:
-  version: "2.2.0"
+  version: "2.3.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -236,13 +236,18 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 ### Phase 4: Testing (Delegate to `/sf-ai-agentforce-testing`)
 Batch testing (up to 100 cases), quality metrics (Completeness, Coherence, Topic/Action Assertions), LLM-as-Judge scoring.
 
-### Phase 5: Deployment
+### Phase 5: Deployment & Activation
 
 > ⚠️ **CRITICAL**: Use `sf agent publish authoring-bundle`, NOT `sf project deploy start`
 
 1. **Create bundle directory**: `force-app/main/default/aiAuthoringBundles/AgentName/`
 2. **Add files**: `AgentName.agent` + `AgentName.bundle-meta.xml` (NOT `.aiAuthoringBundle-meta.xml`)
 3. **Publish**: `sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json`
+4. **Activate**: `sf agent activate --api-name AgentName -o TARGET_ORG --json`
+
+**Full lifecycle**: Validate → Deploy → Publish → Activate → (Deactivate → Re-publish → Re-activate)
+
+> **Preview modes**: Before activating, test with `sf agent preview`. Default mode simulates actions; add `--use-live-actions` to test with real org data. Use `--apex-debug` for Apex logging and `--output-dir` to save transcripts. See [references/cli-guide.md](references/cli-guide.md) for details.
 
 ### Phase 5.5: CustomerWebClient Surface Enablement
 
@@ -376,6 +381,7 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 | Need | Document | Description |
 |------|----------|-------------|
 | CLI commands | [references/cli-guide.md](references/cli-guide.md) | sf project retrieve/agent validate/deploy |
+| Minimal examples | [references/minimal-examples.md](references/minimal-examples.md) | Hello-world agent script |
 | Patterns | [references/patterns-quick-ref.md](references/patterns-quick-ref.md) | Decision tree for pattern selection |
 
 ### Tier 4: Templates
@@ -410,71 +416,14 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 
 ## ✅ DEPLOYMENT CHECKLIST
 
-### Configuration
-- [ ] `default_agent_user` is valid Einstein Agent User
-- [ ] `developer_name` uses snake_case (no spaces)
-
-### Syntax
-- [ ] No mixed tabs/spaces
-- [ ] Booleans use `True`/`False`
-- [ ] Variable names use snake_case
-
-### Structure
-- [ ] Exactly one `start_agent` block
-- [ ] At least one `topic` block
-- [ ] All transitions reference existing topics
-
-### Security
-- [ ] Critical actions have `available when` guards
-- [ ] Session data uses `linked` variables (not `mutable`)
-
-### Testing
-- [ ] `sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG` passes
-- [ ] Preview mode tested before activation
+> **Deployment Checklist**: Validate → Deploy → Publish → Activate. Each step has specific CLI commands and required flags.
+> See [references/cli-guide.md](references/cli-guide.md) for the full deployment workflow with examples.
 
 ---
 
 ## 🚀 MINIMAL WORKING EXAMPLE
 
-```yaml
-config:
-  developer_name: "simple_agent"
-  agent_description: "A minimal working agent example"
-  agent_type: "AgentforceServiceAgent"
-  default_agent_user: "agent_user@yourorg.com"
-
-system:
-  messages:
-    welcome: "Hello! How can I help you today?"
-    error: "Sorry, something went wrong."
-  instructions: "You are a helpful customer service agent."
-
-variables:
-  customer_verified: mutable boolean = False
-
-topic main:
-  description: "Main conversation handler"
-  reasoning:
-    instructions: ->
-      if @variables.customer_verified == True:
-        | You are speaking with a verified customer.
-        | Help them with their request.
-      else:
-        | Please verify the customer's identity first.
-    actions:
-      verify: @actions.verify_customer
-        description: "Verify customer identity"
-        set @variables.customer_verified = @outputs.verified
-
-start_agent entry:
-  description: "Entry point for all conversations"
-  reasoning:
-    instructions: |
-      Greet the customer and route to the main topic.
-    actions:
-      go_main: @utils.transition to @topic.main
-        description: "Navigate to main conversation"
-```
+> **Minimal Working Example**: See [references/minimal-examples.md](references/minimal-examples.md) for a complete hello-world agent script with explanatory comments.
 
 ---
 
@@ -492,4 +441,4 @@ start_agent entry:
 
 > See [references/sources.md](references/sources.md) for full source attributions (trailheadapps/agent-script-recipes, @kunello PR #20, aquivalabs/my-org-butler, and more).
 
-> See [references/version-history.md](references/version-history.md) for the complete changelog from v1.0.0 through v2.2.0.
+> See [references/version-history.md](references/version-history.md) for the complete changelog from v1.0.0 through v2.3.0.
