@@ -1426,12 +1426,18 @@ def copy_skills(source_dir: Path, target_dir: Path, dry_run: bool = False) -> in
                 shutil.copytree(skill_dir, target_skill)
             count += 1
 
-    # Prune orphaned skill directories (removed from repo but still installed)
-    for existing in sorted(target_dir.glob("sf-*")):
-        if existing.is_dir() and existing.name not in source_skill_names:
-            if not dry_run:
-                safe_rmtree(existing)
-            print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned skill: {existing.name}")
+    # Prune orphaned skill directories (removed from repo but still installed).
+    # Safety guard: only prune if source had at least 1 skill. If source_dir
+    # was missing or empty (download/extraction issue), pruning would wipe
+    # every installed skill — a catastrophic data loss.
+    if source_skill_names:
+        for existing in sorted(target_dir.glob("sf-*")):
+            if existing.is_dir() and existing.name not in source_skill_names:
+                if not dry_run:
+                    safe_rmtree(existing)
+                print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned skill: {existing.name}")
+    elif not source_dir.exists():
+        print_warning(f"Source directory not found: {source_dir} — skipping orphan pruning")
 
     return count
 
@@ -1467,13 +1473,15 @@ def copy_agents(source_dir: Path, target_dir: Path, dry_run: bool = False) -> in
                     shutil.copy2(agent_file, target_dir / agent_file.name)
                 count += 1
 
-    # Prune orphaned agent files (renamed/removed from repo but still installed)
-    for prefix in AGENT_PREFIXES:
-        for existing in sorted(target_dir.glob(f"{prefix}*.md")):
-            if existing.is_file() and existing.name not in source_agent_names:
-                if not dry_run:
-                    existing.unlink()
-                print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned agent: {existing.name}")
+    # Prune orphaned agent files (renamed/removed from repo but still installed).
+    # Safety guard: only prune if source had at least 1 agent.
+    if source_agent_names:
+        for prefix in AGENT_PREFIXES:
+            for existing in sorted(target_dir.glob(f"{prefix}*.md")):
+                if existing.is_file() and existing.name not in source_agent_names:
+                    if not dry_run:
+                        existing.unlink()
+                    print_substep(f"{'Would remove' if dry_run else 'Removed'} orphaned agent: {existing.name}")
 
     return count
 
