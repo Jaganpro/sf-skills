@@ -1,9 +1,13 @@
 ---
 name: sf-ai-agentforce-persona
 description: >
-  Deep persona design skill for Salesforce Agentforce. 7-step interactive
-  questionnaire covering identity, dimensions, phrase book, scoring, and
-  Agent Builder encoding.
+  Deep persona design for Agentforce agents with 50-point scoring.
+  TRIGGER when: user designs agent personas, defines agent personality/identity,
+  creates persona documents, encodes persona into Agent Builder fields, or asks
+  about agent tone/voice/register.
+  DO NOT TRIGGER when: building agent metadata (use sf-ai-agentforce), testing
+  agents (use sf-ai-agentforce-testing), or Agent Script DSL
+  (use sf-ai-agentscript).
 version: 1.0
 license: MIT
 metadata:
