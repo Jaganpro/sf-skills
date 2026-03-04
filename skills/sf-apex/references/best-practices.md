@@ -509,10 +509,8 @@ private static final Integer BULK_TEST_SIZE = 201;
 // See: https://tools.ietf.org/html/rfc7519#section-4.1
 
 // GOOD: Explains non-obvious optimization
-// DML on empty list still consumes ~10x CPU. Always check isEmpty().
-if (!accountsToUpdate.isEmpty()) {
-    update accountsToUpdate;
-}
+// SOQL query in a loop replaced with map-based lookup — O(1) per record.
+Account acc = accountsByExternalId.get(record.ExternalId__c);
 ```
 
 ### Comment Anti-Patterns
@@ -557,88 +555,3 @@ if (isStrategicTechAccount) {
     processStrategicAccount(acc);
 }
 ```
-
----
-
-## 12. DML Performance Pattern
-
-> 💡 *Principles inspired by "Clean Apex Code" by Pablo Gonzalez.
-> [Purchase the book](https://link.springer.com/book/10.1007/979-8-8688-1411-2) for complete coverage.*
-
-### The Problem
-
-DML operations on empty collections still consume significant CPU time (~10x more than checking isEmpty first).
-
-### Anti-Pattern
-```apex
-// BAD: DML on potentially empty list
-List<Account> accountsToUpdate = new List<Account>();
-// ... conditional logic that might not add anything ...
-update accountsToUpdate;  // Wastes CPU even if empty
-```
-
-### Best Practice
-```apex
-// GOOD: Always check isEmpty() before DML
-if (!accountsToUpdate.isEmpty()) {
-    update accountsToUpdate;
-}
-```
-
-### SafeDML Wrapper
-
-Create a utility class to enforce this pattern:
-
-```apex
-public class SafeDML {
-
-    public static Database.SaveResult[] safeInsert(List<SObject> records) {
-        if (records == null || records.isEmpty()) {
-            return new List<Database.SaveResult>();
-        }
-        return Database.insert(records, false);
-    }
-
-    public static Database.SaveResult[] safeUpdate(List<SObject> records) {
-        if (records == null || records.isEmpty()) {
-            return new List<Database.SaveResult>();
-        }
-        return Database.update(records, false);
-    }
-
-    public static Database.DeleteResult[] safeDelete(List<SObject> records) {
-        if (records == null || records.isEmpty()) {
-            return new List<Database.DeleteResult>();
-        }
-        return Database.delete(records, false);
-    }
-
-    public static Database.UpsertResult[] safeUpsert(
-        List<SObject> records,
-        Schema.SObjectField externalIdField
-    ) {
-        if (records == null || records.isEmpty()) {
-            return new List<Database.UpsertResult>();
-        }
-        return Database.upsert(records, externalIdField, false);
-    }
-}
-```
-
-### Usage
-```apex
-// Clean, safe DML operations
-SafeDML.safeInsert(newAccounts);
-SafeDML.safeUpdate(modifiedContacts);
-SafeDML.safeDelete(obsoleteRecords);
-```
-
-### Performance Impact
-
-| Scenario | CPU Time |
-|----------|----------|
-| `update emptyList` | ~100-200 CPU ms |
-| `if (!empty) update` | ~10-20 CPU ms |
-| **Savings** | **~10x improvement** |
-
-In triggers processing many records, this optimization compounds significantly.
