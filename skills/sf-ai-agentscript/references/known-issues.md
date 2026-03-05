@@ -287,6 +287,50 @@
 
 ---
 
+### Issue 19: Comments inside `if` blocks treated as empty body
+- **Status**: OPEN
+- **Date Discovered**: 2026-03-04
+- **Affects**: `if`/`else` blocks in `instructions: ->`
+- **Symptom**: An `if` block containing only comments (e.g., `# TODO`) compiles but produces an empty body at runtime. The parser strips comments during tokenization, and the resulting `INDENT → DEDENT` with no executable statements creates a no-op branch that silently swallows the conditional path.
+- **Root Cause**: Comments are not executable statements in Agent Script. The parser treats a comment-only block identically to an empty block.
+- **Workaround**: Always include at least one executable statement (`| text`, `run`, `set`, or `transition`) in every `if`/`else` block. Never use comment-only blocks as placeholders.
+  ```yaml
+  # ❌ WRONG — empty body after comment stripping
+  if @variables.premium == True:
+    # TODO: add premium greeting
+
+  # ✅ CORRECT — executable statement present
+  if @variables.premium == True:
+    | Welcome back, valued premium member!
+  ```
+- **Open Questions**: Will the compiler emit a warning for empty `if` bodies?
+
+---
+
+### Issue 20: GenAiPlannerBundle / AiAuthoringBundle / GenAiFunction NOT SOQL-queryable
+- **Status**: WORKAROUND (by design — metadata types, not sObjects)
+- **Date Discovered**: 2026-03-04
+- **Affects**: Any workflow that attempts SOQL queries on agent metadata types
+- **Symptom**: `SELECT ... FROM GenAiPlannerBundle` returns `INVALID_TYPE: GenAiPlannerBundle`. Same for `AiAuthoringBundle` and `GenAiFunction`. These types do not appear in `EntityDefinition` SOQL queries.
+- **Root Cause**: These are **Metadata API types**, not sObjects. They exist in the metadata layer and are only accessible via `sf project retrieve start --metadata` or the Metadata API. This is by design, not a bug.
+- **Workaround**: Use `sf project retrieve start --metadata "TypeName:ApiName"` instead of SOQL. For querying agent status/versions via SOQL, use `BotDefinition` and `BotVersion` sObjects.
+  ```bash
+  # ❌ WRONG — these are NOT sObjects
+  sf data query --query "SELECT Id FROM GenAiPlannerBundle" -o ORG --json
+  sf data query --query "SELECT Id FROM AiAuthoringBundle" -o ORG --json
+
+  # ✅ CORRECT — use Metadata API
+  sf project retrieve start --metadata "GenAiPlannerBundle:MyAgent_v1" -o ORG --json
+  sf project retrieve start --metadata "AiAuthoringBundle:MyAgent" -o ORG --json
+
+  # ✅ CORRECT — query sObjects for agent info
+  sf data query --query "SELECT Id, DeveloperName FROM BotDefinition WHERE DeveloperName = 'MyAgent'" -o ORG --json
+  sf data query --query "SELECT Id, VersionNumber, Status FROM BotVersion WHERE BotDefinition.DeveloperName = 'MyAgent'" -o ORG --json
+  ```
+- **Open Questions**: None — this is by design.
+
+---
+
 ## Resolved Issues
 
 *(Move issues here when they are fixed by Salesforce or a confirmed workaround is validated.)*
@@ -311,4 +355,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-02-17*
+*Last updated: 2026-03-04*

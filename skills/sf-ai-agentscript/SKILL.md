@@ -52,6 +52,7 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 | Constraint | ❌ WRONG | ✅ CORRECT |
 |------------|----------|-----------|
 | **No `else if` keyword; no nested if** | `else if x:` or `else:` + nested `if` (both invalid) | `if x and y:` (compound), or flatten to sequential ifs |
+| **No comment-only `if` bodies** | `if @variables.x:` + only `# comment` (empty body) | Add executable statement: `| text`, `run`, `set`, or `transition` |
 | **No top-level `actions:` block** | `actions:` at root level | Actions only inside `topic.reasoning.actions:` |
 | **No `inputs:`/`outputs:` in action INVOCATIONS (Level 2)** | `inputs:` block inside `reasoning.actions:` invocation | Use `with`/`set` in `reasoning.actions:` invocations. The topic-level `actions:` definitions DO use `inputs:`/`outputs:` blocks. |
 | **Multiple `available when` supported** | *(previously listed as error)* | `available when A` + `available when B` on same action is valid (TDD validated 2026-02-14). **Org-dependent**: compiles on AgentforceTesting but REJECTED on some orgs with "Duplicate 'available when' clause." Use compound `and` conditions for portability. |
@@ -249,6 +250,8 @@ sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
 Run 3-5 smoke test utterances via `sf agent preview start --authoring-bundle AgentName` to catch topic routing and action invocation issues **without publishing**. ~15s iteration cycles.
 
+> ⛔ **NEVER run bare `sf agent preview`** — it is interactive and requires terminal input. ALWAYS use `sf agent preview start`/`send`/`end` subcommands with `--json`.
+
 **How it works:**
 1. **Derive utterances** — One per non-start topic (from `description:` keywords), one per key action, one off-topic (guardrail test), one multi-turn pair if agent has transitions
 2. **Run preview** — `sf agent preview start --authoring-bundle` → `send` each utterance → `end` session → get traces
@@ -350,8 +353,12 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 | `ValidationError: Tool target 'X'...` | Action not defined or target missing | Ensure Level 1 definition + valid target |
 | `Required fields missing: [BundleType]` | Wrong deploy command | Use `sf agent publish authoring-bundle` |
 | `Cannot find a bundle-meta.xml file` | Wrong file naming | Use `AgentName.bundle-meta.xml` |
+| `INVALID_TYPE: GenAiPlannerBundle` | SOQL query on metadata type | Use `sf project retrieve start --metadata` — NOT an sObject |
+| `No such column 'Status' on BotDefinition` | Wrong sObject | `Status` is on `BotVersion`, not `BotDefinition` |
+| `sf agent preview` hangs | Ran interactive mode | Use subcommands `start`/`send`/`end` with `--json` |
+| Linked variables empty in preview | Context vars not injected | `sf agent preview` can't inject `@context`/`@session` — use Runtime API |
 
-> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 17+ platform bugs and workarounds.
+> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 20 platform bugs and workarounds.
 
 ### Verification Protocol
 

@@ -48,6 +48,7 @@ echo "Session: $SESSION_ID"
 ```bash
 RESPONSE=$(sf agent preview send \
   --session-id "$SESSION_ID" \
+  --authoring-bundle AgentName \
   --utterance "I need help with my order" \
   --target-org ORG_ALIAS --json 2>/dev/null)
 
@@ -69,6 +70,7 @@ PLAN_IDS=()
 for UTTERANCE in "Where is my order?" "I want to return this" "Tell me a joke" "My order #123 is late"; do
   RESP=$(sf agent preview send \
     --session-id "$SESSION_ID" \
+    --authoring-bundle AgentName \
     --utterance "$UTTERANCE" \
     --target-org ORG_ALIAS --json 2>/dev/null)
   PID=$(echo "$RESP" | jq -r '.result.messages[-1].planId')
@@ -267,7 +269,7 @@ topic returns:
 ```bash
 SESSION_ID=$(sf agent preview start --authoring-bundle OrderSupport --target-org dev --json 2>/dev/null | jq -r '.result.sessionId')
 
-RESP1=$(sf agent preview send --session-id "$SESSION_ID" --utterance "Where is my order?" --target-org dev --json 2>/dev/null)
+RESP1=$(sf agent preview send --session-id "$SESSION_ID" --authoring-bundle OrderSupport --utterance "Where is my order?" --target-org dev --json 2>/dev/null)
 PID1=$(echo "$RESP1" | jq -r '.result.messages[-1].planId')
 
 # ... send remaining utterances, capture plan IDs ...
@@ -302,7 +304,7 @@ topic order_mgmt:
 
 ```bash
 SESSION_ID=$(sf agent preview start --authoring-bundle OrderSupport --target-org dev --json 2>/dev/null | jq -r '.result.sessionId')
-RESP1=$(sf agent preview send --session-id "$SESSION_ID" --utterance "Where is my order?" --target-org dev --json 2>/dev/null)
+RESP1=$(sf agent preview send --session-id "$SESSION_ID" --authoring-bundle OrderSupport --utterance "Where is my order?" --target-org dev --json 2>/dev/null)
 PID1=$(echo "$RESP1" | jq -r '.result.messages[-1].planId')
 TRACES_PATH=$(sf agent preview end --session-id "$SESSION_ID" --target-org dev --json 2>/dev/null | jq -r '.result.tracesPath')
 
@@ -348,6 +350,20 @@ get_order: @actions.Get_Order_Status
 | **No FunctionStep in trace** | Planner didn't select any action | Check `available when:` guards and action descriptions |
 | **`preview send` timeout** | Preview compilation taking too long | `.agent` file may be too complex; simplify or wait longer |
 | **Session already ended** | Sending to an expired/ended session | Start a new session with `preview start` |
+
+### Context Variable Limitations in Preview
+
+> ⛔ `sf agent preview` does NOT support context/session variable injection. There are no `--context`, `--session-var`, or `--variables` flags on any preview subcommand.
+
+| Variable Source | Works in Preview? | Alternative |
+|----------------|:-----------------:|-------------|
+| `@session.sessionID` | ❌ | Agent Runtime API with session context |
+| `@context.customerId` | ❌ | Agent Runtime API with `contextVariables` |
+| `@context.RoutableId` | ❌ | Agent Runtime API with `contextVariables` |
+| Mutable vars (defaults) | ✅ | Works normally via default values |
+| `with param=...` (slot-filling) | ✅ | Works normally via LLM extraction |
+
+> **Impact**: If your agent relies on `@context` or `@session` variables for routing or guards, those paths CANNOT be tested via `sf agent preview`. Use the Agent Runtime API (`/einstein/ai-agent/v1`) with `contextVariables` in the request body instead.
 
 ---
 

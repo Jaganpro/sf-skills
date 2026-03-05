@@ -261,17 +261,17 @@ sf agent generate template \
 
 ## Programmatic Preview (Non-Interactive)
 
-> Unlike `sf agent preview` (interactive terminal), these subcommands enable scripted/automated agent testing — critical for CI/CD.
+> ⛔ **NEVER run bare `sf agent preview`** — it launches an interactive terminal requiring keyboard input. Claude Code CANNOT use it. **ALWAYS use subcommands**: `start`, `send`, `end` with `--json`.
 
 ```bash
 # 1. Start a preview session
 SESSION_ID=$(sf agent preview start --api-name MyAgent -o TARGET_ORG --json | jq -r '.result.sessionId')
 
 # 2. Send utterances programmatically
-sf agent preview send --session-id $SESSION_ID --utterance "I need a refund" --json
+sf agent preview send --session-id $SESSION_ID --authoring-bundle MyAgent --utterance "I need a refund" --json
 
 # 3. Send follow-up messages
-sf agent preview send --session-id $SESSION_ID --utterance "Order #12345" --json
+sf agent preview send --session-id $SESSION_ID --authoring-bundle MyAgent --utterance "Order #12345" --json
 
 # 4. End the session
 sf agent preview end --session-id $SESSION_ID --json
@@ -454,3 +454,50 @@ curl -X POST ".../einstein/ai-agent/v1" \
 ```
 
 > **Key implication**: When testing draft versions via API, you must explicitly pass the version ID. Otherwise, the API will use the last activated version — which may not reflect your latest changes.
+
+---
+
+## ⛔ CLI Anti-Patterns
+
+### DO NOT SOQL query metadata types
+
+These are **metadata types**, NOT sObjects. SOQL queries against them return `INVALID_TYPE`.
+
+| Type | ❌ WRONG (SOQL) | ✅ CORRECT (Metadata API) |
+|------|-----------------|--------------------------|
+| GenAiPlannerBundle | `SELECT ... FROM GenAiPlannerBundle` | `sf project retrieve start --metadata "GenAiPlannerBundle:Name"` |
+| AiAuthoringBundle | `SELECT ... FROM AiAuthoringBundle` | `sf project retrieve start --metadata "AiAuthoringBundle:Name"` |
+| GenAiFunction | `SELECT ... FROM GenAiFunction` | `sf project retrieve start --metadata "GenAiFunction:Name"` |
+
+> For SOQL, query `BotDefinition` and `BotVersion` instead — these ARE sObjects.
+
+### BotDefinition vs BotVersion field reference
+
+| Field | BotDefinition | BotVersion |
+|-------|:---:|:---:|
+| Id, DeveloperName | ✅ | ✅ |
+| MasterLabel | ✅ | ❌ |
+| **Status** | ❌ | ✅ |
+| VersionNumber | ❌ | ✅ |
+
+> ⚠️ `Status` lives on `BotVersion`, NOT `BotDefinition`. Querying `BotDefinition.Status` returns "No such column."
+
+### DO NOT run bare `sf agent preview`
+
+| ❌ WRONG (interactive, hangs) | ✅ CORRECT (programmatic) |
+|-------------------------------|--------------------------|
+| `sf agent preview` | `sf agent preview start --authoring-bundle MyAgent --json` |
+| *(waits for keyboard input)* | `sf agent preview send --session-id $ID --authoring-bundle MyAgent --utterance "..." --json` |
+| | `sf agent preview end --session-id $ID --json` |
+
+### DO NOT pass context variables via `sf agent preview`
+
+> ⛔ `sf agent preview` does NOT support context or session variable injection. There are no `--context`, `--session-var`, or `--variables` flags.
+
+| Variable Source | Works in Preview? | Alternative |
+|----------------|:-----------------:|-------------|
+| `@session.sessionID` | ❌ | Agent Runtime API with session context |
+| `@context.customerId` | ❌ | Agent Runtime API with `contextVariables` |
+| `@context.RoutableId` | ❌ | Agent Runtime API with `contextVariables` |
+| Mutable vars (defaults) | ✅ | Works normally via default values |
+| `with param=...` (slot-filling) | ✅ | Works normally via LLM extraction |
