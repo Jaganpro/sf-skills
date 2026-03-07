@@ -166,7 +166,7 @@
 - **Affects**: Agents with actions targeting secured resources
 - **Symptom**: If the running user (Einstein Agent User or session user) lacks permission to execute ANY action defined in the agent — even actions in other topics — the entire agent may fail with a permission error rather than gracefully skipping the unauthorized action.
 - **Root Cause**: The planner appears to validate permissions for all registered actions at startup, not lazily per-topic.
-- **Workaround**: Ensure the Einstein Agent User has permissions for ALL actions defined across all topics. Use Permission Sets to grant necessary access. Alternatively, split agents by permission boundary.
+- **Workaround**: For **Service Agents**: Ensure the Einstein Agent User has both the `AgentforceServiceAgentUser` system PS AND a custom `{AgentName}_Access` PS with `<classAccesses>` for ALL Apex classes across all topics. Do NOT rely on the auto-generated `NextGen_{AgentName}_Permissions` — it is often incomplete (ORM1 testing: 3/4 classes, missing `ShipmentTracker`). For **Employee Agents**: Ensure each employee user has the custom PS assigned. See [agent-user-setup.md](agent-user-setup.md) for the full provisioning workflow and permission set XML template. Alternatively, split agents by permission boundary.
 - **Open Questions**: Will the planner support lazy permission checking in a future release?
 
 ---

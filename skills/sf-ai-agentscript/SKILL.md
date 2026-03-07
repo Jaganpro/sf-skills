@@ -11,7 +11,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v66.0+, Einstein Agent User"
 metadata:
-  version: "2.3.0"
+  version: "2.4.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
@@ -38,11 +38,11 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 |-------------|-------|-------|
 | **API Version** | 66.0+ | Required for Agent Script support |
 | **License** | Agentforce | Required for agent authoring |
-| **Einstein Agent User** | Required | Must exist in org for `default_agent_user` |
+| **Einstein Agent User** | Service Agents only | Required for `AgentforceServiceAgent`; NOT needed for `AgentforceEmployeeAgent`. See [references/agent-user-setup.md](references/agent-user-setup.md) |
 | **File Extension** | `.agent` | Single file contains entire agent definition |
 
 ### MANDATORY Pre-Deployment Checks
-1. **`default_agent_user` MUST be valid** - Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`
+1. **`default_agent_user` MUST be valid (Service Agents only)** - Not needed for `AgentforceEmployeeAgent`. For Service Agents: verify Einstein Agent User exists, `AgentforceServiceAgentUser` system PS is assigned, and a custom `{AgentName}_Access` PS with `<classAccesses>` is deployed. Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`. See [references/agent-user-setup.md](references/agent-user-setup.md) for full 6-step workflow.
 2. **No mixed tabs/spaces** - Use consistent indentation (2-space, 3-space, or tabs - never mix)
 3. **Booleans are capitalized** - Use `True`/`False`, not `true`/`false`
 4. **Exactly one `start_agent` block** - Multiple entry points cause compilation failure
@@ -135,7 +135,7 @@ topic:         # 8. Required: Conversation topics (one or more)
 |--------------------------|------------------------|-------|
 | `agent_name` | `developer_name` | Must match folder name (case-sensitive) |
 | `description` | `agent_description` | Agent's purpose description |
-| *(missing)* | `agent_type` | **Required**: `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
+| *(missing)* | `agent_type` | **Required**: `AgentforceServiceAgent` or `AgentforceEmployeeAgent`. Determines the entire permission model — see [references/agent-user-setup.md](references/agent-user-setup.md) |
 
 ```yaml
 # ✅ CORRECT config block:
@@ -143,7 +143,7 @@ config:
   developer_name: "my_agent"
   agent_description: "Handles customer support inquiries"
   agent_type: "AgentforceServiceAgent"
-  default_agent_user: "agent_user@00dxx000001234.ext"
+  default_agent_user: "agent_user@00dxx000001234.ext"  # Service agents ONLY — omit for Employee agents
 ```
 
 ### Naming Rules
@@ -379,13 +379,15 @@ This skill's resource files are editable. When you discover errors, new patterns
 | `sf agent validate --source-dir` | `sf agent validate authoring-bundle --api-name AgentName` |
 | Query user from wrong org | Query **target org** specifically with `-o` flag |
 
-### Einstein Agent User Format (Org-Specific)
+### Einstein Agent User & Permission Setup (Service Agents Only)
 
 Formats vary: `username@orgid.ext` (production) or `username.suffix@orgfarm.salesforce.com` (dev). **MANDATORY: Ask user to confirm which Einstein Agent User when creating a new agent.**
 
 ```bash
 sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o YOUR_TARGET_ORG --json
 ```
+
+> **Auto-generated PS warning**: Salesforce creates `NextGen_{AgentName}_Permissions` on publish, but it is often incomplete (missing Apex classes). Always create a custom `{AgentName}_Access` PS. See [references/agent-user-setup.md](references/agent-user-setup.md) for the full 6-step provisioning workflow, permission set XML template, and verification checklist.
 
 ---
 
@@ -394,6 +396,7 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 ### Tier 1: Reference Guides (Extracted from this skill)
 | Need | Document | Description |
 |------|----------|-------------|
+| Agent user setup | [references/agent-user-setup.md](references/agent-user-setup.md) | Einstein Agent User provisioning, permission model, service vs employee |
 | Production gotchas | [references/production-gotchas.md](references/production-gotchas.md) | Credits, lifecycle hooks, supervision, I/O metadata, latch pattern, limits |
 | Feature validity | [references/feature-validity.md](references/feature-validity.md) | Property validity by context |
 | Data type mapping | [references/complex-data-types.md](references/complex-data-types.md) | `complex_data_type_name` + Lightning type mapping |

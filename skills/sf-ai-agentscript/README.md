@@ -18,7 +18,7 @@
 |-------------|-------|
 | API Version | 66.0+ |
 | License | Agentforce |
-| Einstein Agent User | Required in org |
+| Einstein Agent User | Required for Service Agents only |
 | SF CLI | v2+ with agent commands |
 
 ## Installation
@@ -62,7 +62,7 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 
 ## Key Rules
 
-1. **`default_agent_user` MUST exist** - Query for valid Einstein Agent User
+1. **`default_agent_user` MUST exist (Service Agents)** - Not needed for Employee Agents. See [references/agent-user-setup.md](references/agent-user-setup.md)
 2. **No mixed tabs/spaces** - Use consistent indentation throughout
 3. **Booleans are `True`/`False`** - Python-style, not JavaScript
 4. **Exactly one `start_agent`** - Single entry point required

@@ -163,26 +163,43 @@ sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 
 ---
 
-## Einstein Agent User Setup
+## Einstein Agent User Setup (Service Agents Only)
+
+> This section applies to `AgentforceServiceAgent` only. `AgentforceEmployeeAgent` does NOT need an Einstein Agent User — it runs as the logged-in user. See [agent-user-setup.md](agent-user-setup.md) for the full 6-step provisioning workflow.
 
 ### Query Existing Users
 
 ```bash
-sf data query --query "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true"
+sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o TARGET_ORG --json
 ```
 
 ### Username Format
 
 ```
-agent_user@<org-id>.ext
+{agent_name}_agent@<org-id>.ext
 ```
 
-Example: `agent_user@00drt00000limwjmal.ext`
+Example: `automotive_agent@00dkd00000g7lv7.ext`
 
 ### Get Org ID
 
 ```bash
-sf org display --json | jq -r '.result.id'
+sf org display -o TARGET_ORG --json | jq -r '.result.id'
+```
+
+### Verify Permission Set Assignments
+
+Both the system PS and custom PS must be assigned to the Einstein Agent User:
+
+```bash
+# Check system PS
+sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>' AND PermissionSet.Name = 'AgentforceServiceAgentUser'" -o TARGET_ORG --json
+
+# Check custom PS
+sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>' AND PermissionSet.Name = '{AgentName}_Access'" -o TARGET_ORG --json
+
+# All assigned PSs
+sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>'" -o TARGET_ORG --json
 ```
 
 ---
