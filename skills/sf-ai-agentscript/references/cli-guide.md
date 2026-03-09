@@ -165,13 +165,33 @@ sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 
 ## Einstein Agent User Setup (Service Agents Only)
 
-> This section applies to `AgentforceServiceAgent` only. `AgentforceEmployeeAgent` does NOT need an Einstein Agent User — it runs as the logged-in user. See [agent-user-setup.md](agent-user-setup.md) for the full 6-step provisioning workflow.
+> This section applies to `AgentforceServiceAgent` only. `AgentforceEmployeeAgent` does NOT need an Einstein Agent User — it runs as the logged-in user. See [agent-user-setup.md](agent-user-setup.md) for the full provisioning workflow, CLI Fast Track, and Deploy → Test → Publish pattern.
 
 ### Query Existing Users
 
 ```bash
 sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o TARGET_ORG --json
 ```
+
+### Create Einstein Agent User
+
+**Option A: Scratch Org** (definition file):
+```bash
+sf org create user --definition-file config/einstein-agent-user.json -o TARGET_ORG
+```
+
+**Option B: Production/Sandbox** (direct record creation):
+```bash
+PROFILE_ID=$(sf data query \
+  --query "SELECT Id FROM Profile WHERE Name = 'Einstein Agent User'" \
+  -o TARGET_ORG --json | jq -r '.result.records[0].Id')
+
+sf data create record --sobject User --values \
+  "Username='{agent_name}_agent@{orgId}.ext' LastName='{AgentName} Agent' Email='placeholder@example.com' Alias='agntuser' ProfileId='${PROFILE_ID}' TimeZoneSidKey='America/Los_Angeles' LocaleSidKey='en_US' EmailEncodingKey='UTF-8' LanguageLocaleKey='en_US'" \
+  -o TARGET_ORG --json
+```
+
+> **`sf org create user` only works in scratch orgs.** For production/sandbox, use `sf data create record`.
 
 ### Username Format
 
@@ -201,6 +221,17 @@ sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WH
 # All assigned PSs
 sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>'" -o TARGET_ORG --json
 ```
+
+### Recommended Workflow: Deploy → Test → Publish
+
+After user setup and permissions are configured, follow this order to avoid version management overhead:
+
+1. **Deploy** agent bundle as unpublished metadata
+2. **Test** with `sf agent preview start` — verify topics and actions
+3. **Publish** only after tests pass — `sf agent publish authoring-bundle`
+4. **Activate** separately — `sf agent activate` (publish does NOT auto-activate)
+
+> See [agent-user-setup.md](agent-user-setup.md) Step 6 for the full workflow with CLI commands.
 
 ---
 

@@ -254,6 +254,26 @@ sf project retrieve start -m AiAuthoringBundle:MyAgent
 sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
 ```
 
+## Reserved `@InvocableVariable` Keywords
+
+> **Validated March 2026**: Certain common words cannot be used as `@InvocableVariable` names in Apex classes called by Agent Script. Using them causes "SyntaxError: Unexpected '{keyword}'" during agent script compilation.
+
+**Reserved names (cannot use as `@InvocableVariable`):**
+
+| Reserved Name | Workaround | Example |
+|---------------|------------|---------|
+| `model` | `vehicle_model`, `data_model`, `model_name` | `@InvocableVariable public String vehicle_model;` |
+| `description` | `issue_description`, `desc_text`, `description_field` | `@InvocableVariable public String issue_description;` |
+| `label` | `label_text`, `display_label`, `label_field` | `@InvocableVariable public String label_text;` |
+
+**How it manifests:**
+- Apex compiles and deploys successfully (these are valid Apex identifiers)
+- Error only appears when the Agent Script compiler processes the action's I/O schema
+- Error message: `SyntaxError: Unexpected 'model'` (or `description`, `label`)
+- Fix: Rename the `@InvocableVariable` in Apex, redeploy, then republish the agent
+
+> **Cross-reference**: These same words are also reserved as Agent Script variable/field names. See [SKILL.md](../SKILL.md) reserved field names section.
+
 ## Language Block Quirks
 
 - Hebrew and Indonesian appear **twice** in the language dropdown

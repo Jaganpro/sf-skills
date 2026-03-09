@@ -1,7 +1,9 @@
 <!-- Parent: sf-ai-agentscript/SKILL.md -->
 # Agent User Setup & Permission Model
 
-> Complete provisioning workflow for Einstein Agent Users and permission sets. Validated against ORM1, ORM2, and AutomotiveSupport agents.
+> Complete provisioning workflow for Einstein Agent Users and permission sets. Validated against ORM1, ORM2, AutomotiveSupport, and SalesforceProductAssistant agents.
+
+**License Requirement:** PID_DigitalAgent (typically included with Agentforce licenses)
 
 ---
 
@@ -18,6 +20,94 @@
 | **Respects Sharing Rules** | No (consistent permissions) | Yes (user's data access) |
 
 > **How to check agent type**: Look at the `agent_type` field in the `config:` block of your `.agent` file, or query: `sf data query --query "SELECT DeveloperName, Type FROM BotDefinition WHERE DeveloperName = 'AgentName'" -o TARGET_ORG --json`
+
+---
+
+## CLI Fast Track: Complete Workflow
+
+**For CLI-first workflow** (tested: ~8 minutes total):
+
+```bash
+# Step 1: Query existing Einstein Agent Users (30 seconds)
+sf data query \
+  --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" \
+  -o TARGET_ORG --json
+
+# Step 2: Create Einstein Agent User (2 minutes)
+# Get Profile ID
+PROFILE_ID=$(sf data query \
+  --query "SELECT Id FROM Profile WHERE Name = 'Einstein Agent User'" \
+  -o TARGET_ORG --json | jq -r '.result.records[0].Id')
+
+# For Production/Sandbox (non-scratch org):
+sf data create record --sobject User --values \
+  "Username=<agent_name>_user@<orgId>.ext \
+   LastName=<AgentName> \
+   Email=admin@example.com \
+   Alias=<alias> \
+   TimeZoneSidKey=America/Los_Angeles \
+   LocaleSidKey=en_US \
+   EmailEncodingKey=UTF-8 \
+   ProfileId=${PROFILE_ID} \
+   LanguageLocaleKey=en_US" \
+  -o TARGET_ORG --json
+
+# For Scratch Orgs (use user definition file):
+# sf org create user --definition-file config/einstein-agent-user.json -o TARGET_ORG
+
+# Step 3: Assign System Permission Set (1 minute)
+sf org assign permset \
+  --name AgentforceServiceAgentUser \
+  --on-behalf-of <agent_name>_user@<orgId>.ext \
+  -o TARGET_ORG --json
+
+# Step 4: Deploy Custom Permission Set (3 minutes)
+# (Create the .permissionset-meta.xml file first - see Section 3.2 template)
+sf project deploy start \
+  --metadata PermissionSet:<AgentName>_Access \
+  -o TARGET_ORG --json
+
+# Assign custom PS
+sf org assign permset \
+  --name <AgentName>_Access \
+  --on-behalf-of <agent_name>_user@<orgId>.ext \
+  -o TARGET_ORG --json
+
+# Step 5: Verify All Permissions (1 minute)
+sf data query \
+  --query "SELECT PermissionSet.Name, PermissionSet.Label FROM PermissionSetAssignment WHERE Assignee.Username = '<agent_name>_user@<orgId>.ext' ORDER BY PermissionSet.Name" \
+  -o TARGET_ORG --json
+
+# Expected: AgentforceServiceAgentUser + <AgentName>_Access
+
+# Step 6: Deploy Agent Bundle (unpublished metadata)
+sf project deploy start \
+  --source-dir force-app/main/default/aiAuthoringBundles/<AgentName> \
+  -o TARGET_ORG --json
+
+# Step 7: Test BEFORE Publishing (recommended)
+sf agent preview start \
+  --api-name <AgentName> \
+  -o TARGET_ORG --json
+# Test all topics and actions to verify permissions
+
+# Step 8: Publish & Activate (only after testing passes)
+sf agent publish authoring-bundle \
+  --api-name <AgentName> \
+  -o TARGET_ORG --json
+
+sf agent activate \
+  --api-name <AgentName> \
+  -o TARGET_ORG
+```
+
+**Critical Notes:**
+- For **scratch orgs**, use `sf org create user --definition-file`
+- For **production/sandbox**, use `sf data create record` as shown above
+- `sf org create user` only works in scratch orgs — it will fail in production/sandbox
+- Always test with preview BEFORE publishing to avoid version management overhead
+- Assign `AgentforceServiceAgentUser` BEFORE publishing to prevent "Internal Error"
+- Publishing does NOT activate — you must run `sf agent activate` separately
 
 ---
 
@@ -44,7 +134,7 @@ sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Nam
    sf data query --query "SELECT Id FROM Profile WHERE Name = 'Einstein Agent User'" -o TARGET_ORG --json
    ```
 
-2. Create a user definition file (`/tmp/agent-user.json`):
+2. Create a user definition file (`config/einstein-agent-user.json`):
    ```json
    {
      "Username": "{agent_name}_agent@{orgId}.ext",
@@ -55,14 +145,34 @@ sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Nam
      "TimeZoneSidKey": "America/Los_Angeles",
      "LocaleSidKey": "en_US",
      "EmailEncodingKey": "UTF-8",
-     "LanguageLocaleKey": "en_US"
+     "LanguageLocaleKey": "en_US",
+     "UserPermissionsKnowledgeUser": true
    }
    ```
 
 3. Create the user:
+
+   **Option A: Scratch Org (Definition File)**
    ```bash
-   sf data create record --sobject User --values "Username='{agent_name}_agent@{orgId}.ext' LastName='{AgentName} Agent' Email='placeholder@example.com' Alias='agntuser' ProfileId='<profile-id>' TimeZoneSidKey='America/Los_Angeles' LocaleSidKey='en_US' EmailEncodingKey='UTF-8' LanguageLocaleKey='en_US'" -o TARGET_ORG --json
+   sf org create user \
+     --definition-file config/einstein-agent-user.json \
+     -o TARGET_ORG
    ```
+
+   **Option B: Production/Sandbox (Direct Record Creation)**
+   ```bash
+   # Get Profile ID first
+   PROFILE_ID=$(sf data query \
+     --query "SELECT Id FROM Profile WHERE Name = 'Einstein Agent User'" \
+     -o TARGET_ORG --json | jq -r '.result.records[0].Id')
+
+   # Create user directly
+   sf data create record --sobject User --values \
+     "Username='{agent_name}_agent@{orgId}.ext' LastName='{AgentName} Agent' Email='placeholder@example.com' Alias='agntuser' ProfileId='${PROFILE_ID}' TimeZoneSidKey='America/Los_Angeles' LocaleSidKey='en_US' EmailEncodingKey='UTF-8' LanguageLocaleKey='en_US'" \
+     -o TARGET_ORG --json
+   ```
+
+   > **`sf org create user` only works in scratch orgs.** For production/sandbox, use `sf data create record`. Attempting `sf org create user` in a non-scratch org fails with an authorization error.
 
 4. Verify creation:
    ```bash
@@ -157,13 +267,71 @@ config:
 
 ---
 
-### Step 6: Publish Agent
+### Step 6: Deploy, Test, Publish & Activate
+
+> **Validated workflow pattern**: Deploy as unpublished metadata, test with preview, then publish only when tests pass. This avoids version management overhead during iteration.
+
+#### 6.1: Deploy Agent Bundle (Unpublished)
 
 ```bash
-sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
+sf project deploy start \
+  --source-dir force-app/main/default/aiAuthoringBundles/<AgentName> \
+  -o TARGET_ORG --json
 ```
 
-If publish fails with "Internal Error", verify Steps 1-5 using the verification checklist below.
+This deploys the agent as **unpublished metadata** — you can edit freely without version management.
+
+#### 6.2: Test with Preview (Before Publishing)
+
+```bash
+sf agent preview start \
+  --api-name <AgentName> \
+  -o TARGET_ORG --json
+```
+
+**What to test:**
+1. All topics trigger correctly
+2. All Apex actions execute without "Insufficient Privileges" errors
+3. Agent responds with expected data
+4. No compilation errors
+
+If testing reveals problems, edit your agent script or Apex classes, redeploy, and test again — no publish required.
+
+> See [preview-test-loop.md](preview-test-loop.md) for the complete smoke test workflow with `jq` trace analysis recipes.
+
+#### 6.3: Publish Agent
+
+**Only publish after all tests pass.**
+
+```bash
+sf agent publish authoring-bundle \
+  --api-name <AgentName> \
+  -o TARGET_ORG --json
+```
+
+> **Publishing does NOT activate.** The new BotVersion is created as `Inactive`. You must explicitly activate.
+
+#### 6.4: Activate Agent
+
+```bash
+sf agent activate \
+  --api-name <AgentName> \
+  -o TARGET_ORG
+```
+
+> `sf agent activate` does NOT support `--json`. It prints a plain-text confirmation.
+
+#### 6.5: Verify Activation
+
+```bash
+sf data query \
+  --query "SELECT Id, DeveloperName, Status FROM BotVersion WHERE BotDefinition.DeveloperName = '<AgentName>' ORDER BY CreatedDate DESC LIMIT 1" \
+  -o TARGET_ORG --json
+```
+
+**Expected:** `Status = 'Active'`
+
+**After publish:** Any further changes require version management. Test thoroughly before publishing.
 
 ---
 
@@ -258,7 +426,43 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 - [ ] Custom `{AgentName}_Access` PS deployed with ALL Apex classes
 - [ ] Custom PS assigned to the agent user
 - [ ] `default_agent_user` set in `.agent` config block
+- [ ] Agent tested with preview before publishing
 - [ ] Agent publishes without error
+- [ ] Agent activated (publish does NOT auto-activate)
+
+---
+
+## Common Pitfalls (Validated)
+
+### 1. "Internal Error" on First Publish
+- **Cause:** Publishing before assigning `AgentforceServiceAgentUser`
+- **Prevention:** Assign system PS (Step 2) before publishing (Step 6.3)
+- **Result:** First-time publish success (no retries needed)
+
+### 2. "Insufficient Privileges" on Apex Actions
+- **Cause:** Missing `<classAccesses>` in custom permission set
+- **Prevention:** Custom PS template includes all Apex classes (Step 3)
+- **Result:** All actions execute without permission errors
+
+### 3. Testing After Publishing
+- **Cause:** Publishing before testing, then needing version management for fixes
+- **Prevention:** Deploy → Test → Publish workflow (Step 6.1-6.3)
+- **Result:** No version management overhead during development
+
+### 4. Wrong User Creation Command
+- **Cause:** Using `sf org create user` in non-scratch orgs
+- **Prevention:** Step 1 provides correct commands for each org type (Option A vs B)
+- **Result:** User created successfully without authorization errors
+
+### 5. Auto-Generated Permission Set Gaps
+- **Cause:** Relying on `NextGen_{AgentName}_Permissions` (often incomplete)
+- **Prevention:** Custom PS with explicit Apex access (Step 3)
+- **Result:** All Apex classes accessible from the start
+
+### 6. Forgot to Activate After Publish
+- **Cause:** Assuming publish automatically activates
+- **Prevention:** Step 6 splits publish and activate into separate steps with verification
+- **Result:** Agent is both published AND activated
 
 ---
 
@@ -271,6 +475,7 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 | "invocable action does not exist" | Apex class not in custom PS (auto-generated PS incomplete) | Create custom `{AgentName}_Access` with all `<classAccesses>` (Step 3) |
 | "Invalid default_agent_user" | Username typo or user not active | Query Einstein Agent Users, verify exact username + `IsActive = true` |
 | Agent runs but returns wrong data | Employee agent using wrong user context | Verify `agent_type` — Service agents use dedicated user, Employee agents use logged-in user |
+| `sf org create user` fails | Used in production/sandbox org | Use `sf data create record` instead (Step 1, Option B) |
 
 ---
 
@@ -310,4 +515,4 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 
 ---
 
-*Validated against: ORM1, ORM2, AutomotiveSupport agents. Last updated: 2026-03-07.*
+*Validated against: ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant agents. Last validated: 2026-03-07.*

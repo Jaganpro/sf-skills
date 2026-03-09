@@ -14,12 +14,12 @@ metadata:
   version: "2.4.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
-  validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor)"
+  validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor). Agent user setup validated against ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant."
   # Validation Framework
-  last_validated: "2026-02-17"
+  last_validated: "2026-03-07"
   validation_status: "PASS"
   validation_agents: 24
-  validate_by: "2026-03-19"  # 30 days from last validation
+  validate_by: "2026-04-06"  # 30 days from last validation
   validation_org: "AgentforceTesting"
 ---
 
@@ -80,6 +80,8 @@ label        → label_text, display_label, label_field
 ```
 
 > **Important distinction**: `is_required`, `is_displayable`, `is_used_by_planner`, and `label` are reserved as **variable/field names** but are valid as **action I/O metadata properties**. For example, you cannot name a variable `label`, but you CAN use `label:` as a property on an action definition, input, or output. See [references/feature-validity.md](references/feature-validity.md).
+
+> **Also reserved as `@InvocableVariable` names in Apex**: `model`, `description`, `label`. These compile as valid Apex but cause `SyntaxError` during Agent Script compilation. Use workarounds: `vehicle_model`, `issue_description`, `label_text`. See [references/production-gotchas.md](references/production-gotchas.md) for details.
 
 ### Feature Validity, Data Types & UI Bugs
 
