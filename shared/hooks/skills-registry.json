@@ -217,9 +217,12 @@
         "persona document",
         "persona encoding",
         "persona framework",
-        "conversation design",
-        "dialog design",
-        "agent tone"
+        "archetype preset",
+        "formality",
+        "warmth",
+        "personality intensity",
+        "agent script persona",
+        "brand input"
       ],
       "intentPatterns": [
         "create.*persona",
@@ -237,8 +240,8 @@
         "persona-encoding.*\\.md$"
       ],
       "priority": "high",
-      "description": "Deep persona design for Agentforce \u2014 identity, dimensions, phrase book, scoring, Agent Builder encoding",
-      "triggerWhen": "user designs agent personas, defines agent personality/identity, creates persona documents, encodes persona into Agent Builder fields, or asks about agent tone/voice/register",
+      "description": "Deep persona design for Agentforce -- 12-attribute framework, brand input, archetype presets, Agent Builder & Agent Script encoding",
+      "triggerWhen": "user designs agent personas, defines agent personality/identity, creates persona documents, encodes persona into Agent Builder fields or Agent Script, translates brand guidelines to agent voice, or asks about agent tone/voice/register",
       "doNotTriggerWhen": "building agent metadata (use sf-ai-agentforce), testing agents (use sf-ai-agentforce-testing), or Agent Script DSL (use sf-ai-agentscript)"
     },
     "sf-ai-agentforce": {

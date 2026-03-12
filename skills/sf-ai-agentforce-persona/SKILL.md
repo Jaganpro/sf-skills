@@ -3,18 +3,21 @@ name: sf-ai-agentforce-persona
 description: >
   Deep persona design for Agentforce agents with 50-point scoring.
   TRIGGER when: user designs agent personas, defines agent personality/identity,
-  creates persona documents, encodes persona into Agent Builder fields, or asks
-  about agent tone/voice/register.
+  creates persona documents, encodes persona into Agent Builder fields or
+  Agent Script, translates brand guidelines to agent voice, or asks about
+  agent tone/voice/register.
   DO NOT TRIGGER when: building agent metadata (use sf-ai-agentforce), testing
   agents (use sf-ai-agentforce-testing), or Agent Script DSL
   (use sf-ai-agentscript).
-version: 1.0
+version: 1.3
 license: MIT
 metadata:
   author: "cascadi"
   scoring: "50 points across 5 categories"
-  last_validated: "2026-03-04"
-tags: [salesforce, agentforce, persona, identity, register, tone, voice, brevity, humor, chatting-style, emoji, formatting, punctuation, capitalization, archetype, agent-personality]
+  last_validated: "2026-03-10"
+tags: [salesforce, agentforce, persona, identity, register, tone, voice,
+  formality, warmth, personality-intensity, brevity, humor, chatting-style,
+  archetype, brand-input, agent-script-encoding, agent-personality]
 allowed-tools:
   - Read
   - Write
@@ -27,14 +30,14 @@ allowed-tools:
 
 ## How to Use
 
-This skill designs an AI agent persona through a guided questionnaire. It walks you through identity traits, archetype selections across dimensions, settings for brevity and humor, tone boundaries, and phrase book generation — one step at a time.
+This skill designs an AI agent persona through a fast input-to-sample-dialog loop. Provide any starting input — a brand guide PDF, a URL, a prior persona document, or a text description — and the skill drafts a complete persona, shows you how the agent sounds in sample dialog, and lets you refine until it's right.
 
 **What it produces:**
-- A persona document (`generated/[agent-name]-persona.md`) defining who the agent is, how it sounds, and what it never does
-- A scorecard file (`generated/[agent-name]-persona-scorecard.md`) evaluating the persona against a 50-point rubric
-- An encoding output file (`generated/[agent-name]-persona-encoding.md`) with copy-paste-ready Agent Builder field values, platform setting recommendations, and reusable instruction blocks
+- A persona document (`_local/generated/[agent-name]-persona.md`) defining who the agent is, how it sounds, and what it never does
+- Scoring available on request (50-point rubric)
+- Encoding available as a separate workflow (persona → platform-specific field values)
 
-**What it drives downstream:** The persona document feeds into conversation design, and the encoding output provides the field values for Agent Builder configuration (Role, Company, Topic Instructions, Action Output Response Instructions, Welcome Message, Loading Text). Those are separate steps — this skill defines the *persona* and translates it into Agent Builder fields, but does not define dialog flows.
+**What it drives downstream:** The persona document feeds into conversation design and Agent Builder encoding. Those are separate steps — this skill defines the *persona*, not dialog flows or field configurations.
 
 **Session resumption:** If you stop mid-workflow, your partial progress is preserved in the conversation and can be resumed.
 
@@ -42,258 +45,364 @@ This skill designs an AI agent persona through a guided questionnaire. It walks 
 
 - Designing a new Agentforce agent and need to define its personality before building
 - Retrofitting persona consistency onto an existing agent whose tone is inconsistent
+- Translating brand guidelines or tone documents into a structured persona
 - Aligning stakeholders on what an agent should sound like before development begins
 - Documenting an agent's voice for handoff between design and implementation teams
 
-**Scope boundary:** This skill defines WHO the agent is. It does not define dialog flows, utterance templates, or interaction branching — those belong in conversation design. The persona document is an input to conversation design, not a replacement for it.
+**Scope boundary:** This skill defines WHO the agent is. It does not define dialog flows, utterance templates, or interaction branching — those belong in conversation design.
 
 ## Framework Reference
 
 Read `references/persona-framework.md` for the full framework. It defines:
 
 - **Identity** — 3-5 personality adjectives that anchor every other decision
-- **Dimensions** (Register, Voice, Tone) — each with a spectrum and 3-4 named archetypes, ordered by dependency
-- **Settings** (Brevity, Empathy Level, Humor) — simple single-knob tuning with one-line descriptions
-- **Chatting Style** (Emoji, Formatting, Punctuation, Capitalization) — visual and textual convention settings grouped under one section
-- **Tone Boundaries** — authored per persona within the Tone section: what the agent must never sound like
+- **12 attributes** across 5 categories:
+  - **Register** — Subordinate / Peer / Advisor / Coach
+  - **Voice** — Formality, Warmth, Personality Intensity (3 independent attributes)
+  - **Tone** — Emotional Coloring, Empathy Level (+ Tone Boundaries, Tone Flex)
+  - **Delivery** — Brevity, Humor
+  - **Chatting Style** — Emoji, Formatting, Punctuation, Capitalization
+- **Persona archetype presets** — 6 starting points that pre-populate all 12 attributes
+- **Phrase Book & Never-Say List** — what to say and what to never say
+- **Tone Flex** — how tone shifts by context
+- **Lexicon** — per-topic vocabulary
 
-Dimensions are ordered by dependency — upstream choices constrain downstream ones. Constraint notes in the framework explain how earlier choices pull later ones.
+Attributes are ordered by dependency — upstream choices constrain downstream ones. Constraint notes in the framework explain how earlier choices pull later ones.
 
-## GENERATION GUARDRAILS
+---
 
-These behavioral constraints apply when executing the persona design workflow:
+## Entry Point Detection
 
-- **Context fields are agent design, not persona** — Name, role, audience, agent type, surface, use cases originate in agent design. Persona design imports or minimally gathers them.
-- **Persona-carrying fields in Agentforce** — Role (255 chars), Company (255 chars), Topic Instructions, Action Output Response Instructions, Loading Text, Welcome Message (800 chars). Platform settings that affect persona: Tone dropdown, Conversation Recommendations toggles. Interaction Model, Information Architecture, Recovery & Escalation, and Content Guardrails are agent design inputs.
-- **Dimension presentation format** — Dimension name + one-line definition, spectrum line, then compact `- Label: description` list matching spectrum labels. Not full behavioral bullet tables (those go in the generated persona document). Settings (Brevity, Empathy Level, Humor) use a simple table format: Setting | Description.
-- **Dependency ordering** — Dimensions and settings are ordered by dependency: Identity → Register → Voice → Brevity → Tone (+Empathy Level) → Humor → Chatting Style (Emoji, Formatting, Punctuation, Capitalization). Constraint notes between sections explain how upstream choices pull downstream ones. No explicit tier labels.
-- **Dimensions vs. settings** — Dimensions (Register, Voice, Tone) use archetype menus with spectrum lines and behavioral bullets. Settings (Brevity, Empathy Level, Humor) are simpler single-knob tuning with one-line descriptions. Chatting Style groups four visual/textual convention settings (Emoji, Formatting, Punctuation, Capitalization).
-- **Cross-skill relationship** — Interaction Model (initiative, autonomy, collaboration) and Information Architecture (output structure, surface formatting) are defined in agent design. Persona imports the Interaction Model selection as context; Chatting Style is the persona-side visual expression preference.
+Detect the user's intent from their opening message:
 
-## Guided Mode Workflow
+- **User provides brand input, text description, or no document** → **Design flow** (Steps 1-6 below)
+- **User provides a completed persona.md document and asks to encode** → **Encode flow** (below)
+- **User provides a persona.md + a list of topics or actions** → **Encode flow**
+- **Ambiguous** → Ask: "Are you designing a new persona or encoding an existing one for Agentforce?"
 
-Walk the user through persona creation in 7 steps. Read `references/persona-framework.md` before starting.
+---
 
-**`AskUserQuestion` usage rules:**
-- **Use it for pure archetype/setting selection only** — where the user picks one option from a menu and that's the complete answer (e.g., choosing Peer vs. Coach vs. Subordinate, or Terse vs. Concise vs. Moderate vs. Expansive).
-- **Never use it for open-ended or revision questions.** If the answer might require explanation, elaboration, or free-text input, ask in prose and let the user respond naturally. Forcing "select an option then explain in Other" is a bad interaction pattern.
-- Concretely: Steps 1 (Context) and 2 (Identity) are prose conversations. Step 3 (Dimensions + Settings) archetype/setting picks use `AskUserQuestion`; Tone Boundaries are proposed and confirmed in prose. Step 6 (Score) review is prose.
-- **Recommended-option convention:** When presenting recommended options in `AskUserQuestion` multiselect, mark recommended items with ⭐️. Include at the end of the question text: "(⭐️ = Recommended)"
+## Design Flow
 
-### Step 1: Context
+The design flow prioritizes **speed to sample dialog** — the designer should see how the agent sounds as fast as possible, then refine.
 
-Most context fields (role, audience, agent type, surface, use cases) are agent design decisions, not persona decisions. They originate in agent design. But persona design needs them as inputs — they inform every archetype recommendation that follows.
+```
+INPUT --> DRAFT --> SAMPLE DIALOG --> REFINE --> DOWNLOAD
+  |          |           |                |           |
+  |          |           |                |           +-- persona.md
+  |          |           |                +-- conversational OR deterministic editing
+  |          |           +-- with/without persona toggle (shows delta)
+  |          +-- auto-generate persona from input + archetype matching
+  +-- brand guide PDF, URL, prior persona.md, or text description
+```
 
-**Exception: Agent name is a persona decision.** The name is user-facing — users see it in the chat header before any conversation starts. It should align with Identity and Register. A distinctive name signals personality; a generic name signals nothing. See the Identity → Naming section in the framework.
+**One-shot capability:** Drop a brand guide PDF → view sample dialog → download persona.md. The user can edit the persona.md directly and regenerate sample dialog.
 
-**Detection:** Start by asking whether agent design work already exists.
+### Step 1: Input
 
-> "Do you have an agent design document — a use case definition, agent scope, or blueprint — for this agent? Or are we starting fresh?"
+Accept any starting input. No detection question needed — accept whatever the user provides.
 
-**Path A — Import from agent design:** The user provides or points to an existing agent design artifact. Extract these fields:
+**Accepted inputs:**
+- Brand guide or tone-of-voice document (PDF, text)
+- Organization URL
+- Prior persona document (persona.md from a previous session)
+- Free-text description (e.g., "a sales coach who talks like Crocodile Dundee")
+- Existing agent system prompt or .agent file
+- Any combination of the above
 
-| Field | Source in Agent Design |
-|---|---|
-| Agent name | Use Case Definition → Agent Name |
-| Role | Use Case Definition → Description |
-| Audience | Use Case Definition → Target Users |
-| Agent Type | Agent Scope → Agent Role / channel context |
-| Surface | Agent Scope → Channel |
-| Primary use cases | Use Case Definition → Use Cases (or prioritized JTBD) |
-| Interaction Model | Agent Scope → Interaction Model (§2.7) |
+**If the user provides nothing** (invokes the skill without additional input):
+> "Share something to get started — a brand guide, a URL, or just describe the agent in your own words. I'll draft a persona and show you how it sounds in conversation."
 
-Present the extracted context as a summary table and ask the user to confirm. If anything is missing or unclear, ask only about the gaps.
+Do NOT ask a detection question ("Do you have agent design work?"). Accept whatever arrives and proceed.
 
-**Path B — Gather minimum context:** No agent design exists. Gather the basics — enough to proceed with persona, not a full agent design exercise. Ask all at once:
+### Step 2: Minimal Context
 
-1. **Agent name** — What is this agent called?
-2. **Role** — What does it do? (e.g., "helps TSEs manage support cases", "guides customers through onboarding")
-3. **Audience** — Internal employees or external customers?
-4. **Agent Type** — The Agentforce deployment type (e.g., Employee Agent, Customer Agent, Service Agent, Sales Agent, Custom Agent). Agent Type and Audience are related but distinct — Agent Type is the deployment category, Audience is who the human users are.
-5. **Surface** — Where the agent appears, expressed as **Platform/Environment > Surface**. A surface is a distinct UI interaction context where a user can access or encounter agent capabilities — it feels like a different "place" or experience to the user. Two surfaces on the same platform (e.g., Copilot panel vs. Lightning record page) may need different persona tuning because they feel like different places.
+Collect only what the input doesn't already answer. **Every question is skippable.** Zero questions is valid — if the input provides enough signal, skip directly to Draft.
 
-   | Platform / Environment | Surfaces |
-   |---|---|
-   | Salesforce | Copilot panel, Lightning record page, Field-level AI generation (inline assist) |
-   | Slack | Agent DM, Agent in channel |
-   | Website | Embedded chat widget, Full-page chat |
-   | WhatsApp | Messaging conversation |
-   | Third-party (e.g., ChatGPT) | Chat with Salesforce integration |
+**Context signals to extract or ask about (priority order):**
 
-   Surface matters for persona because it constrains Chatting Style (inline field assist can't use heavy formatting; Slack DM can use casual capitalization) and channel-appropriate Voice (Slack DM is more casual than a web chat widget). Surface also informs agent design decisions about Interaction Model and Information Architecture.
+1. **Internal vs. external audience** — affects register, formality, warmth. If the user says "internal sales coach," audience is already answered.
+2. **At least 1 use case or JTBD** — needed to generate meaningful sample dialog.
+3. **Agent name** — if not provided in input, will be suggested in Step 3B.
 
-6. **Primary use cases** — 2-4 things users will ask it to do most often
-7. **Interaction Model** — "How much should this agent do on its own?" A lightweight question to inform phrase book design — not a full agent design exercise.
-   - **Socratic Partner** — Asks before acting, confirms everything
-   - **Balanced Collaborator** — Asks on ambiguous, drafts on predictable
-   - **Proactive Drafter** — Drafts first, confirms on irreversible
-   - **Autonomous Operator** — Acts first, reports after
+**Do NOT collect:** surface (encoding question, not persona), interaction model (agent design, not persona), agent type, topic list.
 
-Store these answers — they inform every recommendation that follows.
+**Extraction before asking:** Parse the user's input for context signals before deciding what to ask. "Design an internal sales coach persona for Buc-ee's" already answers audience (internal), role (sales coach), and implies a brand context. Don't re-ask what's already given.
 
-### Step 2: Identity
+**May ask 1-2 clarifying questions** to surface tensions in the input (e.g., "Your brand guide emphasizes both 'bold irreverence' and 'trusted expertise' — which should win when they conflict?"). But every question is skippable.
 
-Based on the context from Step 1, propose **3-5 personality adjectives** that would serve this agent well. For each adjective, provide a one-sentence behavioral definition (what it looks like in practice, not just what the word means).
+### Step 3: Draft
 
-Present your proposal and ask the user to confirm, revise, or replace. Identity is generative — the user writes their own, your proposal is a starting point.
+This step is the skill's intelligence — it must execute explicitly as specified below, not left to per-session judgment. The draft is **invisible to the user** — no intermediate output is shown. The first thing the designer sees is the sample dialog.
 
-**Stop and wait.** Do not proceed to Step 3 until the user has confirmed, revised, or replaced the proposed traits. Identity anchors every subsequent decision — the user must actively sign off before you use it to generate recommendations. If the user hasn't responded, wait.
+#### 3A: Input Parsing
 
-**Validation rule:** Each adjective must be distinct (no synonyms) and non-contradictory. If two traits conflict, flag it and ask the user to resolve.
+Extract persona signals from the user's input:
 
-Optionally ask: "Want to give this agent a backstory? A fictional background (e.g., 'studied hospitality', 'spent 10 years in field service') that informs word choice — the agent never says it aloud." If yes, capture 1-2 sentences. If no, skip.
+- **Tone/voice signals:** Look for adjectives, "we are..." statements, competitive positioning language, formality markers.
+- **Negative signals:** "Never," "don't," "we are NOT" statements — often the strongest persona signals. These feed the Never-Say List.
+- **Audience signals:** Who the brand talks to, formal vs. informal examples, relationship language.
+- **If input is a prior persona.md:** Extract attributes directly, skip archetype matching.
 
-### Step 3: Dimensions & Settings
+#### 3B: Name
 
-Work through dimensions and settings in dependency order. Upstream choices constrain downstream ones — present them in this sequence:
+If the agent name was not provided:
+- Suggest up to 3 names that align with the extracted Identity signals
+- Allow the user to write their own
+- Reassure: "You can change this later."
 
-**Register → Voice → Brevity → Tone (+ Empathy Level) → Humor → Chatting Style (Emoji, Formatting, Punctuation, Capitalization)**
+If a name was provided, use it and skip this sub-step.
 
-For each **dimension** (Register, Voice, Tone):
+#### 3C: Archetype Matching
 
-1. **Present the dimension in prose** — dimension name + one-line definition from the framework (e.g., "Register — Relationship + formality level: *Who are you to me?*"), the spectrum line, and your recommendation with rationale based on Identity + context. Include the relevant constraint note from the framework explaining how upstream choices pull this dimension.
-2. **Ask the user to select** — use `AskUserQuestion` with the archetypes as options. Each option's label is the archetype name and its description is the one-liner from the framework. Do NOT duplicate the archetype list in the prose above — the `AskUserQuestion` IS the archetype menu. The prose presents the dimension context and recommendation; the tool presents the choices.
+Map extracted signals to the closest **persona archetype preset** from the framework:
 
-For each **setting** (Brevity, Empathy Level, Humor) and each **Chatting Style sub-setting** (Emoji, Formatting, Punctuation, Capitalization):
+1. Score input signals against each of the 6 presets (The Steady Hand, Drover, The Concierge, Y.T., The Qualifier, Bluebonnet)
+2. Select the closest match as the starting point
+3. Pre-populate all 12 attributes from the preset
+4. Override attributes where the input provides clear signals (e.g., brand guide says "never use slang" → Formality: Formal)
 
-1. **Present the setting in prose** — setting name, what it controls, and your recommendation based on upstream choices.
-2. **Ask the user to select** — use `AskUserQuestion` with the setting options. Each option's label is the setting name and its description is the one-liner from the framework.
+#### 3D: Confidence Annotations
 
-**Batching:** `AskUserQuestion` supports up to 4 questions per call. A reasonable batching that respects dependency order:
+Mark each attribute as:
+- **Strong signal** — clear evidence in input (quote or cite the source)
+- **Default** — inferred from preset, no direct evidence in input
 
-- **Call 1:** Register + Voice (2 questions). Present both dimension contexts and recommendations in prose above the call.
-- **Call 2:** Brevity + Tone + Empathy Level (3 questions). Present all three contexts in prose, noting how Register + Voice constrain these. Brevity and Tone are largely independent of each other, so they can be batched. Empathy Level depends on Tone selection, but since both are in the same call the user sees the context.
-- **Call 3:** Humor + Emoji + Formatting (3 questions). Present constraint notes from Voice + Tone → Humor and Voice → Chatting Style in prose.
-- **Call 4:** Punctuation + Capitalization (2 questions). Present the remaining Chatting Style sub-settings. These are lightweight — constraint note from Voice covers both.
+These annotations are shown during refinement (Step 5) so the designer knows where to focus.
 
-Sequential (one dimension/setting per call) is also fine — batching is optional. The key constraint: dependency order must be maintained.
+#### 3E: Generation
 
-**Voice dimension additions:**
-- After presenting the Voice archetype selection, mention: "All Voice archetypes taper responses as the user demonstrates familiarity — first interactions get full context, repeat interactions get shorter versions. Tapering behavior is calibrated by the Brevity setting (coming next)."
-- If the Surface from Step 1 is a voice channel (phone, voice assistant, IVR), present optional voice channel parameters: pitch range (Low/Mid/High), speaking rate (Slow/Moderate/Fast), energy level (Calm/Moderate/Energetic), and warmth/aural smile (Neutral/Warm/Bright). These are physical voice qualities on top of the Voice archetype. Skip for text-based agents.
+From the attribute map, generate:
+- **Identity traits** — 3-5 adjectives with behavioral definitions
+- **Phrase Book** — example phrases tuned to all selected attributes
+- **Never-Say List** — anti-phrases derived from Tone Boundaries, Identity contradictions, and input's negative signals
+- **Tone Boundaries** — what the agent must never sound like
+- **Tone Flex** — baseline + triggers + shift rules
+- **Negative Identity** — 2-4 character-level anti-patterns ("Not a salesperson", "Not a snob"). Generate from negative signals in the input and from Identity traits (what kind of character would contradict these traits?).
+- **Values** *(optional)* — Only if the user explicitly stated beliefs, values, or worldview in their input. Never infer values from brand input or other signals. If the user said "we believe everyone deserves X" or "our philosophy is Y", capture it. Otherwise, omit.
 
-**Tone Boundaries sub-step:**
+#### 3F: State Object
 
-After the user confirms Empathy Level, propose Tone Boundaries in prose:
-- Present the 4 default tone boundaries (Never apologize for asking clarifying questions; Never apologize for not knowing something; Only apologize when the agent caused an explicit mistake; Never ask the user for empathy)
-- Propose context-specific boundaries based on the Tone archetype selected
-- When Humor ≠ None, include: "No humor in error states, escalation, or high-stakes contexts"
-- User confirms/revises in prose (NOT AskUserQuestion — this is authored content)
+Maintain the full attribute map as an explicit **state object** across the conversation. Every regeneration works from this state, not from conversation history. The state object contains:
+- All 12 attribute values
+- Confidence annotation per attribute (strong signal / default)
+- Identity traits
+- Negative Identity statements
+- Values (if provided by user — never inferred)
+- Phrase Book
+- Never-Say List
+- Tone Boundaries
+- Tone Flex rules
 
-**Humor setting additions:**
-- When Humor ≠ None, note that a tone boundary will be auto-proposed: "No humor in error states, escalation, or high-stakes contexts."
+Update the state object on every change. When regenerating sample dialog, read from the state object — not from prior conversation turns.
 
-After all dimensions and settings are selected, display a summary table:
+### Step 4: Sample Dialog
 
-| Area | Selection | Rationale |
+Present a few turns of conversation (3-5 exchanges) based on the use case from Step 2.
+
+**Requirements:**
+- The dialog demonstrates the persona in action — word choice, tone, brevity, humor, formatting
+- Include at least one "interesting" turn: an error, a clarification, or an emotional moment — not just happy path
+- None of these agents say "Hello! How can I help you today?" — the sample should make the persona's impact obvious
+
+**With/without persona view:**
+On the **first** sample dialog, show two versions:
+1. **With persona** — the agent responding with the designed persona applied
+2. **Without persona** — a generic neutral agent with no persona instructions, responding to the same prompts
+
+This demonstrates the value of the design process — the delta between "generic" and "designed" should be obvious. After the first showing, the with/without view is available on request only (don't double output length on every regeneration).
+
+**After presenting the sample dialog,** invite refinement:
+> "How does that sound? You can describe what to change ('make it warmer', 'less formal'), ask to see all settings, or request a different scenario."
+
+### Step 5: Refine
+
+Two editing modes, both available at any time. The user can mix them freely.
+
+#### Conversational Editing
+
+The user describes changes in natural language. Map common requests to specific attribute changes using this table:
+
+| User says | Attribute change | Also consider |
 |---|---|---|
-| Register | ... | ... |
-| Voice | ... | ... |
-| Brevity | ... | ... |
-| Tone | ... | ... |
-| Empathy Level | ... | ... |
-| Humor | ... | ... |
-| Emoji | ... | ... |
-| Formatting | ... | ... |
-| Punctuation | ... | ... |
-| Capitalization | ... | ... |
+| "warmer" | Warmth: increase one position | Empathy Level: increase one position |
+| "cooler" / "less warm" | Warmth: decrease one position | Empathy Level: decrease one position |
+| "more formal" | Formality: increase one position | Register: shift toward Advisor |
+| "less formal" / "more casual" | Formality: decrease one position | |
+| "shorter" / "more concise" | Brevity: decrease one position (toward Terse) | |
+| "longer" / "more detail" | Brevity: increase one position (toward Expansive) | |
+| "more personality" | Personality Intensity: increase one position | Humor: consider enabling if None |
+| "less personality" / "more neutral" | Personality Intensity: decrease one position | |
+| "less robotic" | Warmth: increase + Personality Intensity: increase | |
+| "more professional" | Formality: Professional, Humor: None or Dry | Personality Intensity: Moderate |
+| "friendlier" | Warmth: increase + Emotional Coloring: Encouraging | Empathy Level: increase |
+| "more direct" / "blunter" | Emotional Coloring: toward Blunt, Brevity: toward Terse | Empathy Level: toward Minimal |
+| "more encouraging" | Emotional Coloring: Encouraging | Empathy Level: Moderate or High |
+| "funnier" | Humor: increase one position | Personality Intensity: increase if Reserved |
+| "no humor" | Humor: None | |
+| "more emoji" | Emoji: increase one position | |
+| "less emoji" | Emoji: decrease one position | |
 
-Ask: "Does this combination feel right for [agent name]? Any dimension or setting you want to revisit?"
+When a request is ambiguous (e.g., "make it warmer" could mean Warmth, Empathy, or Emotional Coloring), apply the primary mapping and narrate the change so the user can correct: "I increased Warmth to Warm. If you meant more emotional validation, I can also increase Empathy Level."
 
-### Step 4: Phrase Book
+#### Deterministic Editing
 
-**Phrase Book generation:**
+Invoked by asking to "show all settings," "show the attribute table," or "let me see the details."
 
-Replace the fixed 4-category Phrase Book with a dynamic system driven by archetype and setting selections:
+Display all attributes in a summary table with confidence annotations:
 
-1. **Category selection:** Based on selected archetypes, settings, and the imported Interaction Model, generate a recommended set of phrase categories. Present as `AskUserQuestion` multiselect. Mark recommended categories with ⭐️. Include at the end of the question text: "(⭐️ = Recommended)". Examples of selection-driven categories:
-   - All agents: Acknowledgement, Apology, Redirect/Handoff
-   - Terse Brevity: skip Welcome (they don't greet)
-   - Non-Terse agents: Welcome/Greeting
-   - Socratic Partner IM (imported): Asking Clarification
-   - Encouraging Realist / Coach Register: Celebrating Progress, Teaching Moments
-   - Proactive Drafter IM (imported): Confirming Action
-   - Humor ≠ None: Humor Examples (showing humor type in context)
+| Category | Attribute | Value | Signal |
+|---|---|---|---|
+| Register | Register | Peer | default |
+| Voice | Formality | Casual | strong — brand guide: "we keep it relaxed" |
+| Voice | Warmth | Warm | strong — brand guide: "like a trusted friend" |
+| ... | ... | ... | ... |
 
-2. **Additional categories:** Follow up with a second `AskUserQuestion` multiselect offering categories NOT in the recommended set (none marked with ⭐️). User can select extras or type in "Other."
+The user selects specific attributes to adjust. Present the attribute's spectrum and current value. After adjustment, regenerate sample dialog with the change.
 
-3. **Phrase drafting:** Draft ALL phrases for all selected categories based on everything known about the persona (Identity, Voice, Brevity, Tone, Humor, Register, context). Present the full draft Phrase Book to the user for review and feedback. The user reviews and adjusts — they are NOT expected to write phrases from scratch.
+Offer: "Pick any attribute to adjust, or describe what you want to change in your own words."
 
-### Step 5: Generate
+**Detail sections** are available during refinement but not forced:
+- **Phrase Book** — generated automatically, visible on request. Preamble: "The Phrase Book is the single most effective lever for making an agent sound like itself."
+- **Never-Say List** — visible on request. Useful for catching generic chatbot filler.
+- **Tone Flex** — visible on request. Shows how tone shifts by context.
+- **Tone Boundaries** — visible on request.
+- **Lexicon** — visible on request, when agent has topic-specific vocabulary.
+- **Scoring** — available on "score this persona" (50-point rubric, see Scoring section below).
 
-Read `assets/persona-template.md` and fill every section with the confirmed selections:
+#### Diff-Based Regeneration
 
-1. **Identity** — adjectives + behavioral definitions from Step 2; backstory if provided
-2. **Persona Profile** — summary table from Step 3 (includes Brevity, Empathy Level, Humor rows)
-3. **Archetype Detail** — for each selected archetype and setting, the full behavioral description from the framework. Includes Brevity, Tone + Empathy Level + Tone Boundaries, Humor, and Chatting Style (Emoji, Formatting, Punctuation, Capitalization) sections.
-4. **Phrase Book** — the confirmed phrase table from Step 4
-5. **Sample Interactions** — generate 3 sample conversations that demonstrate the persona in action:
-   - One routine/happy-path interaction
-   - One where the agent handles uncertainty or low confidence
-   - One where the agent encounters a persona boundary scenario (tone boundary violation, off-topic request)
+After a single-attribute change:
+1. **Hold ALL unchanged attributes constant** in the state object
+2. Regenerate sample dialog varying only the changed attribute's expression
+3. **Narrate the change:** "I adjusted Formality from Casual to Professional. Notice the contractions are gone and sentence structure is more polished. Everything else stayed the same."
 
-Each sample should be 3-5 turns (user + agent) and should distinctively reflect the chosen Identity, Voice, Brevity, Tone, Humor, and Chatting Style. The agent's responses should feel noticeably different from a generic assistant.
+This prevents the "slot machine" effect where one change causes unexpected cascading changes in the sample dialog. The user should be able to see exactly what each attribute change does.
 
-Write the completed persona document using the `Write` tool. Default path: `generated/[agent-name]-persona.md`.
+#### Natural Exit Points
 
-### Step 6: Score
+After 2-3 rounds of refinement, offer:
+> "This persona is shaping up well. Ready to download, or want to keep refining?"
 
-Score the generated persona document against a 50-point rubric. Write the scorecard to a separate file: `generated/[agent-name]-persona-scorecard.md`. The scorecard file should include frontmatter with datetime, persona skill version, and the persona document filename being scored.
+Don't wait for the user to remember that downloading is an option. But don't force exit — the user decides when they're done.
 
-*For an unbiased score, have someone else run the skill in Audit mode on the generated persona.*
+### Step 6: Download
+
+Generate and write the persona document:
+- Read `assets/persona-template.md` for structure
+- Fill every section from the state object
+- Include the sample dialog in the document
+- Default path: `_local/generated/[agent-name]-persona.md`
+
+**After download, offer next steps:**
+- "Want to keep editing? Changes will regenerate the document."
+- "Want to score this persona? I'll run the 50-point rubric."
+- "Ready to encode for Agentforce? I can generate field values for Agent Builder or Agent Script." (Encode flow)
+
+---
+
+## Scoring
+
+Score the persona document against a 50-point rubric. Scoring is **on-demand** — triggered when the user asks ("score this persona"), not auto-triggered after draft. Write the scorecard to: `_local/generated/[agent-name]-persona-scorecard.md`.
+
+*For an unbiased score, have a different person run the scoring rubric on the generated persona.*
 
 | Category | Points | What It Measures |
 |---|---|---|
 | **Identity Coherence** | /10 | Traits are distinct, non-contradictory, and behaviorally defined. Each trait generates specific, observable agent behaviors — not vague aspirations. |
-| **Dimension Consistency** | /10 | Every archetype and setting selection traces back to Identity. Upstream-downstream constraint alignment is respected (Register → Voice → Brevity → Tone → Humor → Chatting Style). Cross-skill coherence: the imported Interaction Model is compatible with persona selections. Tone Boundaries are consistent with the Tone archetype. |
-| **Behavioral Specificity** | /10 | Each archetype includes concrete behavioral examples (what the agent says/does), not just abstract descriptions. Rules are testable. Chatting Style and Tone Boundaries are explicit. |
-| **Phrase Book Quality** | /10 | Phrases are consistent with Voice + Tone + Brevity + Humor + Chatting Style. Variety in acknowledgements. Language matches the persona's register. |
-| **Sample Quality** | /10 | Interactions demonstrate the persona distinctively. A reader could identify which persona produced these responses. Samples cover happy path, uncertainty, and persona boundary scenarios. |
+| **Attribute Consistency** | /10 | Each attribute within a category is independently set and coherent with Identity. Attribute combinations respect constraint notes (Register → Voice → Tone → Delivery → Chatting Style). Tone Boundaries are consistent with the selected Emotional Coloring and Empathy Level. Tone Flex rules stay within the persona's flex range and never cross Tone Boundaries. |
+| **Behavioral Specificity** | /10 | Attribute selections include concrete behavioral examples (what the agent says/does), not just abstract descriptions. Rules are testable. Chatting Style, Tone Boundaries, and Tone Flex triggers are explicit. Never-Say List entries are specific and actionable. |
+| **Phrase Book Quality** | /10 | Phrases are consistent with all Voice attributes (Formality, Warmth, Personality Intensity) + Emotional Coloring + Empathy Level + Brevity + Humor + Chatting Style. Never-Say List items are distinct from Tone Boundaries (phrase-level, not quality-level). Variety in acknowledgements. Language matches the persona's register. The Phrase Book is the most effective encoding lever — weight this category accordingly. |
+| **Sample Quality** | /10 | Sample dialog demonstrates persona attributes in recognizable ways. A reader could identify which persona produced these responses without seeing the attribute table. With/without persona delta is clear — the sample sounds distinctly different from a generic agent. Samples cover happy path, uncertainty, and persona boundary scenarios. |
 
 **Scoring rules:**
 - Score each category independently. Provide a number and 1-2 sentences of justification.
-- Flag any inconsistencies between dimensions or settings (e.g., "Personable voice but Clinical Analyst tone — these may conflict in practice"). Check upstream-downstream constraint alignment.
+- Flag any inconsistencies between attributes (e.g., "Cool warmth but Enthusiastic coloring — these create tension. Is it intentional?"). Check upstream-downstream constraint alignment. Note productive tensions that are working vs. contradictions that aren't.
 - If any category scores below 7, provide a specific suggestion for improvement.
 - Total score interpretation:
   - **45-50**: Production-ready persona. Minor polish only.
   - **35-44**: Strong foundation. Address flagged inconsistencies before encoding.
-  - **25-34**: Needs revision. Identity or dimension selections may not cohere.
+  - **25-34**: Needs revision. Identity or attribute selections may not cohere.
   - **Below 25**: Restart from Identity. The persona lacks a clear point of view.
 
-Present the scorecard and ask if the user wants to revise any section before finalizing.
+---
 
-### Step 7: Encode
+## Encode Flow
 
-Generate copy-paste-ready Agent Builder field values from the completed persona document. Read `references/persona-encoding-guide.md` for field-by-field encoding guidance and `assets/persona-encoding-template.md` for the output structure.
+A standalone entry point for encoding an existing persona document into platform-specific field values and instructions. Accessible when the user provides a completed persona.md.
 
-**Company context:** The Company field (255 chars) requires company context not gathered in Step 1. Ask in prose:
+Read `references/persona-encoding-guide.md` for field-by-field encoding guidance and `assets/persona-encoding-template.md` for the output structure.
 
-> "The Agent Builder Company field (255 chars) describes what your company does and who it serves — it shapes the agent's frame of reference. What should go here? For example: 'B2B SaaS platform for enterprise revenue operations. Serves sales leaders and ops teams at companies with 500+ employees.'"
+### Encoding-Specific Context
 
-If the user declines or company context doesn't apply (e.g., a generic internal tool), note "Not specified" in the encoding output.
+Collect context needed for encoding but NOT gathered during persona design:
 
-**Generation:** Using the confirmed persona document, generate values for each Agent Builder field:
+1. **Platform** — "Are you encoding for Agent Builder or Agent Script (.agent file)?"
+   - **Agent Builder** — Field-by-field encoding with character limits. Advanced methods available.
+   - **Agent Script** — Recommended instructions for YAML keys. No character limits.
+2. **Company context** — For Agent Builder: "The Company field (255 chars) describes what your company does and who it serves. What should go here?" For Agent Script: "What should the `system.instructions` include about the company?" (no character limit). If declined, note "Not specified."
+3. **Surface** — Where the agent appears (web chat, Slack, voice, etc.). Affects Chatting Style encoding and platform-specific constraints.
+4. **Agent type** — Employee Agent, Customer Agent, Service Agent, etc.
+5. **Topics** *(optional)* — List of agent topics. If provided, generate per-topic persona instructions with tailored brevity calibration, phrase book entries, lexicon, and tone flex triggers. For Agent Script, also generate per-topic `system:` overrides and `reasoning.instructions` content when warranted.
+6. **Actions** *(optional)* — List of agent actions. If provided, generate persona-consistent loading text for each action. For Agent Script, generate `progress_indicator_message` for each.
 
-1. **Name** (80 chars) — The Agent Name from Step 1. Show character count.
-2. **Role** (255 chars) — Compress Identity adjectives + Register archetype + audience + core function into a "You are..." paragraph. Show character count. If over limit, compress — prioritize identity adjectives and register.
-3. **Company** (255 chars) — The company context gathered above. Show character count.
-4. **Welcome Message** (800 chars) — Generate a greeting reflecting Identity + Register + Voice + Tone + Brevity. For Terse brevity, keep minimal — a single-line prompt or functional opener. Show character count.
-5. **Error Message** — Generate a fallback error message reflecting Voice + Tone + Brevity. The agent's Voice should come through even in errors — a Conversational agent doesn't say "An error has occurred."
-6. **Tone dropdown** — Recommend Casual, Neutral, or Formal based on the Register + Voice mapping from the encoding guide's Platform Tone Setting section. Note that the dropdown is a coarse approximation — real persona work lives in the instruction fields.
-7. **Conversation Recommendations on Welcome Screen** — Recommend On when primary use cases are defined (users benefit from seeing what the agent can do); Off when the agent's scope is open-ended.
-8. **Conversation Recommendations in Agent Responses** — Recommend On for Proactive Drafter and Autonomous Operator interaction models (the agent anticipates next steps); Off for Socratic Partner (the agent asks, not suggests).
-9. **Persona instruction block** — A reusable block of persona instructions for appending to any Topic Instructions field. Synthesize from: Identity adjectives + behavioral definitions, archetype behavioral bullets (Register, Voice, Tone), brevity calibration, empathy level, humor guidance, tone boundary reminders, voice calibration, chatting style rules (Emoji vocabulary, Formatting, Punctuation, Capitalization), and relevant phrase book entries. Include a note: "Adapt per topic — add topic-specific brevity calibration, phrase book entries, and humor guidance as needed."
-10. **Action Output Response Instructions block** — A reusable block for action output formatting. Include: Chatting Style rules (Emoji vocabulary, Formatting conventions, Punctuation rules, Capitalization convention), Voice presentation guidance, Brevity calibration for output length.
-11. **Loading Text examples** — 3-4 example loading text strings reflecting Voice + Tone + Brevity. Include a note: "Adapt per action — replace the generic verb with the specific action being performed."
+### Generation
 
-Present all generated values and ask the user to review. Character-limited fields show the count (e.g., "Role (237/255 chars)").
+Using the completed persona document + encoding context, generate the platform-specific encoding:
 
-Write the encoding output using the `Write` tool. Default path: `generated/[agent-name]-persona-encoding.md`.
+#### If Agent Builder
+
+**Agent Configuration Fields:**
+1. **Name** (80 chars) — Show character count.
+2. **Role** (255 chars) — Compress Identity + Register + audience + core function into "You are..." Show character count.
+3. **Company** (255 chars) — Show character count.
+4. **Welcome Message** (800 chars) — Reflect Identity + Register + Voice + Tone + Brevity. Show character count.
+5. **Error Message** — Reflect Formality + Warmth + Emotional Coloring + Brevity.
+
+**Platform Settings:**
+6. **Tone dropdown** — Recommend based on Formality attribute. Note it's a coarse approximation.
+7. **Conversation Recommendations on Welcome Screen** — On when use cases are defined; Off when open-ended.
+8. **Conversation Recommendations in Agent Responses** — On for proactive agents; Off for socratic agents.
+
+**Instruction Blocks:**
+9. **Global persona instruction block** — For appending to Topic Instructions. Synthesize from all persona sections.
+10. **Per-topic persona instructions** — If topics were provided: tailored instructions per topic with brevity calibration, phrase book entries, lexicon terms, tone flex triggers, humor guidance.
+11. **Per-topic lexicon** — If topics were provided and the agent has domain vocabulary.
+12. **Action Output Response Instructions block** — Chatting Style rules, Voice presentation, Brevity calibration.
+
+**Loading Text:**
+13. **Generic loading text examples** — 3-4 examples reflecting Voice + Tone + Brevity.
+14. **Per-action loading text** — If actions were provided: persona-consistent loading text for each specific action.
+15. **Situational messages** *(optional)* — If the persona has specific requirements for common situations (escalation, scope boundary, topic transition, end of conversation), generate pre-authored messages in the persona's voice.
+
+#### If Agent Script
+
+**System Block:**
+1. **system.instructions** — Full persona content: Identity, attribute behavioral rules, phrase book, chatting style rules, tone boundaries, never-say list. No character limit — the complete persona lives here.
+2. **system.messages.welcome** — Static welcome message reflecting Identity + Register + Formality + Warmth + Brevity.
+3. **system.messages.error** — Static error message reflecting Formality + Warmth + Emotional Coloring + Brevity.
+
+**Per-Topic Overrides** (if topics provided):
+4. **Topic-level system: override** — For topics that shift persona significantly (e.g., escalation shifts Emotional Coloring toward Encouraging). Only generate when the topic's tone flex warrants a system-level override.
+5. **Per-topic reasoning.instructions** — Persona calibration per topic: brevity calibration, lexicon, tone flex triggers, phrase book entries, humor guidance.
+
+**Static Messages** (if actions provided):
+6. **Per-action progress_indicator_message** — In-character loading text for each action.
+7. **Deterministic response examples** — Example `| text` pipes for common if/else branches (error recovery, identity verification, status confirmations) written in the persona's voice.
+8. **Situational messages** *(optional)* — Pre-authored messages for common conversational situations. These can be encoded as `| text` deterministic outputs or as guidance in `reasoning.instructions`.
+
+#### Output
+
+Present all generated values and ask the user to review. Character-limited fields (Agent Builder) show the count.
+
+Write the encoding output using the `Write` tool. Default path: `_local/generated/[agent-name]-persona-encoding.md`.
+
+---
 
 ## Output
 
-The skill produces three Markdown files:
+The skill produces up to three Markdown files:
 
-1. **Persona document** (`generated/[agent-name]-persona.md`) — follows the `assets/persona-template.md` structure. The design artifact defining who the agent is, how it sounds, and what it never does.
-2. **Scorecard** (`generated/[agent-name]-persona-scorecard.md`) — 50-point rubric evaluation with datetime, skill version, and reference to the scored persona document.
-3. **Encoding output** (`generated/[agent-name]-persona-encoding.md`) — follows the `assets/persona-encoding-template.md` structure. Copy-paste-ready Agent Builder field values (Name, Role, Company, Welcome Message, Error Message), platform setting recommendations (Tone dropdown, Conversation Recommendations), and reusable instruction blocks (Topic Instructions persona block, Action Output Response Instructions block, Loading Text examples). See `references/persona-encoding-guide.md` for detailed encoding guidance beyond what the skill generates.
+1. **Persona document** (`_local/generated/[agent-name]-persona.md`) — follows the `assets/persona-template.md` structure. The design artifact defining who the agent is, how it sounds, and what it never does. Includes sample dialog.
+2. **Scorecard** (`_local/generated/[agent-name]-persona-scorecard.md`) — 50-point rubric evaluation. Generated on request.
+3. **Encoding output** (`_local/generated/[agent-name]-persona-encoding.md`) — follows the `assets/persona-encoding-template.md` structure. Platform-specific: Agent Builder field values and settings, or Agent Script YAML key content. Generated on request via the Encode flow.
