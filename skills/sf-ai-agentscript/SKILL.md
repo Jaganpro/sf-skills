@@ -253,11 +253,20 @@ Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
 # CLI Validation (before deploy):
 sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
-# Org-aware prepublish check (recommended for Service Agents):
-python3 ~/.claude/skills/sf-ai-agentscript/hooks/scripts/prepublish-check.py \
-  force-app/main/default/aiAuthoringBundles/MyAgent/MyAgent.agent \
-  --target-org TARGET_ORG --api-name MyAgent
+# Native CLI pre-publish verification for Service Agents:
+sf data query --query "
+SELECT Username, IsActive, UserType, Profile.Name
+FROM User
+WHERE Username = 'myagent_agent@00Dxxxx.ext'
+LIMIT 1
+" -o TARGET_ORG --json
 ```
+
+For Service Agents, confirm all four before publish:
+- record exists
+- `IsActive = true`
+- `UserType != AutomatedProcess`
+- `Profile.Name = 'Einstein Agent User'`
 
 ### Phase 3.5: Preview Smoke Test Loop (Pre-Publish)
 
@@ -300,7 +309,7 @@ Batch testing (up to 100 cases), quality metrics (Completeness, Coherence, Topic
 
 > ⚠️ **Publishing does NOT activate.** After `sf agent publish`, the new BotVersion is `Inactive`. Tests and preview run against the previous active version. You MUST run `sf agent activate` separately.
 >
-> ⚠️ **Validate ≠ publish safety**. A Service Agent can pass `sf agent validate` and still fail publish if `default_agent_user` is not a real **Einstein Agent User**. Run the prepublish check above or manually query the user before publishing.
+> ⚠️ **Validate ≠ publish safety**. A Service Agent can pass `sf agent validate` and still fail publish if `default_agent_user` is not a real **Einstein Agent User**. Before publishing, run the native `sf data query` check above.
 
 **Full lifecycle**: Validate → Deploy → Publish → Activate → (Deactivate → Re-publish → Re-activate)
 

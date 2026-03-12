@@ -23,7 +23,7 @@
 |-------------|-----|---------------|
 | Agent published at least once | Authoring bundle must exist in org for `--authoring-bundle` to work | `sf agent validate authoring-bundle --api-name AgentName -o ORG --json` |
 | `sf` CLI v2.121.7+ | Required for `--authoring-bundle` and programmatic preview subcommands | `sf version --json` |
-| Valid `default_agent_user` in `.agent` file | Preview runs as this user | Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true` or run `python3 ~/.claude/skills/sf-ai-agentscript/hooks/scripts/prepublish-check.py <agent-file> --target-org ORG --api-name AgentName` |
+| Valid `default_agent_user` in `.agent` file | Preview runs as this user | Query the exact username from the `.agent` config and confirm: `IsActive = true`, `UserType != AutomatedProcess`, and `Profile.Name = 'Einstein Agent User'` |
 | Target org authenticated | Preview needs valid session | `sf org display -o ORG_ALIAS --json` |
 
 > ⚠️ **First-time agents**: If the agent has NEVER been published, `sf agent preview start --authoring-bundle` returns a 500 error. Run Phase 5 (publish + activate) first, then come back to Phase 3.5 for subsequent iterations.

@@ -268,10 +268,19 @@ config:
 **Before publishing, verify the actual user object** — not just the username string:
 
 ```bash
-python3 ~/.claude/skills/sf-ai-agentscript/hooks/scripts/prepublish-check.py \
-  force-app/main/default/aiAuthoringBundles/<AgentName>/<AgentName>.agent \
-  --target-org TARGET_ORG --api-name <AgentName>
+sf data query --query "
+SELECT Username, IsActive, UserType, Profile.Name
+FROM User
+WHERE Username = '{agent_name}_agent@{orgId}.ext'
+LIMIT 1
+" -o TARGET_ORG --json
 ```
+
+A valid Service Agent user must satisfy all of these:
+- user exists
+- `IsActive = true`
+- `UserType != AutomatedProcess`
+- `Profile.Name = 'Einstein Agent User'`
 
 This catches cases where `sf agent validate` passes but `sf agent publish` later fails because the configured user is missing, inactive, `AutomatedProcess`, or not on the **Einstein Agent User** profile.
 

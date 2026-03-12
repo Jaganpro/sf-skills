@@ -193,15 +193,24 @@ sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json
 sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" -o TARGET_ORG --json
 ```
 
-### Prepublish Check (Recommended)
+### Native Pre-Publish Check (Recommended)
 
 ```bash
-python3 ~/.claude/skills/sf-ai-agentscript/hooks/scripts/prepublish-check.py \
-  force-app/main/default/aiAuthoringBundles/ProntoRefund/ProntoRefund.agent \
-  --target-org TARGET_ORG --api-name ProntoRefund
+sf data query --query "
+SELECT Username, IsActive, UserType, Profile.Name
+FROM User
+WHERE Username = 'prontorefund_agent@00Dxxxx.ext'
+LIMIT 1
+" -o TARGET_ORG --json
 ```
 
-This catches the most common real-world publish failure: a `default_agent_user` value that passes `sf agent validate` but fails `sf agent publish` because the user is missing, inactive, `AutomatedProcess`, or not on the **Einstein Agent User** profile.
+Use this native CLI check before publish for Service Agents. A passing result must show:
+- a matching user record
+- `IsActive = true`
+- `UserType != AutomatedProcess`
+- `Profile.Name = 'Einstein Agent User'`
+
+This covers the most common real-world publish failure: a `default_agent_user` value that passes `sf agent validate` but fails `sf agent publish` because the user is missing, inactive, `AutomatedProcess`, or not on the **Einstein Agent User** profile.
 
 ### Create Einstein Agent User
 
