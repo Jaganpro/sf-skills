@@ -12,6 +12,7 @@ Checks include:
 - Missing required blocks
 - Missing/invalid config fields
 - Service vs Employee agent rules for default_agent_user
+- Org-aware Service Agent user verification against the configured validation org
 - Exactly one start_agent
 - Duplicate or colliding topic/start_agent names
 - Naming rule violations
@@ -34,6 +35,7 @@ Checks include:
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -99,6 +101,8 @@ class AgentScriptValidator:
         self.multiline_description_issues: List[Tuple[int, str]] = []
         self.lifecycle_instruction_wrappers: List[Tuple[int, str]] = []
         self.action_input_required_flags: List[Tuple[int, str, str]] = []
+        self.validation_org = self._resolve_validation_org()
+        self._user_query_cache: Dict[str, Dict] = {}
 
         self._parse_structure()
 
@@ -127,6 +131,7 @@ class AgentScriptValidator:
         self._check_date_type_in_action_io()
         self._check_is_required_advisories()
         self._check_employee_agent_gotchas()
+        self._check_service_agent_user_in_org()
 
         return {
             "success": len(self.errors) == 0,
@@ -146,6 +151,103 @@ class AgentScriptValidator:
         if len(value) >= 2 and ((value[0] == '"' and value[-1] == '"') or (value[0] == "'" and value[-1] == "'")):
             return value[1:-1]
         return value
+
+    @staticmethod
+    def _parse_validation_org_from_skill(skill_path: Path) -> Optional[str]:
+        try:
+            content = skill_path.read_text()
+        except Exception:
+            return None
+
+        frontmatter_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+        if not frontmatter_match:
+            return None
+
+        metadata_match = re.search(r'^\s*validation_org:\s*"?([^"\n]+)"?\s*$', frontmatter_match.group(1), re.MULTILINE)
+        if metadata_match:
+            return metadata_match.group(1).strip()
+        return None
+
+    def _resolve_validation_org(self) -> Optional[str]:
+        for env_name in ("AGENTSCRIPT_VALIDATION_ORG", "SF_TARGET_ORG", "TARGET_ORG"):
+            value = os.environ.get(env_name)
+            if value:
+                return value.strip()
+
+        skill_path = Path(__file__).resolve().parents[2] / "SKILL.md"
+        return self._parse_validation_org_from_skill(skill_path)
+
+    def _effective_agent_type(self) -> Optional[str]:
+        agent_type = self.config_fields.get("agent_type")
+        default_agent_user = self.config_fields.get("default_agent_user")
+        if agent_type:
+            return agent_type[0]
+        if default_agent_user:
+            return "AgentforceServiceAgent"
+        return None
+
+    def _query_user_in_org(self, username: str) -> Dict:
+        if username in self._user_query_cache:
+            return self._user_query_cache[username]
+
+        if not self.validation_org:
+            result = {"ok": False, "reason": "no_validation_org"}
+            self._user_query_cache[username] = result
+            return result
+
+        escaped = username.replace("'", "\\'")
+        soql = (
+            "SELECT Username, IsActive, UserType, Profile.Name "
+            f"FROM User WHERE Username = '{escaped}' LIMIT 1"
+        )
+
+        try:
+            proc = subprocess.run(
+                ["sf", "data", "query", "--query", soql, "-o", self.validation_org, "--json"],
+                text=True,
+                capture_output=True,
+                timeout=30,
+            )
+        except Exception as exc:
+            result = {"ok": False, "reason": "query_failed", "detail": str(exc)}
+            self._user_query_cache[username] = result
+            return result
+
+        if proc.returncode != 0:
+            detail = (proc.stdout or proc.stderr or "sf data query failed").strip()
+            result = {"ok": False, "reason": "query_failed", "detail": detail}
+            self._user_query_cache[username] = result
+            return result
+
+        try:
+            payload = json.loads(proc.stdout or "{}")
+        except Exception:
+            result = {"ok": False, "reason": "query_failed", "detail": "Could not parse sf data query JSON output."}
+            self._user_query_cache[username] = result
+            return result
+
+        records = ((payload.get("result") or {}).get("records") or []) if isinstance(payload, dict) else []
+        if not records:
+            result = {"ok": False, "reason": "missing"}
+            self._user_query_cache[username] = result
+            return result
+
+        record = records[0]
+        is_active = record.get("IsActive") is True
+        user_type = record.get("UserType")
+        profile_name = ((record.get("Profile") or {}).get("Name"))
+
+        if not is_active:
+            result = {"ok": False, "reason": "inactive", "record": record}
+        elif user_type == "AutomatedProcess":
+            result = {"ok": False, "reason": "automated_process", "record": record}
+        elif profile_name != "Einstein Agent User":
+            result = {"ok": False, "reason": "wrong_profile", "record": record}
+        else:
+            result = {"ok": True, "reason": "valid", "record": record}
+
+        self._user_query_cache[username] = result
+        return result
 
     def _add_error(self, line_num: int, message: str):
         self.errors.append((line_num, "error", message))
@@ -700,6 +802,56 @@ class AgentScriptValidator:
             self._add_warning(
                 line,
                 "Messaging-linked variables are usually unnecessary for Employee Agents and may cause configuration issues if Messaging is not set up.",
+            )
+
+    def _check_service_agent_user_in_org(self):
+        default_agent_user = self.config_fields.get("default_agent_user")
+        effective_agent_type = self._effective_agent_type()
+
+        if effective_agent_type != "AgentforceServiceAgent" or not default_agent_user:
+            return
+
+        username, line = default_agent_user
+        if not self.validation_org:
+            self._add_warning(
+                line,
+                "Could not run org-aware default_agent_user validation because no validation org is configured. Set AGENTSCRIPT_VALIDATION_ORG (or validation_org in SKILL.md) to enforce Service Agent user checks.",
+            )
+            return
+
+        query_result = self._query_user_in_org(username)
+        reason = query_result.get("reason")
+        record = query_result.get("record") or {}
+
+        if query_result.get("ok"):
+            return
+
+        if reason == "missing":
+            self._add_error(
+                line,
+                f"Service Agent default_agent_user '{username}' was not found in org '{self.validation_org}'. Use a real active Einstein Agent User before continuing.",
+            )
+        elif reason == "inactive":
+            self._add_error(
+                line,
+                f"Service Agent default_agent_user '{username}' exists in '{self.validation_org}' but is inactive. Use an active Einstein Agent User.",
+            )
+        elif reason == "automated_process":
+            self._add_error(
+                line,
+                f"Service Agent default_agent_user '{username}' resolves to UserType=AutomatedProcess in '{self.validation_org}'. That is not a valid Einstein Agent User for Service Agent publishing.",
+            )
+        elif reason == "wrong_profile":
+            profile_name = ((record.get("Profile") or {}).get("Name")) or "null"
+            self._add_error(
+                line,
+                f"Service Agent default_agent_user '{username}' exists in '{self.validation_org}' but Profile.Name is '{profile_name}', not 'Einstein Agent User'.",
+            )
+        elif reason == "query_failed":
+            detail = query_result.get("detail", "sf data query failed")
+            self._add_warning(
+                line,
+                f"Could not verify default_agent_user '{username}' against org '{self.validation_org}'. sf data query failed: {detail}",
             )
 
 
