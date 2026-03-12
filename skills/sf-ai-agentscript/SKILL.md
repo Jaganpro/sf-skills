@@ -484,6 +484,7 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 | Advanced action patterns | [references/action-patterns.md](references/action-patterns.md) | Context-aware descriptions, `{!@actions.X}` refs |
 | Actions reference | [references/actions-reference.md](references/actions-reference.md) | Complete action types, GenAiFunction, I/O matching |
 | Official sources | [references/official-sources.md](references/official-sources.md) | Canonical SF docs + diagnostic decision tree |
+| Official pattern pages | [references/official-sources.md](references/official-sources.md#official-pattern-pages) | Salesforce pattern docs for variables, transitions, system overrides |
 | Known issues | [references/known-issues.md](references/known-issues.md) | Platform bugs & workarounds |
 | Migration guide | [references/migration-guide.md](references/migration-guide.md) | Builder UI → Agent Script DSL mapping |
 

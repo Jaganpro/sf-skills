@@ -90,10 +90,15 @@ config:
 | `agent_type` | ✅ Yes | `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
 | `default_agent_user` | ⚠️ **REQUIRED** | Must be valid Einstein Agent User |
 | `agent_label` | Optional | Display name for the agent in UI (defaults to `developer_name` if omitted) |
+| `company` | Optional | Company context for the agent |
+| `role` | Optional | Role/persona description for the agent |
+| `agent_version` | Optional / system-managed | Agent version metadata |
+| `enable_enhanced_event_logs` | Optional | Enables enhanced conversation logging (`True` / `False`) |
+| `user_locale` | Optional | User locale setting |
 
 > ⚠️ **Critical**: `default_agent_user` must exist in the org with the "Einstein Agent User" profile. Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`
 
-> 💡 **Compatibility note**: Public/community examples may still use legacy config `description:`. That legacy field still appears in current TrailheadApps recipes, but prefer `agent_description:` for new authoring and skill examples. Treat `description:` as compatibility syntax, not the preferred canonical form.
+> ⚠️ **Official-docs caution**: `company`, `role`, `agent_version`, `enable_enhanced_event_logs`, and `user_locale` are documented by Salesforce. This skill now records them for completeness, but local field behavior has not been revalidated to the same depth as the core fields above.
 
 ---
 
@@ -244,7 +249,8 @@ Topics can override the agent-level `system:` instructions with their own `syste
 ```yaml
 topic specialized_support:
    description: "Handles technical support"
-   system: "You are a technical support specialist. Be precise and methodical."
+   system:
+      instructions: "You are a technical support specialist. Be precise and methodical."
    reasoning:
       instructions: |
          Help with technical issues.
