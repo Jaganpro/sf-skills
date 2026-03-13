@@ -1,0 +1,85 @@
+# sf-industries-callable-apex
+
+Generates and reviews Salesforce Industries (OmniStudio/Vlocity) Apex callable implementations.
+Build secure, deterministic `System.Callable` classes with a 120-point scoring rubric and
+migration guidance from legacy `VlocityOpenInterface` implementations.
+
+## Features
+
+- **Callable Generation**: Create `System.Callable` classes with safe action dispatch
+- **Callable Review**: Analyze existing callable implementations for risks and fixes
+- **120-Point Scoring**: Validation across 7 callable-specific categories
+- **Migration Guidance**: Patterns for moving from `VlocityOpenInterface`/`VlocityOpenInterface2`
+- **Testing Examples**: Test class patterns for actions, errors, and bulk inputs
+
+## Installation
+
+```bash
+# Install as part of sf-skills
+npx skills add Jaganpro/sf-skills
+
+# Or install just this skill
+npx skills add Jaganpro/sf-skills --skill sf-industries-callable-apex
+```
+
+## Quick Start
+
+### 1. Invoke the skill
+
+```
+Skill: sf-industries-callable-apex
+Request: "Create a callable implementation for Order actions with createOrder and cancelOrder"
+```
+
+### 2. Answer requirements questions
+
+The skill will ask about:
+- Industries entry point (OmniScript, Integration Procedure, DataRaptor)
+- Action names (strings passed into `call`)
+- Input/output contract (required keys, response shape)
+- Data access needs and security expectations
+
+### 3. Review generated code
+
+The skill generates:
+- Callable class with explicit `switch on action`
+- Consistent response envelope
+- Test class examples for action coverage and error paths
+
+## Scoring System (120 Points)
+
+| Category | Points | Focus |
+|----------|--------|-------|
+| Contract & Dispatch | 20 | Explicit actions, `switch on`, versioned strings |
+| Input Validation | 20 | Required keys, type coercion, null guards |
+| Security | 20 | CRUD/FLS checks, `with sharing`, stripInaccessible |
+| Error Handling | 15 | Typed exceptions, consistent errors |
+| Bulkification & Limits | 20 | No SOQL/DML in loops, list inputs |
+| Testing | 15 | Positive/negative/contract/bulk tests |
+| Documentation | 10 | ApexDoc for class and action methods |
+
+**Thresholds**: ✅ 90+ (Ready) | ⚠️ 70-89 (Review) | ❌ <70 (Block)
+
+## Cross-Skill Integration
+
+| Related Skill | When to Use |
+|---------------|-------------|
+| sf-apex | General Apex work beyond callable implementations |
+| sf-metadata | Verify object/field availability before coding |
+| sf-testing | Run tests and analyze coverage |
+| sf-deploy | Deploy callable classes to an org |
+
+## Documentation
+
+- [Skill Instructions](SKILL.md)
+- [Callable Implementations (Salesforce Help)](https://help.salesforce.com/s/articleView?id=ind.v_dev_t_callable_implementations_651821.htm&type=5)
+
+## Requirements
+
+- sf CLI v2
+- Target Salesforce org
+
+## License
+
+MIT License. See LICENSE file.
+Copyright (c) 2024-2025 Jag Valaiyapathy
