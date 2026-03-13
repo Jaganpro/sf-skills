@@ -15,439 +15,214 @@ metadata:
 
 # sf-apex: Salesforce Apex Code Generation and Review
 
-Expert Apex developer specializing in clean code, SOLID principles, and 2025 best practices. Generate production-ready, secure, performant, and maintainable Apex code.
+Use this skill when the user needs **production Apex**: new classes, triggers, selectors, services, async jobs, invocable methods, test classes, or evidence-based review of existing `.cls` / `.trigger` code.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Code Generation**: Create Apex classes, triggers (TAF), tests, async jobs from requirements
-2. **Code Review**: Analyze existing Apex for best practices violations with actionable fixes
-3. **Validation & Scoring**: Score code against 8 categories (0-150 points)
-4. **Deployment Integration**: Validate and deploy via sf-deploy skill
+Use `sf-apex` when the work involves:
+- Apex class generation or refactoring
+- trigger design and trigger-framework decisions
+- `@InvocableMethod`, Queueable, Batch, Schedulable, or test-class work
+- review of bulkification, sharing, security, testing, or maintainability
 
----
-
-## Workflow (5-Phase Pattern)
-
-### Phase 1: Requirements Gathering
-
-**Ask the user** to gather:
-- Class type (Trigger, Service, Selector, Batch, Queueable, Test, Controller)
-- Primary purpose (one sentence)
-- Target object(s)
-- Test requirements
-
-**Then**:
-1. Check existing code: `Glob: **/*.cls`, `Glob: **/*.trigger`
-2. Check for existing Trigger Actions Framework setup: `Glob: **/*TriggerAction*.cls`
-3. Create a task list
+Delegate elsewhere when the user is:
+- editing LWC JavaScript / HTML / CSS → [sf-lwc](../sf-lwc/SKILL.md)
+- building Flow XML or Flow orchestration → [sf-flow](../sf-flow/SKILL.md)
+- writing SOQL only → [sf-soql](../sf-soql/SKILL.md)
+- deploying or validating metadata to orgs → [sf-deploy](../sf-deploy/SKILL.md)
 
 ---
 
-### Phase 2: Design & Template Selection
+## Required Context to Gather First
 
-**Select template**:
-| Class Type | Template |
-|------------|----------|
-| Trigger | `assets/trigger.trigger` |
-| Trigger Action | `assets/trigger-action.cls` |
-| Service | `assets/service.cls` |
-| Selector | `assets/selector.cls` |
-| Batch | `assets/batch.cls` |
-| Queueable | `assets/queueable.cls` |
-| Test | `assets/test-class.cls` |
-| Test Data Factory | `assets/test-data-factory.cls` |
-| Standard Class | `assets/apex-class.cls` |
+Ask for or infer:
+- class type: trigger, service, selector, batch, queueable, schedulable, invocable, test
+- target object(s) and business goal
+- whether code is net-new, refactor, or fix
+- org / API constraints if known
+- expected test coverage or deployment target
 
-**Template Path Resolution** (try in order):
-1. **Installed skill folder**: `~/.claude/skills/sf-apex/assets/[template]`
-2. **Project folder**: `[project-root]/skills/sf-apex/assets/[template]`
-
-**Example**: `Read: ~/.claude/skills/sf-apex/assets/apex-class.cls`
+Before authoring, inspect the project shape:
+- existing classes / triggers
+- current trigger framework or handler pattern
+- related tests, flows, and selectors
+- whether TAF is already in use
 
 ---
 
-### Phase 3: Code Generation/Review
+## Recommended Workflow
 
-**For Generation**:
-1. Create class file in `force-app/main/default/classes/`
-2. Apply naming conventions (see [references/naming-conventions.md](references/naming-conventions.md))
-3. Include ApexDoc comments
-4. Create corresponding test class
+### 1. Discover local architecture
+Check for:
+- existing trigger handlers / frameworks
+- service-selector-domain conventions
+- related tests and data factories
+- invocable or async patterns already used in the repo
 
-**For Review**:
-1. Read existing code
-2. Run validation against best practices
-3. Generate improvement report with specific fixes
+### 2. Choose the smallest correct pattern
+| Need | Preferred pattern |
+|---|---|
+| simple reusable logic | service class |
+| query-heavy data access | selector |
+| single object trigger behavior | one trigger + handler / TAF action |
+| Flow needs complex logic | `@InvocableMethod` |
+| background processing | Queueable by default |
+| very large datasets | Batch Apex or `Database.Cursor` patterns |
+| repeatable verification | dedicated test class + test data factory |
 
-**Run Validation**:
-```
-Score: XX/150 ⭐⭐⭐⭐ Rating
-├─ Bulkification: XX/25
-├─ Security: XX/25
-├─ Testing: XX/25
-├─ Architecture: XX/20
-├─ Clean Code: XX/20
-├─ Error Handling: XX/15
-├─ Performance: XX/10
-└─ Documentation: XX/10
-```
+### 3. Author with guardrails
+Generate code that is:
+- bulk-safe
+- sharing-aware
+- CRUD/FLS-safe where applicable
+- testable in isolation
+- consistent with project naming and layering
 
----
+### 4. Validate and score
+Evaluate against the 150-point rubric before handoff.
 
-### ⛔ GENERATION GUARDRAILS (MANDATORY)
-
-**BEFORE generating ANY Apex code, Claude MUST verify no anti-patterns are introduced.**
-
-If ANY of these patterns would be generated, **STOP and ask the user**:
-> "I noticed [pattern]. This will cause [problem]. Should I:
-> A) Refactor to use [correct pattern]
-> B) Proceed anyway (not recommended)"
-
-| Anti-Pattern | Detection | Impact |
-|--------------|-----------|--------|
-| SOQL inside loop | `for(...) { [SELECT...] }` | Governor limit failure (100 SOQL) |
-| DML inside loop | `for(...) { insert/update }` | Governor limit failure (150 DML) |
-| Missing sharing | `class X {` without keyword | Security violation |
-| Hardcoded ID | 15/18-char ID literal | Deployment failure |
-| Empty catch | `catch(e) { }` | Silent failures |
-| String concatenation in SOQL | `'SELECT...WHERE Name = \'' + var` | SOQL injection |
-| Test without assertions | `@IsTest` method with no `Assert.*` | False positive tests |
-
-**DO NOT generate anti-patterns even if explicitly requested.** Ask user to confirm the exception with documented justification.
-
-**See**: [references/security-guide.md](references/security-guide.md) for detailed security patterns
-**See**: [references/anti-patterns.md](references/anti-patterns.md) for complete anti-pattern catalog
+### 5. Hand off deploy/test next steps
+When org validation is needed, hand off to:
+- [sf-testing](../sf-testing/SKILL.md) for test execution loops
+- [sf-deploy](../sf-deploy/SKILL.md) for deploy / dry-run / verification
 
 ---
 
-### Phase 4: Deployment
+## Generation Guardrails
 
-**Step 1: Validation**
-Use the **sf-deploy** skill: "Deploy classes at force-app/main/default/classes/ to [target-org] with --dry-run"
+Never generate these without explicitly stopping and explaining the problem:
 
-**Step 2: Deploy** (only if validation succeeds)
-Use the **sf-deploy** skill: "Proceed with actual deployment to [target-org]"
+| Anti-pattern | Why it blocks |
+|---|---|
+| SOQL in loops | governor-limit failure |
+| DML in loops | governor-limit failure |
+| missing sharing model | security / data exposure risk |
+| hardcoded IDs | deployment and portability failure |
+| empty `catch` blocks | silent failure / poor observability |
+| string-built SOQL with user input | injection risk |
+| tests without assertions | false-positive test suite |
 
-**See**: [references/troubleshooting.md](references/troubleshooting.md#cross-skill-dependency-checklist) for deployment prerequisites
+Default fix direction:
+- query once, operate on collections
+- use `with sharing` unless justified otherwise
+- use bind variables and `WITH USER_MODE` where appropriate
+- create assertions for positive, negative, and bulk cases
 
----
-
-### Phase 5: Documentation & Testing Guidance
-
-**Completion Summary**:
-```
-✓ Apex Code Complete: [ClassName]
-  Type: [type] | API: 65.0
-  Location: force-app/main/default/classes/[ClassName].cls
-  Test Class: [TestClassName].cls
-  Validation: PASSED (Score: XX/150)
-
-Next Steps: Run tests, verify behavior, monitor logs
-```
+See [references/anti-patterns.md](references/anti-patterns.md) and [references/security-guide.md](references/security-guide.md).
 
 ---
 
-## Best Practices (150-Point Scoring)
+## High-Signal Build Rules
 
-| Category | Points | Key Rules |
-|----------|--------|-----------|
-| **Bulkification** | 25 | NO SOQL/DML in loops; collect first, operate after; test 251+ records |
-| **Security** | 25 | `WITH USER_MODE`; bind variables; `with sharing`; `Security.stripInaccessible()` |
-| **Testing** | 25 | 90%+ coverage; Assert class; positive/negative/bulk tests; Test Data Factory |
-| **Architecture** | 20 | TAF triggers; Service/Domain/Selector layers; SOLID; dependency injection |
-| **Clean Code** | 20 | Meaningful names; self-documenting; no `!= false`; single responsibility |
-| **Error Handling** | 15 | Specific before generic catch; no empty catch; custom business exceptions |
-| **Performance** | 10 | Monitor with `Limits`; cache expensive ops; scope variables; async for heavy |
-| **Documentation** | 10 | ApexDoc on classes/methods; meaningful params |
+### Trigger architecture
+- Prefer **one trigger per object**.
+- If TAF is already installed and used, extend it instead of inventing a second trigger pattern.
+- Triggers should delegate logic; avoid heavy business logic directly in trigger bodies.
 
-**Thresholds**: ✅ 90+ (Deploy) | ⚠️ 67-89 (Review) | ❌ <67 (Block - fix required)
+### Async choice
+| Scenario | Default |
+|---|---|
+| standard async work | Queueable |
+| very large record processing | Batch Apex |
+| recurring schedule | Scheduled Flow or Schedulable |
+| post-job cleanup | Finalizer |
+| long-running Lightning callouts | `Continuation` |
 
-**Deep Dives**:
-- [references/bulkification-guide.md](references/bulkification-guide.md) - Governor limits, collection handling
-- [references/security-guide.md](references/security-guide.md) - CRUD/FLS, sharing, injection prevention
-- [references/testing-patterns.md](references/testing-patterns.md) - Exception types, mocking, coverage
-- [references/patterns-deep-dive.md](references/patterns-deep-dive.md) - TAF, @InvocableMethod, async patterns
+### Testing minimums
+Use the **PNB** pattern for every feature:
+- **Positive** path
+- **Negative** / error path
+- **Bulk** path (251+ records where relevant)
+
+### Modern Apex expectations
+Prefer current idioms when available:
+- safe navigation: `obj?.Field__c`
+- null coalescing: `value ?? fallback`
+- `Assert.*` over legacy assertion style
+- `WITH USER_MODE` and explicit security handling where relevant
 
 ---
 
-## Trigger Actions Framework (TAF)
+## Output Format
 
-### Quick Reference
+When finishing, report in this order:
+1. **What was created or reviewed**
+2. **Files changed**
+3. **Key design decisions**
+4. **Risk / guardrail notes**
+5. **Test guidance**
+6. **Deployment guidance**
 
-**When to Use**: If TAF package is installed in target org (check: `sf package installed list`)
+Suggested shape:
 
-**Trigger Pattern** (one per object):
-```apex
-trigger AccountTrigger on Account (before insert, after insert, before update, after update, before delete, after delete, after undelete) {
-    new MetadataTriggerHandler().run();
-}
+```text
+Apex work: <summary>
+Files: <paths>
+Design: <pattern / framework choices>
+Risks: <security, bulkification, async, dependency notes>
+Tests: <what to run / add>
+Deploy: <dry-run or next step>
 ```
 
-**Action Class** (one per behavior):
-```apex
-public class TA_Account_SetDefaults implements TriggerAction.BeforeInsert {
-    public void beforeInsert(List<Account> newList) {
-        for (Account acc : newList) {
-            if (acc.Industry == null) {
-                acc.Industry = 'Other';
-            }
-        }
-    }
-}
-```
-
-**⚠️ CRITICAL**: TAF triggers do NOTHING without `Trigger_Action__mdt` records! Each action class needs a corresponding Custom Metadata record.
-
-**Installation**:
-```bash
-sf package install --package 04tKZ000000gUEFYA2 --target-org [alias] --wait 10
-```
-
-**Fallback**: If TAF is NOT installed, use standard trigger pattern (see [references/patterns-deep-dive.md](references/patterns-deep-dive.md#standard-trigger-pattern))
-
-**See**: [references/patterns-deep-dive.md](references/patterns-deep-dive.md#trigger-actions-framework-taf) for complete TAF patterns and Custom Metadata setup
-
 ---
 
-## Automation Density
+## LSP Validation Note
 
-| Object Density | Recommended Tool | Notes |
-|---------------|-----------------|-------|
-| **Low** (0-2 automations) | Flow (Record-Triggered) | Declarative, admin-maintainable |
-| **Medium** (3-5) | Hybrid (Flow + Invocable Apex) | Flow orchestrates, Apex handles complexity |
-| **High** (6+) | Apex (TAF) | Full control over execution order and limits |
+This skill supports an LSP-assisted authoring loop for `.cls` and `.trigger` files:
+- syntax issues can be detected immediately after write/edit
+- the skill can auto-fix common syntax errors in a short loop
+- semantic quality still depends on the 150-point review rubric
 
-> ⚠️ **One Entry Point Per Object**: Don't add a second trigger or record-triggered flow if one exists. Use Flow Trigger Explorer (Setup → Process Automation) to audit before adding automation.
-
-**See**: [references/automation-density-guide.md](references/automation-density-guide.md) for framework details, hybrid patterns, CDC async, and coexistence management
-
----
-
-## Async Decision Matrix
-
-| Scenario | Use | Key Advantage | Daily Limit |
-|----------|-----|---------------|-------------|
-| Default async processing | **Queueable** (preferred) | Job ID, chaining, non-primitive types, delays up to 10 min, dedup signatures | 250K or 200× licenses |
-| Process millions of records | Batch Apex | Chunked, off-peak, max 5 concurrent threads | Same pool |
-| Modern batch alternative | **CursorStep** (`Database.Cursor`) | 2000-record chunks, higher throughput | N/A |
-| Scheduled/recurring job | **Scheduled Flow** (preferred) or Schedulable | Flow = deployable metadata, packageable; Apex = 100 job limit | — |
-| Post-job cleanup | Queueable Finalizer (`System.Finalizer`) | Runs regardless of success/failure | — |
-| Long-running Lightning callouts | `Continuation` | 3 per txn, 3 parallel, doesn't count toward daily async | — |
-| Legacy fire-and-forget | `@future` (legacy — prefer Queueable) | Simpler syntax only | Same pool |
-
-> ⚠️ **Async doesn't solve horizontal scaling.** Finite threads + flow control + fair usage algorithm constrain throughput. Design for governor limits, not unlimited parallelism.
-
-**See**: [references/patterns-deep-dive.md](references/patterns-deep-dive.md#async-patterns) for detailed async patterns
-
----
-
-## Modern Apex Features (API 62.0)
-
-- **Null coalescing**: `value ?? defaultValue`
-- **Safe navigation**: `record?.Field__c`
-- **User mode**: `WITH USER_MODE` in SOQL
-- **Assert class**: `Assert.areEqual()`, `Assert.isTrue()`
-
-**Breaking Change (API 62.0)**: Cannot modify Set while iterating - throws `System.FinalException`
-
-**See**: [references/bulkification-guide.md](references/bulkification-guide.md#collection-handling-best-practices) for collection usage
-
----
-
-## Flow Integration (@InvocableMethod)
-
-Apex classes can be called from Flow using `@InvocableMethod`. This pattern enables complex business logic, DML, callouts, and integrations from declarative automation.
-
-### Quick Pattern
-
-```apex
-public with sharing class RecordProcessor {
-
-    @InvocableMethod(label='Process Record' category='Custom')
-    public static List<Response> execute(List<Request> requests) {
-        List<Response> responses = new List<Response>();
-        for (Request req : requests) {
-            Response res = new Response();
-            res.isSuccess = true;
-            res.processedId = req.recordId;
-            responses.add(res);
-        }
-        return responses;
-    }
-
-    public class Request {
-        @InvocableVariable(label='Record ID' required=true)
-        public Id recordId;
-    }
-
-    public class Response {
-        @InvocableVariable(label='Is Success')
-        public Boolean isSuccess;
-        @InvocableVariable(label='Processed ID')
-        public Id processedId;
-    }
-}
-```
-
-**Template**: Use `assets/invocable-method.cls` for complete pattern
-
-**See**:
-- [references/patterns-deep-dive.md](references/patterns-deep-dive.md#flow-integration-invocablemethod) - Complete @InvocableMethod guide
-- [references/flow-integration.md](references/flow-integration.md) - Advanced Flow-Apex patterns
-- [references/triangle-pattern.md](references/triangle-pattern.md) - Flow-LWC-Apex triangle
-
----
-
-## Testing Best Practices
-
-### The 3 Test Types (PNB Pattern)
-
-Every feature needs:
-1. **Positive**: Happy path test
-2. **Negative**: Error handling test
-3. **Bulk**: 251+ records test
-
-**Example**:
-```apex
-@IsTest
-static void testPositive() {
-    Account acc = new Account(Name = 'Test', Industry = 'Tech');
-    insert acc;
-    Assert.areEqual('Tech', [SELECT Industry FROM Account WHERE Id = :acc.Id].Industry);
-}
-
-@IsTest
-static void testNegative() {
-    try {
-        insert new Account(); // Missing Name
-        Assert.fail('Expected DmlException');
-    } catch (DmlException e) {
-        Assert.isTrue(e.getMessage().contains('REQUIRED_FIELD_MISSING'));
-    }
-}
-
-@IsTest
-static void testBulk() {
-    List<Account> accounts = new List<Account>();
-    for (Integer i = 0; i < 251; i++) {
-        accounts.add(new Account(Name = 'Bulk ' + i));
-    }
-    insert accounts;
-    Assert.areEqual(251, [SELECT COUNT() FROM Account]);
-}
-```
-
-**See**:
-- [references/testing-patterns.md](references/testing-patterns.md) - Exception types, mocking, Test Data Factory
-- [references/testing-guide.md](references/testing-guide.md) - Complete testing reference
-
----
-
-## Common Exception Types
-
-When writing test classes, use these specific exception types:
-
-| Exception Type | When to Use |
-|----------------|-------------|
-| `DmlException` | Insert/update/delete failures |
-| `QueryException` | SOQL query failures |
-| `NullPointerException` | Null reference access |
-| `ListException` | List operation failures |
-| `LimitException` | Governor limit exceeded |
-| `CalloutException` | HTTP callout failures |
-
-**Example**:
-```apex
-@IsTest
-static void testExceptionHandling() {
-    try {
-        insert new Account(); // Missing required Name
-        Assert.fail('Expected DmlException was not thrown');
-    } catch (DmlException e) {
-        Assert.isTrue(e.getMessage().contains('REQUIRED_FIELD_MISSING'),
-            'Expected REQUIRED_FIELD_MISSING but got: ' + e.getMessage());
-    }
-}
-```
-
-**See**: [references/testing-patterns.md](references/testing-patterns.md#common-exception-types) for complete reference
-
----
-
-## LSP-Based Validation (Auto-Fix Loop)
-
-The sf-apex skill includes Language Server Protocol (LSP) integration for real-time syntax validation. This enables Claude to automatically detect and fix Apex syntax errors during code authoring.
-
-### How It Works
-
-1. **PostToolUse Hook**: After every Write/Edit operation on `.cls` or `.trigger` files, the LSP hook validates syntax
-2. **Apex Language Server**: Uses Salesforce's official `apex-jorje-lsp.jar` (from VS Code extension)
-3. **Auto-Fix Loop**: If errors are found, Claude receives diagnostics and auto-fixes them (max 3 attempts)
-4. **Two-Layer Validation**:
-   - **LSP Validation**: Fast syntax checking (~500ms)
-   - **150-Point Validation**: Semantic analysis for best practices
-
-### Prerequisites
-
-For LSP validation to work, users must have:
-- **VS Code Salesforce Extension Pack**: VS Code → Extensions → "Salesforce Extension Pack"
-- **Java 11+**: https://adoptium.net/temurin/releases/
-
-**Graceful Degradation**: If LSP is unavailable, validation silently skips - the skill continues to work with only 150-point semantic validation.
-
-**See**: [references/troubleshooting.md](references/troubleshooting.md#lsp-based-validation-auto-fix-loop) for complete LSP guide
+Full guide: [references/troubleshooting.md](references/troubleshooting.md#lsp-based-validation-auto-fix-loop)
 
 ---
 
 ## Cross-Skill Integration
 
-| Skill | When to Use | Example |
-|-------|-------------|---------|
-| sf-metadata | Discover object/fields before coding | Use the **sf-metadata** skill: "Describe Invoice__c" |
-| sf-data | Generate 251+ test records after deploy | Use the **sf-data** skill: "Create 251 Accounts for bulk testing" |
-| sf-deploy | Deploy to org - see Phase 4 | Use the **sf-deploy** skill: "Deploy to [org]" |
-| sf-flow | Create Flow that calls your Apex | See @InvocableMethod section above |
-| sf-lwc | Create LWC that calls your Apex | `@AuraEnabled` controller patterns |
+| Need | Delegate to | Reason |
+|---|---|---|
+| describe objects / fields first | [sf-metadata](../sf-metadata/SKILL.md) | avoid coding against wrong schema |
+| seed bulk or edge-case data | [sf-data](../sf-data/SKILL.md) | create realistic test datasets |
+| run Apex tests / fix failing tests | [sf-testing](../sf-testing/SKILL.md) | execute and iterate on failures |
+| deploy to org | [sf-deploy](../sf-deploy/SKILL.md) | validation and deployment orchestration |
+| build Flow that calls Apex | [sf-flow](../sf-flow/SKILL.md) | declarative orchestration |
+| build LWC that calls Apex | [sf-lwc](../sf-lwc/SKILL.md) | UI/controller integration |
 
 ---
 
-## Reference Documentation
+## Reference Map
 
-### Quick Guides (references/)
-| Guide | Description |
-|-------|-------------|
-| [patterns-deep-dive.md](references/patterns-deep-dive.md) | TAF, @InvocableMethod, async patterns, service layer |
-| [security-guide.md](references/security-guide.md) | CRUD/FLS, sharing, SOQL injection, guardrails |
-| [bulkification-guide.md](references/bulkification-guide.md) | Governor limits, collections, monitoring |
-| [testing-patterns.md](references/testing-patterns.md) | Exception types, mocking, Test Data Factory, coverage |
-| [anti-patterns.md](references/anti-patterns.md) | Code smells, red flags, refactoring patterns |
-| [troubleshooting.md](references/troubleshooting.md) | LSP validation, deployment errors, debug logs |
+### Start here
+- [references/patterns-deep-dive.md](references/patterns-deep-dive.md)
+- [references/security-guide.md](references/security-guide.md)
+- [references/bulkification-guide.md](references/bulkification-guide.md)
+- [references/testing-patterns.md](references/testing-patterns.md)
 
-### Full Documentation (references/)
-| Document | Description |
-|----------|-------------|
-| `best-practices.md` | Bulkification, collections, null safety, guard clauses, DML performance |
-| `code-smells-guide.md` | Code smells detection and refactoring patterns |
-| `design-patterns.md` | 12 patterns including Domain Class, Abstraction Levels |
-| `trigger-actions-framework.md` | TAF setup and advanced patterns |
-| `automation-density-guide.md` | Automation density framework, hybrid patterns, CDC async |
-| `security-guide.md` | Complete CRUD/FLS and sharing reference |
-| `testing-guide.md` | Complete test patterns and mocking |
-| `naming-conventions.md` | Variable, method, class naming rules |
-| `solid-principles.md` | SOLID principles for Apex |
-| `code-review-checklist.md` | 150-point scoring criteria |
-| `flow-integration.md` | Complete @InvocableMethod guide |
-| `triangle-pattern.md` | Flow-LWC-Apex integration |
-| `llm-anti-patterns.md` | **NEW**: Common LLM code generation mistakes (Java types, non-existent methods, Map patterns) |
+### High-signal checklists
+- [references/code-review-checklist.md](references/code-review-checklist.md)
+- [references/anti-patterns.md](references/anti-patterns.md)
+- [references/naming-conventions.md](references/naming-conventions.md)
 
-**Path**: `~/.claude/skills/sf-apex/references/`
+### Specialized patterns
+- [references/trigger-actions-framework.md](references/trigger-actions-framework.md)
+- [references/automation-density-guide.md](references/automation-density-guide.md)
+- [references/flow-integration.md](references/flow-integration.md)
+- [references/triangle-pattern.md](references/triangle-pattern.md)
+- [references/design-patterns.md](references/design-patterns.md)
+- [references/solid-principles.md](references/solid-principles.md)
+
+### Troubleshooting / validation
+- [references/troubleshooting.md](references/troubleshooting.md)
+- [references/llm-anti-patterns.md](references/llm-anti-patterns.md)
+- [references/testing-guide.md](references/testing-guide.md)
 
 ---
 
-## Notes
+## Score Guide
 
-- **API Version**: 62.0 required
-- **TAF Optional**: Prefer TAF when package is installed, use standard trigger pattern as fallback
-- **Scoring**: Block deployment if score < 67
-- **LSP**: Optional but recommended for real-time syntax validation
-
+| Score | Meaning |
+|---|---|
+| 120+ | strong production-ready Apex |
+| 90–119 | good implementation, review before deploy |
+| 67–89 | acceptable but needs improvement |
+| < 67 | block deployment |

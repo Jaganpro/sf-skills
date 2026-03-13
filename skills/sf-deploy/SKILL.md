@@ -14,463 +14,176 @@ metadata:
 
 # sf-deploy: Comprehensive Salesforce DevOps Automation
 
-Expert Salesforce DevOps engineer specializing in deployment automation, CI/CD pipelines, and metadata management using Salesforce CLI (sf v2).
+Use this skill when the user needs **deployment orchestration**: dry-run validation, targeted or manifest-based deploys, CI/CD workflow advice, scratch-org management, failure triage, or safe rollout sequencing for Salesforce metadata.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Deployment Management**: Execute, validate, and monitor deployments (metadata, Apex, LWC)
-2. **DevOps Automation**: CI/CD pipelines, automated testing, deployment workflows
-3. **Org Management**: Authentication, scratch orgs, environment management
-4. **Quality Assurance**: Tests, code coverage, pre-production validation
-5. **Troubleshooting**: Debug failures, analyze logs, provide solutions
+Use `sf-deploy` when the work involves:
+- `sf project deploy start`, `quick`, `report`, or retrieval workflows
+- release sequencing across objects, permission sets, Apex, and Flows
+- CI/CD gates, test-level selection, or deployment reports
+- troubleshooting deployment failures and dependency ordering
 
----
-
-## ⚠️ CRITICAL: Orchestration Order
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  sf-metadata → sf-flow → sf-deploy → sf-data                               │
-│                              ▲                                              │
-│                         YOU ARE HERE                                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Deploy order WITHIN sf-deploy**: Objects/Fields → Permission Sets → Apex → Flows (Draft) → Activate Flows
-
-| Phase | Metadata Type | Why This Order |
-|-------|---------------|----------------|
-| 1 | Custom Objects/Fields | Everything references these |
-| 2 | Permission Sets | FLS requires fields to exist |
-| 3 | Apex Classes | @InvocableMethod needed before Flows |
-| 4 | Flows (as Draft) | Flows reference fields and Apex |
-| 5 | Activate Flows | Safe to activate after validation |
-
-See `references/orchestration.md` for detailed deployment workflows and agent deployment patterns.
+Delegate elsewhere when the user is:
+- authoring Apex or LWC code → [sf-apex](../sf-apex/SKILL.md), [sf-lwc](../sf-lwc/SKILL.md)
+- creating metadata definitions → [sf-metadata](../sf-metadata/SKILL.md)
+- building Flows → [sf-flow](../sf-flow/SKILL.md)
+- doing org data operations → [sf-data](../sf-data/SKILL.md)
+- authoring Agent Script logic → [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md)
 
 ---
 
-## 🔑 Key Insights for Deployment
+## Critical Operating Rules
 
-### Always Use --dry-run First
+- Use **`sf` CLI v2 only**.
+- On non-source-tracking orgs, deploy/retrieve commands require an explicit scope such as `--source-dir`, `--metadata`, or `--manifest`.
+- Prefer **`--dry-run` first** before real deploys.
+- For Flows, deploy safely and activate only after validation.
 
-```bash
-# CORRECT: Validate before deploying
-sf project deploy start --dry-run --source-dir force-app --target-org alias
-sf project deploy start --source-dir force-app --target-org alias
+### Default deployment order
+| Phase | Metadata |
+|---|---|
+| 1 | Custom objects / fields |
+| 2 | Permission sets |
+| 3 | Apex |
+| 4 | Flows as Draft |
+| 5 | Flow activation / post-verify |
 
-# WRONG: Deploying without validation
-sf project deploy start --source-dir force-app --target-org alias  # Risky!
-```
-
-### Deploy Permission Sets After Objects
-
-**Common Error:**
-```
-Error: In field: field - no CustomObject named ObjectName__c found
-```
-
-**Solution:** Deploy objects first, THEN permission sets referencing them.
-
-### Flow Activation (4-Step Process)
-
-**Flows deploy as Draft by default.** Activation steps:
-1. Deploy with `<status>Draft</status>`
-2. Verify: `sf project deploy report --job-id [id]`
-3. Edit XML: `Draft` → `Active`
-4. Redeploy
-
-**Why?** Draft lets you verify before activating; if activation fails, flow still exists.
-
-**Common Errors**: "Flow is invalid" (deploy objects first) | "Insufficient permissions" (check Manage Flow) | "Version conflict" (deactivate old version)
-
-### FLS Warning After Deployment
-
-**⚠️ Deployed fields may be INVISIBLE without FLS!**
-
-After deploying custom objects/fields:
-1. Deploy Permission Set granting field access
-2. Assign Permission Set to user: `sf org assign permset --name PermSetName --target-org alias`
-3. Verify field visibility
+This ordering prevents many dependency and FLS failures.
 
 ---
 
-## CLI Version (CRITICAL)
+## Required Context to Gather First
 
-**This skill uses `sf` CLI (v2.x), NOT legacy `sfdx` (v1.x)**
+Ask for or infer:
+- target org alias and environment type
+- deployment scope: source-dir, metadata list, or manifest
+- whether this is validate-only, deploy, quick deploy, retrieve, or CI/CD guidance
+- required test level and rollback expectations
+- whether special metadata types are involved (Flow, permission sets, agents, packages)
 
-**Note**: Legacy `sfdx` (v1) is fully retired. Use `sf` (v2) exclusively.
-
-> **⚠️ Source tracking requirement (Dec 2025+)**: `sf project deploy start` and `sf project retrieve start` now REQUIRE `--source-dir`, `--metadata`, or `--manifest` on non-source-tracking orgs (production, full sandboxes). Without a scope flag, the command fails.
-
-> **⚠️ `sf org open --url-only`**: URLs generated with `--url-only` are single-use and expire after 60 seconds.
-
-## Prerequisites
-
-Before deployment, verify:
+Preflight checks:
 ```bash
-sf --version              # Requires v2.x
-sf org list               # Check authenticated orgs
-test -f sfdx-project.json # Valid SFDX project
+sf --version
+sf org list
+sf org display --target-org <alias> --json
+test -f sfdx-project.json
 ```
 
-## Deployment Workflow (5-Phase)
+---
 
-### Phase 1: Pre-Deployment Analysis
+## Recommended Workflow
 
-**Ask the user** to gather: Target org, deployment scope, validation requirements, rollback strategy.
+### 1. Preflight
+Confirm auth, repo shape, package directories, and target scope.
 
-**Analyze**:
-- Read `sfdx-project.json` for package directories
-- Glob for metadata: `**/force-app/**/*.{cls,trigger,xml,js,html,css}`
-- Grep for dependencies
-
-**Tasks to track**: Validate auth, Pre-tests, Deploy, Monitor, Post-tests, Verify
-
-### Phase 2: Pre-Deployment Validation
-
+### 2. Validate first
 ```bash
-sf org display --target-org <alias> --json             # Check connection
-sf apex run test --test-level RunLocalTests --target-org <alias> --wait 10 --json  # Local tests
-sf project deploy start --dry-run --test-level RunLocalTests --target-org <alias> --wait 30 --json  # Validate
+sf project deploy start --dry-run --source-dir force-app --target-org <alias> --wait 30 --json
 ```
+Use manifest- or metadata-scoped validation when the change set is targeted.
 
-### Phase 3: Deployment Execution
-
-**Commands by scope**:
+### 3. Deploy the smallest correct scope
 ```bash
-# Full metadata (--source-dir required on non-source-tracking orgs since Dec 2025)
+# source-dir deploy
 sf project deploy start --source-dir force-app --target-org <alias> --wait 30 --json
 
-# Specific components
-sf project deploy start --source-dir force-app/main/default/classes --target-org <alias> --json
-
-# Manifest-based
+# manifest deploy
 sf project deploy start --manifest manifest/package.xml --target-org <alias> --test-level RunLocalTests --wait 30 --json
 
-# Quick deploy (after validation)
+# quick deploy after successful validation
 sf project deploy quick --job-id <validation-job-id> --target-org <alias> --json
 ```
 
-Handle failures: Parse errors, identify failed components, suggest fixes.
-
-### Phase 4: Post-Deployment Verification
-
+### 4. Verify
 ```bash
 sf project deploy report --job-id <job-id> --target-org <alias> --json
 ```
+Then verify tests, Flow state, permission assignments, and smoke-test behavior.
 
-Verify components, run smoke tests, check coverage.
+### 5. Report clearly
+Summarize what deployed, what failed, what was skipped, and what the next safe action is.
 
-### Phase 5: Documentation
-
-Provide summary with: deployed components, test results, coverage metrics, next steps.
-
-See [references/deployment-report-template.md](references/deployment-report-template.md) for output format.
-
-**Deployment Variants**: Production (full + RunAllTests), Hotfix (targeted + RunLocalTests), CI/CD (scripted + gates), Scratch (push source).
-
-> **[Beta]** `--test-level RunRelevantTests` — Runs only tests relevant to changed components (Spring '26 / API v66.0 only). Not GA; use `RunLocalTests` for production deploys.
-
-## CLI Reference
-
-**Deploy**: `sf project deploy start [--dry-run] [--source-dir <path>] [--manifest <xml>] [--test-level <level>] --json`
-**Quick**: `sf project deploy quick --job-id <id> --json` | **Status**: `sf project deploy report --json`
-**Test**: `sf apex run test --test-level RunLocalTests` | **Coverage**: `sf apex get test --code-coverage`
-**Org**: `sf org list` | `sf org display` | `sf org create scratch [--snapshot <name>]` | `sf org open`
-**Metadata**: `sf project retrieve start` | `sf org list metadata --metadata-type <type>`
-**Debug**: `sf project deploy start --dev-debug` — Show which files are ignored during deploy/retrieve (v2.117.7+)
-
-## Error Handling
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| FIELD_CUSTOM_VALIDATION_EXCEPTION | Validation rule blocking | Deactivate rules or use valid test data |
-| INVALID_CROSS_REFERENCE_KEY | Missing dependency | Include dependencies in deploy |
-| CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY | Trigger/validation error | Review trigger logic, check recursion |
-| TEST_FAILURE | Test class failure | Fix test or code under test |
-| INSUFFICIENT_ACCESS | Permission issue | Verify user permissions, FLS |
-
-### Flow-Specific Errors
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "Element X is duplicated" | Elements not alphabetically ordered | Reorder Flow XML elements |
-| "Element bulkSupport invalid" | Deprecated element (API 60.0+) | Remove `<bulkSupport>` |
-| "Error parsing file" | Malformed XML | Validate XML syntax |
-
-### Failure Response
-
-1. Parse error output, identify failed components
-2. Explain error in plain language
-3. Suggest specific fixes with code examples
-4. Provide rollback options if needed
-
-## Best Practices
-
-- **Always validate first**: Use `--dry-run` for production
-- **Appropriate test levels**: RunLocalTests (deploy), RunAllTests (packages)
-- **Code coverage**: >75% for production, >90% recommended
-- **Use manifests**: `package.xml` for controlled deployments
-- **Version control**: Commit before deploying, tag releases
-- **Incremental deploys**: Small, frequent changes over large batches
-- **Sandbox first**: Always test before production
-- **Backup metadata**: Retrieve before major deployments
-- **Quick deploy**: Use for validated changesets
+Output template: [references/deployment-report-template.md](references/deployment-report-template.md)
 
 ---
 
-## Trigger Deployment Safety
+## High-Signal Failure Patterns
 
-Triggers require special deployment care: deactivation before modification, proper ordering, and rollback planning.
+| Error / symptom | Likely cause | Default fix direction |
+|---|---|---|
+| `FIELD_CUSTOM_VALIDATION_EXCEPTION` | validation rule or bad test data | adjust data or rule timing |
+| `INVALID_CROSS_REFERENCE_KEY` | missing dependency | include referenced metadata first |
+| `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` | trigger / Flow / validation side effect | inspect automation stack and failing logic |
+| tests fail during deploy | broken code or fragile tests | run targeted tests, fix root cause, revalidate |
+| field/object not found in permset | wrong order | deploy objects/fields before permission sets |
+| Flow invalid / version conflict | dependency or activation problem | deploy as Draft, verify, then activate |
 
-> **Full guide**: See [references/trigger-deployment-safety.md](references/trigger-deployment-safety.md) for deactivation strategies, safe deployment sequences, and rollback procedures.
-
-## CI/CD Integration
-
-Standard pipeline workflow:
-1. Authenticate (JWT/auth URL)
-2. Validate metadata
-3. Static analysis via Code Analyzer v5
-4. Dry-run deployment
-5. Run tests + coverage check
-6. Deploy if validation passes
-7. Notify
-
-### Static Analysis: Code Analyzer v5
-
-`sf code-analyzer` (v5) replaced the retired `sf scanner` (Aug 2025). It bundles ESLint, PMD, RetireJS, and Salesforce-specific rules.
-
-```bash
-# Install plugin (one-time)
-sf plugins install @salesforce/plugin-code-analyzer
-
-# Run scan on source directory
-sf code-analyzer run --workspace force-app --output-file scan-results.csv
-
-# Run with specific rule categories
-sf code-analyzer run --workspace force-app --rule-selector "Category:Security,Best Practices"
-
-# List available rules
-sf code-analyzer rules --view detail
-
-# Generate config file for customization
-sf code-analyzer config --output-file code-analyzer.yaml
-```
-
-> **Migration from sf scanner**: v5 uses `--workspace` (not `--target`), `--view` for table/detail display (not `--output-format`), `--output-file` for file output (format inferred from extension), and `--rule-selector` (not `--engine`/`--category`).
-
-See [references/deployment-workflows.md](references/deployment-workflows.md) for full pipeline scripts.
-
-## Edge Cases
-
-- **Large deployments**: Split into batches (limit: 10,000 files / 39 MB)
-- **Test timeout**: Increase wait time or run tests separately
-- **Namespace conflicts**: Handle managed package issues
-- **API version**: Ensure source/target compatibility
-
-## Cross-Skill Dependency Checklist
-
-**Before deploying, verify these prerequisites from other skills:**
-
-| Dependency | Check Command | Required For |
-|------------|---------------|--------------|
-| **TAF Package** | `sf package installed list --target-org alias` | TAF trigger pattern (sf-apex) |
-| **Custom Objects/Fields** | `sf sobject describe --sobject ObjectName --target-org alias` | Apex/Flow field references |
-| **Trigger_Action__mdt** | Check Setup → Custom Metadata Types | TAF trigger execution |
-| **Queues** | `sf data query --query "SELECT Id,Name FROM Group WHERE Type='Queue'"` | Flow queue assignments |
-| **Permission Sets** | `sf org list metadata --metadata-type PermissionSet` | FLS for custom fields |
-
-**Common Cross-Skill Issues:**
-
-| Error Message | Missing Dependency | Solution |
-|--------------|-------------------|----------|
-| `Invalid type: MetadataTriggerHandler` | TAF Package | Install apex-trigger-actions package |
-| `Field does not exist: Field__c` | Custom Field or FLS | Deploy field or create Permission Set |
-| `No such column 'Field__c'` | Field-Level Security | Assign Permission Set to running user |
-| `SObject type 'Object__c' not supported` | Custom Object | Deploy object via sf-metadata first |
-| `Queue 'QueueName' not found` | Queue Metadata | Deploy queue via sf-metadata first |
-
-### sf-ai-agentscript Integration (Agent DevOps)
-
-**Complete DevOps guide**: See `references/agent-deployment-guide.md` for comprehensive agent deployment documentation.
-
-#### Agent Metadata Types
-
-| Metadata Type | Description |
-|---------------|-------------|
-| `Bot` | Top-level chatbot definition |
-| `BotVersion` | Version configuration |
-| `GenAiPlannerBundle` | Reasoning engine (LLM config) |
-| `GenAiPlugin` | Topic definition |
-| `GenAiFunction` | Action definition |
-
-#### Agent Pseudo Metadata Type
-
-The `Agent` pseudo type syncs all agent components at once:
-
-```bash
-# Retrieve agent + all dependencies from org
-sf project retrieve start --metadata Agent:[AgentName] --target-org [alias] --json
-
-# Deploy agent metadata to org
-sf project deploy start --metadata Agent:[AgentName] --target-org [alias] --json
-```
-
-#### Agent Lifecycle Commands
-
-```bash
-# Activate agent (makes available to users)
-sf agent activate --api-name [AgentName] --target-org [alias]
-
-# Deactivate agent (REQUIRED before making changes)
-sf agent deactivate --api-name [AgentName] --target-org [alias]
-
-# ⚠️ Note: activate/deactivate do NOT support --json. Plain text output only.
-
-# Preview agent (simulated mode - safe testing) — interactive, no --json
-sf agent preview --api-name [AgentName] --target-org [alias]
-
-# Preview agent (live mode - real Apex/Flows) — interactive, no --json
-sf agent preview --api-name [AgentName] --use-live-actions --target-org [alias]
-
-# Validate Agent Script syntax
-sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias] --json
-```
-
-#### Full Agent Deployment Workflow
-
-```bash
-# 1. Deploy Apex classes (if any)
-sf project deploy start --metadata ApexClass --target-org [alias] --json
-
-# 2. Deploy Flows
-sf project deploy start --metadata Flow --target-org [alias] --json
-
-# 3. Validate Agent Script
-sf agent validate authoring-bundle --api-name [AgentName] --target-org [alias] --json
-
-# 4. Publish agent
-sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias] --json
-
-# 5. Preview (simulated mode) — interactive, no --json
-sf agent preview --api-name [AgentName] --target-org [alias]
-
-# 6. Activate
-sf agent activate --api-name [AgentName] --target-org [alias]
-```
-
-#### Modifying Existing Agents
-
-**⚠️ Deactivation Required**: You MUST deactivate an agent before modifying topics, actions, or system instructions.
-
-```bash
-# 1. Deactivate
-sf agent deactivate --api-name [AgentName] --target-org [alias]
-
-# 2. Make changes to Agent Script
-
-# 3. Re-publish
-sf agent publish authoring-bundle --api-name [AgentName] --target-org [alias] --json
-
-# 4. Re-activate
-sf agent activate --api-name [AgentName] --target-org [alias]
-```
-
-#### Sync Agent Between Orgs
-
-```bash
-# 1. Retrieve from source org
-sf project retrieve start --metadata Agent:[AgentName] --target-org source-org --json
-
-# 2. Deploy dependencies to target org first
-sf project deploy start --metadata ApexClass,Flow --target-org target-org --json
-
-# 3. Deploy agent metadata
-sf project deploy start --metadata Agent:[AgentName] --target-org target-org --json
-
-# 4. Publish agent in target org
-sf agent publish authoring-bundle --api-name [AgentName] --target-org target-org --json
-
-# 5. Activate in target org
-sf agent activate --api-name [AgentName] --target-org target-org
-```
-
-#### Agent-Specific CLI Reference
-
-| Command | Description |
-|---------|-------------|
-| `sf agent publish authoring-bundle --api-name X --json` | Publish authoring bundle |
-| `sf agent publish authoring-bundle --api-name X --skip-retrieve --json` | Publish without retrieving metadata (CI/CD) |
-| `sf agent activate --api-name X` | Activate published agent _(no `--json` support)_ |
-| `sf agent deactivate --api-name X` | Deactivate agent for changes _(no `--json` support)_ |
-| `sf agent preview --api-name X` | Preview agent behavior (interactive — no `--json`) |
-| `sf agent preview --authoring-bundle <path>` | Preview from local authoring bundle (interactive — no `--json`) |
-| `sf agent validate authoring-bundle --api-name X --json` | Validate Agent Script syntax |
-| `sf org open agent --api-name X` | Open in Agentforce Builder |
-| `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
-| `sf agent generate authoring-bundle --name <Name> --api-name X --target-org <alias> --json` | Generate authoring bundle scaffolding; `--name` required with `--json` (v2.126.4+) — use `--force-overwrite` to overwrite existing (v2.125.1+) |
-| `sf agent generate template --agent-file <path> --agent-version <ver>` | Generate BotTemplate for ISV packaging (AppExchange) |
-| `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |
-| `sf project deploy start --metadata Agent:X` | Deploy agent metadata |
+Full workflows: [references/orchestration.md](references/orchestration.md), [references/trigger-deployment-safety.md](references/trigger-deployment-safety.md)
 
 ---
 
-#### Package Management (2GP)
+## CI/CD Guidance
 
-| Command | Description |
-|---------|-------------|
-| `sf package convert --package <1GP-id>` | Convert 1GP to 2GP package (GA, v2.92.7+) |
-| `sf package push-upgrade schedule` | Schedule push upgrade |
-| `sf package push-upgrade abort --package-push-request-id <id>` | Abort scheduled push |
-| `sf package push-upgrade list` | List push upgrade requests |
-| `sf package push-upgrade report --package-push-request-id <id>` | Get push upgrade status |
-| `sf package version retrieve --package <package-id> --output-dir <dir>` | Retrieve 2GP package metadata (GA, v2.111.7+) |
-| `sf package version create --generate-pkg-zip --package <name>` | Generate installable .zip alongside version (v2.123.1+) |
+Default pipeline shape:
+1. authenticate
+2. validate repo / org state
+3. static analysis
+4. dry-run deploy
+5. tests + coverage gates
+6. deploy
+7. verify + notify
 
-## Deployment Script Template
+Static analysis now uses **Code Analyzer v5** (`sf code-analyzer`), not retired `sf scanner`.
 
-Reusable multi-step deployment script: **[references/deploy.sh](references/deploy.sh)**
+Deep reference: [references/deployment-workflows.md](references/deployment-workflows.md)
 
-Deploys in order: Objects → Permission Sets → Apex (with tests) → Flows (Draft)
+---
 
-## Generate Package Manifest
+## Agentforce Deployment Note
 
-**Auto-generate package.xml from source directory:**
+Use this skill to orchestrate **deployment/publish sequencing** around agents, but use the agent-specific skills for authoring decisions:
+- [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) for `.agent` authoring and validation
+- [sf-ai-agentforce](../sf-ai-agentforce/SKILL.md) for Agent Builder / PromptTemplate / metadata config
 
-```bash
-# Generate from source
-sf project generate manifest --source-dir force-app --name manifest/package.xml
+For full agent DevOps details, including `Agent:` pseudo metadata, publish/activate, and sync-between-orgs, see:
+- [references/agent-deployment-guide.md](references/agent-deployment-guide.md)
 
-# Generate for specific metadata types
-sf project generate manifest \
-    --metadata CustomObject:Account \
-    --metadata ApexClass \
-    --metadata Flow \
-    --name manifest/package.xml
+---
 
-# Deploy using manifest
-sf project deploy start --manifest manifest/package.xml --target-org alias
+## Cross-Skill Integration
+
+| Need | Delegate to | Reason |
+|---|---|---|
+| custom object / field creation | [sf-metadata](../sf-metadata/SKILL.md) | define metadata before deploy |
+| Apex compile / review / fixes | [sf-apex](../sf-apex/SKILL.md) | code authoring and repair |
+| Flow creation / repair | [sf-flow](../sf-flow/SKILL.md) | Flow authoring and activation guidance |
+| test data or seed records | [sf-data](../sf-data/SKILL.md) | realistic validation data |
+| Agent Script build/publish readiness | [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) | agent-specific correctness |
+
+---
+
+## Reference Map
+
+### Start here
+- [references/orchestration.md](references/orchestration.md)
+- [references/deployment-workflows.md](references/deployment-workflows.md)
+- [references/deployment-report-template.md](references/deployment-report-template.md)
+
+### Specialized deployment safety
+- [references/trigger-deployment-safety.md](references/trigger-deployment-safety.md)
+- [references/agent-deployment-guide.md](references/agent-deployment-guide.md)
+- [references/deploy.sh](references/deploy.sh)
+
+---
+
+## Completion Format
+
+```text
+Deployment goal: <validate / deploy / retrieve / pipeline>
+Target org: <alias>
+Scope: <source-dir / metadata / manifest>
+Result: <passed / failed / partial>
+Key findings: <errors, ordering, tests, skipped items>
+Next step: <safe follow-up action>
 ```
-
-**When to use manifest vs source-dir:**
-
-| Scenario | Use | Command |
-|----------|-----|---------|
-| Deploy everything | `--source-dir` | `sf project deploy start --source-dir force-app` |
-| Deploy specific components | `--manifest` | `sf project deploy start --manifest package.xml` |
-| CI/CD pipelines | `--manifest` | Controlled, reproducible deployments |
-| Development iteration | `--source-dir` | Quick local changes |
-
-## Notes
-
-- **CLI**: Uses only `sf` (v2) with modern flag syntax
-- **Auth**: Supports OAuth, JWT, Auth URL, web login
-- **API**: Uses Metadata API (not Tooling API)
-- **Async**: Use `--wait` to monitor; most deploys are async
-- **Limits**: Be aware of Salesforce governor limits
-
-## License
-
-MIT License. See [LICENSE](LICENSE) file.
-Copyright (c) 2024-2025 Jag Valaiyapathy
