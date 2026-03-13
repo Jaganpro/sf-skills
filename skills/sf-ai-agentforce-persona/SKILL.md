@@ -9,21 +9,14 @@ description: >
   DO NOT TRIGGER when: building agent metadata (use sf-ai-agentforce), testing
   agents (use sf-ai-agentforce-testing), or Agent Script DSL
   (use sf-ai-agentscript).
-version: 1.3
 license: MIT
+allowed-tools: Read Write AskUserQuestion Glob Grep
 metadata:
+  version: "1.3"
   author: "cascadi"
   scoring: "50 points across 5 categories"
   last_validated: "2026-03-10"
-tags: [salesforce, agentforce, persona, identity, register, tone, voice,
-  formality, warmth, personality-intensity, brevity, humor, chatting-style,
-  archetype, brand-input, agent-script-encoding, agent-personality]
-allowed-tools:
-  - Read
-  - Write
-  - AskUserQuestion
-  - Glob
-  - Grep
+  tags: "salesforce, agentforce, persona, identity, register, tone, voice, formality, warmth, personality-intensity, brevity, humor, chatting-style, archetype, brand-input, agent-script-encoding, agent-personality"
 ---
 
 # Agent Persona Design

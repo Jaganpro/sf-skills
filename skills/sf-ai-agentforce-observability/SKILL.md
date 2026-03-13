@@ -342,5 +342,3 @@ stdm_data/
 ## Dependencies
 
 **Python 3.10+**: `polars>=1.0`, `pyarrow>=15.0`, `pyjwt>=2.8`, `cryptography>=42.0`, `httpx>=0.27`, `rich>=13.0`, `click>=8.1`, `pydantic>=2.6`
-
-Install: `pip install -r requirements.txt`

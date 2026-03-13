@@ -308,15 +308,6 @@ See [Salesforce Governor Limits](https://developer.salesforce.com/docs/atlas.en-
 
 ---
 
-## Dependencies
-
-- **sf-metadata** (optional): Query object/field structure before operations
-  - Install: `npx skills add Jaganpro/sf-skills --skill sf-metadata`
-- **sf CLI v2** (required): All data operations use sf CLI
-  - Install: `npm install -g @salesforce/cli`
-
----
-
 ## Completion Format
 
 After completing data operations, provide:
@@ -355,8 +346,3 @@ After completing data operations, provide:
 - **Test Isolation**: Use savepoints for reversible test data
 - **Sensitive Data**: Never include real PII in test data
 
----
-
-## License
-
-MIT License - See LICENSE file for details.

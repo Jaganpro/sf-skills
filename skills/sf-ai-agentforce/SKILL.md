@@ -15,490 +15,167 @@ metadata:
   author: "Jag Valaiyapathy"
 ---
 
-<!-- TIER: 1 | ENTRY POINT -->
-<!-- This is the starting document — read this FIRST -->
-<!-- Progressive disclosure: SKILL.md → Detailed Docs (Tier 2–3) -->
-
 # sf-ai-agentforce: Standard Agentforce Platform Development
 
-Expert Agentforce developer specializing in the **Setup UI / Agentforce Builder** approach to agent development. Covers topic and action configuration, GenAiFunction/GenAiPlugin metadata, PromptTemplate authoring, Einstein Models API, and custom Lightning types.
+Use this skill for the **Setup UI / Agent Builder** path: declarative topics, Builder-managed actions, GenAiFunction / GenAiPlugin metadata, PromptTemplate integration, Models API usage from Apex, and custom Lightning types.
 
-> **Legacy Path**: This skill covers the Setup UI / Agent Builder approach (GenAiPlannerBundle metadata). For new agent development, use **sf-ai-agentscript** (Agent Script DSL / AiAuthoringBundle) — the recommended pro-code path.
+> For new code-first agent development, prefer [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md).
 
-## When to Use This Skill
+## When This Skill Owns the Task
 
-- Maintaining existing agents built via the Setup UI / Agent Builder
-- Orgs that haven't adopted Agent Script DSL
-- Working with GenAiFunction / GenAiPlugin metadata for UI-configured actions
-- Understanding the GenAiPlannerBundle metadata model
+Use `sf-ai-agentforce` when the user is:
+- maintaining existing Builder-based agents
+- working in Setup → Agentforce → Agents
+- creating or fixing `GenAiFunction`, `GenAiPlugin`, or `PromptTemplate` metadata
+- wiring Builder topics to Flow / Apex / Prompt Template actions
+- using Models API or LightningTypeBundle in the context of Builder-based agents
 
-For **new agent development**, prefer [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) which uses the Agent Script DSL and AiAuthoringBundle — the recommended pro-code path with deterministic control flow.
-
----
-
-## Overview
-
-Salesforce **Agentforce** enables organizations to build autonomous AI agents that handle customer interactions, automate tasks, and surface insights. This skill focuses on the **standard platform approach**:
-
-- **Agentforce Builder** (Setup UI) for visual agent configuration
-- **GenAiFunction** and **GenAiPlugin** metadata for registering actions
-- **PromptTemplate** metadata for reusable AI prompts
-- **Einstein Models API** (`aiplatform.ModelsAPI`) for native LLM access in Apex
-- **Custom Lightning Types** (`LightningTypeBundle`) for rich agent action UIs
-
-### Two Approaches to Agentforce
-
-| Approach | Skill | When to Use |
-|----------|-------|-------------|
-| **Setup UI / Agentforce Builder** | `sf-ai-agentforce` (this skill) | Declarative agent config, point-and-click topics/actions |
-| **Agent Script DSL** | `sf-ai-agentscript` | Code-first `.agent` files, FSM architecture, version-controlled agents |
-
-Both approaches produce agents that run on the same Agentforce runtime. Choose based on team preference and complexity requirements.
+Do **not** use it for:
+- `.agent` files or deterministic FSM design → [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md)
+- agent test suites and coverage loops → [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md)
+- persona / voice design → [sf-ai-agentforce-persona](../sf-ai-agentforce-persona/SKILL.md)
 
 ---
 
-## Core Concepts
+## Two Agentforce Paths
 
-### Topics
+| Path | Skill | Best fit |
+|---|---|---|
+| Setup UI / Agent Builder | `sf-ai-agentforce` | Declarative maintenance, existing Builder agents, metadata-driven action registration |
+| Agent Script DSL | `sf-ai-agentscript` | Code-first `.agent` authoring, deterministic routing, version-controlled agent logic |
 
-Topics are the primary organizational unit for an agent's capabilities. Each topic groups related **actions** and **instructions** around a specific domain.
-
-- **Description**: Tells the LLM planner when to route to this topic (must be specific and unambiguous)
-- **Scope**: Defines what the topic can and cannot do (helps the planner make routing decisions)
-- **Instructions**: Step-by-step guidance the agent follows when a topic is active
-- **Actions**: The operations (Flow, Apex, Prompt Template) the agent can invoke within this topic
-
-In the Agentforce Builder, topics are configured via **Setup → Agentforce → Agents → [Agent] → Topics**.
-
-### Actions
-
-Actions are the executable operations an agent can perform. Each action wraps an underlying invocation target:
-
-| Target Type | Description | Registered Via |
-|-------------|-------------|----------------|
-| **Flow** | Invokes an Autolaunched Flow | GenAiFunction with `invocationTargetType: flow` |
-| **Apex** | Invokes an `@InvocableMethod` | GenAiFunction with `invocationTargetType: apex` |
-| **Prompt Template** | Invokes a PromptTemplate | GenAiFunction with `invocationTargetType: prompt` |
-| **Standard Action** | Built-in platform actions (send email, create record) | Pre-registered by Salesforce |
-
-### Instructions
-
-Instructions guide the agent's behavior within a topic. They are natural language directives that tell the LLM:
-- What steps to follow
-- When to invoke specific actions
-- How to handle edge cases and errors
-- When to escalate to a human agent
+If the user is starting from scratch and wants strong control over flow/state, route to Agent Script.
 
 ---
 
-## Agent Builder Workflow
+## Builder Workflow Summary
 
-### Step-by-Step: Creating an Agent via Setup UI
+1. Confirm this is a **Builder / Setup UI** project
+2. Pick Service Agent vs Employee Agent
+3. Define topics with strong descriptions, scope, and instructions
+4. Prepare supporting actions (Flow, Apex, PromptTemplate)
+5. Configure inputs / outputs carefully
+6. Validate dependencies
+7. Publish, then activate
 
-**1. Navigate to Agentforce Builder**
-```
-Setup → Agentforce → Agents → New Agent
-```
-
-**2. Choose Agent Type**
-- **Service Agent** — Customer-facing support and service
-- **Employee Agent** — Internal productivity and automation
-
-**3. Add Topics**
-For each capability area:
-- Provide a clear **Name** and **Description**
-- Write **Instructions** that guide the agent's reasoning
-- Add a **Scope** statement (what's in/out of bounds)
-
-**4. Configure Actions per Topic**
-Assign actions to each topic. Actions can target:
-- Autolaunched Flows (most common)
-- Apex InvocableMethods (via GenAiFunction)
-- Prompt Templates (for LLM-generated content)
-- Standard platform actions
-
-**5. Set Action Inputs & Outputs**
-For each action:
-- Define **inputs** the agent collects from the user (slot filling)
-- Define **outputs** the agent uses in its response
-- Mark which outputs are **displayable** to the user
-
-**6. Configure Agent-Level Settings**
-- **System Instructions**: Global persona and behavior guidelines
-- **Default Agent User**: The running user context for the agent
-- **Welcome Message**: Initial greeting
-- **Error Message**: Fallback when something goes wrong
-
-**7. Preview & Test**
-```bash
-# Preview in Agentforce Builder (uses standard org auth)
-sf agent preview --api-name MyAgent --target-org MyOrg
-```
-
-**8. Publish**
-```bash
-sf agent publish authoring-bundle --api-name MyAgent --target-org MyOrg
-
-# Publish (skip metadata retrieve for CI/CD pipelines, v2.122.6+)
-sf agent publish authoring-bundle --api-name MyAgent --skip-retrieve --target-org MyOrg
-```
-
-### CLI Agent Lifecycle
-
-Manage agent state via CLI (requires agent to be published first):
-
-| Command | Purpose |
-|---------|---------|
-| `sf agent activate --api-name X --target-org Y` | Activate a published agent _(no `--json` support)_ |
-| `sf agent deactivate --api-name X --target-org Y` | Deactivate an active agent _(no `--json` support)_ |
-
-> **Note**: `sf agent create --spec <file>` exists but is NOT recommended — agents created this way don't use Agent Script and are less flexible. Use the authoring-bundle workflow instead.
-
-> **Publishing does NOT activate.** After `sf agent publish`, the new BotVersion
-> is Inactive. You MUST run `sf agent activate --api-name X -o ORG` separately.
-
-Full lifecycle: Validate → Deploy → Publish → Activate → (Deactivate → Re-publish → Re-activate)
-
-Cross-references: [sf-deploy](../sf-deploy/SKILL.md) for deployment orchestration, [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) for Agent Script development.
-
-### Agent Spec Generation
-
-Generate an agent spec YAML with `sf agent generate agent-spec`. Key flags:
-- `--type customer|internal` — Agent type
-- `--role`, `--company-name`, `--company-description` — Core identity
-- `--tone formal|casual|neutral` — Conversational style
-- `--full-interview` — Interactive prompt for all properties
-- `--spec <existing.yaml>` — Iterative refinement of an existing spec
-
-> **Full flag reference**: See [references/cli-commands.md](references/cli-commands.md) for the complete `generate agent-spec` workflow with all 15+ flags.
+Expanded workflow: [references/builder-workflow.md](references/builder-workflow.md)
 
 ---
 
-## GenAiFunction & GenAiPlugin Metadata
+## Key Platform Rules
+
+### Topic quality matters
+Topic descriptions are routing instructions for the planner. They must be:
+- specific
+- scenario-based
+- non-overlapping with sibling topics
+
+### Actions are wrappers around real targets
+| Target type | Typical use | Registered via |
+|---|---|---|
+| Flow | safest default for Builder actions | `GenAiFunction` |
+| Apex | complex business logic via `@InvocableMethod` | `GenAiFunction` |
+| Prompt Template | generated summaries / drafts / recommendations | `GenAiFunction` |
+
+### Supporting metadata deploys first
+Before publishing the agent itself, deploy the supporting stack:
+1. metadata / fields if needed
+2. Apex if needed
+3. Flows if needed
+4. PromptTemplate / GenAiFunction / GenAiPlugin
+5. then publish the agent
+
+### Publish does not activate
+After publish, run `sf agent activate` separately.
+
+---
+
+## Metadata Guidance
 
 ### GenAiFunction
-
-A `GenAiFunction` registers a single action that an Agentforce agent can invoke. It wraps an underlying Flow, Apex method, or Prompt Template.
-
-**Metadata XML Structure:**
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Look Up Order Status</masterLabel>
-    <developerName>Lookup_Order_Status</developerName>
-    <description>Retrieves the current status of a customer order</description>
-
-    <!-- Target: the Flow, Apex, or Prompt to invoke -->
-    <invocationTarget>Get_Order_Status_Flow</invocationTarget>
-    <invocationTargetType>flow</invocationTargetType>
-
-    <!-- Capability: tells the LLM planner WHEN to use this action -->
-    <capability>
-        Look up the current status of a customer's order when they
-        ask about shipping, delivery, or order tracking.
-    </capability>
-
-    <!-- Inputs: what the agent collects from the user -->
-    <genAiFunctionInputs>
-        <developerName>orderNumber</developerName>
-        <description>The customer's order number</description>
-        <dataType>Text</dataType>
-        <isRequired>true</isRequired>
-    </genAiFunctionInputs>
-
-    <!-- Outputs: what the action returns -->
-    <genAiFunctionOutputs>
-        <developerName>orderStatus</developerName>
-        <description>Current status of the order</description>
-        <dataType>Text</dataType>
-        <isRequired>true</isRequired>
-    </genAiFunctionOutputs>
-</GenAiFunction>
-```
-
-**File Location:**
-```
-force-app/main/default/genAiFunctions/Lookup_Order_Status.genAiFunction-meta.xml
-```
-
-### Invocation Target Types
-
-| `invocationTargetType` | Target Value | Notes |
-|------------------------|--------------|-------|
-| `flow` | Flow API name | Flow must be Active |
-| `apex` | Apex class name | Class must have `@InvocableMethod` |
-| `prompt` | PromptTemplate API name | Template must be Active |
+Use when registering a single callable action. Validate:
+- target exists
+- target is active / deployable
+- input names match the target contract
+- output names match the target contract
+- capability text clearly says when the action should be used
 
 ### GenAiPlugin
+Use when grouping related functions into one logical package.
 
-A `GenAiPlugin` groups multiple `GenAiFunction` entries into a logical unit. This is useful for organizing related actions.
+### PromptTemplate
+Use for generated content, not deterministic business rules.
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Order Management Plugin</masterLabel>
-    <developerName>Order_Management_Plugin</developerName>
-    <description>Actions for managing customer orders</description>
+### Models API
+Use when the solution belongs in Apex-driven AI orchestration rather than Builder-only actions.
 
-    <genAiFunctions>
-        <functionName>Lookup_Order_Status</functionName>
-    </genAiFunctions>
-    <genAiFunctions>
-        <functionName>Cancel_Order</functionName>
-    </genAiFunctions>
-    <genAiFunctions>
-        <functionName>Return_Order</functionName>
-    </genAiFunctions>
-</GenAiPlugin>
-```
+### Custom Lightning Types
+Use when the action needs richer structured input or output presentation.
 
-**File Location:**
-```
-force-app/main/default/genAiPlugins/Order_Management_Plugin.genAiPlugin-meta.xml
-```
-
-### Deployment: Two-Command Pattern
-
-The production deployment pattern uses two commands — one for supporting metadata, one for the agent itself:
-
-```bash
-# Step 1: Deploy ALL supporting metadata at once
-sf project deploy start --source-dir force-app -o ORG --json
-
-# Step 2: Publish the agent (validates + publishes + retrieves + deploys agent metadata)
-sf agent publish authoring-bundle --api-name Agent_Name -o ORG --json
-```
-
-| Command | Deploys | Does NOT Deploy |
-|---------|---------|-----------------|
-| `sf project deploy start --source-dir force-app` | Flows, Apex, Objects, GenAiFunction, GenAiPlugin | Agent action references, BotVersion |
-| `sf agent publish authoring-bundle --api-name X` | Validates + Publishes + Retrieves + Deploys agent metadata | Supporting metadata (Flows, Apex) |
-
-> **WARNING**: `sf project deploy start` deploys supporting metadata but does **NOT** update agent action references or BotVersion. You must use `sf agent publish` to update the agent itself.
-
-> **Note**: For new agents using Agent Script, `sf agent publish authoring-bundle` handles the entire agent lifecycle — GenAiFunction/GenAiPlugin XML is NOT needed when using Agent Script DSL.
-
-> **Bundle Metadata Warning**: The `bundle-meta.xml` file must contain ONLY `<bundleType>AGENT</bundleType>`. Adding extra fields (description, label, etc.) causes "Required fields missing" deployment errors.
+Expanded reference: [references/metadata-reference.md](references/metadata-reference.md)
 
 ---
 
-## PromptTemplate Configuration
+## Recommended Orchestration Order
 
-`PromptTemplate` is the metadata type for creating reusable AI prompts. Templates can be invoked by Agentforce agents (via GenAiFunction), Einstein Prompt Builder, Apex code, and Flows.
-
-**Template Types:** `flexPrompt` | `salesGeneration` | `fieldCompletion` | `recordSummary`
-
-**Variable Types:** `freeText` (runtime input) | `recordField` (SObject field binding) | `relatedList` (child records) | `resource` (Static Resource)
-
-**Key Integration Points:**
-- **Agent Action**: Register a GenAiFunction with `invocationTargetType: prompt`
-- **Apex**: `ConnectApi.EinsteinLlm.generateMessagesForPromptTemplate()`
-- **Flow**: Use the "Prompt Template" action element
-
-> **Full reference**: See [references/prompt-templates.md](references/prompt-templates.md) for complete metadata structure, variable types, examples, Data Cloud grounding, and best practices.
-
----
-
-## Models API
-
-The **Einstein Models API** (`aiplatform.ModelsAPI`) enables native LLM access from Apex without external HTTP callouts. Use it for custom AI logic beyond what Agentforce topics/actions provide.
-
-**Available Models:**
-- `sfdc_ai__DefaultOpenAIGPT4OmniMini` — Cost-effective general tasks
-- `sfdc_ai__DefaultOpenAIGPT4Omni` — Complex reasoning
-- `sfdc_ai__DefaultAnthropic` — Nuanced understanding
-- `sfdc_ai__DefaultGoogleGemini` — Multimodal tasks
-
-**Key Patterns:**
-- **Queueable** for single-record async AI processing
-- **Batch** for bulk processing (scope size 10–20)
-- **Platform Events** for notifying completion to LWC/Flow
-
-**Prerequisites:** Einstein Generative AI enabled, API v61.0+, Einstein Generative AI User permission set assigned.
-
-> **Full reference**: See [references/models-api.md](references/models-api.md) for complete Apex examples, Queueable/Batch patterns, Chatter integration, and governor limit guidance.
-
----
-
-## Custom Lightning Types
-
-**Custom Lightning Types** (`LightningTypeBundle`) define structured data types with custom UI components for agent action inputs and outputs. When an agent action needs a rich input form or a formatted output display, create a custom type with:
-
-- **schema.json** — JSON Schema data structure definition
-- **editor.json** — Custom input collection UI (lightning components)
-- **renderer.json** — Custom output display UI (lightning components)
-
-**Requirements:** API v64.0+ (Fall '25), Enhanced Chat V2 enabled in Service Cloud.
-
-**File Structure:**
-```
-force-app/main/default/lightningTypeBundles/OrderDetails/
-├── schema.json
-├── editor.json
-├── renderer.json
-└── OrderDetails.lightningTypeBundle-meta.xml
-```
-
-> **Full reference**: See [references/custom-lightning-types.md](references/custom-lightning-types.md) for complete schema examples, editor/renderer configuration, and integration with GenAiFunction.
-
----
-
-## Orchestration Order
-
-**Prerequisite skills must run in this order:**
-
-```
+```text
 sf-metadata → sf-apex → sf-flow → sf-ai-agentforce → sf-deploy
 ```
 
-**Why this order:**
-
-1. **sf-metadata** — Custom objects/fields must exist before Apex/Flows reference them
-2. **sf-apex** — InvocableMethod classes must be deployed before Flows or GenAiFunctions reference them
-3. **sf-flow** — Flows must be active before GenAiFunctions can target them
-4. **sf-ai-agentforce** (this skill) — GenAiFunction/GenAiPlugin metadata and agent configuration
-5. **sf-deploy** — Final deployment and agent publishing
-
-**MANDATORY Delegations:**
-
-| Requirement | Delegate To | Why |
-|-------------|-------------|-----|
-| Flow creation | Use the **sf-flow** skill | 110-point validation, proper XML |
-| Apex creation | Use the **sf-apex** skill | InvocableMethod generation, 150-point scoring |
-| Deployment | Use the **sf-deploy** skill | Centralized deployment orchestration |
+### Required delegations
+| Requirement | Delegate to | Why |
+|---|---|---|
+| Create / fix Flows | [sf-flow](../sf-flow/SKILL.md) | Action target creation and Flow validation |
+| Create / fix Apex actions | [sf-apex](../sf-apex/SKILL.md) | `@InvocableMethod` and Apex correctness |
+| Deploy / publish | [sf-deploy](../sf-deploy/SKILL.md) | Deployment orchestration |
+| Test the agent | [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md) | Formal test execution and assertions |
 
 ---
 
-## Cross-Skill Integration
+## High-Signal Failure Patterns
 
-| Skill | Purpose | When to Use |
-|-------|---------|-------------|
-| **sf-ai-agentscript** | Agent Script DSL (code-first) | Writing `.agent` files with FSM architecture |
-| **sf-ai-agentforce-testing** | Agent testing | Test execution, coverage analysis, agentic fix loops |
-| **sf-flow** | Flow actions | Creating Autolaunched Flows for agent actions |
-| **sf-apex** | Apex actions | Writing InvocableMethod classes for agent actions |
-| **sf-deploy** | Deployment | Publishing agents, deploying metadata |
-| **sf-metadata** | Object/field setup | Creating SObjects and fields that actions reference |
-| **sf-integration** | External APIs | Named Credentials, External Services for agent callouts |
-
-### Integration Patterns
-
-| Direction | Pattern | Notes |
-|-----------|---------|-------|
-| Agent → Flow | GenAiFunction targets Flow | Most common action pattern |
-| Agent → Apex | GenAiFunction targets InvocableMethod | For complex business logic |
-| Agent → Prompt | GenAiFunction targets PromptTemplate | For AI-generated content |
-| Agent → Custom Type | GenAiFunction uses LightningTypeBundle | Rich input/output UIs |
-| Agent → External API | Flow/Apex wraps Named Credential callout | Via sf-integration skill |
+| Symptom | Likely cause | Read next |
+|---|---|---|
+| Action not available in Builder | target metadata missing or not deployed | [references/metadata-reference.md](references/metadata-reference.md) |
+| Prompt output is poor | PromptTemplate shape / bindings are weak | [references/prompt-templates.md](references/prompt-templates.md) |
+| Apex AI logic times out | Models API work placed in the wrong context | [references/models-api.md](references/models-api.md) |
+| Rich input/output UI not rendering | Lightning type config or prerequisites are incomplete | [references/custom-lightning-types.md](references/custom-lightning-types.md) |
+| Agent publishes but is not usable | forgot explicit activation | [references/cli-commands.md](references/cli-commands.md) |
 
 ---
 
-## Key Insights
+## Reference Map
 
-| Insight | Issue | Fix |
-|---------|-------|-----|
-| **GenAiFunction requires active target** | Deploying GenAiFunction before its Flow/Apex target | Deploy targets first, then GenAiFunction |
-| **PromptTemplate field bindings** | `{!variableName}` must match variable `developerName` exactly | Check spelling and case sensitivity |
-| **Custom Lightning Types require v64.0+** | Bundle won't deploy on older API versions | Set `<version>64.0</version>` or higher in package.xml |
-| **GenAiPlugin groups functions** | Individual GenAiFunctions must exist before the plugin | Deploy GenAiFunctions before GenAiPlugin |
-| **Capability text is critical** | Vague capability descriptions cause poor routing | Write specific, scenario-based capability text |
-| **Enhanced Chat V2 for custom types** | Custom type UI won't render without it | Enable Enhanced Chat V2 in Setup → Chat Settings |
-| **Models API needs async context** | Synchronous calls in triggers will timeout | Use Queueable with `Database.AllowsCallouts` |
-| **Input/output names must match** | GenAiFunction input names must match Flow variable API names | Verify exact name match (case-sensitive) |
-| **Validation before publish** | Skipping validation causes late-stage failures | Always run `sf agent validate authoring-bundle` first |
-| **Data type mapping** | GenAiFunction `dataType` must align with target parameter types | Use `Text`, `Number`, `Boolean`, `Date` as appropriate |
+### Start here
+- [references/builder-workflow.md](references/builder-workflow.md)
+- [references/metadata-reference.md](references/metadata-reference.md)
+- [references/cli-commands.md](references/cli-commands.md)
 
-> **GenAiPluginDefinition Name Collision**: If a topic and its parent agent share the same API name, the generated GenAiPluginDefinition metadata collides, causing publish failures. Ensure unique API names across all agent components.
+### Deep technical docs
+- [references/prompt-templates.md](references/prompt-templates.md)
+- [references/models-api.md](references/models-api.md)
+- [references/custom-lightning-types.md](references/custom-lightning-types.md)
 
----
+### Rubric
+- [references/scoring-rubric.md](references/scoring-rubric.md)
 
-## Scoring System (100 Points)
-
-### Categories
-
-| Category | Points | Key Criteria |
-|----------|--------|--------------|
-| **Agent Configuration** | 20 | System instructions, welcome/error messages, agent user set |
-| **Topic & Action Design** | 25 | Clear descriptions, proper scope, logical routing, capability text |
-| **Metadata Quality** | 20 | Valid GenAiFunction/GenAiPlugin XML, correct target types, input/output definitions |
-| **Integration Patterns** | 15 | Proper orchestration order, dependency management, cross-skill delegation |
-| **PromptTemplate Usage** | 10 | Variable bindings correct, template types appropriate, prompts well-structured |
-| **Deployment Readiness** | 10 | Validation passes, dependencies deployed first, package.xml correct |
-
-### Thresholds
-
-| Score | Rating | Action |
-|-------|--------|--------|
-| 90–100 | Excellent | Deploy with confidence |
-| 80–89 | Very Good | Minor improvements suggested |
-| 70–79 | Good | Review before deploy |
-| 60–69 | Needs Work | Address issues before deploy |
-| < 60 | Critical | **Block deployment** |
-
-### Validation Report Format
-
-```
-Score: 87/100 ⭐⭐⭐⭐ Very Good
-├─ Agent Configuration:     18/20 (90%)
-├─ Topic & Action Design:   22/25 (88%)
-├─ Metadata Quality:        17/20 (85%)
-├─ Integration Patterns:    13/15 (87%)
-├─ PromptTemplate Usage:     9/10 (90%)
-└─ Deployment Readiness:     8/10 (80%)
-
-Issues:
-⚠️ [Metadata] GenAiFunction "Cancel_Order" missing output definition
-⚠️ [Integration] Flow "Get_Order_Status" not yet deployed to org
-✓ All PromptTemplate variable bindings valid
-✓ GenAiPlugin references resolve correctly
-```
+### Cross-skill reads
+- [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md)
+- [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md)
+- [sf-flow](../sf-flow/SKILL.md)
+- [sf-apex](../sf-apex/SKILL.md)
+- [sf-deploy](../sf-deploy/SKILL.md)
 
 ---
 
-## Document Map
+## Score Guide
 
-**Tier 2: Detailed References**
+| Score | Meaning |
+|---|---|
+| 90+ | Ready to deploy |
+| 80–89 | Strong, minor cleanup only |
+| 70–79 | Review before deploy |
+| 60–69 | Needs work |
+| < 60 | Block deployment |
 
-| Document | Description | Read When |
-|----------|-------------|-----------|
-| [references/cli-commands.md](references/cli-commands.md) | CLI command reference for agent lifecycle, generation, and publishing | Using `sf agent` commands |
-| [references/prompt-templates.md](references/prompt-templates.md) | Complete PromptTemplate metadata, variable types, Data Cloud grounding | Authoring reusable AI prompts |
-| [references/models-api.md](references/models-api.md) | `aiplatform.ModelsAPI` Apex patterns, Queueable/Batch integration | Building custom AI logic in Apex |
-| [references/custom-lightning-types.md](references/custom-lightning-types.md) | LightningTypeBundle schema/editor/renderer configuration | Creating rich action input/output UIs |
-
-**Cross-Skill References**
-
-| Need | Skill |
-|------|-------|
-| Agent Script DSL development | `sf-ai-agentscript` |
-| Agent testing & coverage | `sf-ai-agentforce-testing` |
-| Flow creation for actions | `sf-flow` |
-| Apex InvocableMethod classes | `sf-apex` |
-| Metadata deployment | `sf-deploy` |
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| **2.0.0** | 2026-02-07 | Complete rewrite. Skill refocused on standard Agentforce platform (Setup UI, GenAiFunction/GenAiPlugin, PromptTemplate, Models API, Custom Lightning Types). Agent Script DSL content moved to `sf-ai-agentscript`. |
-
----
-
-## Sources & Acknowledgments
-
-| Source | Contribution |
-|--------|-------------|
-| [Salesforce Agentforce Documentation](https://developer.salesforce.com/docs/einstein/genai/overview) | Official platform reference |
-| [Salesforce Diaries](https://salesforcediaries.com) | Models API patterns, Custom Lightning Types guide |
-| [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) | Official Salesforce examples |
-| Jag Valaiyapathy | Skill authoring, scoring system, orchestration design |
-
----
-
-## License
-
-MIT License. See LICENSE file in sf-ai-agentforce folder.
-Copyright (c) 2024–2026 Jag Valaiyapathy
+Full rubric: [references/scoring-rubric.md](references/scoring-rubric.md)

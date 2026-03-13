@@ -444,12 +444,6 @@ For LSP validation to work, users must have:
 
 ---
 
-## Dependencies
-
-**All optional**: sf-deploy, sf-metadata, sf-data. Install with `npx skills add Jaganpro/sf-skills --skill [skill-name]`
-
----
-
 ## Notes
 
 - **API Version**: 62.0 required
@@ -457,9 +451,3 @@ For LSP validation to work, users must have:
 - **Scoring**: Block deployment if score < 67
 - **LSP**: Optional but recommended for real-time syntax validation
 
----
-
-## License
-
-MIT License.
-Copyright (c) 2024-2025 Jag Valaiyapathy
