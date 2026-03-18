@@ -24,6 +24,11 @@ This skill is intentionally simple:
 
 Its job is to provide a **reliable online retrieval playbook** for Salesforce docs that are hard to fetch, especially `help.salesforce.com` and JS-heavy `developer.salesforce.com` pages.
 
+An optional helper script is available at:
+- `skills/sf-docs/scripts/extract_help_salesforce.py`
+
+Use it when you need browser-rendered extraction for a difficult Help article.
+
 ## Core Goal
 
 Find the best official Salesforce HTML page online and extract enough real content to answer confidently.

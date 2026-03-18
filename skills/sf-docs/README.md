@@ -17,7 +17,7 @@ This skill no longer includes:
 - local corpus workflows
 - indexing
 - benchmark workflows
-- helper CLI scripts
+- any required helper CLI dependency
 - PDF fallback guidance
 
 ## Use it for
@@ -27,6 +27,18 @@ This skill no longer includes:
 - Apex / API / LWC / Agentforce documentation grounding
 - deciding when to follow child links from broad official guide pages
 - rejecting weak results such as shells, landing pages, and third-party summaries
+
+## Optional utility
+
+A minimal helper script is available for hard `help.salesforce.com` pages:
+
+```bash
+python3 skills/sf-docs/scripts/extract_help_salesforce.py \
+  --url "https://help.salesforce.com/s/articleView?id=service.miaw_security.htm&type=5" \
+  --pretty
+```
+
+It uses Playwright, browser rendering, and deep shadow DOM traversal to extract the article body from Help pages.
 
 ## Key idea
 
