@@ -112,7 +112,6 @@ def ensure_layout(corpus_root: Path) -> Dict[str, Path]:
         "raw_pdf": corpus_root / "raw" / "pdf",
         "raw_html": corpus_root / "raw" / "html",
         "normalized": corpus_root / "normalized" / "md",
-        "qmd": corpus_root / "qmd",
         "logs": corpus_root / "logs",
     }
     for path in dirs.values():
@@ -337,7 +336,8 @@ def sync_guide(guide: Dict[str, Any], paths: Dict[str, Path], download_pdf: bool
                dry_run: bool, browser_scrape: bool) -> Dict[str, Any]:
     slug = guide.get("slug") or sanitize_slug(guide.get("title", "guide"))
     guide.setdefault("slug", slug)
-    guide.setdefault("status", {"discovered": True, "fetched": False, "normalized": False, "indexed": False})
+    guide.setdefault("status", {"discovered": True, "fetched": False, "normalized": False, "cached": False})
+    guide["status"].setdefault("cached", False)
     notes = list(guide.get("notes", []))
 
     pdf_path = paths["raw_pdf"] / f"{slug}.pdf"
@@ -414,6 +414,7 @@ def sync_guide(guide: Dict[str, Any], paths: Dict[str, Path], download_pdf: bool
                 notes.append(reason)
             if normalized:
                 guide["status"]["normalized"] = True
+                guide["status"]["cached"] = True
 
     guide["raw_pdf_path"] = str(pdf_path)
     guide["raw_html_path"] = str(html_path)

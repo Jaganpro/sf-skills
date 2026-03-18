@@ -1,13 +1,13 @@
 # Salesforce Scraper Techniques
 
-`sf-docs` should borrow the **techniques** from Salesforce-specific scrapers, but keep storage and indexing independent so the local corpus can be indexed with **qmd** instead of SQLite.
+`sf-docs` should borrow the **techniques** from Salesforce-specific scrapers, but keep storage and retrieval independent from any external indexing layer.
 
 ## Principles
 
 1. **Do not couple scraping to storage**
    - scrape into local raw artifacts
    - normalize into markdown
-   - index with qmd
+   - reuse those artifacts directly during local-first retrieval
 
 2. **Prefer robust browser rendering for JS-heavy docs**
    - render with a headless browser
@@ -75,8 +75,9 @@ If a stable help-article API path is later identified, it can be added as a targ
 This keeps the architecture aligned with the goals of the project:
 
 - no SQLite dependency
-- qmd remains the retrieval/index layer
-- scraping is just an acquisition/normalization layer
+- no external indexing dependency
+- scraping is an acquisition/normalization layer
+- local artifacts can be reused directly during retrieval
 - heuristics are reusable no matter which browser engine is used
 
 ## Browser Engine Choice

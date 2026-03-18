@@ -7,58 +7,51 @@ Use the unified `cli.py` wrapper to operate `sf-docs` end-to-end.
 ### 1. Discover / enrich the manifest
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py discover \
-  --output ~/.sf-docs/manifest/guides.json \
-  --pretty
+python3 skills/sf-docs/scripts/cli.py discover           --output ~/.sf-docs/manifest/guides.json           --pretty
 ```
 
 ### 2. Sync a local corpus
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py sync \
-  --manifest ~/.sf-docs/manifest/guides.json \
-  --download-pdf \
-  --normalize
+python3 skills/sf-docs/scripts/cli.py sync           --manifest ~/.sf-docs/manifest/guides.json           --download-pdf           --normalize
 ```
 
-### 3. Bootstrap qmd
-
-```bash
-python3 skills/sf-docs/scripts/cli.py bootstrap-qmd --embed
-```
-
-### 4. Check runtime status
+### 3. Check runtime status
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py status
 ```
 
-### 5. Diagnose query-time routing
+### 4. Diagnose query-time routing
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py diagnose \
-  --query "Find official Salesforce REST API authentication docs"
+python3 skills/sf-docs/scripts/cli.py diagnose           --query "Find official Salesforce REST API authentication docs"
+```
+
+### 5. Run local-first retrieval
+
+```bash
+python3 skills/sf-docs/scripts/cli.py retrieve           --query "Find official Salesforce REST API authentication docs"           --mode local_first
 ```
 
 ### 6. Score benchmark results
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py score-benchmark \
-  --results skills/sf-docs/assets/retrieval-benchmark.results-template.json
+python3 skills/sf-docs/scripts/cli.py score-benchmark           --results skills/sf-docs/assets/retrieval-benchmark.results-template.json           --benchmark skills/sf-docs/assets/retrieval-benchmark.json
 ```
 
 ## Recommended Operator Sequence
 
 1. `discover`
 2. `sync`
-3. `bootstrap-qmd`
-4. `status`
-5. `diagnose`
+3. `status`
+4. `diagnose`
+5. `retrieve`
 6. `score-benchmark`
 
 ## Notes
 
 - `discover` can write directly into `~/.sf-docs/manifest/guides.json`
 - `sync` is targeted by default and accepts repeated `--slug` filters
-- `bootstrap-qmd` requires qmd to be installed on `PATH`
-- `diagnose` helps explain whether a query should use qmd-first or no-qmd fallback behavior
+- `diagnose` explains whether a query should use local-first or Salesforce-aware retrieval
+- `retrieve --mode salesforce_aware --live-scrape` is useful for JS-heavy pages when no local corpus is present

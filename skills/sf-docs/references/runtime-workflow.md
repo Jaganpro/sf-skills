@@ -6,16 +6,17 @@ This document defines the first-version runtime behavior for `sf-docs`.
 
 Use this sequence in order:
 
-1. **Detect qmd**
-   - check whether `qmd` is available on `PATH`
-   - check whether the local Salesforce docs corpus exists and is populated
+1. **Detect local corpus readiness**
+   - check whether `~/.sf-docs/normalized/md/` exists
+   - check whether the local corpus contains usable markdown artifacts
 
-2. **qmd lookup if available**
-   - search the local normalized corpus first
-   - prefer exact API names, CLI commands, error strings, and quoted terms for lexical matching
+2. **Inspect local artifacts when available**
+   - rank likely guides from the manifest
+   - check normalized markdown, scrape payloads, and PDFs in that order
+   - prefer exact API names, CLI commands, error strings, and quoted terms
 
-3. **Evaluate hit quality**
-   - if results are strong, answer from local docs
+3. **Evaluate evidence quality**
+   - if results are strong, answer from local artifacts
    - if results are weak, incomplete, or unrelated, fall back
 
 4. **Salesforce-aware fallback retrieval**
@@ -27,24 +28,24 @@ Use this sequence in order:
 
 5. **Answer with source grounding**
    - cite the exact official source URL
-   - identify whether the source came from local qmd, HTML retrieval, or PDF fallback
-   - call out uncertainty when the retrieval was partial or indirect
+   - identify whether the source came from local markdown, local scrape payload, HTML retrieval, or PDF fallback
+   - call out uncertainty when retrieval was partial or indirect
 
 ## Weak Result Rules
 
 Fall back when:
 
-- no qmd results are returned
+- no relevant local artifacts are returned
 - returned guides are clearly unrelated
 - the exact requested concept/identifier does not appear
 - snippets are too fragmentary to support a reliable answer
 - the query is release-sensitive and the local corpus seems stale
 
-## No-qmd Special Instructions
+## Salesforce-Aware Special Instructions
 
-When qmd is not installed or not usable:
+When no useful local corpus exists:
 
-- do **not** rely on naive generic `web_fetch` expectations for Salesforce docs
+- do **not** rely on naive generic fetch expectations for Salesforce docs
 - identify the likely official guide family first
 - prefer official URLs over blog summaries
 - try `help.salesforce.com` article views carefully because shell content is common
@@ -58,25 +59,25 @@ During normal query-time retrieval:
 - do **not** launch a broad sync automatically
 - target likely guide roots, exact official pages, and candidate PDFs first
 
-Broad crawling belongs in explicit sync/index workflows, not in routine question answering.
+Broad crawling belongs in explicit sync workflows, not in routine question answering.
 
-## Separate Sync / Index Workflow
+## Separate Sync Workflow
 
-For qmd-backed setups, keep query-time retrieval separate from corpus maintenance.
+Keep query-time retrieval separate from corpus maintenance.
 
 Recommended operator workflow:
 
 1. `discover` — build/update the guide manifest
-2. `fetch` — retrieve targeted HTML/PDF sources
+2. `sync` — fetch targeted HTML/PDF sources
 3. `normalize` — convert sources into markdown with provenance
-4. `index` — add/update qmd collection and embeddings
-5. `refresh` — re-run discovery/fetch for changed or missing guides
+4. `refresh` — re-run sync for changed or missing guides
 
 ## Persistence Policy
 
-Useful fetched assets may be stored locally for future indexing:
+Useful fetched assets may be stored locally for future retrieval:
 
 - official PDFs in `~/.sf-docs/raw/pdf/`
+- browser scrape payloads and raw HTML in `~/.sf-docs/raw/html/`
 - normalized markdown in `~/.sf-docs/normalized/md/`
 - manifest/status files in `~/.sf-docs/manifest/`
 
@@ -100,4 +101,4 @@ Keep Salesforce documentation artifacts local-only:
 - downloaded PDFs
 - scraped HTML captures
 - normalized markdown corpus
-- qmd indexes and embeddings
+- browser scrape payloads

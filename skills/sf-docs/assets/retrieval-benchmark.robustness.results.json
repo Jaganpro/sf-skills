@@ -1,35 +1,16 @@
 {
-  "version": 2,
+  "version": 3,
   "benchmark": "retrieval-benchmark.robustness.json",
   "generated_at": "2026-03-14T00:00:00Z",
   "modes": {
-    "qmd_first": {
-      "description": "qmd-first local retrieval with Salesforce-aware fallback on weak/missing results"
-    },
-    "no_qmd": {
-      "description": "Salesforce-aware retrieval without qmd/local index"
+    "local_first": {
+      "description": "Local corpus artifacts when available, with Salesforce-aware fallback on weak/missing evidence"
     }
   },
   "results": [
     {
       "id": "reject-nonexistent-apex-symbol",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "atlas",
-        "source_product": null,
-        "guide": "apexcode",
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_error_fallback:fallback_failed",
-        "source_url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/",
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "atlas",
         "source_product": null,
@@ -48,23 +29,7 @@
     },
     {
       "id": "reject-nonexistent-custom-class",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "unknown",
-        "source_product": null,
-        "guide": null,
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_error_fallback:fallback_failed",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "unknown",
         "source_product": null,
@@ -83,38 +48,7 @@
     },
     {
       "id": "reject-third-party-stripe-auth",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "atlas",
-        "source_product": "apex",
-        "guide": "apexref",
-        "grounded": true,
-        "confidence": "low",
-        "evidence_score": 13,
-        "matched_terms": [
-          "explaining",
-          "stripe",
-          "bearer",
-          "token",
-          "authentication."
-        ],
-        "matched_phrases": [
-          "bearer token"
-        ],
-        "matched_identifiers": [],
-        "matched_evidence": [
-          "bearer token",
-          "explaining",
-          "stripe",
-          "bearer",
-          "token",
-          "authentication."
-        ],
-        "notes": "qmd_fallback:normalized_markdown",
-        "source_url": "https://resources.docs.salesforce.com/latest/latest/en-us/sfdc/pdf/salesforce_apex_reference_guide.pdf",
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "atlas",
         "source_product": "apex",
@@ -148,23 +82,7 @@
     },
     {
       "id": "reject-sap-bapi",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "unknown",
-        "source_product": null,
-        "guide": null,
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_error_fallback:fallback_failed",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "unknown",
         "source_product": null,
@@ -183,23 +101,7 @@
     },
     {
       "id": "reject-typo-stubprovidr",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "atlas",
-        "source_product": null,
-        "guide": "apexcode",
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_error_fallback:fallback_failed",
-        "source_url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/",
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "atlas",
         "source_product": null,
@@ -218,23 +120,7 @@
     },
     {
       "id": "reject-vague-token-query",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "unknown",
-        "source_product": null,
-        "guide": null,
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_fallback:fallback_failed",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "unknown",
         "source_product": null,
@@ -253,23 +139,7 @@
     },
     {
       "id": "reject-random-stacktrace",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "atlas",
-        "source_product": null,
-        "guide": "object_reference",
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_error_fallback:fallback_failed",
-        "source_url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/",
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "atlas",
         "source_product": null,
@@ -288,23 +158,7 @@
     },
     {
       "id": "reject-messaging-wrong-guide-trap",
-      "qmd_first": {
-        "status": "pass",
-        "source_family": "help",
-        "source_product": null,
-        "guide": "object_reference",
-        "grounded": false,
-        "confidence": "low",
-        "evidence_score": 0,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "qmd_fallback:fallback_failed",
-        "source_url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/",
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pass",
         "source_family": "help",
         "source_product": null,

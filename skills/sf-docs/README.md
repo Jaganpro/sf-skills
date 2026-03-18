@@ -7,21 +7,21 @@ Official Salesforce documentation retrieval skill for `sf-skills`.
 `sf-docs` is a **core skill** in the suite.
 
 - mandatory with `sf-skills`
-- uses **qmd first** when available and the local corpus is ready
-- falls back to **Salesforce-aware retrieval** when qmd is missing or weak
+- prefers a **local synced corpus** when available
+- falls back to **Salesforce-aware retrieval** when local artifacts are missing or weak
 - keeps downloaded/scraped docs **local-only**, not in the public repo
+- has **no external indexing dependency**
 
-## Runtime Modes
+## Runtime States
 
-### qmd-enabled
+### local-first
 
-- detect qmd
 - detect local corpus readiness
-- run qmd query first
-- accept results only when they are strong enough
+- inspect the most likely local artifacts first
+- accept results only when the requested identifiers/terms are present
 - otherwise fall back to targeted official HTML/PDF retrieval
 
-### no-qmd
+### salesforce-aware
 
 - classify likely doc family first
 - target likely official guide/article roots
@@ -33,17 +33,14 @@ Official Salesforce documentation retrieval skill for `sf-skills`.
 ### Prerequisites
 
 - Python 3.10+
-- qmd (optional — enables faster local search; without it, the skill uses Salesforce-aware scraping fallback)
+- Optional local corpus under `~/.sf-docs/` if you want faster repeat lookups
 
 ### Try it now (no setup required)
 
 Test sf-docs immediately without any corpus setup:
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py retrieve \
-  --query "System.StubProvider" \
-  --mode no_qmd \
-  --live-scrape
+python3 skills/sf-docs/scripts/cli.py retrieve           --query "System.StubProvider"           --mode salesforce_aware           --live-scrape
 ```
 
 ### Full local corpus setup
@@ -55,9 +52,7 @@ See [references/pilot-scope.md](./references/pilot-scope.md) for details.
 #### 1. Discover guides
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py discover \
-  --output ~/.sf-docs/manifest/guides.json \
-  --pretty
+python3 skills/sf-docs/scripts/cli.py discover           --output ~/.sf-docs/manifest/guides.json           --pretty
 ```
 
 Verify: `~/.sf-docs/manifest/guides.json` exists with 7 guides.
@@ -65,31 +60,20 @@ Verify: `~/.sf-docs/manifest/guides.json` exists with 7 guides.
 #### 2. Sync corpus
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py sync \
-  --download-pdf \
-  --normalize
+python3 skills/sf-docs/scripts/cli.py sync           --download-pdf           --normalize
 ```
 
-Verify: `~/.sf-docs/normalized/md/` contains guide folders (e.g. `apexcode/`, `api_rest/`).
+Verify: `~/.sf-docs/normalized/md/` contains guide folders (for example `apexcode/`, `api_rest/`).
 
-#### 3. Bootstrap qmd (optional)
-
-```bash
-python3 skills/sf-docs/scripts/cli.py bootstrap-qmd --embed
-```
-
-Verify: `python3 skills/sf-docs/scripts/cli.py status` shows qmd collection indexed.
-
-#### 4. Test retrieval
+#### 3. Test retrieval
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py retrieve \
-  --query "Find official Salesforce REST API authentication docs"
+python3 skills/sf-docs/scripts/cli.py retrieve           --query "Find official Salesforce REST API authentication docs"           --mode local_first
 ```
 
 ## CLI Reference
 
-### Check qmd/corpus status
+### Check local corpus status
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py status
@@ -98,48 +82,37 @@ python3 skills/sf-docs/scripts/cli.py status
 ### Diagnose runtime lookup behavior
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py diagnose \
-  --query "Find official Salesforce REST API authentication docs"
+python3 skills/sf-docs/scripts/cli.py diagnose           --query "Find official Salesforce REST API authentication docs"
 ```
 
-### Run end-to-end retrieval (qmd-first mode)
+### Run end-to-end retrieval (local-first mode)
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py retrieve \
-  --query "Find official Salesforce REST API authentication docs" \
-  --mode qmd_first
+python3 skills/sf-docs/scripts/cli.py retrieve           --query "Find official Salesforce REST API authentication docs"           --mode local_first
 ```
 
-### Run no-qmd retrieval for Help article discovery
+### Run Salesforce-aware retrieval for Help article discovery
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py retrieve \
-  --query "Find official Salesforce Help documentation about Messaging for In-App and Web allowed domains, CORS allowlist, and allowed origins." \
-  --mode no_qmd
+python3 skills/sf-docs/scripts/cli.py retrieve           --query "Find official Salesforce Help documentation about Messaging for In-App and Web allowed domains, CORS allowlist, and allowed origins."           --mode salesforce_aware           --live-scrape
 ```
 
 ### Execute the core benchmark and write results
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py run-benchmark \
-  --benchmark skills/sf-docs/assets/retrieval-benchmark.json \
-  --results skills/sf-docs/assets/retrieval-benchmark.results.json
+python3 skills/sf-docs/scripts/cli.py run-benchmark           --benchmark skills/sf-docs/assets/retrieval-benchmark.json           --results skills/sf-docs/assets/retrieval-benchmark.results.json
 ```
 
 ### Execute the robustness benchmark
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py run-benchmark \
-  --benchmark skills/sf-docs/assets/retrieval-benchmark.robustness.json \
-  --results skills/sf-docs/assets/retrieval-benchmark.robustness.results.json
+python3 skills/sf-docs/scripts/cli.py run-benchmark           --benchmark skills/sf-docs/assets/retrieval-benchmark.robustness.json           --results skills/sf-docs/assets/retrieval-benchmark.robustness.results.json
 ```
 
 ### Score retrieval benchmark results
 
 ```bash
-python3 skills/sf-docs/scripts/cli.py score-benchmark \
-  --benchmark skills/sf-docs/assets/retrieval-benchmark.json \
-  --results skills/sf-docs/assets/retrieval-benchmark.results.json
+python3 skills/sf-docs/scripts/cli.py score-benchmark           --benchmark skills/sf-docs/assets/retrieval-benchmark.json           --results skills/sf-docs/assets/retrieval-benchmark.results.json
 ```
 
 > See [references/cli-workflow.md](./references/cli-workflow.md) for the recommended operator sequence.
@@ -149,7 +122,7 @@ python3 skills/sf-docs/scripts/cli.py score-benchmark \
 - [SKILL.md](./SKILL.md)
 - [references/local-corpus-layout.md](./references/local-corpus-layout.md)
 - [references/discovery-manifest.md](./references/discovery-manifest.md)
-- [references/qmd-integration.md](./references/qmd-integration.md)
+- [references/local-retrieval.md](./references/local-retrieval.md)
 - [references/runtime-workflow.md](./references/runtime-workflow.md)
 - [references/ingestion-workflow.md](./references/ingestion-workflow.md)
 - [references/salesforce-scraper-techniques.md](./references/salesforce-scraper-techniques.md)

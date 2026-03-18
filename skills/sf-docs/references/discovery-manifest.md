@@ -1,6 +1,6 @@
 # sf-docs Discovery Manifest
 
-The discovery manifest is the **source of truth** for what `sf-docs` knows about Salesforce documentation roots, guide families, PDF candidates, local storage paths, and fetch/index state.
+The discovery manifest is the **source of truth** for what `sf-docs` knows about Salesforce documentation roots, guide families, PDF candidates, local storage paths, and sync state.
 
 ## Why a Manifest Exists
 
@@ -15,10 +15,10 @@ A manifest lets `sf-docs` work deterministically instead of guessing from scratc
 
 ## Rules
 
-1. **Manifest first** — guide discovery should write to the manifest before bulk fetch/index work begins.
-2. **Manifest is the source of truth** — fetch, normalize, and qmd indexing should read from it.
+1. **Manifest first** — guide discovery should write to the manifest before bulk sync work begins.
+2. **Manifest is the source of truth** — fetch, normalize, and retrieval routing should read from it.
 3. **HTML page extraction is preferred** when it yields clean, page-level content.
-4. **PDFs are secondary but valid** for bulk ingestion, fallback retrieval, and offline indexing.
+4. **PDFs are secondary but valid** for bulk ingestion, fallback retrieval, and offline reuse.
 5. **Every normalized document must preserve provenance** back to a manifest entry.
 
 ## Families
@@ -36,7 +36,7 @@ Each manifest entry should carry a `family` value:
 For a guide with both HTML and PDF forms:
 
 1. Prefer **HTML/page-level extraction** if the page body is clean and navigable
-2. Use **PDF** when HTML is unstable, shell-rendered, or better suited for bulk offline indexing
+2. Use **PDF** when HTML is unstable, shell-rendered, or better suited for local reuse
 3. Keep both in the manifest when both are useful
 
 ## Recommended Schema
@@ -65,7 +65,7 @@ For a guide with both HTML and PDF forms:
         "discovered": true,
         "fetched": false,
         "normalized": false,
-        "indexed": false
+        "cached": false
       },
       "notes": []
     }
@@ -101,7 +101,7 @@ Verification should be explicit — do not assume every candidate exists.
 
 ## Normalization Rules
 
-All indexed content should be normalized into markdown with provenance frontmatter such as:
+All cached content should be normalized into markdown with provenance frontmatter such as:
 
 ```yaml
 ---
@@ -115,17 +115,6 @@ source_type: html
 ---
 ```
 
-## Corpus Organization for qmd
-
-Recommended qmd corpus organization:
-
-- keep one top-level `sf-docs` corpus root
-- group normalized markdown by guide slug
-- preserve family and product metadata in frontmatter
-- use qmd context at the collection and subpath level
-
 ## v1 Recommendation
 
-For v1, use **one qmd collection** rooted at the normalized markdown corpus.
-
-Split into multiple collections only if benchmark results show that a single collection hurts retrieval quality.
+For v1, keep the manifest focused on the small pilot corpus and expand only after benchmark evidence supports it.

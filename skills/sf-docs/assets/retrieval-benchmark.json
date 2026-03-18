@@ -1,16 +1,28 @@
 {
   "version": 2,
   "generated_at": "2026-03-14T00:00:00Z",
-  "description": "Expanded core retrieval-quality benchmark for sf-docs. Use these cases to validate qmd-first and no-qmd retrieval against exact identifiers, guide routing, and evidence quality.",
+  "description": "Expanded core retrieval-quality benchmark for sf-docs. Use these cases to validate local-first retrieval against exact identifiers, guide routing, and evidence quality.",
   "cases": [
     {
       "id": "agentforce-authentication",
       "category": "platform-guide",
       "query": "Find official Salesforce documentation about Agentforce authentication, identity verification, OTP flows, how topics are unlocked after authentication, and the security model for agent conversations.",
-      "expected_families": ["platform", "help"],
-      "expected_products": ["agentforce"],
-      "expected_guides": ["agentforce-guide"],
-      "evidence_any": ["authentication", "identity verification", "otp", "agentforce"],
+      "expected_families": [
+        "platform",
+        "help"
+      ],
+      "expected_products": [
+        "agentforce"
+      ],
+      "expected_guides": [
+        "agentforce-guide"
+      ],
+      "evidence_any": [
+        "authentication",
+        "identity verification",
+        "otp",
+        "agentforce"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -18,11 +30,23 @@
       "id": "messaging-domain-security",
       "category": "hard-web",
       "query": "Find official Salesforce documentation about Messaging for In-App and Web domain and security configuration, allowed domains, CORS/origin restrictions, and embedded deployment security settings.",
-      "expected_families": ["platform", "help"],
-      "expected_products": ["platform"],
+      "expected_families": [
+        "platform",
+        "help"
+      ],
+      "expected_products": [
+        "platform"
+      ],
       "expected_guides": [],
-      "forbidden_guides": ["object_reference"],
-      "evidence_any": ["allowed domains", "cors", "origin restrictions", "embedded deployment"],
+      "forbidden_guides": [
+        "object_reference"
+      ],
+      "evidence_any": [
+        "allowed domains",
+        "cors",
+        "origin restrictions",
+        "embedded deployment"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -30,10 +54,20 @@
       "id": "apex-stubprovider-reference",
       "category": "exact-identifier",
       "query": "Find the official Salesforce documentation for System.StubProvider in Apex and explain when to use it in tests.",
-      "expected_families": ["atlas"],
-      "expected_products": ["apex"],
-      "expected_guides": ["apexref", "apexcode"],
-      "evidence_any": ["system.stubprovider", "stubprovider"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "apex"
+      ],
+      "expected_guides": [
+        "apexref",
+        "apexcode"
+      ],
+      "evidence_any": [
+        "system.stubprovider",
+        "stubprovider"
+      ],
       "min_confidence": "high",
       "priority": "high"
     },
@@ -41,10 +75,19 @@
       "id": "apex-queueablecontext-reference",
       "category": "exact-identifier",
       "query": "Find the official Salesforce Apex documentation for QueueableContext.",
-      "expected_families": ["atlas"],
-      "expected_products": ["apex"],
-      "expected_guides": ["apexref", "apexcode"],
-      "evidence_any": ["queueablecontext"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "apex"
+      ],
+      "expected_guides": [
+        "apexref",
+        "apexcode"
+      ],
+      "evidence_any": [
+        "queueablecontext"
+      ],
       "min_confidence": "high",
       "priority": "high"
     },
@@ -52,10 +95,20 @@
       "id": "apex-test-setmock",
       "category": "exact-identifier",
       "query": "Find the official Salesforce Apex documentation for Test.setMock.",
-      "expected_families": ["atlas"],
-      "expected_products": ["apex"],
-      "expected_guides": ["apexref", "apexcode"],
-      "evidence_any": ["test.setmock", "setmock"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "apex"
+      ],
+      "expected_guides": [
+        "apexref",
+        "apexcode"
+      ],
+      "evidence_any": [
+        "test.setmock",
+        "setmock"
+      ],
       "min_confidence": "high",
       "priority": "high"
     },
@@ -63,10 +116,20 @@
       "id": "apex-database-querylocator",
       "category": "exact-identifier",
       "query": "Find the official Salesforce Apex documentation for Database.QueryLocator.",
-      "expected_families": ["atlas"],
-      "expected_products": ["apex"],
-      "expected_guides": ["apexref", "apexcode"],
-      "evidence_any": ["database.querylocator", "querylocator"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "apex"
+      ],
+      "expected_guides": [
+        "apexref",
+        "apexcode"
+      ],
+      "evidence_any": [
+        "database.querylocator",
+        "querylocator"
+      ],
       "min_confidence": "high",
       "priority": "high"
     },
@@ -74,10 +137,20 @@
       "id": "schema-describesobjectresult",
       "category": "exact-identifier",
       "query": "Find the official Salesforce Apex documentation for Schema.DescribeSObjectResult.",
-      "expected_families": ["atlas"],
-      "expected_products": ["apex"],
-      "expected_guides": ["apexref", "apexcode"],
-      "evidence_any": ["schema.describesobjectresult", "describesobjectresult"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "apex"
+      ],
+      "expected_guides": [
+        "apexref",
+        "apexcode"
+      ],
+      "evidence_any": [
+        "schema.describesobjectresult",
+        "describesobjectresult"
+      ],
       "min_confidence": "high",
       "priority": "high"
     },
@@ -85,10 +158,20 @@
       "id": "rest-api-authentication",
       "category": "guide-topic",
       "query": "Find the official Salesforce REST API documentation for authentication requirements and bearer token usage.",
-      "expected_families": ["atlas"],
-      "expected_products": ["api"],
-      "expected_guides": ["api_rest"],
-      "evidence_any": ["bearer token", "authorization", "oauth"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "api"
+      ],
+      "expected_guides": [
+        "api_rest"
+      ],
+      "evidence_any": [
+        "bearer token",
+        "authorization",
+        "oauth"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -96,10 +179,19 @@
       "id": "rest-api-compression-headers",
       "category": "guide-topic",
       "query": "Find the official Salesforce REST API documentation for compression headers and request headers.",
-      "expected_families": ["atlas"],
-      "expected_products": ["api"],
-      "expected_guides": ["api_rest"],
-      "evidence_any": ["compression", "headers"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "api"
+      ],
+      "expected_guides": [
+        "api_rest"
+      ],
+      "evidence_any": [
+        "compression",
+        "headers"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -107,10 +199,19 @@
       "id": "metadata-api-deploy",
       "category": "guide-topic",
       "query": "Find the official Salesforce Metadata API documentation for deploy and retrieve patterns.",
-      "expected_families": ["atlas"],
-      "expected_products": ["metadata"],
-      "expected_guides": ["api_meta"],
-      "evidence_any": ["deploy", "retrieve"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "metadata"
+      ],
+      "expected_guides": [
+        "api_meta"
+      ],
+      "evidence_any": [
+        "deploy",
+        "retrieve"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -118,10 +219,19 @@
       "id": "metadata-api-retrieve",
       "category": "guide-topic",
       "query": "Find the official Salesforce Metadata API documentation for retrieve() behavior and retrieveResult handling.",
-      "expected_families": ["atlas"],
-      "expected_products": ["metadata"],
-      "expected_guides": ["api_meta"],
-      "evidence_any": ["retrieve", "retrieveresult"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "metadata"
+      ],
+      "expected_guides": [
+        "api_meta"
+      ],
+      "evidence_any": [
+        "retrieve",
+        "retrieveresult"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -129,10 +239,18 @@
       "id": "object-reference-account",
       "category": "object-reference",
       "query": "Find the official Salesforce object reference documentation for Account and standard object metadata lookup.",
-      "expected_families": ["atlas"],
-      "expected_products": ["platform"],
-      "expected_guides": ["object_reference"],
-      "evidence_any": ["account"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "platform"
+      ],
+      "expected_guides": [
+        "object_reference"
+      ],
+      "evidence_any": [
+        "account"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -140,10 +258,18 @@
       "id": "object-reference-case",
       "category": "object-reference",
       "query": "Find the official Salesforce object reference documentation for Case.",
-      "expected_families": ["atlas"],
-      "expected_products": ["platform"],
-      "expected_guides": ["object_reference"],
-      "evidence_any": ["case"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "platform"
+      ],
+      "expected_guides": [
+        "object_reference"
+      ],
+      "evidence_any": [
+        "case"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -151,10 +277,18 @@
       "id": "object-reference-opportunity",
       "category": "object-reference",
       "query": "Find the official Salesforce object reference documentation for Opportunity.",
-      "expected_families": ["atlas"],
-      "expected_products": ["platform"],
-      "expected_guides": ["object_reference"],
-      "evidence_any": ["opportunity"],
+      "expected_families": [
+        "atlas"
+      ],
+      "expected_products": [
+        "platform"
+      ],
+      "expected_guides": [
+        "object_reference"
+      ],
+      "evidence_any": [
+        "opportunity"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -162,10 +296,20 @@
       "id": "lwc-wire-guide",
       "category": "platform-guide",
       "query": "Find official Lightning Web Components documentation explaining the wire service and wire adapters.",
-      "expected_families": ["platform"],
-      "expected_products": ["lwc"],
-      "expected_guides": ["lwc"],
-      "evidence_any": ["wire service", "wire adapters", "wire"],
+      "expected_families": [
+        "platform"
+      ],
+      "expected_products": [
+        "lwc"
+      ],
+      "expected_guides": [
+        "lwc"
+      ],
+      "evidence_any": [
+        "wire service",
+        "wire adapters",
+        "wire"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -173,10 +317,19 @@
       "id": "lwc-lightning-message-service",
       "category": "platform-guide",
       "query": "Find official Lightning Web Components documentation for Lightning Message Service.",
-      "expected_families": ["platform"],
-      "expected_products": ["lwc"],
-      "expected_guides": ["lwc"],
-      "evidence_any": ["lightning message service", "message service"],
+      "expected_families": [
+        "platform"
+      ],
+      "expected_products": [
+        "lwc"
+      ],
+      "expected_guides": [
+        "lwc"
+      ],
+      "evidence_any": [
+        "lightning message service",
+        "message service"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -184,10 +337,18 @@
       "id": "lwc-base-components",
       "category": "platform-guide",
       "query": "Find official Lightning Web Components documentation for base components.",
-      "expected_families": ["platform"],
-      "expected_products": ["lwc"],
-      "expected_guides": ["lwc"],
-      "evidence_any": ["base components"],
+      "expected_families": [
+        "platform"
+      ],
+      "expected_products": [
+        "lwc"
+      ],
+      "expected_guides": [
+        "lwc"
+      ],
+      "evidence_any": [
+        "base components"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -195,10 +356,21 @@
       "id": "agent-script-runtime",
       "category": "platform-guide",
       "query": "Find the official Salesforce documentation for Agentforce Agent Script and Atlas reasoning engine behavior.",
-      "expected_families": ["platform", "help"],
-      "expected_products": ["agentforce"],
-      "expected_guides": ["agentforce-guide"],
-      "evidence_any": ["agent script", "atlas reasoning", "agentforce"],
+      "expected_families": [
+        "platform",
+        "help"
+      ],
+      "expected_products": [
+        "agentforce"
+      ],
+      "expected_guides": [
+        "agentforce-guide"
+      ],
+      "evidence_any": [
+        "agent script",
+        "atlas reasoning",
+        "agentforce"
+      ],
       "min_confidence": "medium",
       "priority": "high"
     },
@@ -206,10 +378,21 @@
       "id": "agentforce-prompt-templates-models",
       "category": "platform-guide",
       "query": "Find official Salesforce documentation for prompt templates and Models API in Agentforce.",
-      "expected_families": ["platform", "help"],
-      "expected_products": ["agentforce"],
-      "expected_guides": ["agentforce-guide"],
-      "evidence_any": ["prompt template", "models api", "models"],
+      "expected_families": [
+        "platform",
+        "help"
+      ],
+      "expected_products": [
+        "agentforce"
+      ],
+      "expected_guides": [
+        "agentforce-guide"
+      ],
+      "evidence_any": [
+        "prompt template",
+        "models api",
+        "models"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     },
@@ -217,10 +400,20 @@
       "id": "agentforce-actions-guide",
       "category": "platform-guide",
       "query": "Find official Salesforce documentation for Agentforce Actions.",
-      "expected_families": ["platform", "help"],
-      "expected_products": ["agentforce"],
-      "expected_guides": ["agentforce-guide"],
-      "evidence_any": ["agentforce actions", "actions"],
+      "expected_families": [
+        "platform",
+        "help"
+      ],
+      "expected_products": [
+        "agentforce"
+      ],
+      "expected_guides": [
+        "agentforce-guide"
+      ],
+      "evidence_any": [
+        "agentforce actions",
+        "actions"
+      ],
       "min_confidence": "medium",
       "priority": "medium"
     }

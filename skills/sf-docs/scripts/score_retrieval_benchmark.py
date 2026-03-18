@@ -4,19 +4,16 @@ Score sf-docs benchmark results.
 
 Input files:
 - benchmark definition JSON
-- results JSON recording qmd_first and no_qmd outcomes per case
+- results JSON recording mode outcomes per case
 
 Usage:
-  python3 score_retrieval_benchmark.py \
-    --benchmark skills/sf-docs/assets/retrieval-benchmark.json \
-    --results skills/sf-docs/assets/retrieval-benchmark.results-template.json
+  python3 score_retrieval_benchmark.py             --benchmark skills/sf-docs/assets/retrieval-benchmark.json             --results skills/sf-docs/assets/retrieval-benchmark.results-template.json
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -52,9 +49,10 @@ def evaluate_mode(case: Dict[str, Any], result: Dict[str, Any]) -> Tuple[bool, L
 
 def score(benchmark: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any]:
     cases_by_id = index_benchmark_cases(benchmark)
+    modes = list((results.get("modes") or {}).keys()) or ["local_first"]
     totals = {
-        "qmd_first": {"pass": 0, "fail": 0, "pending": 0, "details": []},
-        "no_qmd": {"pass": 0, "fail": 0, "pending": 0, "details": []},
+        mode: {"pass": 0, "fail": 0, "pending": 0, "details": []}
+        for mode in modes
     }
 
     for row in results.get("results", []):
@@ -63,7 +61,7 @@ def score(benchmark: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any]:
         if not case:
             continue
 
-        for mode in ("qmd_first", "no_qmd"):
+        for mode in modes:
             mode_result = row.get(mode, {})
             status = mode_result.get("status", "pending")
             if status == "pending":
@@ -95,8 +93,7 @@ def main() -> int:
     results = load_json(args.results)
     totals = score(benchmark, results)
 
-    for mode in ("qmd_first", "no_qmd"):
-        summary = totals[mode]
+    for mode, summary in totals.items():
         total_scored = summary["pass"] + summary["fail"] + summary["pending"]
         print(f"{mode}: pass={summary['pass']} fail={summary['fail']} pending={summary['pending']} total={total_scored}")
         for detail in summary["details"]:
@@ -109,4 +106,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

@@ -3,20 +3,13 @@
 sf-docs runtime helper.
 
 Provides lightweight, stdlib-only utilities for:
-- detecting qmd and local corpus readiness
+- detecting local corpus readiness
 - classifying likely Salesforce doc families
-- evaluating qmd result strength
-- building a sequential qmd-first / scrape-fallback lookup plan
+- building a sequential local-first / Salesforce-aware lookup plan
 - extracting evidence from candidate docs so broad wrong-guide matches are rejected
 
 Examples:
-  python3 sf_docs_runtime.py diagnose \
-    --query "Find official REST API authentication docs" \
-    --manifest skills/sf-docs/assets/discovery-manifest.seed.json
-
-  python3 sf_docs_runtime.py evaluate-qmd \
-    --query "System.StubProvider" \
-    --results-file /path/to/qmd-results.json
+  python3 sf_docs_runtime.py diagnose     --query "Find official REST API authentication docs"     --manifest skills/sf-docs/assets/discovery-manifest.seed.json
 """
 
 from __future__ import annotations
@@ -24,12 +17,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shlex
-import shutil
-import subprocess
-import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 DEFAULT_CORPUS_ROOT = Path.home() / ".sf-docs"
 DEFAULT_MANIFEST = DEFAULT_CORPUS_ROOT / "manifest" / "guides.json"
@@ -117,24 +106,6 @@ def load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text())
 
 
-def detect_qmd() -> Tuple[bool, Optional[str]]:
-    qmd_bin = shutil.which("qmd")
-    if not qmd_bin:
-        return False, None
-
-    try:
-        result = subprocess.run(
-            [qmd_bin, "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        version_lines = (result.stdout or result.stderr or "").strip().splitlines()
-        return True, version_lines[0] if version_lines else qmd_bin
-    except Exception:
-        return True, qmd_bin
-
-
 def corpus_status(corpus_root: Path = DEFAULT_CORPUS_ROOT) -> Dict[str, Any]:
     normalized_root = corpus_root / "normalized" / "md"
     manifest_path = corpus_root / "manifest" / "guides.json"
@@ -179,7 +150,7 @@ def extract_terms(query: str) -> List[str]:
 def extract_identifiers(query: str) -> List[str]:
     identifiers: List[str] = []
     identifiers.extend(re.findall(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+", query))
-    identifiers.extend(re.findall(r"\b[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9_]*)+\b", query))
+    identifiers.extend(re.findall(r"[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9_]*)+", query))
     return unique_preserve(identifiers)
 
 
@@ -287,38 +258,6 @@ def likely_guides(query: str, manifest_path: Optional[Path], limit: int = 5) -> 
     ]
 
 
-def build_qmd_command(query: str, limit: int = 8) -> str:
-    return f"qmd search --json -n {limit} {shlex.quote(query)}"
-
-
-def qmd_results_from_file(path: Path) -> List[Dict[str, Any]]:
-    data = load_json(path)
-    if isinstance(data, list):
-        return [r for r in data if isinstance(r, dict)]
-    if isinstance(data, dict):
-        for key in ("results", "matches", "items"):
-            if isinstance(data.get(key), list):
-                return [r for r in data[key] if isinstance(r, dict)]
-    return []
-
-
-def result_text(result: Dict[str, Any]) -> str:
-    pieces = []
-    for key in ("title", "snippet", "path", "displayPath", "context", "text"):
-        value = result.get(key)
-        if isinstance(value, str):
-            pieces.append(value)
-    return "\n".join(pieces)
-
-
-def extract_score(result: Dict[str, Any]) -> Optional[float]:
-    for key in ("score", "rerankScore", "finalScore"):
-        value = result.get(key)
-        if isinstance(value, (int, float)):
-            return float(value)
-    return None
-
-
 def _contains_evidence(searchable: str, needle: str) -> bool:
     normalized = normalize_query(needle)
     if not normalized:
@@ -422,76 +361,6 @@ def evaluate_text_evidence(query: str, text: str, guide: Optional[Dict[str, Any]
     }
 
 
-def evaluate_qmd_results(query: str, results: List[Dict[str, Any]], min_score: float = 0.2) -> Dict[str, Any]:
-    if not results:
-        return {
-            "strong": False,
-            "reason": "no_results",
-            "matched_terms": [],
-            "matched_phrases": [],
-            "matched_identifiers": [],
-            "matched_evidence": [],
-            "max_score": None,
-            "best_index": None,
-            "best_evidence_score": 0,
-        }
-
-    max_score: Optional[float] = None
-    best_index: Optional[int] = None
-    best_evidence: Optional[Dict[str, Any]] = None
-
-    for idx, result in enumerate(results[:5]):
-        text = result_text(result)
-        evidence = evaluate_text_evidence(query, text)
-        evidence_score = evidence["score"]
-        score = extract_score(result)
-        if score is not None:
-            max_score = score if max_score is None else max(max_score, score)
-        if best_evidence is None or evidence_score > best_evidence["score"]:
-            best_evidence = evidence
-            best_index = idx
-
-    assert best_evidence is not None
-
-    if max_score is not None and max_score < min_score and not best_evidence["acceptable"]:
-        return {
-            "strong": False,
-            "reason": "low_score_and_weak_evidence",
-            "matched_terms": best_evidence["matched_terms"],
-            "matched_phrases": best_evidence["matched_phrases"],
-            "matched_identifiers": best_evidence["matched_identifiers"],
-            "matched_evidence": best_evidence["matched_evidence"],
-            "max_score": max_score,
-            "best_index": best_index,
-            "best_evidence_score": best_evidence["score"],
-        }
-
-    if not best_evidence["acceptable"]:
-        return {
-            "strong": False,
-            "reason": best_evidence["reason"],
-            "matched_terms": best_evidence["matched_terms"],
-            "matched_phrases": best_evidence["matched_phrases"],
-            "matched_identifiers": best_evidence["matched_identifiers"],
-            "matched_evidence": best_evidence["matched_evidence"],
-            "max_score": max_score,
-            "best_index": best_index,
-            "best_evidence_score": best_evidence["score"],
-        }
-
-    return {
-        "strong": True,
-        "reason": best_evidence["reason"],
-        "matched_terms": best_evidence["matched_terms"],
-        "matched_phrases": best_evidence["matched_phrases"],
-        "matched_identifiers": best_evidence["matched_identifiers"],
-        "matched_evidence": best_evidence["matched_evidence"],
-        "max_score": max_score,
-        "best_index": best_index,
-        "best_evidence_score": best_evidence["score"],
-    }
-
-
 def build_fallback_plan(query: str, manifest_path: Optional[Path]) -> Dict[str, Any]:
     classification = classify_query(query)
     guides = likely_guides(query, manifest_path)
@@ -537,27 +406,27 @@ def build_fallback_plan(query: str, manifest_path: Optional[Path]) -> Dict[str, 
 
 
 def build_lookup_plan(query: str, manifest_path: Optional[Path], corpus_root: Path) -> Dict[str, Any]:
-    qmd_available, qmd_version = detect_qmd()
     corpus = corpus_status(corpus_root)
-    qmd_ready = qmd_available and corpus["ready"]
 
     return {
         "query": query,
-        "qmd": {
-            "available": qmd_available,
-            "version": qmd_version,
-            "corpus_ready": corpus["ready"],
-            "command": build_qmd_command(query) if qmd_available else None,
+        "local_corpus": {
+            "ready": corpus["ready"],
+            "preferred_sources": [
+                "normalized_markdown",
+                "browser_scrape_payload",
+                "pdf_text",
+            ],
             "weak_result_rules": [
-                "no results returned",
+                "no relevant local artifacts found",
                 "results clearly unrelated",
                 "exact API/CLI/error term missing",
                 "snippets too fragmentary to support confident answer",
-                "release-sensitive query with stale corpus",
+                "release-sensitive query with stale local corpus",
             ],
         },
         "corpus": corpus,
-        "mode": "qmd_enabled" if qmd_ready else "no_qmd",
+        "mode": "local_first" if corpus["ready"] else "salesforce_aware",
         "classification": classify_query(query),
         "query_signature": build_query_signature(query),
         "fallback": build_fallback_plan(query, manifest_path),
@@ -572,19 +441,10 @@ def command_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
-def command_evaluate_qmd(args: argparse.Namespace) -> int:
-    results = qmd_results_from_file(Path(args.results_file))
-    evaluation = evaluate_qmd_results(args.query, results, min_score=args.min_score)
-    print(json.dumps(evaluation, indent=2))
-    return 0
-
-
 def command_status(args: argparse.Namespace) -> int:
-    qmd_available, qmd_version = detect_qmd()
     corpus = corpus_status(Path(args.corpus_root).expanduser())
     payload = {
-        "qmd_available": qmd_available,
-        "qmd_version": qmd_version,
+        "local_corpus_ready": corpus["ready"],
         "corpus": corpus,
     }
     print(json.dumps(payload, indent=2))
@@ -595,7 +455,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="sf-docs runtime helper")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_status = sub.add_parser("status", help="Show qmd/corpus runtime status")
+    p_status = sub.add_parser("status", help="Show local corpus/runtime status")
     p_status.add_argument("--corpus-root", default=str(DEFAULT_CORPUS_ROOT))
     p_status.set_defaults(func=command_status)
 
@@ -604,12 +464,6 @@ def parse_args() -> argparse.Namespace:
     p_diag.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     p_diag.add_argument("--corpus-root", default=str(DEFAULT_CORPUS_ROOT))
     p_diag.set_defaults(func=command_diagnose)
-
-    p_eval = sub.add_parser("evaluate-qmd", help="Evaluate qmd result strength from a JSON file")
-    p_eval.add_argument("--query", required=True)
-    p_eval.add_argument("--results-file", required=True)
-    p_eval.add_argument("--min-score", type=float, default=0.2)
-    p_eval.set_defaults(func=command_evaluate_qmd)
 
     return parser.parse_args()
 
@@ -620,4 +474,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

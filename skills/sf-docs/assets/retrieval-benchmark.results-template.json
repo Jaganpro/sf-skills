@@ -1,35 +1,16 @@
 {
-  "version": 2,
+  "version": 3,
   "benchmark": "retrieval-benchmark.json",
   "generated_at": "2026-03-14T00:00:00Z",
   "modes": {
-    "qmd_first": {
-      "description": "qmd-first local retrieval with Salesforce-aware fallback on weak/missing results"
-    },
-    "no_qmd": {
-      "description": "Salesforce-aware retrieval without qmd/local index"
+    "local_first": {
+      "description": "Local corpus artifacts when available, with Salesforce-aware fallback on weak/missing evidence"
     }
   },
   "results": [
     {
       "id": "agentforce-authentication",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -48,23 +29,7 @@
     },
     {
       "id": "messaging-domain-security",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -83,23 +48,7 @@
     },
     {
       "id": "apex-stubprovider-reference",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -118,23 +67,7 @@
     },
     {
       "id": "apex-queueablecontext-reference",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -153,23 +86,7 @@
     },
     {
       "id": "apex-test-setmock",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -188,23 +105,7 @@
     },
     {
       "id": "apex-database-querylocator",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -223,23 +124,7 @@
     },
     {
       "id": "schema-describesobjectresult",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -258,23 +143,7 @@
     },
     {
       "id": "rest-api-authentication",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -293,23 +162,7 @@
     },
     {
       "id": "rest-api-compression-headers",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -328,23 +181,7 @@
     },
     {
       "id": "metadata-api-deploy",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -363,23 +200,7 @@
     },
     {
       "id": "metadata-api-retrieve",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -398,23 +219,7 @@
     },
     {
       "id": "object-reference-account",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -433,23 +238,7 @@
     },
     {
       "id": "object-reference-case",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -468,23 +257,7 @@
     },
     {
       "id": "object-reference-opportunity",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -503,23 +276,7 @@
     },
     {
       "id": "lwc-wire-guide",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -538,23 +295,7 @@
     },
     {
       "id": "lwc-lightning-message-service",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -573,23 +314,7 @@
     },
     {
       "id": "lwc-base-components",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -608,23 +333,7 @@
     },
     {
       "id": "agent-script-runtime",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -643,23 +352,7 @@
     },
     {
       "id": "agentforce-prompt-templates-models",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,
@@ -678,23 +371,7 @@
     },
     {
       "id": "agentforce-actions-guide",
-      "qmd_first": {
-        "status": "pending",
-        "source_family": null,
-        "source_product": null,
-        "guide": null,
-        "grounded": null,
-        "confidence": null,
-        "evidence_score": null,
-        "matched_terms": [],
-        "matched_phrases": [],
-        "matched_identifiers": [],
-        "matched_evidence": [],
-        "notes": "",
-        "source_url": null,
-        "reasons": []
-      },
-      "no_qmd": {
+      "local_first": {
         "status": "pending",
         "source_family": null,
         "source_product": null,

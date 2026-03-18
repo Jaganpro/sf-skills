@@ -1,13 +1,13 @@
 ---
 name: sf-docs
 description: >
-  Official Salesforce documentation retrieval skill. Prefer locally indexed
-  Salesforce docs via qmd when available; otherwise use Salesforce-aware
+  Official Salesforce documentation retrieval skill. Prefer locally synced
+  official Salesforce docs when available; otherwise use Salesforce-aware
   scraping and guide/PDF discovery strategies for developer.salesforce.com and
   help.salesforce.com.
 license: MIT
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   author: "Jag Valaiyapathy"
 ---
 
@@ -20,29 +20,29 @@ Expert Salesforce documentation researcher focused on **official sources**. This
 ## Core Responsibilities
 
 1. **Official Docs Retrieval**: Find authoritative answers from Salesforce documentation first
-2. **Local-First Search**: Use a local qmd index when available for speed and accuracy
-3. **Salesforce-Aware Fallback**: When qmd is unavailable or weak, use Salesforce-specific retrieval patterns instead of generic web fetch
+2. **Local Corpus Usage**: Prefer locally synced official docs artifacts when they are available and relevant
+3. **Salesforce-Aware Fallback**: Use Salesforce-specific retrieval patterns instead of naive generic web fetch
 4. **Source Grounding**: Return answers with exact source URLs, guide names, and retrieval notes
 5. **Cross-Skill Support**: Serve as the documentation lookup layer for other `sf-*` skills
 
 ---
 
-## Runtime Modes
+## Runtime States
 
-### Mode A: qmd-Enabled
+### State A: Local-First
 
-Use this mode when qmd is installed and a local Salesforce docs corpus exists.
+Use this state when a local `sf-docs` corpus exists under `~/.sf-docs/` and contains normalized markdown or other synced artifacts.
 
 **Preferred flow:**
-1. Detect qmd availability
-2. Query qmd first
-3. Evaluate result quality
-4. If results are strong, answer from local docs
-5. If results are weak or missing, fall back to Salesforce-aware scraping
+1. Detect local corpus readiness
+2. Identify the most likely Salesforce guide family
+3. Check the most relevant local artifacts first
+4. Accept local evidence only when the requested identifiers/terms are actually present
+5. Fall back to Salesforce-aware retrieval when local artifacts are weak or missing
 
-### Mode B: No-qmd
+### State B: Salesforce-Aware Retrieval
 
-Use this mode when qmd is not installed or no local corpus exists.
+Use this state when no useful local corpus exists or when local artifacts do not answer the question confidently.
 
 **Preferred flow:**
 1. Identify the most likely Salesforce doc family
@@ -55,36 +55,34 @@ Use this mode when qmd is not installed or no local corpus exists.
 When the local `sf-docs` helper scripts are installed, prefer the built-in retrieval command over ad-hoc search-engine probing:
 
 ```bash
-python3 ~/.claude/skills/sf-docs/scripts/cli.py retrieve \
-  --query "<user question>" \
-  --mode no_qmd
+python3 ~/.claude/skills/sf-docs/scripts/cli.py retrieve           --query "<user question>"           --mode salesforce_aware           --live-scrape
 ```
 
-For hard `help.salesforce.com` questions, this command applies the local no-qmd retrieval flow, including targeted Help article discovery and browser-based rendering.
+For hard `help.salesforce.com` questions, this command applies the local Salesforce-aware retrieval flow, including targeted Help article discovery and browser-based rendering.
 
 ### Runtime Detection
 
-`sf-docs` should detect qmd **at runtime**, not just rely on installer choices.
+`sf-docs` should detect **local corpus readiness at runtime**, not rely on installer choices.
 
 Use this detection order:
-1. Check whether the `qmd` CLI is available on `PATH`
-2. Check whether a local Salesforce docs corpus exists
-3. If qmd exists but the local corpus/index is missing or effectively empty, treat the request as **no-qmd mode**
-4. If qmd exists and the corpus is populated, use **qmd-enabled mode**
+1. Check whether a local Salesforce docs corpus exists
+2. Check whether normalized markdown artifacts exist under the corpus root
+3. If the local corpus is populated, use **local-first state**
+4. Otherwise, use **Salesforce-aware retrieval state**
 
 > Reference: [references/local-corpus-layout.md](references/local-corpus-layout.md)
 
 ---
 
-## Fallback Triggers
+## Local Artifact Acceptance Rules
 
-Treat qmd results as **weak** and fall back when any of the following happen:
+Treat local artifacts as **weak** and fall back when any of the following happen:
 
-- No results returned
-- Results are clearly from the wrong Salesforce product or guide family
-- Results lack the exact concept, API name, CLI command, or error term requested
-- Results are too fragmentary to answer confidently
-- Results appear stale and the query is obviously release-sensitive
+- No relevant local artifacts are available
+- The likely guide is clearly from the wrong Salesforce family or product area
+- The exact concept, API name, CLI command, or error term requested is missing
+- The local content is too fragmentary to answer confidently
+- The local corpus appears stale for an obviously release-sensitive question
 
 > **Rule**: Prefer a reliable Salesforce-specific fallback over confidently answering from a poor local hit.
 
@@ -147,7 +145,7 @@ Use PDFs when:
 - HTML extraction is inconsistent
 - A long-form developer guide is easier to search locally after normalization
 
-PDFs may be stored **locally** and indexed later, but should **not** be committed into the public repo.
+PDFs may be stored **locally** for reuse, but should **not** be committed into the public repo.
 
 ---
 
@@ -155,10 +153,10 @@ PDFs may be stored **locally** and indexed later, but should **not** be committe
 
 When using `sf-docs`, answers should include:
 
-1. **Source type** — qmd local hit, official HTML page, or official PDF
+1. **Source type** — local normalized markdown, local scrape artifact, official HTML page, or official PDF
 2. **Guide/article name**
 3. **Exact official URL**
-4. **Any retrieval caveat** — for example, if fallback scraping was needed or if the content appeared partially rendered
+4. **Any retrieval caveat** — for example, if browser scraping was needed or if the content appeared partially rendered
 
 If the evidence is weak, say so plainly.
 
@@ -182,8 +180,8 @@ If the evidence is weak, say so plainly.
 ## Local Storage Policy
 
 - `sf-docs` is part of the core skill suite
-- qmd remains an **optional external dependency**
-- Downloaded PDFs, scraped markdown, manifests, and indexes should live on the **user's machine**
+- There is **no external local index dependency**
+- Downloaded PDFs, scraped markdown, manifests, and diagnostics should live on the **user's machine**
 - Official Salesforce docs content should **not** be stored in this public Git repository
 
 ### Default Local Corpus Layout
@@ -195,11 +193,10 @@ Use a stable local root such as:
 ```
 
 Recommended structure:
-- `~/.sf-docs/manifest/` — discovery manifests and fetch/index status
+- `~/.sf-docs/manifest/` — discovery manifests and sync status
 - `~/.sf-docs/raw/pdf/` — downloaded official PDFs
-- `~/.sf-docs/raw/html/` — optional raw HTML captures
-- `~/.sf-docs/normalized/md/` — canonical markdown corpus for qmd indexing
-- `~/.sf-docs/qmd/` — qmd-specific config notes
+- `~/.sf-docs/raw/html/` — optional raw HTML captures and browser scrape payloads
+- `~/.sf-docs/normalized/md/` — canonical markdown corpus used for local-first retrieval
 - `~/.sf-docs/logs/` — optional diagnostics and fetch logs
 
 > Full reference: [references/local-corpus-layout.md](references/local-corpus-layout.md)
@@ -210,22 +207,20 @@ Recommended structure:
 
 The initial implementation should optimize for correctness and operational simplicity:
 
-1. qmd-first when available
-2. Sequential fallback to Salesforce-aware scraping
+1. Local-first when a useful corpus exists
+2. Sequential fallback to Salesforce-aware retrieval
 3. Targeted retrieval, not broad crawling, during normal lookups
 4. Grounded responses with official source links
 
 ### Query-Time Runtime Flow
 
-1. Detect qmd and local corpus availability
-2. Run qmd lookup if available
-3. Evaluate hit quality
-4. On weak/missing results, use Salesforce-specific HTML/PDF fallback
+1. Detect local corpus availability
+2. Inspect the most likely local artifacts first
+3. Evaluate evidence quality
+4. On weak/missing evidence, use Salesforce-specific HTML/PDF fallback
 5. Answer with source grounding and retrieval caveats when needed
 
 > Full runtime guide: [references/runtime-workflow.md](references/runtime-workflow.md)
-
-Parallel qmd + scraping can be considered later if benchmarks justify the added complexity.
 
 ---
 
@@ -245,14 +240,14 @@ Parallel qmd + scraping can be considered later if benchmarks justify the added 
 | Document | Purpose |
 |----------|---------|
 | [references/local-corpus-layout.md](references/local-corpus-layout.md) | Local-only corpus structure and runtime detection rules |
-| [references/discovery-manifest.md](references/discovery-manifest.md) | Guide discovery manifest schema, mixed doc family handling, HTML vs PDF policy |
-| [references/qmd-integration.md](references/qmd-integration.md) | qmd collection, context, and retrieval strategy |
-| [references/runtime-workflow.md](references/runtime-workflow.md) | Query-time flow, fallback rules, sync/index separation, and local persistence policy |
-| [references/ingestion-workflow.md](references/ingestion-workflow.md) | Targeted HTML/PDF fetch, normalization, and qmd bootstrap workflow |
+| [references/discovery-manifest.md](references/discovery-manifest.md) | Guide discovery manifest schema, mixed doc family handling, and HTML vs PDF policy |
+| [references/local-retrieval.md](references/local-retrieval.md) | Local artifact retrieval strategy and acceptance rules |
+| [references/runtime-workflow.md](references/runtime-workflow.md) | Query-time flow, fallback rules, sync separation, and local persistence policy |
+| [references/ingestion-workflow.md](references/ingestion-workflow.md) | Targeted HTML/PDF fetch and normalization workflow |
 | [references/salesforce-scraper-techniques.md](references/salesforce-scraper-techniques.md) | Salesforce-aware browser extraction techniques, Shadow DOM handling, and PDF fallback rationale |
 | [references/pilot-scope.md](references/pilot-scope.md) | Initial guide scope for v1 ingestion |
-| [references/benchmark-protocol.md](references/benchmark-protocol.md) | qmd-first and no-qmd validation protocol |
-| [references/cli-workflow.md](references/cli-workflow.md) | Unified CLI workflow for discover, sync, bootstrap, diagnose, and benchmark scoring |
+| [references/benchmark-protocol.md](references/benchmark-protocol.md) | Local-first benchmark and wrong-guide rejection protocol |
+| [references/cli-workflow.md](references/cli-workflow.md) | Unified CLI workflow for discover, sync, diagnose, retrieve, and benchmark scoring |
 | [references/implementation-order.md](references/implementation-order.md) | Recommended v1 execution order |
 | [references/final-architecture.md](references/final-architecture.md) | Final architectural recommendation |
 
@@ -262,18 +257,17 @@ Parallel qmd + scraping can be considered later if benchmarks justify the added 
 |------|---------|
 | [assets/discovery-manifest.seed.json](assets/discovery-manifest.seed.json) | Starter guide manifest seed |
 | [assets/retrieval-benchmark.json](assets/retrieval-benchmark.json) | Expanded core retrieval benchmark cases for exact identifiers, guide routing, and evidence grounding |
-| [assets/retrieval-benchmark.results-template.json](assets/retrieval-benchmark.results-template.json) | Template for recording qmd-first and no-qmd core benchmark outcomes |
+| [assets/retrieval-benchmark.results-template.json](assets/retrieval-benchmark.results-template.json) | Template for recording local-first benchmark outcomes |
 | [assets/retrieval-benchmark.robustness.json](assets/retrieval-benchmark.robustness.json) | Negative / wrong-guide rejection benchmark for hardening fallback behavior |
 | [assets/retrieval-benchmark.robustness.results-template.json](assets/retrieval-benchmark.robustness.results-template.json) | Template for recording robustness benchmark outcomes |
-| [scripts/cli.py](scripts/cli.py) | Unified sf-docs CLI for discover, sync, bootstrap-qmd, status, diagnose, retrieve, and benchmarking |
+| [scripts/cli.py](scripts/cli.py) | Unified sf-docs CLI for discover, sync, status, diagnose, retrieve, and benchmarking |
 | [scripts/discover_salesforce_docs.py](scripts/discover_salesforce_docs.py) | Enrich guide seeds into a discovery manifest and optionally verify PDF candidates |
 | [scripts/salesforce_dom_scraper.mjs](scripts/salesforce_dom_scraper.mjs) | Salesforce-aware browser scraper with Shadow DOM, legacy doc container, iframe, and help-page heuristics |
 | [scripts/sync_sf_docs.py](scripts/sync_sf_docs.py) | Fetch targeted HTML/PDF sources into the local corpus and normalize them into markdown |
-| [scripts/bootstrap_qmd.py](scripts/bootstrap_qmd.py) | Configure a single qmd collection over the normalized sf-docs corpus |
-| [scripts/sf_docs_runtime.py](scripts/sf_docs_runtime.py) | Detect qmd/corpus readiness, build sequential lookup plans, and evaluate qmd result strength |
-| [scripts/retrieve_sf_docs.py](scripts/retrieve_sf_docs.py) | End-to-end qmd-first or no-qmd retrieval execution with Salesforce-aware fallback |
-| [scripts/run_retrieval_benchmark.py](scripts/run_retrieval_benchmark.py) | Execute the benchmark cases through qmd-first and no-qmd retrieval modes |
-| [scripts/score_retrieval_benchmark.py](scripts/score_retrieval_benchmark.py) | Score benchmark results for qmd-first and no-qmd modes |
+| [scripts/sf_docs_runtime.py](scripts/sf_docs_runtime.py) | Detect corpus readiness, build sequential lookup plans, and evaluate evidence quality |
+| [scripts/retrieve_sf_docs.py](scripts/retrieve_sf_docs.py) | End-to-end local-first retrieval execution with Salesforce-aware fallback |
+| [scripts/run_retrieval_benchmark.py](scripts/run_retrieval_benchmark.py) | Execute the benchmark cases through the local-first retrieval mode |
+| [scripts/score_retrieval_benchmark.py](scripts/score_retrieval_benchmark.py) | Score benchmark results |
 
 ---
 

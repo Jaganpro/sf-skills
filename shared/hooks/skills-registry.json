@@ -486,7 +486,7 @@
       ],
       "filePatterns": [],
       "priority": "high",
-      "description": "Official Salesforce documentation retrieval with qmd-first local search, weak-hit evaluation, and Salesforce-aware fallback scraping"
+      "description": "Official Salesforce documentation retrieval with local-first corpus lookup, weak-hit evaluation, and Salesforce-aware fallback scraping"
     },
     "sf-integration": {
       "keywords": [

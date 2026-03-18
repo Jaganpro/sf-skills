@@ -49,7 +49,9 @@
       "id": "reject-messaging-wrong-guide-trap",
       "expected_outcome": "reject",
       "query": "Find official Salesforce docs for messaging domain security and allowed origins.",
-      "forbidden_guides": ["object_reference"],
+      "forbidden_guides": [
+        "object_reference"
+      ],
       "priority": "high"
     }
   ]

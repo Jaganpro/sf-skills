@@ -166,7 +166,7 @@ def enrich_entry(entry: Dict[str, Any], verify_pdf: bool = False) -> Dict[str, A
             "discovered": True,
             "fetched": bool(entry.get("status", {}).get("fetched", False)),
             "normalized": bool(entry.get("status", {}).get("normalized", False)),
-            "indexed": bool(entry.get("status", {}).get("indexed", False)),
+            "cached": bool(entry.get("status", {}).get("cached", False)),
         },
         "notes": list(entry.get("notes", [])),
     }

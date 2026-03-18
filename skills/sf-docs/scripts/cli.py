@@ -7,11 +7,10 @@ Unified wrapper around the sf-docs helper scripts.
 Examples:
   python3 cli.py discover --output ~/.sf-docs/manifest/guides.json --pretty
   python3 cli.py sync --download-pdf --normalize
-  python3 cli.py bootstrap-qmd --embed
   python3 cli.py status
   python3 cli.py diagnose --query "Find official Salesforce REST API authentication docs"
-  python3 cli.py evaluate-qmd --query "System.StubProvider" --results-file ./qmd-results.json
-  python3 cli.py score-benchmark --results ../assets/retrieval-benchmark.results-template.json
+  python3 cli.py retrieve --query "System.StubProvider" --mode salesforce_aware --live-scrape
+  python3 cli.py score-benchmark --benchmark ../assets/retrieval-benchmark.json --results ../assets/retrieval-benchmark.results-template.json
 """
 
 from __future__ import annotations
@@ -71,18 +70,6 @@ def cmd_sync(args: argparse.Namespace) -> int:
     return run("sync_sf_docs.py", argv)
 
 
-def cmd_bootstrap_qmd(args: argparse.Namespace) -> int:
-    argv = [
-        "--corpus-root", str(args.corpus_root),
-        "--name", args.name,
-    ]
-    if args.embed:
-        argv.append("--embed")
-    if args.dry_run:
-        argv.append("--dry-run")
-    return run("bootstrap_qmd.py", argv)
-
-
 def cmd_status(args: argparse.Namespace) -> int:
     argv = ["status", "--corpus-root", str(args.corpus_root)]
     return run("sf_docs_runtime.py", argv)
@@ -94,16 +81,6 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         "--query", args.query,
         "--manifest", str(args.manifest),
         "--corpus-root", str(args.corpus_root),
-    ]
-    return run("sf_docs_runtime.py", argv)
-
-
-def cmd_evaluate_qmd(args: argparse.Namespace) -> int:
-    argv = [
-        "evaluate-qmd",
-        "--query", args.query,
-        "--results-file", str(args.results_file),
-        "--min-score", str(args.min_score),
     ]
     return run("sf_docs_runtime.py", argv)
 
@@ -163,14 +140,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_sync.add_argument("--dry-run", action="store_true")
     p_sync.set_defaults(func=cmd_sync)
 
-    p_bootstrap = sub.add_parser("bootstrap-qmd", help="Configure qmd over the local normalized corpus")
-    p_bootstrap.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
-    p_bootstrap.add_argument("--name", default="sf-docs")
-    p_bootstrap.add_argument("--embed", action="store_true")
-    p_bootstrap.add_argument("--dry-run", action="store_true")
-    p_bootstrap.set_defaults(func=cmd_bootstrap_qmd)
-
-    p_status = sub.add_parser("status", help="Show qmd/corpus runtime status")
+    p_status = sub.add_parser("status", help="Show local corpus/runtime status")
     p_status.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
     p_status.set_defaults(func=cmd_status)
 
@@ -180,21 +150,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_diag.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
     p_diag.set_defaults(func=cmd_diagnose)
 
-    p_eval = sub.add_parser("evaluate-qmd", help="Evaluate qmd result strength from JSON")
-    p_eval.add_argument("--query", required=True)
-    p_eval.add_argument("--results-file", type=Path, required=True)
-    p_eval.add_argument("--min-score", type=float, default=0.35)
-    p_eval.set_defaults(func=cmd_evaluate_qmd)
-
     p_retrieve = sub.add_parser("retrieve", help="Run end-to-end sf-docs retrieval")
     p_retrieve.add_argument("--query", required=True)
     p_retrieve.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     p_retrieve.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
-    p_retrieve.add_argument("--mode", choices=("auto", "qmd_first", "no_qmd"), default="auto")
+    p_retrieve.add_argument("--mode", choices=("auto", "local_first", "salesforce_aware"), default="auto")
     p_retrieve.add_argument("--live-scrape", action="store_true")
     p_retrieve.set_defaults(func=cmd_retrieve)
 
-    p_score = sub.add_parser("score-benchmark", help="Score qmd-first/no-qmd benchmark results")
+    p_score = sub.add_parser("score-benchmark", help="Score benchmark results")
     p_score.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK)
     p_score.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     p_score.set_defaults(func=cmd_score_benchmark)

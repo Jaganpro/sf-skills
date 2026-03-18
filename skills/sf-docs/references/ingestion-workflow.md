@@ -28,42 +28,21 @@ The workflow is intentionally **targeted**, not broad:
    - if HTML is weak/unusable, prefer PDF text extraction when available
    - retain raw sources locally for reprocessing
 
-4. **index**
-   - point qmd at `~/.sf-docs/normalized/md/`
-   - add global and family-level context
-   - run embeddings when desired
+4. **refresh**
+   - re-run sync for changed, missing, or newly added guides
 
 ## Helper Scripts
 
 ### Discover / enrich manifest
 
 ```bash
-python3 skills/sf-docs/scripts/discover_salesforce_docs.py \
-  --seed skills/sf-docs/assets/discovery-manifest.seed.json \
-  --output ~/.sf-docs/manifest/guides.json \
-  --pretty
+python3 skills/sf-docs/scripts/discover_salesforce_docs.py           --seed skills/sf-docs/assets/discovery-manifest.seed.json           --output ~/.sf-docs/manifest/guides.json           --pretty
 ```
 
 ### Fetch / normalize selected guides
 
 ```bash
-python3 skills/sf-docs/scripts/sync_sf_docs.py \
-  --manifest ~/.sf-docs/manifest/guides.json \
-  --corpus-root ~/.sf-docs \
-  --slug apexcode \
-  --slug api_rest \
-  --download-pdf \
-  --download-html \
-  --browser-scrape \
-  --normalize
-```
-
-### Bootstrap qmd over the normalized corpus
-
-```bash
-python3 skills/sf-docs/scripts/bootstrap_qmd.py \
-  --corpus-root ~/.sf-docs \
-  --embed
+python3 skills/sf-docs/scripts/sync_sf_docs.py           --manifest ~/.sf-docs/manifest/guides.json           --corpus-root ~/.sf-docs           --slug apexcode           --slug api_rest           --download-pdf           --download-html           --browser-scrape           --normalize
 ```
 
 ## Normalization Preference
@@ -78,6 +57,6 @@ When browser-scraped JSON, raw HTML, and raw PDF are available:
 ## v1 Constraints
 
 - no broad whole-site crawling during routine queries
-- no mandatory dependency on qmd
+- no external indexing dependency
 - no public-repo storage of downloaded Salesforce docs
-- no parallel qmd + scraping fusion by default
+- no parallel live-retrieval fusion by default

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run the sf-docs retrieval benchmark against qmd_first and no_qmd modes.
+Run the sf-docs retrieval benchmark against the local_first mode.
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def benchmark_status(case: Dict[str, Any], result: Dict[str, Any]) -> str:
     passed, _ = evaluate_case(case, result)
     if passed:
         return 'pass'
-    if result.get('status') == 'pass' or result.get('status') == 'partial':
+    if result.get('status') in ('pass', 'partial'):
         return 'partial'
     return 'fail'
 
@@ -111,12 +111,10 @@ def adapt_result(case: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]
 
 
 def run_case(case: Dict[str, Any], manifest: Path, corpus_root: Path, live_scrape: bool) -> Dict[str, Any]:
-    qmd_result = retrieve(case['query'], manifest, corpus_root, 'qmd_first', live_scrape=live_scrape)
-    no_qmd_result = retrieve(case['query'], manifest, corpus_root, 'no_qmd', live_scrape=live_scrape)
+    local_first_result = retrieve(case['query'], manifest, corpus_root, 'local_first', live_scrape=live_scrape)
     return {
         'id': case['id'],
-        'qmd_first': adapt_result(case, qmd_result),
-        'no_qmd': adapt_result(case, no_qmd_result),
+        'local_first': adapt_result(case, local_first_result),
     }
 
 
@@ -134,12 +132,11 @@ def main() -> int:
     args = parse_args()
     benchmark = load_json(args.benchmark)
     out = {
-        'version': 2,
+        'version': 3,
         'benchmark': args.benchmark.name,
         'generated_at': benchmark.get('generated_at'),
         'modes': {
-            'qmd_first': {'description': 'qmd-first local retrieval with Salesforce-aware fallback on weak/missing results'},
-            'no_qmd': {'description': 'Salesforce-aware retrieval without qmd/local index'},
+            'local_first': {'description': 'Local corpus artifacts when available, with Salesforce-aware fallback on weak/missing evidence'},
         },
         'results': [run_case(case, args.manifest.expanduser(), args.corpus_root.expanduser(), args.live_scrape) for case in benchmark.get('cases', [])],
     }

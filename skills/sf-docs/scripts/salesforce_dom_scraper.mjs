@@ -4,7 +4,7 @@
  *
  * Reimplements the useful retrieval techniques for Salesforce docs without
  * coupling them to SQLite or a specific storage backend. Output is JSON so the
- * caller can persist raw results locally and index them into qmd.
+ * caller can persist raw results locally for later normalization and retrieval.
  *
  * Techniques:
  * - JS rendering with Playwright

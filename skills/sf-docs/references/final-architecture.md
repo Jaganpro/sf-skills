@@ -3,15 +3,15 @@
 ## Mandatory vs Optional
 
 - `sf-docs` is a **mandatory core skill** in `sf-skills`
-- qmd is an **optional external dependency** installed via the installer when the user opts in
+- `sf-docs` has **no external retrieval-index dependency**
 
 ## Runtime Behavior
 
 Use a **sequential retrieval model** in v1:
 
-1. detect qmd and local corpus availability
-2. run qmd lookup first when available
-3. evaluate result quality
+1. detect local corpus availability
+2. inspect local artifacts first when present
+3. evaluate evidence quality
 4. fall back to Salesforce-aware retrieval when results are weak or missing
 5. answer with grounded official sources
 
@@ -21,8 +21,8 @@ This model gives the best balance of:
 
 - correctness
 - operational simplicity
-- user choice
-- compatibility with both qmd and non-qmd environments
+- predictable local caching
+- compatibility with both synced and non-synced environments
 
 ## Local Storage
 
@@ -31,8 +31,8 @@ All downloaded/scraped Salesforce documentation artifacts stay **local to the us
 - manifests
 - raw PDFs
 - raw HTML captures
+- browser scrape payloads
 - normalized markdown
-- qmd index/embedding state
 
 These artifacts should **not** be committed into the public Git repo.
 
@@ -41,16 +41,16 @@ These artifacts should **not** be committed into the public Git repo.
 Keep v1 intentionally limited:
 
 - small pilot corpus
-- one qmd collection
+- local artifact inspection before live retrieval
 - targeted fallback retrieval
 - no broad automatic crawling during normal queries
-- no parallel qmd + scraping fusion by default
+- no new indexing dependency
 
 ## Expansion Rule
 
 Expand beyond the pilot corpus only after benchmark evidence shows that:
 
-- qmd-first mode is reliable
-- no-qmd mode is still materially useful
+- local-first retrieval is reliable
+- wrong-guide rejection remains strong
 - fallback thresholds are well tuned
 - answer grounding remains strong

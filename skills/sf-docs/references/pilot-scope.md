@@ -10,7 +10,7 @@ Instead, start with a compact, high-value corpus that:
 
 - covers the most common developer workflows
 - covers the failure modes already observed with generic web fetch
-- provides a realistic benchmark for qmd-first and no-qmd modes
+- provides a realistic benchmark for local-first retrieval
 
 ## Pilot Guide Set
 
@@ -45,7 +45,7 @@ That mix is enough to validate:
 
 - mixed-family retrieval behavior
 - HTML-vs-PDF decisions
-- qmd context usefulness
+- local artifact usefulness
 - fallback logic when pages are unstable
 
 ## Explicitly Out of Scope for v1
@@ -57,7 +57,7 @@ These are **not** required for the first implementation milestone:
 - exhaustive setup/admin docs
 - every guide listed under `developer.salesforce.com/docs#browse`
 - aggressive continuous crawling of the whole docs site
-- parallel qmd + scraping fusion
+- introducing a new indexing dependency
 
 ## Expansion Order After Pilot
 
