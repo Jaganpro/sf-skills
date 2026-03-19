@@ -63,6 +63,7 @@ Before building, confirm Flow is the right answer rather than:
 | reusable background logic | autolaunched / subflow |
 | scheduled processing | scheduled flow |
 | event-driven declarative response | platform-event flow |
+| AI-evaluated routing (sentiment, intent, tone) | autolaunched with AI Decision element |
 
 ### 3. Start from a template
 Prefer the provided assets:
@@ -72,6 +73,7 @@ Prefer the provided assets:
 - `assets/autolaunched-flow-template.xml`
 - `assets/scheduled-flow-template.xml`
 - `assets/platform-event-flow-template.xml`
+- `assets/ai-decision-template.xml`
 - `assets/subflows/`
 
 ### 4. Validate against Flow guardrails
@@ -81,6 +83,8 @@ Focus on:
 - proper fault paths
 - correct trigger conditions
 - safe subflow composition
+- AI Decision elements not placed inside loops (credit cost per iteration)
+- AI Decision prompts include merge field references for data context
 
 ### 5. Hand off deployment and testing
 Use:
@@ -161,6 +165,9 @@ Next step: <dry-run deploy, activate, or test>
 - [references/orchestration-parent-child.md](references/orchestration-parent-child.md)
 - [references/orchestration-sequential.md](references/orchestration-sequential.md)
 - [references/orchestration-conditional.md](references/orchestration-conditional.md)
+
+### AI Decision
+- [references/ai-decision-guide.md](references/ai-decision-guide.md)
 
 ### Screen / integration / troubleshooting
 - [references/form-building-guide.md](references/form-building-guide.md)
