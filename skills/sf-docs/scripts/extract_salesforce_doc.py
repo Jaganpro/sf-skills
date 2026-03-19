@@ -32,6 +32,7 @@ import re
 from typing import Any, Dict
 from urllib.parse import urlparse
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 try:
@@ -119,7 +120,23 @@ def extract_official_salesforce_doc(url: str, timeout_seconds: int, use_stealth:
             response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
             http_status = response.status if response else None
             page.wait_for_timeout(1500)
-            page.wait_for_load_state("networkidle", timeout=timeout_ms)
+            try:
+                page.wait_for_function(
+                    r"""
+                    () => {
+                      const el = document.querySelector('main, article, [role="main"]');
+                      const text = (el?.innerText || el?.textContent || '').trim();
+                      return text.length > 200;
+                    }
+                    """,
+                    timeout=min(timeout_ms, 15000),
+                )
+            except PlaywrightTimeoutError:
+                pass
+            try:
+                page.wait_for_load_state("networkidle", timeout=min(timeout_ms, 15000))
+            except PlaywrightTimeoutError:
+                pass
             page.wait_for_timeout(500)
 
             payload = page.evaluate(
