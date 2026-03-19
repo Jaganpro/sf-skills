@@ -107,7 +107,7 @@
 | `ASV-RUN-011` | Blocking | Missing target action `outputs:` | Errors when a target-backed action definition omits `outputs:`. |
 | `ASV-RUN-012` | Warning | Multiple `available when` portability | Warns when an action declares more than one `available when` clause. |
 | `ASV-RUN-013` | Warning | `require_user_confirmation` runtime gap | Warns on `require_user_confirmation: True` because runtime dialogs are unreliable. |
-| `ASV-RUN-014` | Blocking | `run` resolves to reasoning-only utility | Errors when `run @actions.X` points at a reasoning-only utility/delegation instead of a topic-level target-backed action definition. |
+| `ASV-RUN-014` | Blocking | `run` resolves outside target-backed definition scope | Errors when `run @actions.X` points at a reasoning-only utility, a topic-level utility/delegation without `target:`, or an unresolved action name instead of a topic-level target-backed action definition. |
 | `ASV-RUN-015` | Warning | Welcome/error interpolation drift | Warns when system welcome/error message lines appear to use interpolation. |
 | `ASV-RUN-016` | Warning | Welcome/error multiline risk | Warns when system welcome/error messages use block scalars (`|`, `>`). |
 | `ASV-RUN-017` | Warning | Service Agent `@context.*` sources | Warns on linked `@context.*` sources in Service Agent files because support is surface-dependent. |

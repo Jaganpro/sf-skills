@@ -7,13 +7,15 @@
 #   - When you want the agent to make intelligent choices about tool usage
 #
 # ★ Key Insight:
-#   - Deterministic: "run @actions.x" - ALWAYS runs when code path is reached
+#   - Deterministic: "run @actions.x" - ALWAYS runs when code path is reached,
+#     but ONLY when x resolves to a topic-level action definition with target:
 #   - LLM-Controlled: "{!@actions.x}" in instructions - LLM decides based on context
 #   - Tools in reasoning.actions - LLM chooses which to invoke
 #
 # ★ Two Invocation Methods:
-#   1. Deterministic (run @actions.x): Use in before/after_reasoning, action callbacks
-#   2. LLM-Controlled ({!@actions.x}): Reference in reasoning instructions
+#   1. Deterministic (run @actions.x): Use only for topic-level target-backed actions
+#   2. LLM-Controlled ({!@actions.x} / reasoning.actions): Use for utilities,
+#      delegations, and context-sensitive choices
 #
 # This is a PARTIAL template - integrate into a complete agent file
 
@@ -133,7 +135,8 @@ topic order_assistance:
 #   - Audit logging (must always run)
 #   - Required follow-up actions
 #   - Guaranteed side effects
-#   - In before_reasoning / after_reasoning blocks
+#   - Only when the referenced action is topic-level and has target:
+#   - In before_reasoning / after_reasoning blocks (portability still varies)
 #   - In action callbacks (run after parent)
 #
 # LLM-CONTROLLED (reasoning.actions or {!@actions.x}):

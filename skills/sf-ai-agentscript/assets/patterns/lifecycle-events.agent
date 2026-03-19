@@ -76,6 +76,10 @@ topic conversation:
 
 	# ★ before_reasoning: Runs BEFORE each reasoning step
 	before_reasoning:
+		# Null-guard mutable numbers before arithmetic
+		if @variables.turn_count is None:
+			set @variables.turn_count = 0
+
 		# Increment turn counter
 		set @variables.turn_count = @variables.turn_count + 1
 

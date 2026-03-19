@@ -11,7 +11,7 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v66.0+, Einstein Agent User"
 metadata:
-  version: "2.8.0"
+  version: "2.8.1"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor). Agent user setup validated against ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant."
@@ -67,6 +67,7 @@ Before you author or fix any `.agent` file, verify these first:
 8. **`linked` variables do not use `object` / `list` types**
 9. **Use explicit `agent_type`**
 10. **Use `@actions.` prefixes consistently**
+11. **Use `run @actions.X` only when `X` is a topic-level action definition with `target:`**
 
 For the expanded version, use [references/activation-checklist.md](references/activation-checklist.md).
 
@@ -167,9 +168,17 @@ These execute as code, not suggestions:
 - conditionals
 - `available when` guards
 - variable checks
-- inline action execution
-- utility actions such as transitions / escalation
+- direct `set` / `transition to`
+- `run @actions.X` **only when `X` is a topic-level action definition with `target:`**
 - variable injection into LLM-facing text
+
+Important distinction:
+- **Deterministic**: `set`, `transition to`, and `run @actions.X` for a target-backed topic action
+- **LLM-directed**: `reasoning.actions:` utilities / delegations such as `@utils.setVariables`, `@utils.transition`, and `{!@actions.X}` instruction references
+
+If you need deterministic behavior for something that is currently modeled as a reasoning-level utility, either:
+- rewrite it as direct `set` / `transition to`, or
+- promote it to a topic-level target-backed action and `run` that action
 
 See [references/instruction-resolution.md](references/instruction-resolution.md) and [references/architecture-patterns.md](references/architecture-patterns.md).
 
@@ -196,6 +205,7 @@ See [references/instruction-resolution.md](references/instruction-resolution.md)
 | `invalid input/output parameters` on prompt template action | **Target template is in Draft status** — activate it first | [references/action-prompt-templates.md](references/action-prompt-templates.md#draft-template-publish-errors) |
 | Parser rejects conditionals | `else if`, nested `if`, empty `if` body | [references/syntax-reference.md](references/syntax-reference.md) |
 | Action target issues | missing Flow / Apex target, inactive Flow, bad schemas | [references/actions-reference.md](references/actions-reference.md) |
+| `ACTION_NOT_IN_SCOPE` on `run @actions.X` | `run` points at a utility / delegation / unresolved action instead of a topic-level target-backed definition | [references/syntax-reference.md](references/syntax-reference.md), [references/instruction-resolution.md](references/instruction-resolution.md) |
 | Preview and runtime disagree | linked vars / context / known platform issues | [references/known-issues.md](references/known-issues.md) |
 | Validate passes but publish fails | org-specific user / permission / retrieve-back issue | [references/production-gotchas.md](references/production-gotchas.md), [references/cli-guide.md](references/cli-guide.md) |
 

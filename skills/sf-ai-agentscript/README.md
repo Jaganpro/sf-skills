@@ -83,7 +83,7 @@ topic:         # Required: Conversation handlers
 instructions: ->           # Arrow syntax for expressions
   if @variables.verified:  # Conditional (resolves before LLM)
     | Welcome back!        # Literal text for LLM
-  run @actions.load_data   # Execute action
+  run @actions.load_data   # Execute a topic-level target-backed action deterministically
   set @var = @outputs.val  # Capture output
 
 # Action guards

@@ -26,6 +26,7 @@ Do **not** use it for:
 - No default values on `linked` variables
 - No `object` / `list` linked variables
 - Use explicit `agent_type`
+- Use `run @actions.X` only for topic-level action definitions that declare `target:`
 
 ## 3. Service Agent publish safety
 

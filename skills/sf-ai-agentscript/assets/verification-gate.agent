@@ -134,6 +134,29 @@ topic account_management:
 
 topic refund_processor:
    description: "Process refund requests (requires verification)"
+
+   actions:
+      create_crm_case:
+         description: "Create a CRM case to record the approved refund"
+         inputs:
+            customer_id: string
+               description: "Verified customer ID"
+            refund_amount: number
+               description: "Approved refund amount"
+         outputs:
+            case_id: string
+               description: "Created case ID"
+         target: "flow://Create_CRM_Case"
+      check_churn_risk:
+         description: "Load churn risk data for the verified customer"
+         inputs:
+            customer_id: string
+               description: "Verified customer ID"
+         outputs:
+            score: number
+               description: "Churn risk score"
+         target: "flow://Check_Churn_Risk"
+
    reasoning:
       instructions: ->
          # SECURITY GATE: Re-check verification

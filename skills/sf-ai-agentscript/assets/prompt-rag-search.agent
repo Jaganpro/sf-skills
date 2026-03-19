@@ -53,6 +53,35 @@ start_agent entry:
 
 topic knowledge_search:
    description: "Search knowledge base and generate grounded responses"
+
+   actions:
+      Search_Knowledge_Base:
+         description: "Search for relevant information in the knowledge base"
+         inputs:
+            query: string
+               description: "Customer's knowledge query"
+         outputs:
+            original_query: string
+               description: "Normalized query text"
+            retrieved_chunks: string
+               description: "Retrieved knowledge context"
+            has_results: boolean
+               description: "Whether matching knowledge was found"
+         target: "retriever://Search_Knowledge_Base"
+      Generate_Grounded_Response:
+         description: "Generate a grounded answer from retrieved knowledge"
+         inputs:
+            query: string
+               description: "Customer's question"
+            context: string
+               description: "Retrieved knowledge context"
+         outputs:
+            promptResponse: string
+               description: "Grounded answer"
+               is_displayable: True
+               is_used_by_planner: True
+         target: "prompt://Generate_Grounded_Response"
+
    reasoning:
       instructions: ->
          # POST-ACTION: Generate response after retrieval
@@ -116,6 +145,22 @@ topic knowledge_search:
 
 topic follow_up:
    description: "Handle follow-up questions using cached context"
+
+   actions:
+      Generate_Grounded_Response:
+         description: "Generate a grounded answer from cached knowledge"
+         inputs:
+            query: string
+               description: "Follow-up question"
+            context: string
+               description: "Cached retrieved knowledge"
+         outputs:
+            promptResponse: string
+               description: "Grounded follow-up answer"
+               is_displayable: True
+               is_used_by_planner: True
+         target: "prompt://Generate_Grounded_Response"
+
    reasoning:
       instructions: ->
          # COST OPTIMIZATION: Reuse cached search_results instead of re-searching

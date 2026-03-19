@@ -157,6 +157,21 @@ topic order_status:
 	description: "Check order status with lazy loading"
 
 	actions:
+		load_orders:
+			description: "Load recent order data for this topic"
+			inputs:
+				contact_id: string
+					description: "Contact ID"
+					is_required: True
+			outputs:
+				order_id: string
+					description: "Most recent order ID"
+				status: string
+					description: "Order status"
+				tracking: string
+					description: "Tracking number"
+			target: "flow://Get_Recent_Orders"
+
 		get_tracking_details:
 			description: "Get detailed tracking information"
 			inputs:
@@ -200,6 +215,20 @@ topic order_status:
 topic support_cases:
 	label: "Support Cases"
 	description: "Review support cases with lazy loading"
+
+	actions:
+		load_cases:
+			description: "Load support case data for this topic"
+			inputs:
+				contact_id: string
+					description: "Contact ID"
+					is_required: True
+			outputs:
+				open_count: number
+					description: "Number of open cases"
+				last_subject: string
+					description: "Last case subject"
+			target: "flow://Get_Open_Cases"
 
 	reasoning:
 		instructions: ->

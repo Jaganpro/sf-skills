@@ -165,6 +165,26 @@ topic pre_escalation:
 
 topic escalation:
    description: "Execute escalation to human agent"
+
+   actions:
+      Log_Escalation_Context:
+         description: "Persist escalation context before handoff"
+         inputs:
+            customer_name: string
+               description: "Customer's name"
+            issue_summary: string
+               description: "Issue summary"
+            category: string
+               description: "Issue category"
+            reason: string
+               description: "Escalation reason"
+            attempt_count: number
+               description: "Attempt count before escalation"
+         outputs:
+            logged: boolean
+               description: "Whether escalation context was persisted"
+         target: "flow://Log_Escalation_Context"
+
    reasoning:
       instructions: ->
          # Log escalation context (this gets passed to human agent)

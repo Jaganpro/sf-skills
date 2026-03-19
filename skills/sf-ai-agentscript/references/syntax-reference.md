@@ -826,7 +826,7 @@ actions:
 | Missing `default_agent_user` | Internal error on deploy | Add valid Einstein Agent User |
 | `@inputs` in `set` directive | Unknown deploy error | Use `@utils.setVariables` to capture inputs separately, then reference via `@variables` |
 | Bare action name (no prefix) | Action not found / ignored | Always use `@actions.action_name` in `run`, templates, and instruction text |
-| `run @actions.X` for utility | Action not found | `run @actions.X` resolves against topic-level `actions:` with `target:` — use `@utils.setVariables` directly, not via `run` |
+| `run @actions.X` for utility / delegation / unresolved action | `ACTION_NOT_IN_SCOPE`, action not found, or available-actions list excludes the name | `run @actions.X` resolves only to topic-level `actions:` that declare `target:`. Use direct `set` / `transition to` for deterministic utility behavior, or let `reasoning.actions:` invoke the utility. |
 | Null check vs empty string | Wrong comparison for null | Use `is None` for null checks, `== ""` for empty strings — they are different |
 | `is_required` not enforced | Planner invokes action without required inputs | Use `available when @variables.X is not None` guard instead. `is_required` is a hint, not a gate. See Issue 26 |
 | `date` type in action I/O | Runtime error `'Date'` | Use `object` + `complex_data_type_name: "lightning__dateType"` in action I/O. `date` works fine for variables. See Issue 28 |
@@ -883,20 +883,56 @@ if @variables.data == "":
 
 > Use `is None` when a variable may not have been set at all. Use `== ""` when checking for an explicitly empty string value.
 
-### `run @actions.X` vs Reasoning-Level Utilities
+### `run @actions.X` Only Works for Topic-Level Target-Backed Actions
 
-`run @actions.X` resolves against the topic-level `actions:` block (definitions with `target:`). It does NOT work for reasoning-level utilities like `@utils.setVariables`.
+`run @actions.X` resolves only against topic-level `actions:` definitions that declare a real `target:`. It does **not** work for reasoning-level utilities, and it is also the wrong tool for topic-level utilities / delegations that do not have `target:`.
 
 ```yaml
-# ❌ WRONG — set_user_name is defined as @utils.setVariables, not a topic-level action
-run @actions.set_user_name   # "Action not found" error
+# ❌ WRONG — set_user_name is a reasoning-level utility, not a target-backed action
+run @actions.set_user_name   # ACTION_NOT_IN_SCOPE / action not found
 
-# ✅ CORRECT — use @utils.setVariables directly in reasoning.actions:
 reasoning:
    actions:
       set_user_name: @utils.setVariables
          with user_name=...
 ```
+
+```yaml
+# ❌ WRONG — go_help is topic-level, but it is still a utility transition (no target:)
+actions:
+   go_help: @utils.transition to @topic.help
+
+reasoning:
+   instructions: ->
+      run @actions.go_help   # not a valid deterministic run target
+```
+
+```yaml
+# ✅ CORRECT — use direct deterministic primitives for non-target utility behavior
+reasoning:
+   instructions: ->
+      set @variables.user_name = "Pat"
+      transition to @topic.help
+```
+
+```yaml
+# ✅ CORRECT — use run only for a topic-level target-backed action definition
+actions:
+   load_customer:
+      target: "flow://Load_Customer"
+      inputs:
+         customer_id: string
+      outputs:
+         customer_name: string
+
+reasoning:
+   instructions: ->
+      run @actions.load_customer
+         with customer_id = @variables.customer_id
+         set @variables.customer_name = @outputs.customer_name
+```
+
+**Rule of thumb:** if you want deterministic execution, `run` is correct **only** when the referenced action is a topic-level definition with `target:`. Otherwise use direct `set` / `transition to`, or let `reasoning.actions:` expose the utility for LLM-driven invocation.
 
 ---
 

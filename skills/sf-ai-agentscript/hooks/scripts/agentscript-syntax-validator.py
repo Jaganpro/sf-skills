@@ -1245,14 +1245,14 @@ class AgentScriptValidator:
                 self._add_error(i, f"Bare action name '{match.group(1)}' in run. Use '@actions.{match.group(1)}' explicitly.", "ASV-RUN-003")
 
     def _check_run_resolution_to_definition_scope(self):
-        definition_names: Dict[str, Set[str]] = {}
-        reasoning_names: Dict[str, Set[str]] = {}
+        definition_actions: Dict[str, Dict[str, Dict]] = {}
+        reasoning_actions: Dict[str, Dict[str, Dict]] = {}
         for action in self.action_definitions:
             owner = action.get("owner") or ""
             if action.get("scope") == "definition":
-                definition_names.setdefault(owner, set()).add(action["name"])
+                definition_actions.setdefault(owner, {})[action["name"]] = action
             elif action.get("scope") == "reasoning":
-                reasoning_names.setdefault(owner, set()).add(action["name"])
+                reasoning_actions.setdefault(owner, {})[action["name"]] = action
 
         pattern = re.compile(r"^\s*run\s+@actions\.([A-Za-z_][A-Za-z0-9_]*)\b")
         for i, line in enumerate(self.lines, 1):
@@ -1263,12 +1263,43 @@ class AgentScriptValidator:
             owner = self.line_owner.get(i)
             if not owner:
                 continue
-            if action_name in reasoning_names.get(owner, set()) and action_name not in definition_names.get(owner, set()):
+
+            definition_action = definition_actions.get(owner, {}).get(action_name)
+            reasoning_action = reasoning_actions.get(owner, {}).get(action_name)
+
+            if definition_action:
+                if not definition_action.get("target"):
+                    kind = definition_action.get("kind") or "action"
+                    self._add_error(
+                        i,
+                        f"run @actions.{action_name} resolves to a non-target-backed '{kind}' action in '{owner}'. Deterministic 'run' only works for topic-level action definitions that declare 'target:'. Use direct 'set' / 'transition to', or let reasoning.actions invoke the utility/delegation instead.",
+                        "ASV-RUN-014",
+                    )
+                continue
+
+            if reasoning_action:
                 self._add_error(
                     i,
-                    f"run @actions.{action_name} resolves to a reasoning-only utility/delegation in '{owner}'. 'run' should target topic-level action definitions with 'target:'.",
+                    f"run @actions.{action_name} resolves to a reasoning-only utility/delegation in '{owner}'. Deterministic 'run' only works for topic-level action definitions that declare 'target:'.",
                     "ASV-RUN-014",
                 )
+                continue
+
+            available_targets = sorted(
+                action["name"]
+                for action in definition_actions.get(owner, {}).values()
+                if action.get("target")
+            )
+            available_suffix = (
+                f" Available deterministic targets in '{owner}': {', '.join(available_targets)}."
+                if available_targets
+                else ""
+            )
+            self._add_error(
+                i,
+                f"run @actions.{action_name} does not resolve to a topic-level target-backed action definition in '{owner}'. Deterministic 'run' requires a topic-level action with 'target:'.{available_suffix}",
+                "ASV-RUN-014",
+            )
 
     def _check_action_metadata_context(self):
         for action in self.action_definitions:
@@ -1879,7 +1910,7 @@ class AgentScriptValidator:
             self._checklist_entry("Targets & permissions", "Connection route flow readiness", ["ASV-ORG-007"], success_detail="All connection route Flows exist and have an active version.", na_detail="No outbound connection route Flows detected.", applicable=bool(route_targets), confidence="Proven publish blocker"),
             self._checklist_entry("Targets & permissions", "Other target protocol review", ["ASV-ORG-005"], success_detail="All detected target protocols are fully supported by automatic checks.", na_detail="No non-apex/non-flow targets detected.", applicable=bool(targets["other"]), confidence="Manual review"),
             self._checklist_entry("Runtime gotchas", "Collection / set gotchas", ["ASV-RUN-001", "ASV-RUN-002"], success_detail="No known collection/set gotchas detected.", confidence="Compiler / deploy rule"),
-            self._checklist_entry("Runtime gotchas", "Action invocation syntax", ["ASV-RUN-003", "ASV-RUN-014"], success_detail="run statements reference valid topic-level @actions definitions.", confidence="Compiler / resolution rule"),
+            self._checklist_entry("Runtime gotchas", "Action invocation syntax", ["ASV-RUN-003", "ASV-RUN-014"], success_detail="run statements resolve only to topic-level target-backed @actions definitions.", confidence="Compiler / resolution rule"),
             self._checklist_entry("Runtime gotchas", "Utility action metadata", ["ASV-RUN-004"], success_detail="@utils.transition metadata usage is valid.", confidence="Compiler rule"),
             self._checklist_entry("Runtime gotchas", "Target action schema completeness", ["ASV-RUN-011"], success_detail="Target-backed actions declare outputs: blocks for publish safety.", na_detail="No target-backed action definitions detected.", applicable=has_targets, confidence="Publish blocker"),
             self._checklist_entry("Runtime gotchas", "Multiple available-when portability", ["ASV-RUN-012"], success_detail="Actions avoid duplicate available-when clauses.", na_detail="No actions detected.", applicable=bool(self.action_definitions), confidence="Org-dependent behavior"),

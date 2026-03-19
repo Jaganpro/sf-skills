@@ -159,7 +159,7 @@ Useful for isolating whether failures are in the action target or the agent fram
 | Method | Syntax | Behavior | AiAuthoringBundle | GenAiPlannerBundle |
 |--------|--------|----------|-------------------|-------------------|
 | **Actions Block** | `actions:` in `reasoning:` | LLM chooses which to execute | ✅ Works | ✅ Works |
-| **Deterministic** | `run @actions.name` | Always executes when code path is reached | ⚠️ Partial (see below) | ✅ Works |
+| **Deterministic** | `run @actions.name` | Always executes when code path is reached **if `name` resolves to a topic-level target-backed action definition** | ⚠️ Partial (see below) | ✅ Works |
 
 ### Deployment Method Capabilities
 
@@ -184,7 +184,7 @@ before_reasoning:
    run @actions.log_turn    # ❌ May not execute as expected
 ```
 
-> **Note**: The Dec 2025 finding that `run` was "NOT supported" has been superseded. As of Jan 2026, `run` works in post-action chains and procedural instruction blocks. It does NOT work reliably in `before_reasoning:`.
+> **Note**: The Dec 2025 finding that `run` was "NOT supported" has been superseded. As of Jan 2026, `run` works in post-action chains and procedural instruction blocks **when it targets a topic-level action definition with `target:`**. It does NOT work reliably in `before_reasoning:`. Do **not** use `run` for utilities / delegations (`@utils.setVariables`, `@utils.transition`, `@topic.X`) even if they are written under an `actions:` block — those are not deterministic `run` targets.
 
 **`{!@actions.name}` interpolation in instructions (Updated Feb 2026)**
 
