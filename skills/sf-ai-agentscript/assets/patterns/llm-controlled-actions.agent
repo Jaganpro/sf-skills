@@ -72,7 +72,7 @@ topic order_assistance:
 			outputs:
 				refund_amount: number
 					description: "Refund amount"
-					filter_from_agent: False     # Show this to LLM
+					filter_from_agent: False     # Leave visible for normal response/planner use
 			target: "flow://Cancel_Order"
 
 		log_interaction:

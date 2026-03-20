@@ -9,11 +9,11 @@
 #
 # KEY PATTERN:
 # In Agentforce Assets, set action outputs with:
-# - is_displayable: False  (LLM cannot show this to user)
-# - is_used_by_planner: True  (LLM can use for routing)
+# - is_displayable: False  (hide from direct customer display)
+# - is_used_by_planner: True  (planner can use for routing)
 #
-# This ensures the LLM routes based on classification but cannot
-# generate hallucinated responses based on the classification data.
+# This ensures the planner routes based on classification but the raw
+# classification label is not directly surfaced to the customer.
 
 system:
    messages:

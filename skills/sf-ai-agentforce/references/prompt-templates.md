@@ -627,7 +627,7 @@ topic content_generation:
                 promptResponse: string
                     description: "The AI-generated schedule content"
                     is_used_by_planner: True
-                    is_displayable: True
+                    is_displayable: False
             # Target uses generatePromptResponse:// protocol
             target: "generatePromptResponse://Generate_Personalized_Schedule"
 
@@ -649,7 +649,13 @@ topic content_generation:
 | Target protocol | `generatePromptResponse://` | `target: "generatePromptResponse://My_Template"` |
 | Input naming | Must have `"Input:"` prefix | `"Input:customerName": string` |
 | Output field | Use `promptResponse` | `promptResponse: string` |
+| Recommended output flags | Hide raw prompt output, keep it planner-visible | `is_displayable: False` + `is_used_by_planner: True` |
 | Template name | Must match PromptTemplate API name | Template file: `My_Template.promptTemplate-meta.xml` |
+
+> **Output visibility guidance**
+> - For prompt-template outputs, prefer `is_displayable: False` + `is_used_by_planner: True`.
+> - `is_displayable: True` can cause blank or missing responses because the platform may try to render the raw prompt output directly.
+> - Do not treat `filter_from_agent: True` as a drop-in replacement when the same field must also be planner-visible.
 
 **Mapping Template Variables:**
 

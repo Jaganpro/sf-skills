@@ -27,6 +27,10 @@ Do **not** use it for:
 - No `object` / `list` linked variables
 - Use explicit `agent_type`
 - Use `run @actions.X` only for topic-level action definitions that declare `target:`
+- Do not branch directly on raw `@system_variables.user_input contains/startswith/endswith`
+- Do not treat `contains` / `startswith` / `endswith` as the sole gate for critical routing or validation
+- On prompt template outputs, prefer `is_displayable: False` + `is_used_by_planner: True`
+- Do not assume `@outputs.X` is scalar; inspect the output schema before comparing or assigning it
 
 ## 3. Service Agent publish safety
 

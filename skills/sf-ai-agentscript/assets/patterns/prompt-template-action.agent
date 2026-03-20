@@ -98,10 +98,11 @@ topic schedule_generation:
 					is_required: False
 			outputs:
 				# ★ Standard output field name for prompt responses
+				# Hide the raw prompt output and let the planner synthesize it naturally
 				promptResponse: string
 					description: "The AI-generated schedule content"
 					is_used_by_planner: True
-					is_displayable: True
+					is_displayable: False
 			# ★ Target protocol: generatePromptResponse://TemplateApiName
 			target: "generatePromptResponse://Generate_Personalized_Schedule"
 
@@ -148,7 +149,7 @@ topic email_generation:
 				promptResponse: string
 					description: "The generated email content"
 					is_used_by_planner: True
-					is_displayable: True
+					is_displayable: False
 			target: "generatePromptResponse://Generate_Professional_Email"
 
 	reasoning:
@@ -185,5 +186,7 @@ topic email_generation:
 #
 # COMMON ERRORS:
 #   - HTTP 404: PromptTemplate not deployed yet
+#   - Blank response: prompt output is marked is_displayable: True instead of False
+#   - Missing synthesis: prompt output is hidden but not planner-visible
 #   - "property X not found": Input name doesn't match template variable
 #   - Missing "Input:" prefix: Inputs won't map correctly

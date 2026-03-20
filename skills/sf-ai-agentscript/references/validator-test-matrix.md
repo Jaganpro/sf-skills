@@ -49,7 +49,7 @@ PY
 | `assets/patterns/critical-input-collection.agent` | `ASV-RUN-012`, `ASV-RUN-007`, `ASV-CFG-007` | Complete pattern demonstrating planner-hint caveats; warnings are instructional. |
 | `assets/patterns/multi-step-workflow.agent` | `ASV-RUN-007`, `ASV-RUN-012`, `ASV-QLT-005` | Complete pattern; warnings are mostly planner-hint guidance plus one post-action ordering suggestion. |
 | `assets/patterns/procedural-instructions.agent` | `ASV-RUN-007`, `ASV-CFG-007` | Complete pattern with advisory warnings only. |
-| `assets/patterns/prompt-template-action.agent` | `ASV-RUN-005`, `ASV-RUN-007`, `ASV-CFG-007` | Complete pattern intentionally demonstrates risky prompt output displayability / planner hints. |
+| `assets/patterns/prompt-template-action.agent` | `ASV-RUN-007`, `ASV-CFG-007` | Complete pattern now uses the safer prompt-output flags; remaining warnings are planner-hint guidance plus demo placeholders. |
 | `assets/patterns/system-instruction-overrides.agent` | `ASV-RUN-010`, `ASV-CFG-007` | Complete pattern; lifecycle `run` warnings are expected portability cautions. |
 | `assets/prompt-rag-search.agent` | `ASV-CFG-007` | Complete example with only the demo `default_agent_user` reminder remaining. |
 | `assets/verification-gate.agent` | `ASV-CFG-007` | Complete pattern; undefined `refund_amount` bug was fixed during validator audit and inline demo-user comment removed. |

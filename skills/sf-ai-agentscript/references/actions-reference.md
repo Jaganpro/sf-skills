@@ -47,14 +47,35 @@ All actions in Agent Script support these properties:
 | `description` | String | Explains the output parameter | v1.3.0 |
 | `label` | String | Display name in UI | v2.2.0 |
 | `filter_from_agent` | Boolean | `True` = hide from user display (GA standard name) | v1.3.0 |
-| `is_displayable` | Boolean | `False` = hide from user (compile-valid alias for `filter_from_agent`) | v2.2.0 |
+| `is_displayable` | Boolean | `False` = hide from user (compile-valid alias for `filter_from_agent`). Prefer this on prompt outputs when the planner still needs the value | v2.2.0 |
 | `is_used_by_planner` | Boolean | `True` = LLM can reason about this value for routing decisions | v2.2.0 |
 | `developer_name` | String | Overrides the parameter's developer name | — |
 | `complex_data_type_name` | String | Lightning data type mapping | v2.1.0 |
 
 > **`filter_from_agent` vs `is_displayable`**: Both control the same behavior. `filter_from_agent: True` is the GA standard name (used in official documentation). `is_displayable: False` is a compile-valid alias that achieves the same result.
 
-> ⚠️ **`filter_from_agent` and `is_used_by_planner` are mutually exclusive**: Do NOT use both on the same output field. The combination causes `InvalidFormatError` which invalidates the entire action definition, triggering cascading `ACTION_NOT_IN_SCOPE` errors on every reference to that action. Use `filter_from_agent: True` alone to hide outputs from the customer. See [known-issues.md](known-issues.md#issue-40) Issue 40.
+> ⚠️ **Prompt-template exception**: On `prompt://` / `generatePromptResponse://` targets, prefer `is_displayable: False` + `is_used_by_planner: True` when the planner should synthesize the reply. `is_displayable: True` is a blank-response trap for prompt outputs.
+
+> ⚠️ **`filter_from_agent` and `is_used_by_planner` are mutually exclusive**: Do NOT use both on the same output field. The combination causes `InvalidFormatError` which invalidates the entire action definition, triggering cascading `ACTION_NOT_IN_SCOPE` errors on every reference to that action. Use `filter_from_agent: True` alone to hide outputs from the customer. See [known-issues.md](known-issues.md#issue-40-filter-planner-conflict) Issue 40.
+
+### Output Access Follows the Output Schema
+
+Do not assume `@outputs.X` is always a scalar.
+
+```agentscript
+# Scalar output
+set @variables.status = @outputs.status
+
+# Structured/wrapper output
+set @variables.raw_result = @outputs.output
+set @variables.result_text = @outputs.output.value   # only if the schema exposes 'value'
+```
+
+**Guidance:**
+- Direct assignment is safe for scalar outputs (`string`, `number`, `boolean`).
+- If an action returns `object` or another structured type, inspect the output schema before comparing or assigning it.
+- `.value` is a common wrapper field, but not a universal rule.
+- When a deterministic branch depends on the result, flatten the Flow/Apex output so the agent receives an explicit scalar.
 
 ### Example with All Properties
 
@@ -74,7 +95,7 @@ actions:
             description: "Transaction reference"
          card_last_four: string
             description: "Last 4 digits of card"
-            filter_from_agent: True     # Hide from LLM context
+            filter_from_agent: True     # Hide from direct customer display
       target: "flow://Process_Payment"
       available_when: @variables.cart_total > 0
 ```

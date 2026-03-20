@@ -11,11 +11,11 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v66.0+, Einstein Agent User"
 metadata:
-  version: "2.8.1"
+  version: "2.9.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor). Agent user setup validated against ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant."
-  last_validated: "2026-03-13"
+  last_validated: "2026-03-20"
   validation_status: "PASS"
   validation_agents: "24"
   validate_by: "2026-04-10"
@@ -68,6 +68,9 @@ Before you author or fix any `.agent` file, verify these first:
 9. **Use explicit `agent_type`**
 10. **Use `@actions.` prefixes consistently**
 11. **Use `run @actions.X` only when `X` is a topic-level action definition with `target:`**
+12. **Do not branch directly on raw `@system_variables.user_input contains/startswith/endswith` for intent routing**
+13. **On prompt-template outputs, prefer `is_displayable: False` + `is_used_by_planner: True`**
+14. **Do not assume `@outputs.X` is scalar — inspect the output schema before branching or assignment**
 
 For the expanded version, use [references/activation-checklist.md](references/activation-checklist.md).
 
@@ -132,6 +135,7 @@ Canonical rule set: [references/syntax-reference.md](references/syntax-reference
 - create `config`, `system`, `start_agent`, and topics first
 - add target-backed actions with full `inputs:` and `outputs:`
 - use `available when` for deterministic tool visibility
+- normalize raw intent/validation signals into booleans or enums before branching; avoid direct substring checks on raw user utterances for critical control flow
 - keep post-action checks at the **top** of `instructions: ->`
 
 ### Phase 3 — validate continuously
@@ -205,7 +209,11 @@ See [references/instruction-resolution.md](references/instruction-resolution.md)
 | `invalid input/output parameters` on prompt template action | **Target template is in Draft status** — activate it first | [references/action-prompt-templates.md](references/action-prompt-templates.md#draft-template-publish-errors) |
 | Parser rejects conditionals | `else if`, nested `if`, empty `if` body | [references/syntax-reference.md](references/syntax-reference.md) |
 | Action target issues | missing Flow / Apex target, inactive Flow, bad schemas | [references/actions-reference.md](references/actions-reference.md) |
+| Prompt template runs but user sees blank response | prompt output marked `is_displayable: True` | [references/production-gotchas.md](references/production-gotchas.md), [references/action-prompt-templates.md](references/action-prompt-templates.md) |
+| Prompt action runs but planner behaves like output is missing | output hidden from direct display but not planner-visible | [references/production-gotchas.md](references/production-gotchas.md), [references/actions-reference.md](references/actions-reference.md) |
 | `ACTION_NOT_IN_SCOPE` on `run @actions.X` | `run` points at a utility / delegation / unresolved action instead of a topic-level target-backed definition | [references/syntax-reference.md](references/syntax-reference.md), [references/instruction-resolution.md](references/instruction-resolution.md) |
+| Deterministic cancel / revise / URL checks behave inconsistently | raw `@system_variables.user_input` matching or string-method guards are being used as control-flow-critical validation | [references/syntax-reference.md](references/syntax-reference.md), [references/production-gotchas.md](references/production-gotchas.md) |
+| `@outputs.X` comparisons or assignments behave unexpectedly | the action output is structured/wrapped, not a plain scalar | [references/actions-reference.md](references/actions-reference.md), [references/syntax-reference.md](references/syntax-reference.md) |
 | Preview and runtime disagree | linked vars / context / known platform issues | [references/known-issues.md](references/known-issues.md) |
 | Validate passes but publish fails | org-specific user / permission / retrieve-back issue | [references/production-gotchas.md](references/production-gotchas.md), [references/cli-guide.md](references/cli-guide.md) |
 

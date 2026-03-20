@@ -78,7 +78,7 @@ topic knowledge_search:
          outputs:
             promptResponse: string
                description: "Grounded answer"
-               is_displayable: True
+               is_displayable: False
                is_used_by_planner: True
          target: "prompt://Generate_Grounded_Response"
 
@@ -121,7 +121,7 @@ topic knowledge_search:
          # Prompt Template for grounded response
          # Configure in Agentforce Assets with:
          # - Template instructions referencing retrieved context
-         # - Set output is_displayable: True (response shown to user)
+         # - Set output is_displayable: False and is_used_by_planner: True
          generate_answer: @actions.Generate_Grounded_Response
             description: "Generate answer from retrieved knowledge"
             available when @variables.has_results == True
@@ -157,7 +157,7 @@ topic follow_up:
          outputs:
             promptResponse: string
                description: "Grounded follow-up answer"
-               is_displayable: True
+               is_displayable: False
                is_used_by_planner: True
          target: "prompt://Generate_Grounded_Response"
 

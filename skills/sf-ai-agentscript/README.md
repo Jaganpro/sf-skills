@@ -67,6 +67,8 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 3. **Booleans are `True`/`False`** - Python-style, not JavaScript
 4. **Exactly one `start_agent`** - Single entry point required
 5. **Use `available when` for security** - Don't rely on prompts
+6. **Do not branch directly on raw `@system_variables.user_input` substring checks** - Normalize intent first
+7. **Prompt template outputs should usually be `is_displayable: False` + `is_used_by_planner: True`** - Avoid blank responses
 
 ## Quick Syntax Reference
 

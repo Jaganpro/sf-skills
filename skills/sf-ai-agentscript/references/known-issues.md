@@ -564,7 +564,7 @@
 - **Affects**: Action outputs on prompt template actions (`prompt://` / `generatePromptResponse://` targets)
 - **Symptom**: Setting `is_displayable: True` (or toggling "Show in conversation" in the UI) on a prompt template action's output causes the agent to return a blank or empty response. The prompt template executes correctly (visible in trace), but the response text is not surfaced to the user.
 - **Root Cause**: When `is_displayable: True`, the platform attempts to render the raw prompt template output directly instead of letting the reasoner synthesize it. The rendering pipeline does not handle prompt template output format correctly, resulting in blank display.
-- **Workaround**: Set `is_displayable: False` (or `filter_from_agent: True`) on prompt template outputs and let the reasoner synthesize the output into its response naturally.
+- **Workaround**: Set `is_displayable: False` on prompt template outputs and let the reasoner synthesize the output into its response naturally. If the output should influence the reply or routing, also set `is_used_by_planner: True` on that field.
   ```yaml
   # ❌ WRONG — causes blank response
   outputs:
@@ -715,6 +715,8 @@
 - **Note**: `outboundRouteName` in compiled XML does NOT need the `flow://` prefix — the publisher strips it during compilation. Both forms work in production XML.
 - **Validated on**: Production org, 2026-02-16
 
+<a id="issue-40-filter-planner-conflict"></a>
+
 ### Issue 40: `filter_from_agent` + `is_used_by_planner` on same output — `InvalidFormatError` with cascade
 
 - **Status**: WORKAROUND
@@ -770,6 +772,32 @@
 - **Validator Rule**: `ASV-RUN-021` (Warning)
 - **Validated on**: Production sandbox, 2026-03-17
 
+### Issue 42: Raw `@system_variables.user_input` substring matching is brittle for deterministic routing
+
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-20
+- **Affects**: Deterministic branching that uses `contains`, `startswith`, or `endswith` directly on `@system_variables.user_input`
+- **Symptom**: Rules such as `if @system_variables.user_input contains "never mind":` appear simple, but cancellation/revision detection behaves inconsistently across real user phrasing. The branch may miss intent variants or fail to trigger when punctuation, casing, or phrasing changes.
+- **Root Cause**: `@system_variables.user_input` is raw last-utterance text, not a normalized intent signal. Direct substring checks are too weak for control-flow-critical intent detection.
+- **Workaround**: Normalize the utterance first via Flow, Apex, or a classifier action, then branch on an explicit boolean or enum.
+  ```yaml
+  # ❌ BRITTLE — raw text matching
+  if @system_variables.user_input contains "never mind":
+     transition to @topic.cancel_request
+
+  # ✅ SAFER — normalize first
+  run @actions.classify_user_intent
+     with utterance = @system_variables.user_input
+     set @variables.cancel_requested = @outputs.cancel_requested
+
+  if @variables.cancel_requested == True:
+     transition to @topic.cancel_request
+  ```
+- **Validator Rule**: `ASV-RUN-023` (Warning)
+- **Open Questions**:
+  - Will future runtime layers provide stronger deterministic utterance-matching semantics?
+  - Will direct raw-text guards become portable enough to recommend for intent routing?
+
 ---
 
 ## Contributing
@@ -790,4 +818,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-03-12 (v2.7.0)*
+*Last updated: 2026-03-20 (v2.9.0)*

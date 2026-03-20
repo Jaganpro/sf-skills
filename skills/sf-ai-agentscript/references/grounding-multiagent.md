@@ -93,6 +93,8 @@ Agent Script uses a safe subset of Python for expressions:
 | **Logical** | `and`, `or`, `not` |
 | **String** | `contains`, `startswith`, `endswith` |
 
+> ⚠️ **Guardrail note**: These string operators may compile, but they are not the most reliable way to enforce control-flow-critical validation or intent routing. For anything that must deterministically gate behavior — such as URL validation, cancellation detection, or revision handling — prefer a Flow/Apex/classifier action that returns an explicit boolean or enum.
+
 **Security Constraints:**
 - ❌ No `import` statements
 - ❌ No file access

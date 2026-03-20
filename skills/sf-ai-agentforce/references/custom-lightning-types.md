@@ -621,6 +621,11 @@ topic address_management:
             collect: @actions.Collect_Shipping_Address
 ```
 
+> **Why `is_displayable: True` is correct in this example**
+> This custom Lightning-type output is meant for direct UI rendering, so `is_displayable: True` is intentional here.
+>
+> Use `is_displayable: False` instead when the value should stay hidden from direct customer display and only drive planner behavior. For prompt-template outputs specifically, the safer default is `is_displayable: False` + `is_used_by_planner: True`.
+
 ---
 
 ## Best Practices

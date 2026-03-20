@@ -52,9 +52,12 @@ Use `out_` prefix for output variables to distinguish them in Action Definition 
 3. Click **"New Action"**, select **"Flow"** as target type
 4. Choose your deployed Flow from the list
 5. **Map input/output variables** — these become the action's schema
-6. Configure planner flags:
-   - `is_displayable`: Can LLM show output to user?
-   - `is_used_by_planner`: Can LLM use output for decisions?
+6. Configure output-visibility flags intentionally:
+   - `filter_from_agent`: GA hide-from-user flag when an output should not be rendered directly to the customer
+   - `is_displayable`: direct-display flag / alias; `False` hides direct display
+   - `is_used_by_planner`: planner visibility flag when the output should influence routing or response synthesis
+   - If a field is hidden but should still drive the response, make it planner-visible too
+   - Do **not** combine `filter_from_agent` and `is_used_by_planner` on the same output field in Agent Script-driven actions
 7. **Save** the Action Definition
 
 ```

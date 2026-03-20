@@ -95,22 +95,25 @@ get_advice: @topic.product_expert
 
 > **Key Pattern for Determinism**: Control what the LLM can see and say.
 
-When defining actions in Agentforce Assets, use these output flags:
+When defining actions in Agentforce Assets, use these output flags carefully:
 
 | Flag | Effect | Use When |
 |------|--------|----------|
-| `filter_from_agent: True` | LLM **cannot** show this value to user | Preventing hallucinated responses (GA standard) |
-| `is_used_by_planner: True` | LLM **can** reason about this value | Decision-making, routing |
+| `filter_from_agent: True` | Hide from direct customer display (GA standard) | Output should stay hidden and does **not** need `is_used_by_planner` on the same field |
+| `is_displayable: False` | Hide from direct customer display (compile-valid alias) | Preferred hide-from-user flag when the planner still needs the same prompt output field |
+| `is_used_by_planner: True` | Planner can reason about the value | Decision-making, routing, response synthesis |
+
+> ⚠️ Do **not** combine `filter_from_agent` and `is_used_by_planner` on the same output field. That combination is a known blocking parser/runtime conflict.
 
 **Zero-Hallucination Intent Classification Pattern:**
 ```yaml
 # In Agentforce Assets - Action Definition outputs:
 outputs:
    intent_classification: string
-      filter_from_agent: True     # LLM cannot show this to user (GA standard)
-      is_used_by_planner: True    # LLM can use for routing decisions
+      is_displayable: False     # Hide from direct display
+      is_used_by_planner: True  # Planner can use for routing decisions
 
-# In Agent Script - LLM routes but cannot hallucinate:
+# In Agent Script - planner routes but the raw label is never shown directly:
 topic intent_router:
    reasoning:
       instructions: ->
@@ -145,10 +148,66 @@ outputs:
 **Key Points:**
 - This only affects prompt template actions (`prompt://` / `generatePromptResponse://` targets)
 - `is_displayable: True` works correctly on non-prompt actions (Flow, Apex) where the output is a simple string
-- `filter_from_agent: True` is the GA standard equivalent of `is_displayable: False`
+- The safest prompt-template default is `is_displayable: False` + `is_used_by_planner: True`
+- `filter_from_agent: True` is the GA-standard hide-from-user flag, but on prompt outputs it is a worse fit when the planner also needs the value because `filter_from_agent` and `is_used_by_planner` cannot be combined on the same field in this runtime
 - The reasoner naturally incorporates planner-visible outputs into its response — explicit display is unnecessary
 
+**If the prompt action ran but the response is still missing, check these next:**
+1. `is_displayable` is not `True`
+2. `is_used_by_planner` is `True` on the output that should influence the reply
+3. You did **not** combine `filter_from_agent` with `is_used_by_planner` on the same field
+4. The action output is not a structured wrapper that still needs field extraction before deterministic use
+
 > **Cross-reference**: See [known-issues.md](known-issues.md#issue-34) Issue 34.
+
+---
+
+## Raw `user_input` String Matching Is a Weak Deterministic Pattern
+
+> **Production impact**: Substring checks on the last utterance look simple, but they are brittle for deterministic routing, cancellation handling, and revision detection.
+
+**The Problem**: Branches such as `if @system_variables.user_input contains "never mind":` treat raw user text as if it were a normalized intent signal. That works inconsistently for real conversations because phrasing varies, punctuation varies, and the deterministic layer is not a robust intent classifier.
+
+```yaml
+# ❌ BRITTLE — raw utterance parsing as deterministic control flow
+if @system_variables.user_input contains "never mind":
+   transition to @topic.cancel_request
+
+# ✅ SAFER — normalize the utterance first, then branch on explicit state
+run @actions.classify_user_intent
+   with utterance = @system_variables.user_input
+   set @variables.cancel_requested = @outputs.cancel_requested
+
+if @variables.cancel_requested == True:
+   transition to @topic.cancel_request
+```
+
+**Use raw string checks only for light heuristics.** If a branch must deterministically gate behavior, normalize it into:
+- a boolean (`cancel_requested`, `is_valid_url`)
+- an enum/string (`intent = "cancel"`)
+- or a pre-validated scalar returned by Flow/Apex
+
+---
+
+## Output Access Follows the Output Schema
+
+> **Production impact**: Deterministic comparisons fail when a target returns a wrapper object and the script treats `@outputs.X` like a plain scalar.
+
+**The Problem**: Some actions return structured outputs. In those cases, `@outputs.output` is an object envelope, not the final string/boolean you want to compare. The right accessor depends on the declared schema.
+
+```yaml
+# ❌ WRONG — assumes object output is already a boolean
+set @variables.is_after_hours = @outputs.output
+
+# ✅ CORRECT — access a concrete field only if the schema exposes it
+set @variables.is_after_hours = @outputs.output.value
+```
+
+**Guidance:**
+- If the action output is declared as `string`, `number`, or `boolean`, direct assignment is fine.
+- If the output is declared as `object` or another structured type, inspect the contract before you branch on it.
+- `.value` is a common wrapper field, but it is **not universal** — only use it when that field actually exists in the output schema.
+- For deterministic branches, the safest design is to flatten the target output in Flow/Apex so Agent Script receives an explicit scalar such as `is_after_hours: boolean`.
 
 ---
 
@@ -183,12 +242,14 @@ outputs:
 | `description` | String | Explains output to LLM |
 | `label` | String | Display name in UI |
 | `filter_from_agent` | Boolean | `True` = hide from user display (GA standard) |
-| `is_displayable` | Boolean | `False` = hide from user (compile-valid alias) |
+| `is_displayable` | Boolean | `False` = hide from user (compile-valid alias). Prefer this on prompt outputs when the planner still needs the value |
 | `is_used_by_planner` | Boolean | `True` = LLM can reason about value |
 | `developer_name` | String | Overrides the parameter's developer name |
 | `complex_data_type_name` | String | Lightning type mapping |
 
 > **Cross-reference**: `filter_from_agent: True` is the GA standard name. `is_displayable: False` is a compile-valid alias.
+
+> ⚠️ For prompt-template outputs specifically, prefer `is_displayable: False` when the planner still needs the output. `filter_from_agent` is not a safe drop-in replacement there if you also need `is_used_by_planner`, because those two flags conflict on the same field.
 
 **User Input Pattern** (`is_user_input: True`):
 ```yaml
