@@ -12,7 +12,7 @@ A reusable skill library for **Salesforce-focused coding agents**—covering Ape
 
 **Included:** 32 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
 
-**Start here:** [Available Skills](#available-skills) · [Data Cloud Skill Family](#datacloud-skill-family) · [Installation](#installation) · [Claude Code Features](#claude-code-features) · [Skill Architecture](#skill-architecture)
+**Start here:** [Available Skills](#available-skills) · [Installation](#installation) · [Claude Code Features](#claude-code-features) · [Skill Architecture](#skill-architecture)
 
 ---
 
@@ -28,36 +28,12 @@ The library is organized by capability area so you can scan quickly, pick the ri
 | 🧪 **Quality** | [sf-testing](skills/sf-testing/), [sf-debug](skills/sf-debug/) | Test execution, coverage analysis, and debug-log troubleshooting |
 | 📦 **Foundation** | [sf-metadata](skills/sf-metadata/), [sf-data](skills/sf-data/), [sf-docs](skills/sf-docs/), [sf-permissions](skills/sf-permissions/) | Metadata generation, data operations, access analysis, and official Salesforce docs retrieval |
 | 🔌 **Integration** | [sf-connected-apps](skills/sf-connected-apps/), [sf-integration](skills/sf-integration/) | OAuth, External Client Apps, Named Credentials, callouts, and events |
-| ☁️ **Data Cloud** | [sf-datacloud](skills/sf-datacloud/), [sf-datacloud-connect](skills/sf-datacloud-connect/), [sf-datacloud-prepare](skills/sf-datacloud-prepare/), [sf-datacloud-harmonize](skills/sf-datacloud-harmonize/), [sf-datacloud-segment](skills/sf-datacloud-segment/), [sf-datacloud-act](skills/sf-datacloud-act/), [sf-datacloud-retrieve](skills/sf-datacloud-retrieve/) | Data Cloud connections, ingestion, harmonization, segmentation, activation, and retrieval |
+| ☁️ **Data Cloud** | [sf-datacloud](skills/sf-datacloud/), [sf-datacloud-connect](skills/sf-datacloud-connect/), [sf-datacloud-prepare](skills/sf-datacloud-prepare/), [sf-datacloud-harmonize](skills/sf-datacloud-harmonize/), [sf-datacloud-segment](skills/sf-datacloud-segment/), [sf-datacloud-act](skills/sf-datacloud-act/), [sf-datacloud-retrieve](skills/sf-datacloud-retrieve/) | Data Cloud connections, ingestion, harmonization, segmentation, activation, and retrieval.<br><sub>Beta / Community Preview · live execution uses the external community <code>sf data360</code> runtime</sub> |
 | 🤖 **AI & Automation** | [sf-ai-agentscript](skills/sf-ai-agentscript/), [sf-ai-agentforce](skills/sf-ai-agentforce/), [sf-ai-agentforce-testing](skills/sf-ai-agentforce-testing/), [sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/), [sf-ai-agentforce-persona](skills/sf-ai-agentforce-persona/) | Agent design, Agent Script, testing, observability, and persona design |
 | 🚀 **DevOps & Tooling** | [sf-deploy](skills/sf-deploy/), [sf-diagram-mermaid](skills/sf-diagram-mermaid/), [sf-diagram-nanobananapro](skills/sf-diagram-nanobananapro/) | Deployment automation, Mermaid diagrams, and visual artifacts |
 | 🏢 **Industries** | [sf-industry-commoncore-omnistudio-analyze](skills/sf-industry-commoncore-omnistudio-analyze/), [sf-industry-commoncore-datamapper](skills/sf-industry-commoncore-datamapper/), [sf-industry-commoncore-integration-procedure](skills/sf-industry-commoncore-integration-procedure/), [sf-industry-commoncore-omniscript](skills/sf-industry-commoncore-omniscript/), [sf-industry-commoncore-flexcard](skills/sf-industry-commoncore-flexcard/) | OmniStudio: DataMappers, Integration Procedures, OmniScripts, FlexCards, dependency analysis |
 
-<a id="datacloud-skill-family"></a>
-
-## ☁️ Data Cloud Skill Family
-
-The Data Cloud family adds seven focused skills plus a top-level orchestrator covering the lifecycle from connectivity and ingestion through harmonization, segmentation, activation, and retrieval.
-
-> **Status:** Beta / Community Preview. The skills are in the repo today, while broader live-org smoke testing continues.
->
-> **Runtime note:** the skill content ships with `sf-skills`, but live Data Cloud execution relies on the external community `sf data360` CLI runtime. Install it during setup when prompted, or later with `python3 ~/.claude/sf-skills-install.py --with-datacloud-runtime`.
-
-| Skill | Best for |
-|---|---|
-| [sf-datacloud](skills/sf-datacloud/) | Cross-phase orchestration, data spaces, data kits, runtime verification |
-| [sf-datacloud-connect](skills/sf-datacloud-connect/) | Connections, connectors, and source discovery |
-| [sf-datacloud-prepare](skills/sf-datacloud-prepare/) | Data streams, DLOs, ingestion setup, transforms, and DocAI prep |
-| [sf-datacloud-harmonize](skills/sf-datacloud-harmonize/) | DMOs, mappings, identity resolution, unified profiles, and data graphs |
-| [sf-datacloud-segment](skills/sf-datacloud-segment/) | Segments, calculated insights, and audience troubleshooting |
-| [sf-datacloud-act](skills/sf-datacloud-act/) | Activations, activation targets, and data actions |
-| [sf-datacloud-retrieve](skills/sf-datacloud-retrieve/) | SQL, async queries, vector search, and search indexes |
-
-**Included with the family:**
-- reusable JSON templates in [`skills/sf-datacloud/assets/definitions/`](skills/sf-datacloud/assets/definitions/)
-- deterministic helper scripts for bootstrap + verification
-- upstream tracking in [`skills/sf-datacloud/UPSTREAM.md`](skills/sf-datacloud/UPSTREAM.md)
-- primary contribution by [Gnanasekaran Thoppae](https://github.com/gthoppae)
+> **Data Cloud note:** the `sf-datacloud-*` family is listed in the table above. It ships with `sf-skills`, includes reusable JSON templates plus deterministic helper scripts, and relies on the external community `sf data360` CLI runtime for live Data Cloud execution. Install that runtime when prompted, or later with `python3 ~/.claude/sf-skills-install.py --with-datacloud-runtime`.
 
 <a id="installation"></a>
 
