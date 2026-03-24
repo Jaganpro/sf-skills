@@ -65,6 +65,7 @@ CLAUDE_DIR = Path.home() / ".claude"
 SKILLS_DIR = CLAUDE_DIR / "skills"
 HOOKS_DIR = CLAUDE_DIR / "hooks"
 LSP_DIR = CLAUDE_DIR / "lsp-engine"
+CODE_ANALYZER_DIR = CLAUDE_DIR / "code_analyzer"
 META_FILE = CLAUDE_DIR / ".sf-skills.json"
 INSTALLER_FILE = CLAUDE_DIR / "sf-skills-install.py"
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
@@ -2154,6 +2155,66 @@ def copy_lsp_engine(source_dir: Path, target_dir: Path) -> int:
     return sum(1 for _ in target_dir.rglob("*") if _.is_file())
 
 
+def copy_code_analyzer(source_dir: Path, target_dir: Path) -> int:
+    """
+    Copy code_analyzer Python package for PostToolUse validators.
+
+    The code_analyzer wraps `sf code-analyzer run` (PMD/CPD/SFGE) and provides
+    score merging, result formatting, and live query plan analysis.
+
+    Args:
+        source_dir: Source code_analyzer directory
+        target_dir: Target code-analyzer directory
+
+    Returns:
+        Number of files copied
+    """
+    if not source_dir.exists():
+        return 0
+
+    if target_dir.exists() or target_dir.is_symlink():
+        safe_rmtree(target_dir)
+
+    shutil.copytree(source_dir, target_dir)
+
+    return sum(1 for _ in target_dir.rglob("*") if _.is_file())
+
+
+def ensure_code_analyzer_plugin() -> bool:
+    """
+    Check if the sf code-analyzer plugin is installed, and install it if missing.
+
+    Returns:
+        True if code-analyzer is available after this call.
+    """
+    try:
+        result = subprocess.run(
+            ["sf", "plugins", "inspect", "@salesforce/plugin-code-analyzer", "--json"],
+            capture_output=True, text=True, timeout=15
+        )
+        if result.returncode == 0:
+            return True
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    # Not installed — install it
+    print_substep("Installing sf code-analyzer plugin (PMD/CPD engine)...")
+    try:
+        result = subprocess.run(
+            ["sf", "plugins", "install", "@salesforce/plugin-code-analyzer"],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0:
+            print_substep("sf code-analyzer plugin installed successfully")
+            return True
+        else:
+            print_warning(f"Could not install code-analyzer: {result.stderr.strip()[:100]}")
+            return False
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        print_warning(f"Could not install code-analyzer: {e}")
+        return False
+
+
 def touch_all_files(directory: Path):
     """Update mtime on all files to force cache refresh."""
     now = time.time()
@@ -2649,8 +2710,15 @@ def cmd_install(dry_run: bool = False, force: bool = False,
             lsp_source = source_dir / "shared" / "lsp-engine"
             lsp_count = copy_lsp_engine(lsp_source, LSP_DIR)
 
+            # Copy code_analyzer (Python wrapper for sf code-analyzer CLI)
+            ca_source = source_dir / "shared" / "code_analyzer"
+            ca_count = copy_code_analyzer(ca_source, CODE_ANALYZER_DIR)
+
             # Auto-acquire LSP servers if no VS Code and no cached servers
             _auto_acquire_lsp_servers(LSP_DIR)
+
+            # Ensure sf code-analyzer plugin is installed (PMD/CPD engine)
+            ensure_code_analyzer_plugin()
 
             # Copy installer for self-updates
             installer_source = source_dir / "tools" / "install.py"

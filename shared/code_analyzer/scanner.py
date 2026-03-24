@@ -297,12 +297,17 @@ class CodeAnalyzerScanner:
             # Use Java environment if available (for Homebrew/non-standard Java paths)
             env = self._java_env if self._java_env else None
 
+            # Run from the file's directory so code-analyzer resolves
+            # the workspace correctly (it defaults to CWD).
+            scan_cwd = os.path.dirname(os.path.abspath(file_path)) or None
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout_seconds,
-                env=env
+                env=env,
+                cwd=scan_cwd
             )
 
             scan_time = int((time.time() - start_time) * 1000)
