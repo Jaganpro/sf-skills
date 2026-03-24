@@ -8,10 +8,8 @@ This directory contains the centralized hook system for sf-skills, providing int
 shared/hooks/
 ├── skills-registry.json              # Single source of truth for all skill metadata
 ├── scripts/
-│   ├── guardrails.py                 # PreToolUse hook (block/warn dangerous operations)
 │   ├── validator-dispatcher.py       # PostToolUse hook (routes to skill-specific validators)
 │   ├── session-init.py               # Session initialization hook
-│   ├── lsp-prewarm.py                # LSP server pre-warming
 │   ├── naming_validator.py           # Naming convention enforcement
 │   ├── security_validator.py         # Security pattern detection
 │   └── stdin_utils.py               # Shared stdin reading utility
@@ -27,18 +25,16 @@ shared/hooks/
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ PROACTIVE LAYER                                                         │
+│ PROACTIVE LAYER (LLM-first)                                            │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  User Request → PreToolUse Hook → Block or Warn → Tool Executes         │
+│  User Request → PreToolUse Prompt Hook → ALLOW or BLOCK → Tool Executes│
 │                       ↓                                                 │
-│                 guardrails.py                                           │
-│                       ↓                                                 │
-│        ┌─────────────────────────────────┐                              │
-│        │ CRITICAL: Block dangerous DML   │  (6 patterns)                │
-│        │ HIGH: (empty — see note below)  │                              │
-│        │ MEDIUM: Warn on anti-patterns   │  (4 patterns)                │
-│        └─────────────────────────────────┘                              │
+│              Haiku evaluates command for:                                │
+│              • Hardcoded credentials/API keys                           │
+│              • Hardcoded Salesforce record IDs                          │
+│              • Deprecated sfdx commands                                 │
+│              • Old API versions (< v56)                                 │
 │                                                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ REACTIVE LAYER                                                          │
@@ -60,32 +56,20 @@ shared/hooks/
 
 ## Hook Types
 
-### 1. PreToolUse (Guardrails)
+### 1. PreToolUse (Guardrails — Prompt Hook)
 
 **Purpose:** Block dangerous operations before execution or warn on anti-patterns.
 
-**Location:** `scripts/guardrails.py`
+**Type:** `prompt` (Haiku-powered semantic evaluation — no Python script)
 
-**Severity Levels:**
-
-| Severity | Action | Count | Examples |
-|----------|--------|-------|----------|
-| CRITICAL | Block | 6 patterns | DELETE without WHERE, UPDATE without WHERE, hardcoded credentials, production deploy without --dry-run, force push to main, DROP TABLE |
-| HIGH | (empty) | 0 | Was unbounded SOQL auto-fix — removed because regex cannot reliably parse SOQL inside shell-quoted strings with pipes. The sf-soql skill handles LIMIT enforcement instead. |
-| MEDIUM | Warn | 4 patterns | Hardcoded Salesforce IDs, deprecated `sfdx` usage, old API versions (<v56), SOQL without USER_MODE |
+**What it checks:**
+- Hardcoded credentials, API keys, secrets, or passwords in arguments
+- Hardcoded 15/18-character Salesforce record IDs (vary between environments)
+- Deprecated `sfdx` commands (should use `sf`)
+- API versions below v56
 
 **How it works:**
-```python
-# Returns JSON to block or warn
-{
-  "hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "permissionDecision": "deny",        # or "allow"
-    "permissionDecisionReason": "DELETE without WHERE detected",
-    "additionalContext": "..."           # Warnings (for MEDIUM)
-  }
-}
-```
+The prompt hook sends the command to Haiku for semantic evaluation. Unlike regex, it understands context — won't false-positive on credentials mentioned in commit messages, echo statements, or documentation strings. Responds with `ALLOW` or `BLOCK: <reason>`.
 
 ### 2. PostToolUse (Validator Dispatcher)
 
@@ -123,14 +107,8 @@ shared/hooks/
 ```json
 {
   "version": "5.0.0",
-  "guardrails": {
-    "dangerous_dml": {
-      "patterns": ["DELETE FROM \\w+ (;|$)", "UPDATE \\w+ SET .* (?<!WHERE.*)$"],
-      "severity": "CRITICAL",
-      "action": "block",
-      "message": "Destructive DML without WHERE clause detected"
-    }
-  },
+  "description": "Skills registry for skill discovery keywords and background operation rules",
+  "background_operations": { ... },
   "skills": { ... }
 }
 ```
@@ -207,7 +185,6 @@ Place your validator at `skills/sf-newskill/hooks/scripts/your-validator.py`. It
 
 1. Verify the hook scripts exist and are executable:
    ```bash
-   /bin/ls -la shared/hooks/scripts/guardrails.py
    /bin/ls -la shared/hooks/scripts/validator-dispatcher.py
    ```
 
@@ -224,9 +201,9 @@ Place your validator at `skills/sf-newskill/hooks/scripts/your-validator.py`. It
 
 ### Guardrail Too Aggressive
 
-1. Check `CRITICAL_PATTERNS` in `scripts/guardrails.py`
-2. Adjust severity or add exceptions for your use case
-3. Output-only commands (`echo`, `printf`, heredocs) are automatically excluded
+1. Edit the prompt hook text in `tools/install.py` `get_hooks_config()` or directly in `~/.claude/settings.json`
+2. Add exceptions to the prompt text (e.g., "ignore patterns inside heredocs")
+3. The prompt hook uses Haiku — it understands context and shouldn't false-positive on quoted text
 
 ### Validator Not Found
 

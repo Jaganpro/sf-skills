@@ -27,7 +27,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: "${SHARED_HOOKS}/scripts/guardrails.py"
+          command: "${SHARED_HOOKS}/scripts/validator-dispatcher.py"
           timeout: 5000
   PostToolUse:
     - matcher: "Write|Edit"
@@ -130,7 +130,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          command: "python3 ${SHARED_HOOKS}/scripts/validator-dispatcher.py"
           timeout: 5000
 ```
 
@@ -186,7 +186,7 @@ hooks:
     - matcher: Bash
       hooks:
         - type: command
-          command: "python3 ${SHARED_HOOKS}/scripts/guardrails.py"
+          command: "python3 ${SHARED_HOOKS}/scripts/validator-dispatcher.py"
           timeout: 5000
   PostToolUse:
     - matcher: "Write|Edit"

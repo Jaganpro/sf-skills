@@ -1641,14 +1641,6 @@ def get_hooks_config() -> Dict[str, Any]:
                     "command": f"{python_cmd} {scripts_path}/session-init.py",
                     "timeout": 3000
                 }],
-            },
-            {
-                "hooks": [{
-                    "type": "command",
-                    "command": f"{python_cmd} {scripts_path}/lsp-prewarm.py",
-                    "timeout": 60000,
-                    "async": True
-                }],
             }
         ],
         "PreToolUse": [
@@ -1656,9 +1648,9 @@ def get_hooks_config() -> Dict[str, Any]:
                 "matcher": "Bash|mcp__salesforce",
                 "hooks": [
                     {
-                        "type": "command",
-                        "command": f"{python_cmd} {scripts_path}/guardrails.py",
-                        "timeout": 5000
+                        "type": "prompt",
+                        "prompt": "You are a Salesforce CLI safety guardrail. Evaluate this command for: (1) hardcoded credentials, API keys, secrets, or passwords in arguments, (2) hardcoded 15 or 18-character Salesforce record IDs that vary between environments, (3) deprecated 'sfdx' commands that should use 'sf' instead, (4) API versions below v56. Only flag genuine issues — ignore these patterns when they appear inside quoted commit messages, echo statements, comments, or documentation strings. If the command is safe, respond with just 'ALLOW'. If dangerous, respond with 'BLOCK: <one-line reason>'.",
+                        "timeout": 10
                     }
                 ],
             },
@@ -2287,7 +2279,6 @@ def verify_installation() -> Tuple[bool, List[str]]:
     else:
         # Check key hook scripts
         required_scripts = [
-            "scripts/guardrails.py",
             "scripts/session-init.py",
             "skills-registry.json"
         ]

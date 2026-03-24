@@ -5,7 +5,7 @@ Session Init Hook (SessionStart - Synchronous)
 
 Initializes session directory and cleans up stale sessions.
 This hook runs SYNCHRONOUSLY before async hooks to ensure the session
-directory exists before lsp-prewarm.py writes to it.
+directory exists before async hooks write to it.
 
 BEHAVIOR:
 1. Gets Claude Code's PID (parent process)
@@ -231,7 +231,7 @@ def main():
     Main entry point for the hook.
 
     This hook is SYNCHRONOUS and runs FIRST in the SessionStart sequence.
-    It must complete before async hooks (lsp-prewarm) run
+    It must complete before any async hooks run
     so they have a session directory to write to.
 
     On /clear events, if valid session state exists, we skip re-initialization
@@ -250,7 +250,7 @@ def main():
     # This prevents status bar from resetting to "Loading..." unnecessarily
     if is_clear_event(input_data) and session_state_is_valid(session_dir, pid):
         # Session state is valid, skip re-initialization
-        # Async hooks (lsp-prewarm) will also detect this and skip
+        # Async hooks will also detect this and skip
         sys.exit(0)
 
     # Clean up old sessions first (dead PIDs)

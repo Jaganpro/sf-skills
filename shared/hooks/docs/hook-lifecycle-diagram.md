@@ -15,7 +15,7 @@ flowchart TB
     end
 
     subgraph hooks_session["📌 SessionStart Hooks"]
-        H_LSP["⚡ lsp-prewarm.py"]
+        H_INIT["🏗️ session-init.py"]
     end
 
     subgraph agentic["⚙️ AGENTIC LOOP"]
@@ -29,7 +29,7 @@ flowchart TB
     end
 
     subgraph hooks_pre["📌 PreToolUse Hooks"]
-        H_GUARD["🛡️ guardrails.py"]
+        H_GUARD["🛡️ guardrails (prompt hook)"]
     end
 
     subgraph hooks_post["📌 PostToolUse Hooks"]
@@ -47,7 +47,7 @@ flowchart TB
     S1 --> S2 --> LLM
 
     %% SessionStart hooks
-    S1 -.-> H_LSP
+    S1 -.-> H_INIT
 
     %% Agentic Loop
     LLM --> S3 --> S4 --> EXEC
@@ -89,8 +89,7 @@ flowchart TB
     style MORE_Q fill:#fde68a,stroke:#b45309,color:#1f2937
 
     %% Node Styling - SessionStart hooks (Teal-200)
-    style H_ORG fill:#99f6e4,stroke:#0f766e,color:#1f2937
-    style H_LSP fill:#99f6e4,stroke:#0f766e,color:#1f2937
+    style H_INIT fill:#99f6e4,stroke:#0f766e,color:#1f2937
 
     %% Node Styling - PreToolUse hooks (Orange-200)
     style H_GUARD fill:#fed7aa,stroke:#c2410c,color:#1f2937
@@ -129,14 +128,13 @@ For terminals and viewers that don't render Mermaid:
 │           │                      │                                              │
 │           ▼                      │                                              │
 │  ┌─────────────────────────┐     │                                              │
-│  │ ⚡ lsp-prewarm.py       │     │                                              │
 │  └─────────────────────────┘     │                                              │
 └──────────────────────────────────│──────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │  ⚙️ AGENTIC LOOP                              ┌───────────────────────────────┐ │
-│  ┌─────────────────────────────┐              │ 🛡️ guardrails.py             │ │
+│  ┌─────────────────────────────┐              │ 🛡️ guardrails (prompt hook)  │ │
 │  │   CLAUDE CODE / LLM        │◀─────┐       │                               │ │
 │  └──────────────┬──────────────┘      │       └───────────────────────────────┘ │
 │                 │                     │                      ▲                  │
@@ -193,8 +191,8 @@ For terminals and viewers that don't render Mermaid:
 
 | Event | Hook Script | Purpose | Action Type |
 |-------|-------------|---------|-------------|
-| **SessionStart** | `lsp-prewarm.py` | Spawn LSP servers in background | Background |
-| **PreToolUse** | `guardrails.py` | Block dangerous operations | BLOCK/MODIFY |
+| **SessionStart** | `session-init.py` | Session directory lifecycle | State file |
+| **PreToolUse** | Prompt hook (Haiku) | Block dangerous operations | BLOCK/ALLOW |
 | **PostToolUse** | `validator-dispatcher.py` | Route to skill-specific validators | Feedback |
 
 ---
@@ -223,7 +221,7 @@ For terminals and viewers that don't render Mermaid:
 | Color | Hex | Meaning | Nodes |
 |-------|-----|---------|-------|
 | 🟦 Cyan-200 | `#a5f3fc` | Lifecycle event nodes | S1-S10 |
-| 🟩 Teal-200 | `#99f6e4` | SessionStart hooks | lsp-prewarm |
+| 🟩 Teal-200 | `#99f6e4` | SessionStart hooks | session-init |
 | 🟧 Orange-200 | `#fed7aa` | Guards/Pre-checks | guardrails |
 | 🟣 Violet-200 | `#ddd6fe` | Validation | validator-dispatcher |
 | 🔵 Indigo-200 | `#c7d2fe` | Execution | LLM, EXEC |
@@ -236,7 +234,7 @@ For terminals and viewers that don't render Mermaid:
 ### Pattern 1: Blocking Flow
 
 ```
-PreToolUse → guardrails.py
+PreToolUse → guardrails prompt hook (Haiku)
          ├─ Allow: Continue to Permission Request
          └─ Block: Return error message to LLM
                    (tool never executes)
@@ -252,8 +250,8 @@ PostToolUse → validator-dispatcher.py → Validates file
 ### Pattern 3: Workflow Tracking
 
 ```
-SessionStart → lsp-prewarm.py → Writes ~/.claude/.lsp-prewarm-state.json
-                              → Status line reads these files
+SessionStart → session-init.py → Creates ~/.claude/sessions/{PID}/
+                                → Cleans dead session directories
 ```
 
 ---
