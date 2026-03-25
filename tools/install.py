@@ -2215,6 +2215,50 @@ def ensure_code_analyzer_plugin() -> bool:
         return False
 
 
+def ensure_prettier_apex() -> bool:
+    """
+    Ensure prettier + prettier-plugin-apex are installed in ~/.claude/prettier/.
+
+    Uses a local npm install (not global) so the plugin is always resolvable
+    from the prettier runtime directory. This avoids the npx plugin resolution
+    issues that occur with global installs.
+
+    Returns:
+        True if prettier with Apex support is available after this call.
+    """
+    prettier_dir = CLAUDE_DIR / "prettier"
+    prettier_bin = prettier_dir / "node_modules" / ".bin" / "prettier"
+
+    # Check if already installed
+    if prettier_bin.exists():
+        return True
+
+    # Create runtime directory and install
+    print_substep("Installing prettier + prettier-plugin-apex (code formatting)...")
+    try:
+        prettier_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize package.json if needed
+        pkg_json = prettier_dir / "package.json"
+        if not pkg_json.exists():
+            pkg_json.write_text('{"private": true}\n')
+
+        result = subprocess.run(
+            ["npm", "install", "prettier", "prettier-plugin-apex"],
+            capture_output=True, text=True, timeout=60,
+            cwd=str(prettier_dir)
+        )
+        if result.returncode == 0:
+            print_substep("prettier + prettier-plugin-apex installed successfully")
+            return True
+        else:
+            print_warning(f"Could not install prettier: {result.stderr.strip()[:100]}")
+            return False
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        print_warning(f"Could not install prettier: {e}")
+        return False
+
+
 def touch_all_files(directory: Path):
     """Update mtime on all files to force cache refresh."""
     now = time.time()
@@ -2719,6 +2763,9 @@ def cmd_install(dry_run: bool = False, force: bool = False,
 
             # Ensure sf code-analyzer plugin is installed (PMD/CPD engine)
             ensure_code_analyzer_plugin()
+
+            # Ensure prettier + prettier-plugin-apex are installed (auto-formatting)
+            ensure_prettier_apex()
 
             # Copy installer for self-updates
             installer_source = source_dir / "tools" / "install.py"

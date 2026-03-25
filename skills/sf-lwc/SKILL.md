@@ -123,6 +123,22 @@ Next step: <deploy, add controller, or run tests>
 
 ---
 
+## Local Development Server
+
+Preview LWC components locally with hot reload — no deployment needed:
+
+```bash
+# Start local dev server for an app
+sf lightning dev app --target-org <alias>
+
+# Start local dev server for Experience Cloud sites
+sf lightning dev site --target-org <alias>
+```
+
+These are long-running processes that open a browser with live preview. Changes to `.js`, `.html`, and `.css` files auto-reload instantly. Requires an active org connection for data and Apex callouts.
+
+---
+
 ## Cross-Skill Integration
 
 | Need | Delegate to | Reason |

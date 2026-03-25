@@ -23,11 +23,24 @@ import json
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
-# Find shared modules (../../shared relative to sf-flow)
-PLUGIN_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))  # sf-flow/
-SKILLS_ROOT = os.path.dirname(PLUGIN_ROOT)  # sf-skills/
+# Find shared modules — try installed path first, then dev repo path
+_CLAUDE_DIR = os.path.join(os.path.expanduser("~"), ".claude")
+_CODE_ANALYZER_CANDIDATES = [
+    os.path.join(_CLAUDE_DIR, "code_analyzer"),           # Installed path
+    os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "shared", "code_analyzer"),  # Dev repo
+]
+for _ca_path in _CODE_ANALYZER_CANDIDATES:
+    _ca_path = os.path.normpath(_ca_path)
+    if os.path.isdir(_ca_path):
+        sys.path.insert(0, os.path.dirname(_ca_path))
+        break
+
+# Also add shared dir for other shared modules
+PLUGIN_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+SKILLS_ROOT = os.path.dirname(PLUGIN_ROOT)
 SHARED_DIR = os.path.join(SKILLS_ROOT, "shared")
-sys.path.insert(0, SHARED_DIR)
+if os.path.isdir(SHARED_DIR):
+    sys.path.insert(0, SHARED_DIR)
 
 
 def validate_flow_with_ca(file_path: str) -> dict:

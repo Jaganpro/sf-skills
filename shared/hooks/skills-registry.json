@@ -2,6 +2,14 @@
   "version": "5.0.0",
   "description": "Skills registry for skill discovery keywords, background operation rules, and advisory metadata. Validator routing is handled by validator-dispatcher.py.",
   "background_operations": {
+    "sf-flow": {
+      "commands": [
+        "sf flow test run"
+      ],
+      "typical_duration": "1-5 minutes",
+      "always_background": true,
+      "reason": "Flow tests execute in the org and can take several minutes"
+    },
     "sf-testing": {
       "commands": [
         "sf apex run test"

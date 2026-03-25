@@ -71,6 +71,22 @@ VALIDATOR_REGISTRY: List[tuple] = [
         DEFAULT_TIMEOUT,
     ),
 
+    # Apex class files (.cls) - auto-format (runs BEFORE validation)
+    (
+        r"\.cls$",
+        "sf-apex",
+        "sf-apex/hooks/scripts/prettier-format.py",
+        DEFAULT_TIMEOUT,
+    ),
+
+    # Apex trigger files (.trigger) - auto-format (runs BEFORE validation)
+    (
+        r"\.trigger$",
+        "sf-apex",
+        "sf-apex/hooks/scripts/prettier-format.py",
+        DEFAULT_TIMEOUT,
+    ),
+
     # Apex class files (.cls) - LSP syntax validation
     (
         r"\.cls$",
