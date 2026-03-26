@@ -1337,6 +1337,15 @@ def is_sf_skills_hook(hook: Dict[str, Any]) -> bool:
     )):
         return True
 
+    # Catch zombie agent hooks left by older sf-skills installs.
+    # These have type:"agent" but the prompt field was stripped by Claude Code's
+    # schema normalization, leaving a broken hook that blocks startup.
+    # A type:"agent" hook with no prompt and no command is always broken and
+    # almost certainly ours — safe to claim for cleanup.
+    hook_type = hook.get("type", "")
+    if hook_type == "agent" and not hook.get("prompt") and not hook.get("command"):
+        return True
+
     # Check nested hooks
     for nested in hook.get("hooks", []):
         if is_sf_skills_hook(nested):
