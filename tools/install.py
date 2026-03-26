@@ -1653,7 +1653,6 @@ def get_hooks_config() -> Dict[str, Any]:
     return {
         "SessionStart": [
             {
-                "_sf_skills": True,
                 "hooks": [{
                     "type": "command",
                     "command": f"{python_cmd} {scripts_path}/session-init.py",
@@ -1663,7 +1662,6 @@ def get_hooks_config() -> Dict[str, Any]:
         ],
         "PreToolUse": [
             {
-                "_sf_skills": True,
                 "matcher": "Bash|mcp__salesforce",
                 "hooks": [
                     {
@@ -1687,7 +1685,6 @@ def get_hooks_config() -> Dict[str, Any]:
                 ],
             },
             {
-                "_sf_skills": True,
                 "matcher": "Bash",
                 "hooks": [
                     {
@@ -1700,7 +1697,6 @@ def get_hooks_config() -> Dict[str, Any]:
         ],
         "PostToolUse": [
             {
-                "_sf_skills": True,
                 "matcher": "Write|Edit",
                 "hooks": [
                     {
@@ -1711,24 +1707,12 @@ def get_hooks_config() -> Dict[str, Any]:
                 ],
             },
             {
-                "_sf_skills": True,
                 "matcher": "Bash",
                 "hooks": [
                     {
-                        "type": "agent",
-                        "prompt": (
-                            "Hook input: $ARGUMENTS\n\n"
-                            "If the command above was 'sf apex get log' or 'sf apex tail log', "
-                            "analyze the debug log output for:\n"
-                            "1. EXCEPTION_THROWN / FATAL_ERROR — what type, what line, what message\n"
-                            "2. LIMIT_USAGE — any limits above 80% (SOQL_QUERIES, DML_STATEMENTS, CPU_TIME, HEAP_SIZE)\n"
-                            "3. SOQL_EXECUTE_BEGIN inside loops — governor limit risk\n"
-                            "4. DML_BEGIN inside loops — governor limit risk\n"
-                            "5. Total execution time from EXECUTION_FINISHED\n"
-                            "Provide a structured summary under 20 lines.\n\n"
-                            "If the command was NOT a debug log command, respond with just: allow"
-                        ),
-                        "timeout": 60
+                        "type": "command",
+                        "command": f"{python_cmd} {scripts_path}/debug-log-analyzer.py",
+                        "timeout": 30000
                     }
                 ],
             }
