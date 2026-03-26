@@ -1700,10 +1700,9 @@ def get_hooks_config() -> Dict[str, Any]:
                             "Exception: IDs inside echo/printf statements or test data setup scripts are acceptable.\n\n"
                             "(4) BLOCK if: API version below v56 is specified via --api-version flag.\n\n"
                             "Context rules: Do NOT flag patterns inside echo, printf, cat heredocs, git commit messages, or comments. "
-                            "These are output/documentation, not execution.\n\n"
-                            "Respond ONLY with 'ALLOW' if safe, or 'BLOCK: <one-line reason>' if any issue is found."
+                            "These are output/documentation, not execution."
                         ),
-                        "timeout": 10
+                        "timeout": 30
                     }
                 ],
             },
