@@ -192,7 +192,7 @@ For terminals and viewers that don't render Mermaid:
 | Event | Hook Script | Purpose | Action Type |
 |-------|-------------|---------|-------------|
 | **SessionStart** | `session-init.py` | Session directory lifecycle | State file |
-| **PreToolUse** | Prompt hook (Haiku) | Block dangerous operations | BLOCK/ALLOW |
+| **PreToolUse** | Prompt hook (Haiku) | Advisory CLI warnings | ALLOW |
 | **PostToolUse** | `validator-dispatcher.py` | Route to skill-specific validators | Feedback |
 
 ---
@@ -205,7 +205,7 @@ For terminals and viewers that don't render Mermaid:
 |---|-------|------|-------------|
 | 1 | **SessionStart** | Claude Code session begins | State files, background tasks |
 | 2 | **Setup** | Configuration loaded | (no hooks) |
-| 3 | **PreToolUse** | Before tool executes | ALLOW, BLOCK, MODIFY |
+| 3 | **PreToolUse** | Before tool executes | ALLOW (+ optional warning context) |
 | 4 | **PermissionRequest** | Tool needs approval | APPROVE, DENY, defer to user |
 | 5 | **PostToolUse (success)** | Tool completed successfully | Feedback |
 | 6 | **PostToolUse (failure)** | Tool failed | Error analysis |
@@ -231,13 +231,12 @@ For terminals and viewers that don't render Mermaid:
 
 ## Hook Interaction Patterns
 
-### Pattern 1: Blocking Flow
+### Pattern 1: Advisory Flow
 
 ```
 PreToolUse → guardrails prompt hook (Haiku)
-         ├─ Allow: Continue to Permission Request
-         └─ Block: Return error message to LLM
-                   (tool never executes)
+         └─ Allow: Continue to Permission Request
+            + optional warning context
 ```
 
 ### Pattern 2: Feedback Loop

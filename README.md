@@ -159,7 +159,7 @@ python3 ~/.claude/sf-skills-install.py --profile delete old
 | Event | Matcher | Hook Type | What it does |
 |------|---------|-----------|----------|
 | **SessionStart** | — | command | Session directory lifecycle (session-init.py) |
-| **PreToolUse** | Bash\|MCP | prompt (Haiku) | Guardrails: credentials, sfdx, hardcoded IDs, old API versions |
+| **PreToolUse** | Bash\|MCP | prompt (Haiku) | Advisory guardrails: sfdx deprecation, old API versions |
 | **PreToolUse** | Bash | command | SOQL schema validator: JIT sf sobject describe before queries |
 | **PostToolUse** | Write\|Edit | command | Validator dispatcher → Prettier + LSP + Scorer + Code Analyzer |
 | **PostToolUse** | Bash | agent (Haiku) | Debug log analysis: exceptions, governor limits, hotspots |

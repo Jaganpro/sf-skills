@@ -28,11 +28,9 @@ shared/hooks/
 │ PROACTIVE LAYER (LLM-first)                                            │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  User Request → PreToolUse Prompt Hook → ALLOW or BLOCK → Tool Executes│
+│  User Request → PreToolUse Prompt Hook → ALLOW (+ warnings) → Executes │
 │                       ↓                                                 │
 │              Haiku evaluates command for:                                │
-│              • Hardcoded credentials/API keys                           │
-│              • Hardcoded Salesforce record IDs                          │
 │              • Deprecated sfdx commands                                 │
 │              • Old API versions (< v56)                                 │
 │                                                                         │
@@ -58,18 +56,16 @@ shared/hooks/
 
 ### 1. PreToolUse (Guardrails — Prompt Hook)
 
-**Purpose:** Block dangerous operations before execution or warn on anti-patterns.
+**Purpose:** Provide advisory warnings before execution for low-risk CLI anti-patterns.
 
 **Type:** `prompt` (Haiku-powered semantic evaluation — no Python script)
 
 **What it checks:**
-- Hardcoded credentials, API keys, secrets, or passwords in arguments
-- Hardcoded 15/18-character Salesforce record IDs (vary between environments)
 - Deprecated `sfdx` commands (should use `sf`)
 - API versions below v56
 
 **How it works:**
-The prompt hook sends the command to Haiku for semantic evaluation. Unlike regex, it understands context — won't false-positive on credentials mentioned in commit messages, echo statements, or documentation strings. Responds with `ALLOW` or `BLOCK: <reason>`.
+The prompt hook sends the command to Haiku for semantic evaluation. It is advisory-only and always returns `ALLOW`, optionally attaching warning context for deprecated CLI usage or old API versions.
 
 ### 2. PostToolUse (Validator Dispatcher)
 
@@ -152,7 +148,7 @@ Place your validator at `skills/sf-newskill/hooks/scripts/your-validator.py`. It
 
 ### Why Proactive + Reactive?
 
-1. **Prevention is better than cure** - Block dangerous operations before damage
+1. **Catch issues early** - Surface low-risk CLI problems before execution
 2. **User experience** - Warn on common anti-patterns without blocking
 3. **Safety net** - PostToolUse catches issues that slip through
 
@@ -203,7 +199,7 @@ Place your validator at `skills/sf-newskill/hooks/scripts/your-validator.py`. It
 
 1. Edit the prompt hook text in `tools/install.py` `get_hooks_config()` or directly in `~/.claude/settings.json`
 2. Add exceptions to the prompt text (e.g., "ignore patterns inside heredocs")
-3. The prompt hook uses Haiku — it understands context and shouldn't false-positive on quoted text
+3. The prompt hook is advisory-only — it should warn for deprecated CLI usage or old API versions without blocking execution
 
 ### Validator Not Found
 
