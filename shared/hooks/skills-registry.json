@@ -33,6 +33,20 @@
       ],
       "reason": "Full deployments and org creation are long-running operations"
     },
+    "sf-vlocity-build-deploy": {
+      "commands": [
+        "vlocity packDeploy",
+        "vlocity packRetry",
+        "vlocity packExport"
+      ],
+      "typical_duration": "2-20 minutes",
+      "background_if_no_wait": true,
+      "exclude_patterns": [
+        "validateLocalData",
+        "packGetDiffs"
+      ],
+      "reason": "DataPack exports and deploys can run for extended periods depending on dependency depth"
+    },
     "sf-data": {
       "commands": [
         "sf data import tree",
@@ -310,6 +324,41 @@
       "description": "CI/CD deployment automation",
       "triggerWhen": "user deploys metadata, creates/manages scratch orgs or sandboxes, sets up CI/CD pipelines, or troubleshoots deployment errors with sf project deploy",
       "doNotTriggerWhen": "writing Apex/LWC code (use sf-apex/sf-lwc), creating metadata XML (use sf-metadata), or querying org data (use sf-data)"
+    },
+    "sf-vlocity-build-deploy": {
+      "keywords": [
+        "vlocity",
+        "vlocity build",
+        "datapack",
+        "datapacks",
+        "packdeploy",
+        "packretry",
+        "packexport",
+        "packcontinue",
+        "packgetdiffs",
+        "validateLocalData",
+        "omnistudio deploy",
+        "idx deploy",
+        "vlocity migration",
+        "datapack migration",
+        "omniscript deploy"
+      ],
+      "intentPatterns": [
+        "deploy.*datapack",
+        "run.*packdeploy",
+        "retry.*datapack",
+        "export.*datapack",
+        "migrate.*vlocity",
+        "migrate.*omnistudio",
+        "validate.*datapack",
+        "packgetdiffs",
+        "continue.*datapack.*job",
+        "vlocity.*ci.*cd"
+      ],
+      "priority": "high",
+      "description": "Vlocity Build DataPack deployment orchestration for export, deploy, retry, and migration workflows",
+      "triggerWhen": "user deploys or validates OmniStudio/Vlocity DataPacks with vlocity packDeploy/packRetry/packExport, manages DataPack migration workflows, or troubleshoots DataPack deployment failures",
+      "doNotTriggerWhen": "deploying Salesforce metadata with sf project deploy (use sf-deploy), authoring OmniStudio assets (use sf-industry-commoncore-*), or writing Apex/LWC business logic"
     },
     "sf-testing": {
       "keywords": [
@@ -1105,6 +1154,41 @@
       "description": "OmniStudio FlexCard creation and validation with 130-point scoring",
       "triggerWhen": "user creates FlexCards, configures data sources, designs card layouts, or asks about OmniUiCard metadata",
       "doNotTriggerWhen": "building OmniScripts (use sf-industry-commoncore-omniscript), creating Integration Procedures (use sf-industry-commoncore-integration-procedure), or analyzing dependencies (use sf-industry-commoncore-omnistudio-analyze)"
+    },
+    "sf-industry-cme-epc-model": {
+      "keywords": [
+        "epc",
+        "enterprise product catalog",
+        "cme epc",
+        "industries product catalog",
+        "product2 catalog",
+        "offer bundle",
+        "product bundle",
+        "product child item",
+        "attribute assignment",
+        "attribute metadata",
+        "product attributes",
+        "vlocity product2",
+        "specification type",
+        "specification subtype",
+        "product model"
+      ],
+      "intentPatterns": [
+        "create.*epc.*product",
+        "build.*offer.*bundle",
+        "create.*product2.*catalog",
+        "add.*product.*attributes",
+        "create.*attribute.*assignment",
+        "model.*epc.*offer",
+        "review.*epc.*datapack",
+        "create.*product.*bundle",
+        "configure.*productchilditem",
+        "update.*epc.*catalog"
+      ],
+      "priority": "high",
+      "description": "Salesforce Industries CME EPC product modeling for Product2 catalog items, attributes, and offer bundles",
+      "triggerWhen": "user creates or updates EPC Product2 records, configures attributes and defaults, builds offer bundles via ProductChildItem relationships, or edits EPC DataPack JSON in vlocity/Product2",
+      "doNotTriggerWhen": "building OmniScripts/FlexCards/Integration Procedures (use sf-industry-commoncore-*), implementing Apex business logic (use sf-apex), or deployment troubleshooting (use sf-deploy)"
     }
   }
 }
