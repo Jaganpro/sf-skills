@@ -157,6 +157,7 @@ In current SF CLI releases, these Local Dev commands are installed just-in-time 
 
 ### Start here
 - [references/component-patterns.md](references/component-patterns.md)
+- [references/slds-design-guide.md](references/slds-design-guide.md)
 - [references/lwc-best-practices.md](references/lwc-best-practices.md)
 - [references/scoring-and-testing.md](references/scoring-and-testing.md)
 - [references/jest-testing.md](references/jest-testing.md)
