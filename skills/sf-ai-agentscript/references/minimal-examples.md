@@ -54,3 +54,25 @@ start_agent entry:
 - **`instructions: |`**: Literal mode for static text passed to the LLM
 - **`set @variables.X = @outputs.Y`**: Captures action output into mutable state
 - **`@utils.transition`**: Permanent handoff (does not return to calling topic)
+
+### Personalized Welcome Message
+
+Use quoted strings for static system messages, but switch `welcome` / `error` to template/block form when you need interpolation:
+
+```yaml
+variables:
+  user_preferred_name: linked string
+    source: @MessagingSession.UserPreferredName__c
+    description: "Example linked variable source for first-turn personalization"
+
+system:
+  messages:
+    welcome: |
+      Hi {!@variables.user_preferred_name}! How can I help you today?
+    error: "Sorry, something went wrong."
+  instructions: "You are a helpful customer service agent."
+```
+
+- Use `|` for dynamic welcome/error messages that include `{!...}` references.
+- Keep quoted strings for static welcome/error text.
+- Keep conditional logic in `reasoning.instructions: ->`; `system.messages` should stay as static text or direct variable templates.

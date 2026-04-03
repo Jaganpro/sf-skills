@@ -171,25 +171,32 @@
 
 ---
 
-### Issue 11: Dynamic welcome messages broken (`{!userName}` not resolved)
-- **Status**: OPEN
+### Issue 11: Welcome/error interpolation written as a quoted string renders literally
+- **Status**: WORKAROUND
 - **Date Discovered**: 2026-02-14
-- **Affects**: `system.messages.welcome` with variable interpolation
-- **Symptom**: Variable references like `{!@variables.customer_name}` or `{!userName}` in the welcome message display as literal text instead of resolved values.
-- **Root Cause**: Welcome messages are rendered before the agent runtime initializes variables. Mutable variables have not been set yet, and linked variables may not be resolved at welcome-message time.
-- **Workaround**: Use static welcome messages. Personalize greetings in the first topic's instructions instead.
-- **Open Questions**: Will welcome message variable resolution be supported in a future release?
+- **Affects**: `system.messages.welcome` / `system.messages.error` when `{!...}` interpolation is authored inline
+- **Symptom**: A message such as `welcome: "Hi {!@variables.user_preferred_name}!"` can display the `{!...}` token literally instead of rendering the variable value.
+- **Root Cause**: System messages use a template-style rendering path for interpolation. Plain quoted string form is reliable for static text, but dynamic welcome/error messages should be authored in template/block form.
+- **Workaround**: Use `|` for dynamic welcome/error messages and keep quoted strings for static messages.
+  ```yaml
+  system:
+    messages:
+      welcome: |
+        Hi {!@variables.user_preferred_name}! How can I help?
+      error: "Sorry, something went wrong."
+  ```
+- **Open Questions**: Should the validator auto-suggest template mode whenever `{!...}` appears on a quoted welcome/error line?
 
 ---
 
-### Issue 12: Welcome message line breaks stripped
-- **Status**: OPEN
+### Issue 12: System welcome/error messages are templates, not procedural instruction blocks
+- **Status**: WORKAROUND
 - **Date Discovered**: 2026-02-14
-- **Affects**: `system.messages.welcome` with multi-line content
-- **Symptom**: Line breaks (`\n`) in welcome messages are stripped, causing multi-line messages to render as a single line.
-- **Root Cause**: The welcome message renderer does not preserve newline characters from the Agent Script source.
-- **Workaround**: Keep welcome messages as a single line. Use the first topic's instructions with pipe syntax (`|`) for multi-line greetings.
-- **Open Questions**: Is this by design or a bug?
+- **Affects**: `system.messages.welcome` / `system.messages.error` personalization
+- **Symptom**: Authors sometimes expect welcome/error messages to behave like `reasoning.instructions: ->`, including conditional logic or step-by-step instruction resolution.
+- **Root Cause**: `system.messages` supports simple template rendering, not the procedural control flow available in topic `instructions: ->` blocks.
+- **Workaround**: Keep welcome/error messages to static text or direct variable references. Move `if` / `else`, `run`, or richer personalization logic into the first topic's `reasoning.instructions: ->` block.
+- **Open Questions**: Will system messages eventually gain richer templating beyond direct variable injection?
 
 ---
 

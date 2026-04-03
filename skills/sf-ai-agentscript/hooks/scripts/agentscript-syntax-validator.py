@@ -133,8 +133,8 @@ class AgentScriptValidator:
         self.lifecycle_null_guards: List[Tuple[int, str, str, str]] = []  # (line, lifecycle_name, var_name, owner)
         self.topic_inline_system_lines: List[Tuple[int, str]] = []
         self.line_owner: Dict[int, str] = {}
-        self.welcome_error_interpolation_lines: List[Tuple[int, str]] = []
-        self.welcome_error_multiline_lines: List[Tuple[int, str]] = []
+        self.welcome_error_inline_interpolation_lines: List[Tuple[int, str]] = []
+        self.welcome_error_folded_scalar_lines: List[Tuple[int, str]] = []
         self.default_agent_user_comment_lines: List[int] = []
         self.top_level_actions_lines: List[int] = []
 
@@ -621,16 +621,15 @@ class AgentScriptValidator:
                     current_connection["fields"][field] = (self._clean_scalar_value(raw_value), i)
                 continue
 
-            # system block (simple heuristics for welcome/error issues)
+            # system block (simple heuristics for welcome/error message guidance)
             if current_top == "system" and indent > 0:
                 lower = stripped.lower()
                 if "welcome" in lower or "error" in lower:
+                    kind = "welcome" if "welcome" in lower else "error"
                     if "{!" in stripped:
-                        kind = "welcome" if "welcome" in lower else "error"
-                        self.welcome_error_interpolation_lines.append((i, kind))
-                    if re.search(r":\s*[|>][-+]?\s*$", stripped):
-                        kind = "welcome" if "welcome" in lower else "error"
-                        self.welcome_error_multiline_lines.append((i, kind))
+                        self.welcome_error_inline_interpolation_lines.append((i, kind))
+                    if re.search(r":\s*>[-+]?\s*$", stripped):
+                        self.welcome_error_folded_scalar_lines.append((i, kind))
                 continue
 
             # topic/start_agent internals
@@ -1935,10 +1934,10 @@ class AgentScriptValidator:
                 )
 
     def _check_welcome_error_patterns(self):
-        for line, kind in self.welcome_error_interpolation_lines:
-            self._add_warning(line, f"{kind.title()} message appears to use interpolation. Dynamic welcome/error message variable resolution is known to be unreliable; verify in preview and runtime.", "ASV-RUN-015")
-        for line, kind in self.welcome_error_multiline_lines:
-            self._add_warning(line, f"{kind.title()} message uses a multiline scalar. Line-break preservation in system welcome/error messages is not reliable across surfaces.", "ASV-RUN-016")
+        for line, kind in self.welcome_error_inline_interpolation_lines:
+            self._add_warning(line, f"{kind.title()} message uses `{{!...}}` interpolation in quoted string form. For dynamic system messages, switch to template/block form with `|`.", "ASV-RUN-015")
+        for line, kind in self.welcome_error_folded_scalar_lines:
+            self._add_warning(line, f"{kind.title()} message uses folded scalar style (`>`). Prefer literal block style (`|`) for dynamic or multiline system messages.", "ASV-RUN-016")
 
     def _check_escalation_fallback_heuristic(self):
         if "@utils.escalate" not in self.content or not self.connection_blocks:
@@ -2066,7 +2065,7 @@ class AgentScriptValidator:
             self._checklist_entry("Runtime gotchas", "Deterministic string-guard portability", ["ASV-RUN-023", "ASV-RUN-024"], success_detail="No brittle raw-user-input or string-method guards detected.", confidence="Portability warning"),
             self._checklist_entry("Runtime gotchas", "Structured output access", ["ASV-RUN-026"], success_detail="Structured outputs are not being assigned directly into scalar variables.", na_detail="No structured-output direct assignments detected.", applicable=bool(self.action_definitions), confidence="Schema / runtime warning"),
             self._checklist_entry("Runtime gotchas", "Agent-type-specific messaging/context patterns", ["ASV-RUN-008", "ASV-RUN-017"], success_detail="No agent-type-specific Messaging/context issues detected.", na_detail="No employee/service-agent-only Messaging/context checks apply.", applicable=employee_agent or service_agent, confidence="Runtime / portability"),
-            self._checklist_entry("Runtime gotchas", "Welcome/error message stability", ["ASV-RUN-015", "ASV-RUN-016"], success_detail="System welcome/error messages avoid known interpolation/line-break pitfalls.", na_detail="No obvious welcome/error message patterns detected.", applicable=bool(self.welcome_error_interpolation_lines or self.welcome_error_multiline_lines), confidence="Runtime drift"),
+            self._checklist_entry("Runtime gotchas", "Welcome/error message stability", ["ASV-RUN-015", "ASV-RUN-016"], success_detail="System welcome/error messages avoid inline interpolation and folded-scalar pitfalls.", na_detail="No obvious welcome/error message patterns detected.", applicable=bool(self.welcome_error_inline_interpolation_lines or self.welcome_error_folded_scalar_lines), confidence="Authoring guidance"),
             self._checklist_entry("Runtime gotchas", "Escalation fallback resilience", ["ASV-RUN-018"], success_detail="Escalation usage includes an obvious fallback or latch pattern.", na_detail="No @utils.escalate usage detected.", applicable="@utils.escalate" in self.content, confidence="Heuristic warning"),
             self._checklist_entry("Runtime gotchas", "Large file parser risk", ["ASV-RUN-019"], success_detail="File size/complexity stays below the configured parser-risk thresholds.", confidence="Heuristic warning"),
             self._checklist_entry("Runtime gotchas", "Platform guardrail topic conflict", ["ASV-RUN-022"], success_detail="No custom topics duplicate the platform's built-in guardrail tools.", na_detail="No guardrail-related topic names detected.", applicable=any(p in n.lower() for n in self.topic_names for p in ("inappropriate", "prompt_injection", "reverse_engineering")), confidence="Runtime crash risk"),

@@ -71,6 +71,17 @@ system:
 | `messages.error` | Fallback error message |
 | `instructions` | Global system prompt for the agent |
 
+> **Message syntax note**: Quoted strings are fine for **static** `welcome` / `error` messages. If a welcome or error message includes variable interpolation such as `{!@variables.user_preferred_name}`, author that message in template/block form with `|` so the value is rendered in the system message. For first-turn personalization, prefer linked or session-backed variables.
+
+```yaml
+system:
+  messages:
+    welcome: |
+      Hi {!@variables.user_preferred_name}! How can I help today?
+    error: "Sorry, something went wrong."
+  instructions: "You are a helpful assistant."
+```
+
 ---
 
 ### 2. config: Block (Required)
