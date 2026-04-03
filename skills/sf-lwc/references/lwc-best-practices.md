@@ -78,6 +78,62 @@ Data flows down (props), events bubble up.
 
 ---
 
+## Naming & Decorator Conventions
+
+### Property & Attribute Naming
+
+| Context | Convention | Example |
+|---------|-----------|---------|
+| JavaScript properties | camelCase | `itemName`, `maxValue` |
+| HTML attributes | kebab-case, lowercase | `item-name`, `max-value` |
+| Dispatched event names | Lowercase, no `on` prefix | `'recordchange'`, `'save'` |
+| HTML event listeners | `on` + event name | `onrecordchange`, `onsave` |
+
+Reserved prefixes in JS property names: `on`, `aria`, `data`. Reserved words: `slot`, `part`, `is`.
+
+### @api Decorator Rules
+
+- Only one decorator per field/method — do not combine `@api` with `@track` or `@wire`
+- For getter/setter pairs: decorate only the getter, and always define both getter and setter
+- Never mutate `@api` properties internally — use a private reactive copy instead
+- Only use `@api` on properties/methods that are part of the component's public API
+
+```javascript
+// ✅ GOOD: getter/setter with @api on getter only
+_recordId;
+
+@api
+get recordId() { return this._recordId; }
+set recordId(value) {
+    this._recordId = value;
+    this.loadRecord();
+}
+```
+
+### @track Decorator Rules
+
+Since Spring '20, primitive properties are reactive by default. `@track` is only needed when **mutating nested properties** of objects or arrays.
+
+| Scenario | @track Needed? |
+|----------|----------------|
+| Primitive value (`string`, `number`, `boolean`) | No |
+| Object/array that is **reassigned** entirely | No |
+| Object with **nested property mutation** (`this.obj.nested.value++`) | Yes |
+
+```javascript
+// ❌ Unnecessary: primitives are reactive by default
+@track searchTerm = '';
+
+// ✅ Correct: remove @track for primitives
+searchTerm = '';
+
+// ✅ Correct: @track needed for nested mutation
+@track formData = { billing: { city: '' } };
+// later: this.formData.billing.city = 'San Francisco';
+```
+
+---
+
 ## Data Integration (PICKLES: Integrate)
 
 ### Data Source Decision Tree
@@ -150,7 +206,6 @@ reduceErrors(errors) {
         .join('; ');
 }
 ```
-
 ---
 
 ## Event Patterns (PICKLES: Kinetics)
@@ -169,6 +224,46 @@ this.dispatchEvent(new CustomEvent('select', {
 handleSelect(event) {
     const recordId = event.detail.recordId;
 }
+```
+
+### Event Bubbling Configuration
+
+Choose the minimum propagation scope needed:
+
+| Configuration | Encapsulation | Use Case |
+|---------------|---------------|----------|
+| `{ bubbles: false, composed: false }` | **Maximum** (Preferred) | Direct parent-child communication |
+| `{ bubbles: true, composed: false }` | Acceptable | Internal shadow DOM communication |
+| `{ bubbles: false, composed: true }` | Acceptable | Cross shadow boundary without full bubbling |
+| `{ bubbles: true, composed: true }` | **Discouraged** | Only when grandparent+ must handle event |
+
+```javascript
+// ✅ Preferred: Maximum encapsulation
+this.dispatchEvent(new CustomEvent('select', {
+    detail: { recordId: this.recordId }
+    // bubbles and composed default to false
+}));
+
+// ⚠️ Use only when necessary
+this.dispatchEvent(new CustomEvent('globalnotify', {
+    detail: { message: 'Record saved' },
+    bubbles: true,
+    composed: true
+}));
+```
+
+### Event Data Passing
+
+```javascript
+// Primitives: pass directly in detail
+this.dispatchEvent(new CustomEvent('update', {
+    detail: this.recordId  // string — no wrapping needed
+}));
+
+// Non-primitives: always pass a copy to prevent mutation
+this.dispatchEvent(new CustomEvent('change', {
+    detail: { ...this.formData }  // shallow copy
+}));
 ```
 
 ### Event Naming Conventions
@@ -648,6 +743,98 @@ get showLoadingState() {
 
 ---
 
+## Template Directives
+
+### Conditional Rendering: Legacy → Modern
+
+Always use `lwc:if`, `lwc:elseif`, `lwc:else` instead of the deprecated `if:true` / `if:false` directives.
+
+```html
+<!-- ❌ Legacy (deprecated) -->
+<template if:true={isLoading}>
+    <lightning-spinner></lightning-spinner>
+</template>
+<template if:false={isLoading}>
+    <c-data-view data={records}></c-data-view>
+</template>
+
+<!-- ✅ Modern -->
+<template lwc:if={isLoading}>
+    <lightning-spinner></lightning-spinner>
+</template>
+<template lwc:elseif={error}>
+    <c-error-panel errors={error}></c-error-panel>
+</template>
+<template lwc:else>
+    <c-data-view data={records}></c-data-view>
+</template>
+```
+
+**Rules**: Conditional directives are valid on `<template>`, standard HTML tags, custom components, and base components. All elements in a conditional group must be siblings at the same DOM level.
+
+### List Rendering
+
+#### for:each
+
+Every `for:each` must be paired with `for:item`. The `key` attribute must use a stable unique identifier — always `key={item.id}`, never an index.
+
+```html
+<!-- ✅ GOOD -->
+<template for:each={accounts} for:item="account">
+    <c-account-card key={account.Id} account={account}></c-account-card>
+</template>
+
+<!-- ❌ BAD: key={index} or key={account.Name} -->
+```
+
+#### iterator Directive
+
+Use `iterator` when you need access to `.first` or `.last` metadata for conditional styling.
+
+```html
+<template iterator:it={contacts}>
+    <div key={it.value.Id}>
+        {it.value.Name}
+    </div>
+</template>
+```
+
+**Iterator name must be lowercase**. Access item data via `{iteratorname}.value.property` and metadata via `.index`, `.first`, `.last`.
+
+#### Nested Loop Rules
+
+Use distinct `for:item` or `iterator` names in nested loops to avoid variable shadowing:
+
+```html
+<!-- ✅ Distinct names -->
+<template for:each={departments} for:item="dept">
+    <div key={dept.Id}>
+        <template for:each={dept.Employees} for:item="emp">
+            <span key={emp.Id}>{emp.Name}</span>
+        </template>
+    </div>
+</template>
+```
+
+### Multiple Template Rendering
+
+When a component needs to switch between entirely different layouts, import multiple HTML templates and return the appropriate one from `render()`.
+
+```javascript
+import defaultTemplate from './myComponent.html';
+import editTemplate from './myComponentEdit.html';
+
+export default class MyComponent extends LightningElement {
+    isEditing = false;
+
+    render() {
+        return this.isEditing ? editTemplate : defaultTemplate;
+    }
+}
+```
+
+---
+
 ## Performance Optimization (PICKLES: Execution)
 
 ### Lifecycle Hook Guidance
@@ -693,6 +880,8 @@ get filteredItems() {
 ### Virtual Scrolling
 
 Use `lightning-datatable` with `enable-infinite-loading` for large datasets instead of rendering all items.
+
+**For comprehensive performance patterns** (DOM optimization, event delegation, memory management, bundle size): see `references/performance-guide.md`
 
 ---
 
@@ -821,6 +1010,62 @@ LWC automatically escapes content in templates. Never bypass this.
 <p>{userInput}</p>
 ```
 
+### Input Validation Patterns
+
+#### Lightning Base Component Validation Attributes
+
+Use built-in validation attributes on Lightning input components to enforce constraints declaratively:
+
+```html
+<lightning-input
+    label="Email"
+    type="email"
+    required
+    max-length="255"
+    message-when-value-missing="Email is required"
+    message-when-pattern-mismatch="Enter a valid email address"
+    onchange={handleEmailChange}>
+</lightning-input>
+```
+
+#### Form Submission Validation
+
+Always validate all inputs before processing a form submission:
+
+```javascript
+handleSubmit() {
+    const allValid = [...this.template.querySelectorAll('lightning-input')]
+        .reduce((valid, input) => {
+            input.reportValidity();
+            return valid && input.checkValidity();
+        }, true);
+
+    if (!allValid) {
+        return;  // Stop — validation errors displayed to user
+    }
+
+    this.saveRecord();
+}
+```
+
+#### Custom Validation with setCustomValidity
+
+```javascript
+handleBlur(event) {
+    const input = event.target;
+    if (input.value && !this.isUniqueName(input.value)) {
+        input.setCustomValidity('This name is already in use');
+    } else {
+        input.setCustomValidity('');  // Always clear when valid
+    }
+    input.reportValidity();
+}
+```
+
+### Scoped Module Imports
+
+Always use static `@salesforce/` scoped imports instead of legacy Global Value Providers (`$Label`, `$Resource`, etc.)
+
 ---
 
 ## Accessibility (a11y)
@@ -925,6 +1170,63 @@ disconnectedCallback() {
 | Spacing | `--slds-g-spacing-0` to `-12` |
 
 **Important**: `--slds-c-*` (component-level hooks) are NOT supported in SLDS 2 yet.
+
+---
+
+## CSS Isolation & Scoping
+
+LWC uses Shadow DOM for style encapsulation. Follow these rules to prevent style leakage and collisions.
+
+### CSS Selector Rules
+
+| Pattern | Status | Reason |
+|---------|--------|--------|
+| `:host` | ✅ Use | Targets the component's root element |
+| `:host(.modifier)` | ✅ Use | Conditional styling based on host class |
+| `.my-class` | ✅ Use | Class selectors scoped automatically |
+| `*` (universal) | ❌ Avoid | Can leak outside component scope |
+| `#my-id` | ❌ Avoid | LWC transforms IDs to globally unique values |
+| `c-my-component` | ❌ Avoid | Use `:host` instead of component name |
+| `:host-context()` | ❌ Not supported | Use `:host` instead |
+| `lightning-button` | ❌ Avoid | Cannot override base component internals |
+| `.slds-button` | ❌ Avoid | Cannot replace or override SLDS classes |
+
+```css
+/* ❌ BAD: Universal selector leaks */
+* { font-family: Arial, sans-serif; }
+
+/* ✅ GOOD: Scoped universal */
+:host * { font-family: Arial, sans-serif; }
+
+/* ❌ BAD: Component name as selector */
+c-my-component { display: flex; }
+
+/* ✅ GOOD: :host for component-level styles */
+:host { display: flex; }
+
+/* ❌ BAD: Overriding base component or SLDS */
+lightning-button { background-color: red; }
+.slds-button { background-color: purple; }
+
+/* ✅ GOOD: Use styling hooks */
+:host {
+    --slds-c-button-brand-color-background: red;
+}
+```
+
+### Avoid `!important` Overuse
+
+Rely on proper specificity rather than `!important` declarations. Excessive `!important` interferes with parent component styling and makes future maintenance difficult.
+
+### Never Rely on Compiler-Generated Scope Tokens
+
+```css
+/* ❌ BAD: Brittle — token changes across builds */
+c-child[lwc-2j48dfhd928c-host] { padding: 1rem; }
+
+/* ✅ GOOD */
+:host { padding: 1rem; }
+```
 
 ---
 
