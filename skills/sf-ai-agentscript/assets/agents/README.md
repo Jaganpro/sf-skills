@@ -34,6 +34,8 @@ Templates for building complete, deployable agents.
    sf agent publish authoring-bundle --api-name My_Agent --target-org your-org --json
    ```
 
+> **System message tip**: Keep static `welcome` / `error` messages in quotes. If you personalize a system message with Agent Script interpolation such as `{!@variables.user_name}`, use block form with `|`. Template placeholders like `{{WelcomeMessage}}` in these scaffolds are pre-processing placeholders, not Agent Script runtime interpolation.
+
 ## Required Blocks
 
 Every agent should use these top-level blocks **in this order**:

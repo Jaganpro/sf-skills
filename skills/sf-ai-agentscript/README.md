@@ -69,6 +69,7 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 5. **Use `available when` for security** - Don't rely on prompts
 6. **Do not branch directly on raw `@system_variables.user_input` substring checks** - Normalize intent first
 7. **Prompt template outputs should usually be `is_displayable: False` + `is_used_by_planner: True`** - Avoid blank responses
+8. **Dynamic `system.messages.welcome` / `error` should use `|`** - Quoted strings are fine for static text, but if a system message contains `{!...}` interpolation, switch that message to template/block form
 
 ## Quick Syntax Reference
 
@@ -92,6 +93,13 @@ instructions: ->           # Arrow syntax for expressions
 actions:
   process: @actions.refund
     available when @variables.verified == True  # LLM can't see if False
+
+# System message patterns
+system:
+  messages:
+    welcome: "Hello!"                 # Static text: quotes are fine
+    # welcome: |                       # Dynamic text with {!...}: use block form
+    #   Hi {!@variables.user_name}!
 ```
 
 ## Documentation

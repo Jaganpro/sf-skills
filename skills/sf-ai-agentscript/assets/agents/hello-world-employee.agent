@@ -14,6 +14,8 @@
 
 system:
 	instructions: "You are a friendly internal assistant. Help employees with their questions."
+	# Static welcome/error text uses quotes. If you later add {!@variables.x}
+	# personalization here, switch that message to block form with `|`.
 	messages:
 		welcome: "Hello! How can I help you today?"
 		error: "I'm sorry, something went wrong. Please try again."

@@ -2,6 +2,8 @@
 
 This folder contains reusable patterns for common Agentforce scenarios.
 
+> **System message tip**: These patterns generally keep `system.messages.welcome` / `error` as static quoted text. If you add `{!...}` interpolation to a system message, switch that message to block form with `|`. Keep conditional logic and richer personalization in `reasoning.instructions: ->`, not in `system.messages`.
+
 ## Pattern Decision Tree
 
 ```

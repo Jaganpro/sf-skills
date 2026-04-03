@@ -6,6 +6,8 @@
 #
 # Required blocks: config, system, topic, start_agent
 # File extension: .agent
+# Tip: Quoted welcome/error messages are fine for static text.
+# If you personalize a system message with {!@variables.x}, switch that message to block form with `|`.
 
 system:
    messages:
