@@ -177,7 +177,17 @@
 - **Affects**: `system.messages.welcome` / `system.messages.error` when `{!...}` interpolation is authored inline
 - **Symptom**: A message such as `welcome: "Hi {!@variables.user_preferred_name}!"` can display the `{!...}` token literally instead of rendering the variable value.
 - **Root Cause**: System messages use a template-style rendering path for interpolation. Plain quoted string form is reliable for static text, but dynamic welcome/error messages should be authored in template/block form.
-- **Workaround**: Use `|` for dynamic welcome/error messages and keep quoted strings for static messages.
+- **Workaround**: Replace quoted interpolation with block-form template syntax.
+
+  **❌ Wrong**
+  ```yaml
+  system:
+    messages:
+      welcome: "Hi {!@variables.user_preferred_name}!"
+      error: "Sorry, something went wrong."
+  ```
+
+  **✅ Correct**
   ```yaml
   system:
     messages:

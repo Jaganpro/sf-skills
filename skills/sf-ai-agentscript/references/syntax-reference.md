@@ -75,6 +75,16 @@ system:
 
 > **Message syntax note**: Quoted strings are fine for **static** `welcome` / `error` messages. If a welcome or error message includes variable interpolation such as `{!@variables.user_preferred_name}`, author that message in template/block form with `|` so the value is rendered in the system message. For first-turn personalization, prefer linked or session-backed variables.
 
+**❌ Wrong — quoted interpolation can render literally**
+```yaml
+system:
+  messages:
+    welcome: "Hi {!@variables.user_preferred_name}!"
+    error: "Sorry, something went wrong."
+  instructions: "You are a helpful assistant."
+```
+
+**✅ Correct — use block form for dynamic system messages**
 ```yaml
 system:
   messages:

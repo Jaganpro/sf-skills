@@ -74,5 +74,6 @@ system:
 ```
 
 - Use `|` for dynamic welcome/error messages that include `{!...}` references.
+- Do **not** write dynamic system messages like `welcome: "Hi {!@variables.user_preferred_name}!"` — that quoted form can render literally.
 - Keep quoted strings for static welcome/error text.
 - Keep conditional logic in `reasoning.instructions: ->`; `system.messages` should stay as static text or direct variable templates.
