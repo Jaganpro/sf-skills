@@ -37,6 +37,7 @@ env/
 .claude/cache/
 .claude/temp/
 .claude/logs/
+.claude/settings.local.json
 
 # Backup files
 *.backup.*
@@ -56,7 +57,7 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
-core.code-workspace
+*.code-workspace
 *.swp
 *.swo
 *.swn
