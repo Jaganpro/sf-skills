@@ -18,7 +18,9 @@
 
 ## Block Structure
 
-### Required Block Order
+### Recommended Top-Level Block Convention
+
+Use the following order as this skill's preferred convention:
 
 ```
 config → variables → system → connection → knowledge → language → start_agent → topic
@@ -35,7 +37,7 @@ config → variables → system → connection → knowledge → language → st
 | `start_agent:` | ✅ Yes | Entry point (exactly one) |
 | `topic:` | ✅ Yes | Conversation topics (one or more) |
 
-> ✅ **Validated Finding**: Documentation implies strict ordering, but both config-first and system-first orderings compile. Pick one convention and be consistent.
+> ✅ **Evidence note**: Official Salesforce docs and examples present top-level blocks in varying sequences, and local validation evidence indicates both config-first and system-first orderings compile. Use one convention consistently, but do not treat top-level block order alone as a correctness rule.
 
 ### Block Internal Ordering
 

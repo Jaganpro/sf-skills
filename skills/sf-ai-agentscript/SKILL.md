@@ -87,7 +87,9 @@ For the expanded version, use [references/activation-checklist.md](references/ac
 
 Full details: [references/agent-user-setup.md](references/agent-user-setup.md)
 
-### 2) Required block order
+### 2) Recommended top-level block convention
+
+Use this order for consistency in this skill's examples and reviews:
 
 ```yaml
 config:
@@ -99,6 +101,8 @@ language:
 start_agent:
 topic:
 ```
+
+Official Salesforce materials present top-level blocks in differing sequences, and local validation evidence indicates multiple orderings compile. Treat this as a style convention, not a standalone correctness or publish blocker.
 
 ### 3) Critical config fields
 

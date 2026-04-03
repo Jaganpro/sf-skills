@@ -51,7 +51,7 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 
 | Category | Points | Focus |
 |----------|--------|-------|
-| Structure & Syntax | 20 | Block ordering, indentation, required fields |
+| Structure & Syntax | 20 | Required blocks, indentation, required fields |
 | Deterministic Logic | 25 | Security guards, post-action checks |
 | Instruction Resolution | 20 | Arrow syntax, template injection |
 | FSM Architecture | 15 | Topic separation, transitions |
@@ -72,6 +72,8 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 8. **Dynamic `system.messages.welcome` / `error` should use `|`** - Quoted strings are fine for static text, but if a system message contains `{!...}` interpolation, switch that message to template/block form
 
 ## Quick Syntax Reference
+
+Common minimal layout (`connection:` and `knowledge:` omitted here because they are optional):
 
 ```yaml
 # Block structure

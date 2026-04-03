@@ -36,17 +36,22 @@ Templates for building complete, deployable agents.
 
 > **System message tip**: Keep static `welcome` / `error` messages in quotes. If you personalize a system message with Agent Script interpolation such as `{!@variables.user_name}`, use block form with `|`. Template placeholders like `{{WelcomeMessage}}` in these scaffolds are pre-processing placeholders, not Agent Script runtime interpolation.
 
-## Required Blocks
+## Common Top-Level Blocks
 
-Every agent should use these top-level blocks **in this order**:
+Use this ordering convention for consistency in this skill's examples.
 
-| Block | Purpose |
-|-------|---------|
-| `config:` | Deployment metadata (`developer_name`, `agent_label`, `agent_type`, etc.) |
-| `variables:` | Data connections and state storage |
-| `system:` | Agent personality and default messages |
-| `language:` | Locale configuration |
-| `start_agent` | Entry point topic (exactly one required) |
+| Block | Required | Purpose |
+|-------|----------|---------|
+| `config:` | ✅ Yes | Deployment metadata (`developer_name`, `agent_label`, `agent_type`, etc.) |
+| `variables:` | Optional | Data connections and state storage |
+| `system:` | ✅ Yes | Agent personality and default messages |
+| `connection:` | Optional | Escalation routing |
+| `knowledge:` | Optional | Knowledge configuration |
+| `language:` | Optional | Locale configuration |
+| `start_agent` | ✅ Yes | Entry point topic (exactly one required) |
+| `topic` | ✅ Yes | Conversation topics (one or more required) |
+
+Official Salesforce materials can present these blocks in different sequences. This table reflects the convention used by this skill, not a universal compile rule.
 
 ## Next Steps
 

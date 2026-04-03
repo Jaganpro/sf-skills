@@ -6,7 +6,7 @@
 
 | Category | Points | Key Criteria |
 |----------|--------|--------------|
-| **Structure & Syntax** | 20 | Block ordering, indentation consistency, required fields present |
+| **Structure & Syntax** | 20 | Required blocks present, indentation consistency, valid identifiers, valid top-level wrappers |
 | **Deterministic Logic** | 25 | Security via `available when`, post-action checks, proper conditionals |
 | **Instruction Resolution** | 20 | Correct use of `->` vs `|`, template injection, action execution |
 | **FSM Architecture** | 15 | Clear topic separation, explicit transitions, state management |
@@ -21,8 +21,10 @@
 | 20 | All required blocks present, consistent indentation, valid identifiers |
 | 15 | Minor issues (e.g., inconsistent spacing within tolerance) |
 | 10 | Missing optional blocks that would improve clarity |
-| 5 | Block ordering issues or mixed indentation |
+| 5 | Significant structural issues (for example mixed indentation, invalid top-level wrappers, or repeated structural problems) |
 | 0 | Missing required blocks or compilation failures |
+
+> Top-level block order differences should be treated as style feedback unless they correspond to an actual validation or compiler issue.
 
 ### Deterministic Logic (25 points)
 | Points | Criteria |

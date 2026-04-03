@@ -73,7 +73,7 @@
 **Purpose**: Agent Script code with real-time syntax validation
 
 **Shows:**
-- ✅ Block ordering errors
+- ✅ Missing required top-level blocks
 - ✅ Indentation issues
 - ✅ Missing required fields
 - ✅ Invalid resource references
