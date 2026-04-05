@@ -88,11 +88,11 @@ Key settings:
 ### C) Commands executed
 
 ```bash
-npx --yes vlocity -sfdx.username att-funqa -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" validateLocalData
+npx --yes vlocity -sfdx.username sample-uat -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" validateLocalData
 
-npx --yes vlocity -sfdx.username att-funqa -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" packDeploy
+npx --yes vlocity -sfdx.username sample-uat -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" packDeploy
 
-npx --yes vlocity -sfdx.username att-funqa -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" packRetry
+npx --yes vlocity -sfdx.username sample-uat -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle-deploy/deploy-business-internet-plus-bundle.yaml" packRetry
 ```
 
 ### D) Command outcomes
@@ -130,7 +130,7 @@ Missing child Product2 keys confirmed absent from local `vlocity/Product2`:
 ```text
 DataPack goal: deploy
 Source org: N/A (local staged payload)
-Target org: att-funqa
+Target org: sample-uat
 Scope: Product2/9f1d3c4a-8e5b-4d71-9a2d-f6b719a90101
 Result: failed (dependency missing)
 Key findings:

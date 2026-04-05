@@ -58,7 +58,8 @@ When generating a complete bundle, include:
 
 ## Bundled Examples
 
-- [assets/examples/business-internet-essential-vpl-bundle/](assets/examples/business-internet-essential-vpl-bundle/) - full EPC bundle sample set
+- [assets/](assets/) - canonical EPC bundle template set for DataPack authoring
+- [assets/examples/](assets/examples/) - additional bundle and simple-offer sample packs
 - [examples/business-internet-plus-bundle/](examples/business-internet-plus-bundle/) - generated Business Internet Plus example with transcript
 
 ## Scoring System (120 Points)

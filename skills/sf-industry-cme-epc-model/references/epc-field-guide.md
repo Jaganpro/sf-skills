@@ -77,14 +77,14 @@ Key quantity fields:
 | Missing root ProductChildItem | Broken offer traversal | Always add root row |
 | Direct org-specific IDs in DataPack | Deploy failures across orgs | Use lookup source keys and global keys |
 
-## Included Example Packs (Per Folder)
+## Included Example Packs
 
-The skill includes full examples under `assets/examples/`, with one folder per example:
+The skill ships with:
 
-- `assets/examples/business-internet-essential-vpl-bundle/` (bundle offer example)
+- `assets/` (canonical EPC bundle template set)
 - `assets/examples/samsung-galaxy-s22-bundle/` (bundle offer example)
 - `assets/examples/business-internet-premium-fttc-simple-offer/` (simple offer example)
 - `assets/examples/business-internet-pro-vpl-simple-offer/` (simple offer example)
 - `assets/examples/static-ip-simple-offer/` (simple offer example)
 
-Each folder contains the full related file set from `vlocity/Product2`, including DataPack, attribute assignments, product child items, and pricing artifacts.
+The example folders contain related DataPack-style files, including Product2 payloads, attribute assignments, product child items, and pricing artifacts.

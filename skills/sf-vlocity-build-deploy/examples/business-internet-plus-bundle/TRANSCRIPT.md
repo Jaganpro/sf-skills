@@ -70,7 +70,7 @@ Validate deployment for the `Business Internet Plus` bundle and document the pro
 
 - `vlocity` global binary check: **not installed globally** (`command not found`).
 - `npx vlocity` check: **available** (`Vlocity Build v1.17.21`).
-- `sf org list --json`: org context available; target alias `att-funqa` is connected.
+- `sf org list --json`: org context available; target alias `sample-uat` is connected.
 
 ### C) File-level integrity validation
 
@@ -93,7 +93,7 @@ Job file used:
 Command:
 
 ```bash
-npx --yes vlocity -sfdx.username att-funqa -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle/deploy-business-internet-plus-bundle.yaml" validateLocalData
+npx --yes vlocity -sfdx.username sample-uat -job "skills/sf-vlocity-build-deploy/examples/business-internet-plus-bundle/deploy-business-internet-plus-bundle.yaml" validateLocalData
 ```
 
 Result:
@@ -113,7 +113,7 @@ Interpretation:
 ```text
 DataPack goal: validate deployment readiness
 Source org: N/A
-Target org: att-funqa
+Target org: sample-uat
 Scope: deploy-business-internet-plus-bundle.yaml + Product2/9f1d3c4a-8e5b-4d71-9a2d-f6b719a90101
 Result: partial
 Key findings:

@@ -22,22 +22,22 @@ metadata:
 
 Expert Salesforce Industries CME EPC modeler for creating Product2-based catalog entries, assigning configurable attributes, and building offer bundles through Product Child Item relationships.
 
-This skill is optimized for DataPack-style metadata authoring, using the same structure as:
+This skill is optimized for DataPack-style metadata authoring. Use the canonical template set in `assets/`:
 
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_DataPack.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_AttributeAssignments.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_ProductChildItems.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_PricebookEntries.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_PriceListEntries.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_ObjectFieldAttributes.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_OrchestrationScenarios.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_DecompositionRelationships.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_CompiledAttributeOverrides.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_OverrideDefinitions.json`
-- `assets/examples/business-internet-essential-vpl-bundle/Business-Internet-Essential-VPL_ParentKeys.json`
+- `assets/product2-offer-template.json`
+- `assets/attribute-assignment-template.json`
+- `assets/product-child-item-template.json`
+- `assets/pricebook-entries-template.json`
+- `assets/price-list-entries-template.json`
+- `assets/object-field-attributes-template.json`
+- `assets/orchestration-scenarios-template.json`
+- `assets/decomposition-relationships-template.json`
+- `assets/compiled-attribute-overrides-template.json`
+- `assets/override-definitions-template.json`
+- `assets/parent-keys-template.json`
 
 Additional packaged examples are available under `assets/examples/` with one folder per bundle/simple-offer sample.
-The root `assets/` folder now contains a complete Business Internet Essential (VPL) bundle template set, not only the core 3 files.
+The root `assets/` folder contains the canonical baseline template set for bundle authoring.
 
 ---
 
@@ -320,7 +320,7 @@ cursor-agent "Update Product2 Business Internet Essential with attribute metadat
 cursor-agent "Create root and child %vlocity_namespace%__ProductChildItem__c records for offer Business Internet Essential VPL with min/max/default quantity rules."
 
 # Review an existing DataPack for EPC modeling quality
-cursor-agent "Review vlocity/Product2/Business-Internet-Essential-VPL_* JSON files, score against the 120-point rubric, and return risks plus required fixes."
+cursor-agent "Review the Product2 bundle JSON files under skills/sf-industry-cme-epc-model/examples/business-internet-plus-bundle/, score against the 120-point rubric, and return risks plus required fixes."
 
 # Convert a spec product into a bundle-ready offer payload
 cursor-agent "Transform Product2 Dedicated Fiber 1G from spec product to offer bundle (SpecificationType=Offer, SpecificationSubType=Bundle) and generate aligned PCI + pricing artifacts."
