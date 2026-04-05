@@ -101,7 +101,7 @@ system:
 ```yaml
 config:
   developer_name: "refund_agent"
-  agent_description: "Handles refund requests"
+  description: "Handles refund requests"
   agent_type: "AgentforceServiceAgent"
   default_agent_user: "admin@yourorg.com"
 ```
@@ -109,10 +109,11 @@ config:
 | Field | Required | Purpose |
 |-------|----------|---------|
 | `developer_name` | ✅ Yes | Internal identifier (must match folder name, case-sensitive) |
-| `agent_description` | ✅ Yes | Agent's purpose description |
+| `description` | ✅ Yes | Agent's goals and purpose |
 | `agent_type` | ✅ Yes | `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
 | `default_agent_user` | ⚠️ **REQUIRED** | Must be valid Einstein Agent User |
 | `agent_label` | Optional | Display name for the agent in UI (defaults to `developer_name` if omitted) |
+| `agent_description` | Optional / compatibility | Alternative config key accepted by local tooling; public docs/examples in this skill prefer `description` |
 | `company` | Optional | Company context for the agent |
 | `role` | Optional | Role/persona description for the agent |
 | `agent_version` | Optional / system-managed | Agent version metadata |
@@ -704,7 +705,7 @@ system:
 
 config:
   developer_name: "pronto_refund_agent"
-  agent_description: "Handles customer refund requests with churn risk assessment"
+  description: "Handles customer refund requests with churn risk assessment"
   agent_type: "AgentforceServiceAgent"
   default_agent_user: "agent_user@myorg.com"
 

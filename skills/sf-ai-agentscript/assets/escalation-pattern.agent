@@ -19,7 +19,7 @@ system:
 config:
    developer_name: "EscalationPatternAgent"
    agent_label: "Escalation Demo Agent"
-   agent_description: "Agent demonstrating complete escalation patterns"
+   description: "Agent demonstrating complete escalation patterns"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"  # REQUIRED: Change to valid Einstein Agent User
 

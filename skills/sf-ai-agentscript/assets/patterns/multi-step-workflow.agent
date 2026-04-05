@@ -39,7 +39,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "agent@company.salesforce.com"
 	agent_label: "Onboarding Assistant"
-	agent_description: "Guides users through multi-step onboarding workflow"
+	description: "Guides users through multi-step onboarding workflow"
 
 variables:
 	# Standard linked variables

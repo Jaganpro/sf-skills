@@ -57,9 +57,9 @@
 
 | Rule ID | Severity | Check | Encoded behavior |
 |---|---|---|---|
-| `ASV-CFG-001` | Blocking | Config completeness | Requires an identifier (`developer_name` or legacy `agent_name`) and description (`agent_description` or legacy `description`). |
+| `ASV-CFG-001` | Blocking | Config completeness | Requires an identifier (`developer_name` or legacy `agent_name`) and description (`description` or compatibility `agent_description`). |
 | `ASV-CFG-002` | Blocking / Warning | Agent type semantics | Errors when Service Agents omit `default_agent_user`, Employee Agents include it, or `agent_type` is invalid. Warns when `agent_type` is omitted but `default_agent_user` implies Service Agent fallback. |
-| `ASV-CFG-003` | Warning | Legacy config `description:` | Warns to prefer `agent_description:` over legacy `description:`. |
+| `ASV-CFG-003` | Warning | Duplicate config description fields | Warns when both `description:` and `agent_description:` are defined in the same config block. |
 | `ASV-CFG-004` | Warning | `default_agent_user` inline comments | Warns when `default_agent_user:` contains trailing inline comments / extra text. |
 | `ASV-CFG-005` | Warning | Optional config field shape | Warns on malformed optional config fields such as non-boolean `enable_enhanced_event_logs` or empty `company` / `role` / `agent_version` / `user_locale`. |
 | `ASV-CFG-006` | Blocking | Topic system override syntax | Errors on topic-level shorthand `system: "..."`; enforces nested `system:` + `instructions:` shape. |

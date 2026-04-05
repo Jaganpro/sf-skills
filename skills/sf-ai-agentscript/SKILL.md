@@ -115,9 +115,11 @@ Official Salesforce materials present top-level blocks in differing sequences, a
 | Field | Rule |
 |---|---|
 | `developer_name` | Must match folder / bundle name |
-| `agent_description` | Use instead of legacy `description` |
+| `description` | Public docs/examples should use this config field |
 | `agent_type` | Set explicitly every time |
 | `default_agent_user` | Service Agents only |
+
+Local tooling also accepts `agent_description:` for compatibility, but this skill's public docs and examples should prefer `description:`.
 
 ### 4) Syntax blockers you should treat as immediate failures
 

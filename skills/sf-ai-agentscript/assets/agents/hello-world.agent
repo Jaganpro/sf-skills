@@ -33,7 +33,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "your.user@company.com"
 	agent_label: "Hello World Agent"
-	agent_description: "A minimal example agent to learn Agent Script basics"
+	description: "A minimal example agent to learn Agent Script basics"
 
 variables:
 	# Linked variables (required) - Connect to Salesforce Messaging context

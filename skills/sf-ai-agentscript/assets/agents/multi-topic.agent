@@ -3,7 +3,7 @@
 # Users are routed to specialized topics based on their needs
 #
 # Usage: Replace {{placeholders}} with your values
-# Required: developer_name, agent_type, default_agent_user, agent_label, agent_description
+# Required: developer_name, agent_type, default_agent_user, agent_label, description
 # Required: At least 2 topics with label and description
 # NOTE: {{WelcomeMessage}} is a scaffolding placeholder, not Agent Script runtime interpolation.
 # If you replace it with a system message that uses {!@variables.x}, use block form:
@@ -21,7 +21,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "{{AgentUser}}"
 	agent_label: "{{AgentLabel}}"
-	agent_description: "{{AgentDescription}}"
+	description: "{{AgentDescription}}"
 
 variables:
 	EndUserId: linked string

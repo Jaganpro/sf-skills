@@ -22,7 +22,7 @@ system:
 config:
    developer_name: "SecureAgent"
    agent_label: "Secure Customer Agent"
-   agent_description: "Agent with verification gate for sensitive operations"
+   description: "Agent with verification gate for sensitive operations"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"
 

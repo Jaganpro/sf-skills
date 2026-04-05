@@ -16,7 +16,7 @@ system:
 config:
    developer_name: "HubAndSpokeAgent"
    agent_label: "Customer Service Agent"
-   agent_description: "Multi-purpose agent with hub-and-spoke architecture"
+   description: "Multi-purpose agent with hub-and-spoke architecture"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"
 

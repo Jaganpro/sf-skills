@@ -964,18 +964,18 @@ class AgentScriptValidator:
     def _check_config_fields(self):
         developer_name = self.config_fields.get("developer_name")
         legacy_agent_name = self.config_fields.get("agent_name")
-        agent_description = self.config_fields.get("agent_description")
-        legacy_description = self.config_fields.get("description")
+        compatibility_agent_description = self.config_fields.get("agent_description")
+        config_description = self.config_fields.get("description")
         agent_type = self.config_fields.get("agent_type")
         default_agent_user = self.config_fields.get("default_agent_user")
 
         if not developer_name and not legacy_agent_name:
             self._add_error(1, "Missing agent identifier in config block. Use either 'developer_name' or legacy 'agent_name'.", "ASV-CFG-001")
-        if not agent_description and not legacy_description:
-            self._add_error(1, "Missing agent description in config block. Use either 'agent_description' or legacy 'description'.", "ASV-CFG-001")
+        if not compatibility_agent_description and not config_description:
+            self._add_error(1, "Missing agent description in config block. Use either 'description' or compatibility 'agent_description'.", "ASV-CFG-001")
 
-        if legacy_description:
-            self._add_warning(legacy_description[1], "Config uses legacy 'description:'. Prefer 'agent_description:' for modern Agent Script assets.", "ASV-CFG-003")
+        if compatibility_agent_description and config_description:
+            self._add_warning(compatibility_agent_description[1], "Config defines both 'description:' and 'agent_description:'. Use one field; public docs/examples prefer 'description:'.", "ASV-CFG-003")
 
         for line in self.default_agent_user_comment_lines:
             self._add_warning(

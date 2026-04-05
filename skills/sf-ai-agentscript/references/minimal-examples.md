@@ -9,7 +9,7 @@ A complete, deployable agent with one topic, one action, and conditional logic:
 ```yaml
 config:
   developer_name: "simple_agent"
-  agent_description: "A minimal working agent example"
+  description: "A minimal working agent example"
   agent_type: "AgentforceServiceAgent"
   default_agent_user: "agent_user@yourorg.com"
 

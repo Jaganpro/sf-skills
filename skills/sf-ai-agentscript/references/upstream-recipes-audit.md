@@ -39,7 +39,7 @@ Do **not** use TrailheadApps alone as the final truth for:
 | Upstream pattern | Evidence | Our verdict | Guidance |
 |---|---|---|---|
 | `connections:` plural wrapper | `.airules/AGENT_SCRIPT.md` still shows `connections:` top-level ordering; `future_recipes/escalationPatterns` still uses it | Stale / contradicts downstream validation | Prefer `connection messaging:` only |
-| Config `description:` shown as primary field | `.airules/AGENT_SCRIPT.md` config block and current recipes still use `description:` | Legacy-compatible, but not preferred | Prefer `agent_description:` in this skill |
+| Config `description:` shown as primary field | `.airules/AGENT_SCRIPT.md` config block and current recipes still use `description:` | Aligned with official/public usage | Prefer `description:` in public docs/examples; keep `agent_description:` compatibility in local tooling |
 | `before_reasoning` removed from rules but still appears in recipes | Main rules removed it, but `future_recipes/customerServiceAgent` still uses it | Internally inconsistent | Keep lifecycle-hook docs, but be cautious about runtime guarantees |
 | Service Agent coverage is weak | Current repo is almost entirely Employee-Agent examples and has effectively no real Service-Agent `.agent` corpus | Incomplete source for Service-Agent authoring | Prefer this skill's service-user and publish docs |
 
@@ -77,7 +77,7 @@ When upstream and local evidence disagree, use this priority order:
 ## Recommended Ongoing Audit Checklist
 
 When reviewing new TrailheadApps commits, specifically check for:
-- config field changes (`developer_name`, `agent_description`, `agent_type`)
+- config field changes (`developer_name`, `description`, `agent_type`, and any compatibility behavior around `agent_description`)
 - lifecycle hook additions/removals
 - connection block syntax
 - target protocol examples (`flow://`, `apex://`, `prompt://`)
@@ -86,6 +86,6 @@ When reviewing new TrailheadApps commits, specifically check for:
 
 ## Current Decision Log
 
-- **Adopted from upstream:** `developer_name`, `@actions.` prefix guidance, `run` vs utility clarification
-- **Not adopted from upstream:** plural `connections:` wrapper, legacy config `description:` as preferred modern syntax, implicit Employee-Agent bias as general guidance
+- **Adopted from upstream:** `developer_name`, public config `description:`, `@actions.` prefix guidance, `run` vs utility clarification
+- **Not adopted from upstream:** plural `connections:` wrapper, implicit Employee-Agent bias as general guidance
 - **Handled cautiously:** lifecycle hooks and `run` inside lifecycle hooks

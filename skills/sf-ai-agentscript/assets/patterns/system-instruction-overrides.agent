@@ -31,7 +31,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "agent@company.salesforce.com"
 	agent_label: "Dynamic Service Agent"
-	agent_description: "Agent with dynamic instruction overrides based on context"
+	description: "Agent with dynamic instruction overrides based on context"
 
 variables:
 	# Standard linked variables

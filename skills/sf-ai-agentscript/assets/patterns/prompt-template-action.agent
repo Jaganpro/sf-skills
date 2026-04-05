@@ -30,7 +30,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "agent@company.salesforce.com"
 	agent_label: "Content Generator"
-	agent_description: "Agent that generates AI content using Prompt Templates"
+	description: "Agent that generates AI content using Prompt Templates"
 
 variables:
 	# Standard linked variables

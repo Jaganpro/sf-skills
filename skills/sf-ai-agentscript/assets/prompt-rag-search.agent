@@ -21,7 +21,7 @@ system:
 config:
    developer_name: "RAGSearchAgent"
    agent_label: "Knowledge Assistant"
-   agent_description: "Agent demonstrating Prompt Template with Data Cloud RAG pattern"
+   description: "Agent demonstrating Prompt Template with Data Cloud RAG pattern"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"
 

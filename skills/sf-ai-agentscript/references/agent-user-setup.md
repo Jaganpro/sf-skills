@@ -248,7 +248,7 @@ In your `.agent` file:
 ```yaml
 config:
   developer_name: "AgentName"
-  agent_description: "Your agent description"
+  description: "Your agent description"
   agent_type: "AgentforceServiceAgent"
   default_agent_user: "{agent_name}_agent@{orgId}.ext"  # Service agents ONLY
 ```
@@ -401,7 +401,7 @@ Or use Permission Set Groups for role-based access.
 ```yaml
 config:
   developer_name: "Employee_Agent"
-  agent_description: "Internal employee assistant"
+  description: "Internal employee assistant"
   agent_type: "AgentforceEmployeeAgent"
   # NO default_agent_user — agent runs as logged-in user
 ```

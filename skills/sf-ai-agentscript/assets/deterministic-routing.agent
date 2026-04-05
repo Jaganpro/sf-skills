@@ -24,7 +24,7 @@ system:
 config:
    developer_name: "DeterministicRoutingAgent"
    agent_label: "Smart Router Agent"
-   agent_description: "Agent demonstrating zero-hallucination intent routing pattern"
+   description: "Agent demonstrating zero-hallucination intent routing pattern"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"
 

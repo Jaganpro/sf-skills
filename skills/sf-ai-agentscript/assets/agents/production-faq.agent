@@ -15,7 +15,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "agent.user@company.com"
 	agent_label: "Simple FAQ Agent"
-	agent_description: "A minimal FAQ agent that answers common questions using AI"
+	description: "A minimal FAQ agent that answers common questions using AI"
 
 variables:
 	EndUserId: linked string

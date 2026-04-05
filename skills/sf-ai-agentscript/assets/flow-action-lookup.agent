@@ -21,7 +21,7 @@ system:
 config:
    developer_name: "FlowActionLookupAgent"
    agent_label: "Order Lookup Agent"
-   agent_description: "Agent demonstrating Flow action patterns with complex data types"
+   description: "Agent demonstrating Flow action patterns with complex data types"
    agent_type: "AgentforceServiceAgent"
    default_agent_user: "agent@yourorg.com"
 

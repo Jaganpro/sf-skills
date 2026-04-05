@@ -29,7 +29,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "{{AGENT_USER_EMAIL}}"
 	agent_label: "{{AGENT_LABEL}}"
-	agent_description: "Customer service agent with human escalation capability"
+	description: "Customer service agent with human escalation capability"
 
 variables:
 	# Required linked variables for messaging context

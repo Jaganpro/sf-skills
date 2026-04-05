@@ -38,7 +38,7 @@ config:
 	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "agent@company.salesforce.com"
 	agent_label: "Account Research Agent"
-	agent_description: "Demonstrates critical input collection patterns for reliable slot filling"
+	description: "Demonstrates critical input collection patterns for reliable slot filling"
 
 variables:
 	# Standard linked variables (required)

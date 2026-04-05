@@ -24,7 +24,7 @@ config:
 	developer_name: "Hello_World_Employee"
 	agent_type: "AgentforceEmployeeAgent"
 	agent_label: "Hello World Employee Agent"
-	agent_description: "A minimal Employee Agent example -- no dedicated user needed"
+	description: "A minimal Employee Agent example -- no dedicated user needed"
 
 start_agent main:
 	label: "Main"
