@@ -2,6 +2,8 @@
 
 🤖 **Agent Script DSL development for Salesforce Agentforce** - Write deterministic agents in a single `.agent` file with FSM architecture, instruction resolution, and hybrid reasoning.
 
+> Default workflow: direct `.agent` authoring first. Spec generation and scaffolds are optional helpers, not the primary authoring model.
+
 ## Features
 
 - ✅ **100-point scoring system** across 6 categories for quality assurance
@@ -43,6 +45,7 @@ Tell Claude what your agent should do, and it will generate a scored Agent Scrip
 
 ### 3. Validate & Deploy
 ```bash
+sf org create agent-user --target-org TARGET_ORG --json   # Service Agents only
 sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 ```
@@ -70,6 +73,7 @@ sf agent publish authoring-bundle --api-name MyAgent --target-org prod --json
 6. **Do not branch directly on raw `@system_variables.user_input` substring checks** - Normalize intent first
 7. **Prompt template outputs should usually be `is_displayable: False` + `is_used_by_planner: True`** - Avoid blank responses
 8. **Dynamic `system.messages.welcome` / `error` should use `|`** - Quoted strings are fine for static text, but if a system message contains `{!...}` interpolation, switch that message to template/block form
+9. **Employee Agents do not need a dedicated running user** - They need end-user visibility via permission sets when surfaced in Lightning Experience
 
 ## Quick Syntax Reference
 
@@ -111,7 +115,7 @@ system:
 | [SKILL.md](SKILL.md) | Main entry point with scoring system |
 | [references/](references/) | Comprehensive guides per topic |
 | [references/](references/) | Quick reference guides |
-| [assets/](assets/) | Example .agent files |
+| [assets/](assets/) | Example `.agent` files and starter scaffolds |
 
 ## Cross-Skill Workflow
 

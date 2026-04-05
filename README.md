@@ -12,6 +12,10 @@ A reusable skill library for **Salesforce-focused coding agents**—covering Ape
 
 **Included:** 33 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
 
+> Recommended workflow for this repository: agent-first development in Claude Code, Pi, and similar coding agents. VS Code is optional tooling, not the primary operating model.
+>
+> The primary value of this repo is the skill library itself, not a VS Code-first workflow.
+
 **Start here:** [Available Skills](#available-skills) · [Installation](#installation) · [Claude Code Features](#claude-code-features) · [Skill Architecture](#skill-architecture)
 
 ---
@@ -284,7 +288,7 @@ Skills leverage official Salesforce LSP servers for real-time syntax validation 
 3. If errors found → Claude receives diagnostics and auto-fixes
 4. Repeat up to 3 attempts
 
-**Prerequisites:** See LSP table in Prerequisites section. LWC uses standalone npm package; Apex and Agent Script require VS Code extensions.
+**Prerequisites:** See LSP table in Prerequisites section. LWC uses a standalone npm package; Apex and Agent Script use official extension-bundled language-server artifacts.
 
 Hooks provide **advisory feedback** — they inform but don't block operations.
 
@@ -396,7 +400,7 @@ This is the working mental model for the ecosystem: foundation and integration s
 
 *LSP real-time validation (auto-fix loops):*
 - **LWC Language Server** — `npm install -g @salesforce/lwc-language-server` (standalone, no VS Code needed)
-- **VS Code with Salesforce Extensions** — Required for Apex and Agent Script only (no npm packages available)
+- **VS Code with Salesforce Extensions** — Official Salesforce extension artifacts are still the source of the Apex and Agent Script language servers. In this repository, VS Code Marketplace usage is optional from a workflow perspective; install those extensions only if you want the bundled language-server binaries locally.
   - Apex: Install "Salesforce Extension Pack" (Java JAR bundled in extension)
   - Agent Script: Install "Salesforce Agent Script" extension (server.js bundled in extension)
 - **Java 11+** — Required for Apex LSP (same as Code Analyzer)

@@ -1,7 +1,9 @@
 <!-- Parent: sf-ai-agentscript/SKILL.md -->
 # Agent User Setup & Permission Model
 
-> Complete provisioning workflow for Einstein Agent Users and permission sets. Validated against ORM1, ORM2, AutomotiveSupport, and SalesforceProductAssistant agents.
+> Complete provisioning workflow for Einstein Agent Users and permission sets. Validated against representative Service Agent and Employee Agent scenarios.
+>
+> Preferred GA path: provision the Service Agent running user with `sf org create agent-user`. Use manual user creation only when you need custom user fields or the command is unavailable in the target org/tooling version.
 
 **License Requirement:** PID_DigitalAgent (typically included with Agentforce licenses)
 
@@ -14,10 +16,11 @@
 | **Use Case** | Customer-facing, external users | Internal employees |
 | **Runs As** | Dedicated Einstein Agent User | Logged-in user |
 | **Einstein Agent User?** | Required | Not needed |
-| **System PS (`AgentforceServiceAgentUser`)** | Required | Not needed |
+| **System PS (`AgentforceServiceAgentBase`, `AgentforceServiceAgentUser`, `EinsteinGPTPromptTemplateUser`)** | Required | Not needed |
 | **Custom PS (`{AgentName}_Access`)** | Assigned to agent user | Assigned to employees |
 | **`default_agent_user` in config** | Required | Omit entirely |
 | **Respects Sharing Rules** | No (consistent permissions) | Yes (user's data access) |
+| **Preferred setup path** | `sf org create agent-user` | Permission-set visibility via `<agentAccesses>` |
 
 > **How to check agent type**: Look at the `agent_type` field in the `config:` block of your `.agent` file, or query: `sf data query --query "SELECT DeveloperName, Type FROM BotDefinition WHERE DeveloperName = 'AgentName'" -o TARGET_ORG --json`
 
@@ -25,100 +28,68 @@
 
 ## CLI Fast Track: Complete Workflow
 
-**For CLI-first workflow** (tested: ~8 minutes total):
+**Preferred CLI-first workflow** (tested: ~8 minutes total):
 
 ```bash
-# Step 1: Query existing Einstein Agent Users (30 seconds)
+# Step 1: Create the native Service Agent user
+sf org create agent-user --target-org TARGET_ORG --json
+
+# Optional: custom display name
+sf org create agent-user \
+  --first-name Service \
+  --last-name Agent \
+  --target-org TARGET_ORG --json
+
+# Optional: custom username base
+sf org create agent-user \
+  --base-username service-agent@corp.com \
+  --target-org TARGET_ORG --json
+
+# Step 2: Verify the native system assignments
 sf data query \
-  --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true" \
+  --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>' ORDER BY PermissionSet.Name" \
   -o TARGET_ORG --json
 
-# Step 2: Create Einstein Agent User (2 minutes)
-# Get Profile ID
-PROFILE_ID=$(sf data query \
-  --query "SELECT Id FROM Profile WHERE Name = 'Einstein Agent User'" \
-  -o TARGET_ORG --json | jq -r '.result.records[0].Id')
+# Expected: AgentforceServiceAgentBase + AgentforceServiceAgentUser + EinsteinGPTPromptTemplateUser
 
-# For Production/Sandbox (non-scratch org):
-sf data create record --sobject User --values \
-  "Username=<agent_name>_user@<orgId>.ext \
-   LastName=<AgentName> \
-   Email=admin@example.com \
-   Alias=<alias> \
-   TimeZoneSidKey=America/Los_Angeles \
-   LocaleSidKey=en_US \
-   EmailEncodingKey=UTF-8 \
-   ProfileId=${PROFILE_ID} \
-   LanguageLocaleKey=en_US" \
-  -o TARGET_ORG --json
-
-# For Scratch Orgs (use user definition file):
-# sf org create user --definition-file config/einstein-agent-user.json -o TARGET_ORG
-
-# Step 3: Assign System Permission Set (1 minute)
-sf org assign permset \
-  --name AgentforceServiceAgentUser \
-  --on-behalf-of <agent_name>_user@<orgId>.ext \
-  -o TARGET_ORG --json
-
-# Step 4: Deploy Custom Permission Set (3 minutes)
-# (Create the .permissionset-meta.xml file first - see Section 3.2 template)
+# Step 3: Deploy custom Permission Set for agent-specific Apex / data access
 sf project deploy start \
   --metadata PermissionSet:<AgentName>_Access \
   -o TARGET_ORG --json
 
-# Assign custom PS
+# Step 4: Assign custom Permission Set
 sf org assign permset \
   --name <AgentName>_Access \
-  --on-behalf-of <agent_name>_user@<orgId>.ext \
+  --on-behalf-of <agent-username> \
   -o TARGET_ORG --json
 
-# Step 5: Verify All Permissions (1 minute)
+# Step 5: Verify all Permission Sets for the running user
 sf data query \
-  --query "SELECT PermissionSet.Name, PermissionSet.Label FROM PermissionSetAssignment WHERE Assignee.Username = '<agent_name>_user@<orgId>.ext' ORDER BY PermissionSet.Name" \
+  --query "SELECT PermissionSet.Name, PermissionSet.Label FROM PermissionSetAssignment WHERE Assignee.Username = '<agent-username>' ORDER BY PermissionSet.Name" \
   -o TARGET_ORG --json
 
-# Expected: AgentforceServiceAgentUser + <AgentName>_Access
+# Expected: AgentforceServiceAgentBase + AgentforceServiceAgentUser + EinsteinGPTPromptTemplateUser + <AgentName>_Access
 
-# Step 6: Deploy Agent Bundle (unpublished metadata)
-sf project deploy start \
-  --source-dir force-app/main/default/aiAuthoringBundles/<AgentName> \
-  -o TARGET_ORG --json
+# Step 6: Set default_agent_user in the .agent config to the returned username
 
-# Step 7: Test BEFORE Publishing (recommended)
-sf agent preview start \
-  --api-name <AgentName> \
-  -o TARGET_ORG --json
-# Test all topics and actions to verify permissions
+# Step 7: Validate and smoke-test before publish
+sf agent validate authoring-bundle --api-name <AgentName> -o TARGET_ORG --json
+sf agent preview start --authoring-bundle <AgentName> --simulate-actions -o TARGET_ORG --json
 
-# Step 8: Publish & Activate (only after testing passes)
-sf agent publish authoring-bundle \
-  --api-name <AgentName> \
-  -o TARGET_ORG --json
-
-# Manual activation
-sf agent activate \
-  --api-name <AgentName> \
-  -o TARGET_ORG
-
-# CI / deterministic activation of a known BotVersion
-sf agent activate \
-  --api-name <AgentName> \
-  --version <n> \
-  -o TARGET_ORG --json
+# Step 8: Publish and activate
+sf agent publish authoring-bundle --api-name <AgentName> -o TARGET_ORG --json
+sf agent activate --api-name <AgentName> --version <n> -o TARGET_ORG --json
 ```
 
 **Critical Notes:**
-- For **scratch orgs**, use `sf org create user --definition-file`
-- For **production/sandbox**, use `sf data create record` as shown above
-- `sf org create user` only works in scratch orgs — it will fail in production/sandbox
-- Always test with preview BEFORE publishing to avoid version management overhead
-- Assign `AgentforceServiceAgentUser` BEFORE publishing to prevent "Internal Error"
-- Publishing does NOT activate — you must run `sf agent activate` separately
+- `sf org create agent-user` is the preferred GA path for Service Agent running-user setup.
+- The native command auto-assigns the standard system profile and permission sets.
+- Always test with preview BEFORE publishing to avoid version management overhead.
+- Publishing does NOT activate — you must run `sf agent activate` separately.
 
 ---
 
-## Service Agent Setup (6 Steps)
+## Manual fallback (only if native agent-user creation can't be used)
 
 ### Step 1: Create Einstein Agent User
 
@@ -190,22 +161,30 @@ sf data query --query "SELECT Id, Username, IsActive FROM User WHERE Profile.Nam
 
 ---
 
-### Step 2: Assign System Permission Set (`AgentforceServiceAgentUser`)
+### Step 2: Assign Native System Permission Sets
 
-**CRITICAL**: Must be assigned BEFORE publishing the agent. Without it, publish fails with "Internal Error".
+**CRITICAL**: If you are not using `sf org create agent-user`, you must mirror the native system assignments BEFORE publishing the agent. Without them, publish or runtime execution can fail with generic errors.
+
+**Assign these system permission sets:**
+- `AgentforceServiceAgentBase`
+- `AgentforceServiceAgentUser`
+- `EinsteinGPTPromptTemplateUser`
 
 **Via Setup UI:**
-1. Setup > Permission Sets > search "AgentforceServiceAgentUser"
-2. Manage Assignments > Add Assignments > select the Einstein Agent User > Save
+1. Setup > Permission Sets > assign `AgentforceServiceAgentBase`
+2. Setup > Permission Sets > assign `AgentforceServiceAgentUser`
+3. Setup > Permission Sets > assign `EinsteinGPTPromptTemplateUser`
 
 **Via CLI:**
 ```bash
+sf org assign permset --name AgentforceServiceAgentBase --on-behalf-of "{agent_name}_agent@{orgId}.ext" -o TARGET_ORG --json
 sf org assign permset --name AgentforceServiceAgentUser --on-behalf-of "{agent_name}_agent@{orgId}.ext" -o TARGET_ORG --json
+sf org assign permset --name EinsteinGPTPromptTemplateUser --on-behalf-of "{agent_name}_agent@{orgId}.ext" -o TARGET_ORG --json
 ```
 
-**Verify assignment:**
+**Verify assignments:**
 ```bash
-sf data query --query "SELECT Id, PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext' AND PermissionSet.Name = 'AgentforceServiceAgentUser'" -o TARGET_ORG --json
+sf data query --query "SELECT Id, PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext' AND PermissionSet.Name IN ('AgentforceServiceAgentBase', 'AgentforceServiceAgentUser', 'EinsteinGPTPromptTemplateUser')" -o TARGET_ORG --json
 ```
 
 ---
@@ -214,7 +193,7 @@ sf data query --query "SELECT Id, PermissionSet.Name FROM PermissionSetAssignmen
 
 The custom PS grants the agent user permission to execute your Apex invocable actions.
 
-**Naming convention**: `{AgentName}_Access` (e.g., `AutomotiveSupport_Access`)
+**Naming convention**: `{AgentName}_Access` (e.g., `CustomerSupport_Access`)
 
 **File**: `force-app/main/default/permissionsets/{AgentName}_Access.permissionset-meta.xml`
 
@@ -255,8 +234,10 @@ sf org assign permset --name {AgentName}_Access --on-behalf-of "{agent_name}_age
 sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext'" -o TARGET_ORG --json
 ```
 
-Expected output should include both:
+Expected output should include all of these:
+- `AgentforceServiceAgentBase` (system)
 - `AgentforceServiceAgentUser` (system)
+- `EinsteinGPTPromptTemplateUser` (system)
 - `{AgentName}_Access` (custom)
 
 ---
@@ -271,6 +252,8 @@ config:
   agent_type: "AgentforceServiceAgent"
   default_agent_user: "{agent_name}_agent@{orgId}.ext"  # Service agents ONLY
 ```
+
+> Official docs may describe `default_agent_user` as an API name or ID. In this skill, the standard operational path is to store the concrete username returned by `sf org create agent-user`, because that is the easiest value to verify in org queries and publish troubleshooting.
 
 **Before publishing, verify the actual user object** — not just the username string:
 
@@ -318,7 +301,8 @@ This deploys the agent as **unpublished metadata** — you can edit freely witho
 
 ```bash
 sf agent preview start \
-  --api-name <AgentName> \
+  --authoring-bundle <AgentName> \
+  --use-live-actions \
   -o TARGET_ORG --json
 ```
 
@@ -391,7 +375,7 @@ Employee agents run as the logged-in user. The permission model is simpler.
 ### What You DO NOT Need
 
 - No Einstein Agent User creation
-- No `AgentforceServiceAgentUser` system permission set
+- No native Service Agent system permission sets (`AgentforceServiceAgentBase`, `AgentforceServiceAgentUser`, `EinsteinGPTPromptTemplateUser`)
 - No `default_agent_user` in agent config
 
 ### What You DO Need
@@ -444,11 +428,11 @@ sf agent publish authoring-bundle --api-name Employee_Agent -o TARGET_ORG --json
 
 Salesforce auto-generates `NextGen_{AgentName}_Permissions` when an agent is published. **Do NOT rely on this PS.** It is often incomplete.
 
-**ORM1 testing example:**
-- Agent script referenced 4 Apex classes: `OrderManagementVerification`, `FraudRiskCalculator`, `OrderLookupService`, `ShipmentTracker`
-- Auto-generated `NextGen_ORM1_Permissions` only included 3 classes (missing `ShipmentTracker`)
+**Representative example:**
+- Agent script referenced 4 Apex classes: `IdentityVerificationService`, `RiskScoringService`, `OrderLookupService`, `ShipmentTrackingService`
+- Auto-generated `NextGen_Support_Agent_Permissions` only included 3 classes (missing `ShipmentTrackingService`)
 - Runtime error: "invocable action track_delivery does not exist"
-- Fix: Created custom `ORM1_Access` with all 4 classes — no errors
+- Fix: Created custom `Support_Agent_Access` with all 4 classes — no errors
 
 **Best practice**: Always create your own custom `{AgentName}_Access` PS with explicit `<classAccesses>` for every Apex class. Ignore the auto-generated PS.
 
@@ -462,8 +446,8 @@ Run this combined query to verify all setup steps for a Service Agent:
 # 1. Einstein Agent User exists and is active
 sf data query --query "SELECT Id, Username, IsActive, Profile.Name FROM User WHERE Username = '{agent_name}_agent@{orgId}.ext'" -o TARGET_ORG --json
 
-# 2. System PS assigned
-sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext' AND PermissionSet.Name = 'AgentforceServiceAgentUser'" -o TARGET_ORG --json
+# 2. Native system PS assigned
+sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext' AND PermissionSet.Name IN ('AgentforceServiceAgentBase', 'AgentforceServiceAgentUser', 'EinsteinGPTPromptTemplateUser')" -o TARGET_ORG --json
 
 # 3. Custom PS assigned
 sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username = '{agent_name}_agent@{orgId}.ext' AND PermissionSet.Name = '{AgentName}_Access'" -o TARGET_ORG --json
@@ -481,7 +465,7 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 **Checklist:**
 - [ ] Einstein Agent User created and active (`IsActive = true`)
 - [ ] Profile is "Einstein Agent User" (or "Minimum Access - Salesforce")
-- [ ] `AgentforceServiceAgentUser` system PS assigned
+- [ ] `AgentforceServiceAgentBase`, `AgentforceServiceAgentUser`, and `EinsteinGPTPromptTemplateUser` system PS assigned
 - [ ] Custom `{AgentName}_Access` PS deployed with ALL Apex classes
 - [ ] Custom PS assigned to the agent user
 - [ ] `default_agent_user` set in `.agent` config block
@@ -494,8 +478,8 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 ## Common Pitfalls (Validated)
 
 ### 1. "Internal Error" on First Publish
-- **Cause:** Publishing before assigning `AgentforceServiceAgentUser`
-- **Prevention:** Assign system PS (Step 2) before publishing (Step 6.3)
+- **Cause:** Publishing before the native Service Agent system assignments are in place
+- **Prevention:** Prefer `sf org create agent-user`, or manually assign all Step 2 system permission sets before publishing (Step 6.3)
 - **Result:** First-time publish success (no retries needed)
 
 ### 2. "Insufficient Privileges" on Apex Actions
@@ -529,18 +513,19 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| "Internal Error" on publish | `AgentforceServiceAgentUser` PS not assigned to Einstein Agent User | Assign system PS (Step 2), wait 2-3 min, retry publish |
+| "Internal Error" on publish | One or more native Service Agent system permission sets missing | Prefer `sf org create agent-user`, or assign Step 2 system PS manually, wait 2-3 min, retry publish |
 | "Insufficient Privileges" at runtime | Custom PS missing or incomplete `<classAccesses>` | Verify custom PS includes ALL Apex classes, redeploy + reassign |
 | "invocable action does not exist" | Apex class not in custom PS (auto-generated PS incomplete) | Create custom `{AgentName}_Access` with all `<classAccesses>` (Step 3) |
 | "Invalid default_agent_user" | Username typo or user not active | Query Einstein Agent Users, verify exact username + `IsActive = true` |
 | Agent runs but returns wrong data | Employee agent using wrong user context | Verify `agent_type` — Service agents use dedicated user, Employee agents use logged-in user |
 | `sf org create user` fails | Used in production/sandbox org | Use `sf data create record` instead (Step 1, Option B) |
+| Native system behavior differs from local assumptions | Running user was created manually instead of with the native command | Re-check with `sf org create agent-user --help` and verify `AgentforceServiceAgentBase`, `AgentforceServiceAgentUser`, and `EinsteinGPTPromptTemplateUser` assignments |
 
 ---
 
 ## Permission Set XML Template (Complete Example)
 
-**AutomotiveSupport agent** (5 Apex classes):
+**CustomerSupport agent** (5 Apex classes):
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -574,4 +559,4 @@ sf agent publish authoring-bundle --api-name AgentName -o TARGET_ORG --json
 
 ---
 
-*Validated against: ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant agents. Last validated: 2026-03-07.*
+*Validated against representative Service Agent and Employee Agent scenarios. Last validated: 2026-03-07.*

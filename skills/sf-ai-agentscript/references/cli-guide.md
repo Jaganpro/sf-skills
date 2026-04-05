@@ -10,10 +10,11 @@
 | Command | Purpose | Example |
 |---------|---------|---------|
 | `sf project retrieve start` | Pull agent from org | `sf project retrieve start --metadata Agent:MyAgent --target-org sandbox` |
+| `sf org create agent-user` | Create native Service Agent running user | `sf org create agent-user --target-org TARGET_ORG --json` |
 | `sf agent validate authoring-bundle` | Check syntax before deploy | `sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG` |
 | `sf agent publish authoring-bundle` | Publish agent to org | `sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --json` |
 | `sf agent test run` | Run batch tests | `sf agent test run --api-name MyTestDef --wait 10 -o TARGET_ORG --json` |
-| `sf agent create` | Create agent from spec file | `sf agent create --name "My Agent" --api-name MyAgent --spec agent-spec.yaml -o TARGET_ORG --json` |
+| `sf agent create` | Create non-Agent Script agent from spec file (legacy / not default for this skill) | `sf agent create --name "My Agent" --api-name MyAgent --spec agent-spec.yaml -o TARGET_ORG --json` |
 | `sf agent generate agent-spec` | Generate agent specification | `sf agent generate agent-spec --type customer --role "Service Rep" --output-file agent-spec.yaml` |
 | `sf agent generate authoring-bundle` | Scaffold authoring bundle | `sf agent generate authoring-bundle --no-spec --name "My Agent" -o TARGET_ORG --json` |
 | `sf agent activate` | Activate agent (make live) | `sf agent activate --api-name MyAgent --version <n> -o TARGET_ORG --json` |
@@ -26,9 +27,21 @@
 
 > ⚠️ **CRITICAL**: Use `sf agent publish authoring-bundle` for Agent Script deployment, NOT `sf project deploy start`. The metadata API deploy will fail with "Required fields are missing: [BundleType]".
 >
+> Default workflow for this skill: edit or generate the `.agent` bundle directly. Use `sf agent generate agent-spec` only when the user explicitly wants LLM-assisted topic ideation.
+>
 > ℹ️ **Managed packaging note:** `sf agent generate template` targets Bot / BotVersion metadata and is **not** a packaging path for Agent Script `.agent` bundles. See [known-issues.md](known-issues.md) for the current Agent Script packaging limitation.
 
 ---
+
+## Create Service Agent User (GA)
+
+```bash
+sf org create agent-user --target-org TARGET_ORG --json
+sf org create agent-user --first-name Service --last-name Agent --target-org TARGET_ORG --json
+sf org create agent-user --base-username service-agent@corp.com --target-org TARGET_ORG --json
+```
+
+The native command assigns the standard Service Agent profile and system permission sets automatically. Use the returned username as the `default_agent_user` value.
 
 ## Authoring Bundle Structure
 
@@ -36,9 +49,9 @@
 
 ```
 force-app/main/default/aiAuthoringBundles/
-└── ProntoRefund/
-    ├── ProntoRefund.agent           # Your Agent Script (REQUIRED)
-    └── ProntoRefund.bundle-meta.xml # Metadata XML (REQUIRED)
+└── MyAgent/
+    ├── MyAgent.agent           # Your Agent Script (REQUIRED)
+    └── MyAgent.bundle-meta.xml # Metadata XML (REQUIRED)
 ```
 
 ### AgentName.bundle-meta.xml Content
@@ -56,15 +69,15 @@ force-app/main/default/aiAuthoringBundles/
 
 | Component | Convention | Example |
 |-----------|------------|---------|
-| Folder name | PascalCase or snake_case | `ProntoRefund/` or `Pronto_Refund/` |
-| Agent script | Same as folder + `.agent` | `ProntoRefund.agent` |
-| Metadata XML | Same as folder + `.bundle-meta.xml` | `ProntoRefund.bundle-meta.xml` |
+| Folder name | PascalCase or snake_case | `MyAgent/` or `My_Agent/` |
+| Agent script | Same as folder + `.agent` | `MyAgent.agent` |
+| Metadata XML | Same as folder + `.bundle-meta.xml` | `MyAgent.bundle-meta.xml` |
 
 ### Deployment Command (NOT sf project deploy!)
 
 ```bash
 # ✅ CORRECT: Use sf agent publish authoring-bundle
-sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG
+sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
 
 # ❌ WRONG: Do NOT use sf project deploy start
 # This will fail with "Required fields are missing: [BundleType]"
@@ -86,7 +99,7 @@ sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG
 
 ```bash
 # Retrieve from sandbox
-sf project retrieve start --metadata Agent:ProntoRefund --target-org sandbox --json
+sf project retrieve start --metadata Agent:MyAgent --target-org sandbox --json
 ```
 
 > **⚠️ Flow Version Mismatch Warning**: `sf project retrieve start --metadata Flow:FlowName` retrieves the **latest** Flow version, which may be Draft or Obsolete — NOT necessarily the active version. The Agent Script publisher validates action I/O against the **active** Flow version's inputs/outputs. If the latest version has different I/O than the active version (e.g., a renamed input parameter), your action definition will compile locally but fail on publish.
@@ -105,24 +118,24 @@ sf project retrieve start --metadata Agent:ProntoRefund --target-org sandbox --j
 
 ```bash
 # Edit the agent script
-vim ./ProntoRefund/main.agent
+vim force-app/main/default/aiAuthoringBundles/MyAgent/MyAgent.agent
 ```
 
 ### Step 3: Validate
 
 ```bash
 # Validate authoring bundle syntax
-sf agent validate authoring-bundle --api-name ProntoRefund -o TARGET_ORG --json
+sf agent validate authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 ```
 
 ### Step 4: Publish
 
 ```bash
 # Publish agent to org (4-step process: Validate → Publish → Retrieve → Deploy)
-sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG --json
+sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --json
 
 # If publish fails AFTER validate/preview pass, retry without retrieve-back:
-sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG --skip-retrieve --json
+sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG --skip-retrieve --json
 
 # Expected output:
 # ✔ Validate Bundle    ~1-2s
@@ -143,13 +156,13 @@ sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG --skip-r
 
 ```bash
 # Manual activation (choose interactively if you omit --version)
-sf agent activate --api-name ProntoRefund -o TARGET_ORG
+sf agent activate --api-name MyAgent -o TARGET_ORG
 
 # CI / deterministic activation of a known BotVersion
-sf agent activate --api-name ProntoRefund --version <n> -o TARGET_ORG --json
+sf agent activate --api-name MyAgent --version <n> -o TARGET_ORG --json
 
 # Verify activation (optional)
-sf data query --query "SELECT DeveloperName, VersionNumber, Status FROM BotVersion WHERE BotDefinition.DeveloperName = 'ProntoRefund' AND Status = 'Active' LIMIT 1" -o TARGET_ORG --json
+sf data query --query "SELECT DeveloperName, VersionNumber, Status FROM BotVersion WHERE BotDefinition.DeveloperName = 'MyAgent' AND Status = 'Active' LIMIT 1" -o TARGET_ORG --json
 ```
 
 > ℹ️ `sf agent activate` and `sf agent deactivate` now support `--json`.
@@ -516,6 +529,8 @@ sf agent generate authoring-bundle --spec agent-spec.yaml --name "My Agent" --fo
 ---
 
 ## Generate Agent Spec — Full Flag Reference
+
+> Optional path only. In this repository, direct `.agent` authoring is the default path; spec generation is a bootstrap aid, not the primary authoring workflow.
 
 | Flag | Values / Type | Description |
 |------|---------------|-------------|

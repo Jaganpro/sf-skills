@@ -47,6 +47,7 @@ Delegate elsewhere when the user is:
 Default guidance:
 - choose **ECA** for new regulated, packageable, or automation-heavy solutions
 - choose **Connected App** when simplicity and legacy compatibility matter more
+- Spring ’26 note: creation of new Connected Apps is disabled by default in orgs. For new integrations, prefer External Client Apps unless Connected App compatibility is explicitly required.
 
 ---
 

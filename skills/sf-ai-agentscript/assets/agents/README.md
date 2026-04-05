@@ -1,27 +1,27 @@
-# Complete Agent Templates
+# Complete Agent Examples & Starter Scaffolds
 
-Templates for building complete, deployable agents.
+Examples and starter scaffolds for building complete, deployable agents.
 
 ## Learning Path
 
 ### Service Agent Examples
-| Template | Complexity | Description |
-|----------|------------|-------------|
+| Example | Complexity | Description |
+|---------|------------|-------------|
 | `hello-world.agent` | Beginner | Minimal viable Service Agent - start here |
 | `simple-qa.agent` | Beginner | Single-topic Q&A agent |
 | `multi-topic.agent` | Intermediate | Multi-topic routing agent |
 | `production-faq.agent` | Advanced | Production-ready FAQ with escalation |
 
 ### Employee Agent Examples
-| Template | Complexity | Description |
-|----------|------------|-------------|
+| Example | Complexity | Description |
+|---------|------------|-------------|
 | `hello-world-employee.agent` | Beginner | Minimal viable Employee Agent - no dedicated user needed |
 
 > **Service vs Employee**: Service Agents run as a dedicated Einstein Agent User and require `default_agent_user`, linked Messaging variables, and `connection` blocks. Employee Agents run as the logged-in user and need none of these. See [agent-user-setup.md](../../references/agent-user-setup.md) for details.
 
 ## Quick Start
 
-1. Copy a template to your SFDX project:
+1. Copy a starter example to your SFDX project if you want a scaffold:
    ```bash
    mkdir -p force-app/main/default/aiAuthoringBundles/My_Agent
    cp hello-world.agent force-app/main/default/aiAuthoringBundles/My_Agent/My_Agent.agent
@@ -34,6 +34,8 @@ Templates for building complete, deployable agents.
    sf agent publish authoring-bundle --api-name My_Agent --target-org your-org --json
    ```
 
+> Default repo workflow: create or edit the target `.agent` directly. These files are optional examples/scaffolds, not a required template system.
+>
 > **System message tip**: Keep static `welcome` / `error` messages in quotes. If you personalize a system message with Agent Script interpolation such as `{!@variables.user_name}`, use block form with `|`. Template placeholders like `{{WelcomeMessage}}` in these scaffolds are pre-processing placeholders, not Agent Script runtime interpolation.
 
 ## Common Top-Level Blocks
@@ -55,6 +57,6 @@ Official Salesforce materials can present these blocks in different sequences. T
 
 ## Next Steps
 
-- [components/](../components/) - Reusable action and topic templates
+- [components/](../components/) - Reusable action and topic snippets
 - [patterns/](../patterns/) - Advanced patterns for complex behaviors
-- [metadata/](../metadata/) - XML metadata templates
+- [metadata/](../metadata/) - Supporting metadata examples

@@ -20,7 +20,7 @@ Employee Agents require explicit access via the `<agentAccesses>` element in Per
 ```
 
 **Key Points:**
-- `<agentName>` must exactly match the `developer_name` in the agent's config block
+- `<agentName>` must match the agent developer/API name. For Agent Script, this is usually `config.developer_name`. For Builder-based agents, use the agent’s developer/API name exposed in metadata or Setup.
 - Multiple `<agentAccesses>` elements can be included for multiple agents
 - `<enabled>true</enabled>` grants access; `false` or omission denies access
 
@@ -30,6 +30,27 @@ Employee Agents require explicit access via the `<agentAccesses>` element in Per
 sf project deploy start --source-dir force-app/main/default/permissionsets/Agent_Access.permissionset-meta.xml -o TARGET_ORG
 
 # Assign via Setup > Permission Sets > Manage Assignments
+```
+
+## Starter scaffold
+
+Create `force-app/main/default/permissionsets/MyAgent_Access.permissionset-meta.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <agentAccesses>
+        <agentName>MyAgent</agentName>
+        <enabled>true</enabled>
+    </agentAccesses>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>MyAgent Access</label>
+</PermissionSet>
+```
+
+```bash
+sf project deploy start --source-dir force-app/main/default/permissionsets/MyAgent_Access.permissionset-meta.xml -o TARGET_ORG --json
+sf org assign permset --name MyAgent_Access --on-behalf-of <username> -o TARGET_ORG --json
 ```
 
 ---
@@ -72,5 +93,6 @@ Create `force-app/main/default/permissionsets/MyAgent_Access.permissionset-meta.
 |---------|-------|----------|
 | No Agentforce icon | CopilotSalesforceUser PS not assigned | Assign CopilotSalesforceUser permission set |
 | Icon visible, agent not in list | Missing agentAccesses | Add `<agentAccesses>` to permission set |
+| Admin can activate the agent but employees still can’t see it | Missing `<agentAccesses>` on assigned Permission Set | Deploy and assign an access Permission Set |
 | Agent visible, errors on open | Agent not fully published | Check agent logs in Setup |
-| "Agent not found" error | Name mismatch | Ensure `<agentName>` matches `developer_name` exactly |
+| "Agent not found" error | Name mismatch | Ensure `<agentName>` matches the agent developer/API name exactly |

@@ -3,18 +3,20 @@ name: sf-ai-agentscript
 description: >
   Agent Script DSL for deterministic Agentforce agents.
   TRIGGER when: user writes or edits .agent files, builds FSM-based agents,
-  uses Agent Script CLI (sf agent generate/publish), or asks about deterministic
-  agent patterns, slot filling, or instruction resolution.
-  DO NOT TRIGGER when: Setup UI agent building (use sf-ai-agentforce), agent
+  uses Agent Script CLI (sf agent generate authoring-bundle, sf agent validate
+  authoring-bundle, sf agent preview, sf agent publish authoring-bundle, sf
+  agent activate), or asks about deterministic agent patterns, slot filling, or
+  instruction resolution.
+  DO NOT TRIGGER when: Builder metadata work (use sf-ai-agentforce), agent
   testing (use sf-ai-agentforce-testing), or persona design
   (use sf-ai-agentforce-persona).
 license: MIT
-compatibility: "Requires Agentforce license, API v66.0+, Einstein Agent User"
+compatibility: "Requires Agentforce license and API v66.0+; Einstein Agent User is required for Service Agents only"
 metadata:
   version: "2.9.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
-  validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor). Agent user setup validated against ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant."
+  validated: "0-shot generation tested against multiple representative sample agents. Agent user setup validated against representative Service Agent and Employee Agent scenarios."
   last_validated: "2026-03-20"
   validation_status: "PASS"
   validation_agents: "24"
@@ -34,13 +36,15 @@ Agent Script is the **code-first** path for deterministic Agentforce agents. Use
 Use `sf-ai-agentscript` when the work involves:
 - creating or editing `.agent` files
 - deterministic topic routing, guards, and transitions
-- Agent Script CLI workflows (`sf agent generate`, `sf agent validate`, `sf agent publish`)
+- Agent Script CLI workflows (`sf agent generate authoring-bundle`, `sf agent validate authoring-bundle`, `sf agent preview`, `sf agent publish authoring-bundle`, `sf agent activate`)
 - slot filling, instruction resolution, post-action loops, or FSM design
 
 Delegate elsewhere when the user is:
-- maintaining legacy Setup UI / Agent Builder agents → [sf-ai-agentforce](../sf-ai-agentforce/SKILL.md)
+- maintaining Builder metadata agents (`GenAiFunction`, `GenAiPlugin`, `GenAiPromptTemplate`, Models API, custom Lightning types) → [sf-ai-agentforce](../sf-ai-agentforce/SKILL.md)
 - designing persona / tone / voice → [sf-ai-agentforce-persona](../sf-ai-agentforce-persona/SKILL.md)
 - building formal test plans or coverage loops → [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md)
+
+If the user is in Builder Script / Canvas view but the outcome is a `.agent` authoring bundle, keep the work in `sf-ai-agentscript`.
 
 ---
 
@@ -84,7 +88,7 @@ For the expanded version, use [references/activation-checklist.md](references/ac
 
 | Agent type | Required | Forbidden / caution |
 |---|---|---|
-| `AgentforceServiceAgent` | Valid `default_agent_user`, correct permissions, target-org checks | Publishing without a real Einstein Agent User |
+| `AgentforceServiceAgent` | Valid `default_agent_user`, correct permissions, target-org checks, prefer `sf org create agent-user` | Publishing without a real Einstein Agent User |
 | `AgentforceEmployeeAgent` | Explicit `agent_type` | Supplying `default_agent_user` |
 
 Full details: [references/agent-user-setup.md](references/agent-user-setup.md)
@@ -143,6 +147,13 @@ Canonical rule set: [references/syntax-reference.md](references/syntax-reference
 - use `available when` for deterministic tool visibility
 - normalize raw intent/validation signals into booleans or enums before branching; avoid direct substring checks on raw user utterances for critical control flow
 - keep post-action checks at the **top** of `instructions: ->`
+
+### Default authoring stance
+
+- Default to direct `.agent` authoring and edits in source control.
+- Use `sf agent generate authoring-bundle --no-spec` only when the user wants local bundle scaffolding.
+- Treat `sf agent generate agent-spec` as optional ideation / topic bootstrap, not the default workflow.
+- Do not route Agent Script users toward `sf agent create` or `sf agent generate template`.
 
 ### Phase 3 — validate continuously
 Validation already runs automatically on write/edit. Use the CLI before publish:
@@ -256,7 +267,7 @@ See [references/instruction-resolution.md](references/instruction-resolution.md)
 - [references/debugging-guide.md](references/debugging-guide.md)
 - [references/validator-rule-catalog.md](references/validator-rule-catalog.md)
 
-### Examples / templates
+### Examples / scaffolds
 - [references/minimal-examples.md](references/minimal-examples.md)
 - [references/migration-guide.md](references/migration-guide.md)
 - [assets/](assets/)

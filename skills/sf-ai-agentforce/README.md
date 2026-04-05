@@ -3,6 +3,8 @@
 Standard Agentforce platform skill for **Setup UI / Agent Builder** work: Builder-managed topics and actions, `GenAiFunction` / `GenAiPlugin`, **Prompt Builder templates stored as `GenAiPromptTemplate` metadata**, Einstein Models API, and custom Lightning types.
 
 > **For code-first Agent Script DSL development**, use [sf-ai-agentscript](../sf-ai-agentscript/).
+>
+> If the work ends in a `.agent` file or authoring bundle, use [sf-ai-agentscript](../sf-ai-agentscript/).
 
 ## What This Skill Covers
 
@@ -20,6 +22,7 @@ Standard Agentforce platform skill for **Setup UI / Agent Builder** work: Builde
 | Area | Use Instead |
 |------|-------------|
 | Agent Script DSL (`.agent` files) | [sf-ai-agentscript](../sf-ai-agentscript/) |
+| Builder Script / Canvas work that results in `.agent` authoring bundles | [sf-ai-agentscript](../sf-ai-agentscript/) |
 | Agent testing & coverage | [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/) |
 | Deployment & publishing | [sf-deploy](../sf-deploy/) |
 
@@ -44,6 +47,8 @@ Request: "Set up a GenAiFunction for my Apex discount calculator"
 - In source metadata, use **`GenAiPromptTemplate`**.
 - Prefer `genAiPromptTemplates/*.genAiPromptTemplate-meta.xml` for source-driven Prompt Builder work.
 - Flex templates should be designed around the **5-input maximum**.
+- For Service Agents, prefer `sf org create agent-user` for running-user setup.
+- For Employee Agents, plan user visibility with a Permission Set that contains `<agentAccesses>`.
 
 ## Documentation
 
