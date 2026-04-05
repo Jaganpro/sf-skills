@@ -133,6 +133,9 @@ site/
 .factory/
 .cursor/rules/
 
+# Pi agent local state
+.pi/
+
 # Coverage reports
 htmlcov/
 .tox/
