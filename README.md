@@ -4,7 +4,7 @@
 
 [![Author](https://img.shields.io/badge/Author-Jag_Valaiyapathy-blue?logo=github)](https://github.com/Jaganpro)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-36-4F46E5)](#available-skills)
+[![Skills](https://img.shields.io/badge/Skills-37-4F46E5)](#available-skills)
 [![Claude Code Agents](https://img.shields.io/badge/Claude_Code_Agents-7-059669)](#agent-team)
 [![Standard](https://img.shields.io/badge/Agent_Skills-Compatible-0F766E)](https://agentskills.io)
 
@@ -34,7 +34,7 @@ The library is organized by capability area so you can scan quickly, pick the ri
 | 🔌 **Integration** | [sf-connected-apps](skills/sf-connected-apps/), [sf-integration](skills/sf-integration/) | OAuth, External Client Apps, Named Credentials, callouts, and events |
 | 💰 **Planning & Estimation** | [sf-flex-estimator](skills/sf-flex-estimator/) | Public list-price Flex Credit estimation, scenario planning, and cost optimization for Agentforce and Data Cloud |
 | ☁️ **Data Cloud** | [sf-datacloud](skills/sf-datacloud/), [sf-datacloud-connect](skills/sf-datacloud-connect/), [sf-datacloud-prepare](skills/sf-datacloud-prepare/), [sf-datacloud-harmonize](skills/sf-datacloud-harmonize/), [sf-datacloud-segment](skills/sf-datacloud-segment/), [sf-datacloud-act](skills/sf-datacloud-act/), [sf-datacloud-retrieve](skills/sf-datacloud-retrieve/) | Data Cloud connections, ingestion, harmonization, segmentation, activation, and retrieval.<br><sub>Beta / Community Preview · live execution uses the external community <code>sf data360</code> runtime</sub> |
-| 🤖 **AI & Automation** | [sf-ai-agentscript](skills/sf-ai-agentscript/), [sf-ai-agentforce](skills/sf-ai-agentforce/), [sf-ai-agentforce-testing](skills/sf-ai-agentforce-testing/), [sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/), [sf-ai-agentforce-persona](skills/sf-ai-agentforce-persona/) | Agent design, Agent Script, testing, observability, and persona design |
+| 🤖 **AI & Automation** | [sf-ai-agentscript](skills/sf-ai-agentscript/), [sf-ai-agentforce](skills/sf-ai-agentforce/), [sf-agentforce-agent-api](skills/sf-agentforce-agent-api/), [sf-ai-agentforce-testing](skills/sf-ai-agentforce-testing/), [sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/), [sf-ai-agentforce-persona](skills/sf-ai-agentforce-persona/) | Agent design, Agent Script, Agent API integration, testing, observability, and persona design |
 | 🚀 **DevOps & Tooling** | [sf-deploy](skills/sf-deploy/), [sf-vlocity-build-deploy](skills/sf-vlocity-build-deploy/), [sf-diagram-mermaid](skills/sf-diagram-mermaid/), [sf-diagram-nanobananapro](skills/sf-diagram-nanobananapro/) | Salesforce + Vlocity DataPack deployment automation, Mermaid diagrams, and visual artifacts |
 | 🏢 **Industries** | [sf-industry-commoncore-omnistudio-analyze](skills/sf-industry-commoncore-omnistudio-analyze/), [sf-industry-commoncore-datamapper](skills/sf-industry-commoncore-datamapper/), [sf-industry-commoncore-integration-procedure](skills/sf-industry-commoncore-integration-procedure/), [sf-industry-commoncore-callable-apex](skills/sf-industry-commoncore-callable-apex/), [sf-industry-commoncore-omniscript](skills/sf-industry-commoncore-omniscript/), [sf-industry-commoncore-flexcard](skills/sf-industry-commoncore-flexcard/), [sf-industry-cme-epc-model](skills/sf-industry-cme-epc-model/) | OmniStudio + EPC: dependency analysis, Data Mappers, Integration Procedures, callable Apex, OmniScripts, FlexCards, and CME product/offer catalog modeling |
 
@@ -621,6 +621,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | | Skill | Description | Status |
 |--|-------|-------------|--------|
 | 🤖 | `sf-ai-agentforce` | Agent Builder, PromptTemplate, Models API, GenAi metadata | ✅ Live |
+| 🤖 | `sf-agentforce-agent-api` | Agent API, Mobile SDKs, Enhanced Chat v2, Testing API | ✅ Live |
 | 🧪 | `sf-ai-agentforce-testing` | Agent test specs, agentic fix loops | ✅ Live |
 | 📈 | `sf-ai-agentforce-observability` | STDM + Builder trace capture, trace-test, and execution analysis | ✅ Live |
 | 📝 | `sf-ai-agentscript` | Agent Script DSL, FSM patterns, 100-pt scoring | ✅ Live |
@@ -664,7 +665,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Current repo state:** 36 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
+**Current repo state:** 37 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
 
 </details>
 
