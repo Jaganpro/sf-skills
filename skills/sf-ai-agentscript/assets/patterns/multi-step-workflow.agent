@@ -281,3 +281,76 @@ start_agent onboarding:
 # RESUME CAPABILITY:
 #   - Boolean flags persist across conversation turns
 #   - User can pick up where they left off
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# ★ Production Hardening Variants
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# ROLLBACK:
+#   Let users redo earlier steps without restarting the whole workflow.
+#
+#   reset_to_step_2: @utils.setVariables
+#      description: "Let user redo profile info (clears steps 2-3)"
+#      with step_2_profile_completed = False
+#      with step_3_preferences_set = False
+#      with current_step = 2
+#      available when @variables.step_2_profile_completed == True
+#      available when @variables.onboarding_complete == False
+#
+# POST-COMPLETION IMMUTABILITY:
+#   Add `available when @variables.onboarding_complete == False` to
+#   EVERY mutation action. Once the workflow finalizes, the platform
+#   physically prevents all state changes — the LLM cannot override it.
+#
+# RESUME DETECTION:
+#   When users leave mid-workflow (FAQ, topic switch) and return,
+#   detect prior progress and offer to continue. Use a separate flag:
+#
+#   resume_prompted: mutable boolean = False
+#      description: "True after we've offered to resume"
+#
+#   # At the TOP of instructions, before step logic:
+#   if @variables.step_1_account_created == True and @variables.resume_prompted == False:
+#      | I see you already started. Name: {!@variables.user_name}
+#      | Would you like to continue or start over?
+#
+#   mark_resume_prompted: @utils.setVariables
+#      with resume_prompted = True
+#      available when @variables.resume_prompted == False
+#
+#   reset_workflow: @utils.setVariables
+#      with step_1_account_created = False
+#      with step_2_profile_completed = False
+#      with step_3_preferences_set = False
+#      with step_4_verification_done = False
+#      with resume_prompted = False
+#      with current_step = 1
+#      available when @variables.onboarding_complete == False
+#
+# SHOW-THEN-ACCEPT COMPLIANCE GATE:
+#   For legal/GDPR/age gates, use TWO flags so acceptance can't happen
+#   without the content being shown first:
+#
+#   disclaimer_shown: mutable boolean = False
+#   disclaimer_accepted: mutable boolean = False
+#
+#   mark_disclaimer_shown: @utils.setVariables
+#      with disclaimer_shown = True
+#      available when @variables.disclaimer_shown == False
+#
+#   accept_disclaimer: @utils.setVariables
+#      with disclaimer_accepted = True
+#      available when @variables.disclaimer_shown == True
+#      available when @variables.disclaimer_accepted == False
+#
+#   do_step_1: @actions.create_account
+#      ...
+#      available when @variables.disclaimer_accepted == True
+#
+#   Use two flags when you must PROVE content was displayed.
+#   Use one flag when simple confirmation suffices.
+#
+# NON-INTERACTIVE STAGES:
+#   Not every step needs user input. For data-processing chains
+#   (normalize → validate → enrich), the user provides input once
+#   at stage 1. Stages 2+ run on processed output without prompting.

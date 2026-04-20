@@ -33,6 +33,10 @@ What do you need?
 │   └─► Use: open-gate-routing.agent
 │       (3-variable state machine with LLM bypass)
 │
+├─► Multi-stage workflow with progress tracking?
+│   └─► Use: multi-step-workflow.agent
+│       (boolean flags, step guard, resume, rollback)
+│
 └─► None of the above?
     └─► Start with: ../getting-started/hello-world.agent
 ```
@@ -151,6 +155,7 @@ reasoning:
 | Fixed Value | `with x="value"` | Always use a constant |
 | Variable | `with x=@variables.y` | Use stored state |
 | Output | `with x=@outputs.y` | Chain from previous action |
+| Description Contract | description with rules | LLM normalizes/transforms value |
 
 ---
 
@@ -216,6 +221,46 @@ before_reasoning:
 
 ---
 
+### 7. [multi-step-workflow.agent](multi-step-workflow.agent)
+
+**Purpose**: Track progress through complex multi-stage processes using boolean flags and a step guard.
+
+**Use when**:
+- User onboarding with multiple required steps
+- Order/checkout or application submission flows
+- Any workflow where steps must happen in order
+- Resumable workflows (user can leave and return mid-flow)
+
+**Key syntax**:
+```agentscript
+variables:
+   step_1_done: mutable boolean = False
+   current_step: mutable number = 1
+
+reasoning:
+   instructions: ->
+      # Step guard — prevents mid-workflow re-routing
+      if @variables.current_step > 1:
+         | Continuing your setup...
+
+   actions:
+      do_step_1: @actions.create_account
+         with email=...
+         set @variables.step_1_done = @outputs.success
+         set @variables.current_step = 2
+         available when @variables.step_1_done == False
+```
+
+**Production Hardening**:
+| Variant | Purpose |
+|---------|---------|
+| Rollback | Let users redo an earlier step |
+| Post-completion immutability | `available when @variables.complete == False` on all mutations |
+| Resume detection | Offer to continue when user returns mid-workflow |
+| Show-then-accept compliance gate | Two flags to prove content was displayed before acceptance |
+
+---
+
 ## Pattern Combinations
 
 These patterns can be combined:
@@ -243,6 +288,7 @@ open-gate-routing + lifecycle-events
 | Input Bindings | +5 pts | Proper binding patterns |
 | System Overrides | +5 pts | Static system, dynamic topics |
 | Open Gate | +5 pts | 3-variable coordination |
+| Multi-Step Workflow | +5 pts | Step guard + boolean flags |
 
 ## Anti-Patterns to Avoid
 
@@ -254,3 +300,5 @@ open-gate-routing + lifecycle-events
 | Use lifecycle for one-time setup | Use if @variables.turn_count == 1 |
 | Missing EXIT_PROTOCOL in gate pattern | Always include gate reset topic |
 | Hardcoding gate topic name in open_gate | Use variable-driven routing |
+| No step guard in multi-step workflow | Add `if @variables.current_step > 1` guard |
+| Allowing steps out of order | Use `available when` on all step actions |

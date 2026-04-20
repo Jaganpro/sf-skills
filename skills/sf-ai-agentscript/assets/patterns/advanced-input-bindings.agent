@@ -78,6 +78,23 @@ topic order_processing:
 					description: "Whether notification was sent"
 			target: "flow://Send_Order_Notification"
 
+		# ★ Action with transformation contracts in parameter descriptions
+		save_contact:
+			description: "Save contact information to CRM"
+			inputs:
+				full_name: string
+					description: "Full name in Title Case. Convert 'john smith' to 'John Smith', 'JOHN SMITH' to 'John Smith'."
+				phone_number: string
+					description: "Phone in E.164 format: +[country][number]. '07700 123456' → '+447700123456'. '(202) 555-1234' → '+12025551234'. Always add country code if missing (default +44 UK). Remove all spaces, dashes, parentheses. Final format: '+' followed by digits only."
+				email: string
+					description: "Email in lowercase, whitespace trimmed. 'John.Doe@Example.COM  ' → 'john.doe@example.com'. Must contain '@' and a domain."
+				postal_code: string
+					description: "UK postcode uppercase with space. 'sw1a1aa' → 'SW1A 1AA'. 'SW1A1AA' → 'SW1A 1AA'."
+			outputs:
+				contact_id: string
+					description: "Created contact ID"
+			target: "flow://Save_Contact"
+
 	reasoning:
 		instructions: ->
 			| Help the customer process their order.
@@ -129,13 +146,30 @@ topic order_processing:
 				with amount=@variables.amount                   # From variable
 				with account_id="001INTERNAL00001"              # Fixed value
 
+			# ★ PATTERN 6: Description as Transformation Contract
+			# save_contact's descriptions contain normalization rules.
+			# Compare with process_order's generic descriptions above.
+			contract_binding: @actions.save_contact
+				with full_name=...
+				with phone_number=...
+				with email=...
+				with postal_code=...
+
 # ★ Insight: Binding Pattern Decision Tree
 #
 # Need the LLM to extract from conversation?     -> Use `...`
 # Value is always the same constant?             -> Use "value"
 # Value was captured in a previous step?         -> Use @variables.x
 # Value comes from another action's output?      -> Use @outputs.x (in callback)
+# Need the LLM to normalize/transform the value? -> Use description contract (Pattern 6)
 #
 # ★ Common Mistake: Using @outputs.x outside of a `run` callback
 # @outputs.x is only available inside the action's callback chain
 # Store important outputs in @variables for use elsewhere
+#
+# ★ Why Description Contracts Work (Pattern 6)
+#   The LLM reads parameter descriptions IMMEDIATELY before invocation —
+#   closer than topic instructions. This temporal proximity makes
+#   descriptions the most reliable place for normalization rules.
+#   Not platform-enforced; for critical validation pair with a
+#   server-side action (see critical-input-collection.agent).
