@@ -1,0 +1,9 @@
+{
+  "outputDir": "dist",
+  "apiVersion": "v66.0",
+  "routing": {
+    "fileBasedRouting": true,
+    "trailingSlash": "never",
+    "fallback": "index.html"
+  }
+}

@@ -4,13 +4,13 @@
 
 [![Author](https://img.shields.io/badge/Author-Jag_Valaiyapathy-blue?logo=github)](https://github.com/Jaganpro)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-36-4F46E5)](#available-skills)
+[![Skills](https://img.shields.io/badge/Skills-37-4F46E5)](#available-skills)
 [![Claude Code Agents](https://img.shields.io/badge/Claude_Code_Agents-7-059669)](#agent-team)
 [![Standard](https://img.shields.io/badge/Agent_Skills-Compatible-0F766E)](https://agentskills.io)
 
 A reusable skill library for **Salesforce-focused coding agents**—covering Apex, Flow, LWC, SOQL, metadata, Data Cloud, integration, testing, deployment, Agentforce workflows, and Flex Credit estimation.
 
-**Included:** 36 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
+**Included:** 37 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
 
 > Recommended workflow for this repository: agent-first development in Claude Code, Pi, and similar coding agents. VS Code is optional tooling, not the primary operating model.
 >
@@ -28,7 +28,7 @@ The library is organized by capability area so you can scan quickly, pick the ri
 
 | Area | Skills | Best for |
 |---|---|---|
-| 💻 **Development** | [sf-apex](skills/sf-apex/), [sf-flow](skills/sf-flow/), [sf-lwc](skills/sf-lwc/), [sf-soql](skills/sf-soql/) | Apex, Flow, LWC, and query development |
+| 💻 **Development** | [sf-apex](skills/sf-apex/), [sf-flow](skills/sf-flow/), [sf-lwc](skills/sf-lwc/), [sf-soql](skills/sf-soql/), [sf-multiframework](skills/sf-multiframework/) | Apex, Flow, LWC, React (UIBundle), and query development |
 | 🧪 **Quality** | [sf-testing](skills/sf-testing/), [sf-debug](skills/sf-debug/) | Test execution, coverage analysis, and debug-log troubleshooting |
 | 📦 **Foundation** | [sf-metadata](skills/sf-metadata/), [sf-data](skills/sf-data/), [sf-docs](skills/sf-docs/), [sf-permissions](skills/sf-permissions/) | Metadata generation, data operations, access analysis, and official Salesforce docs retrieval |
 | 🔌 **Integration** | [sf-connected-apps](skills/sf-connected-apps/), [sf-integration](skills/sf-integration/) | OAuth, External Client Apps, Named Credentials, callouts, and events |
@@ -78,7 +78,7 @@ npx skills add Jaganpro/sf-skills --list
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-This installs 36 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures LLM-powered guardrails (Haiku prompt hook), SOQL schema validation, Prettier auto-formatting, Code Analyzer (PMD/ESLint), and debug log analysis (Haiku agent hook).
+This installs 37 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures LLM-powered guardrails (Haiku prompt hook), SOQL schema validation, Prettier auto-formatting, Code Analyzer (PMD/ESLint), and debug log analysis (Haiku agent hook).
 
 > **Data Cloud note:** the installer brings in the `sf-datacloud-*` skills, but the external community `sf data360` CLI runtime is still a separate prerequisite. On first-time install the installer can prompt for it, or you can request it explicitly with `--with-datacloud-runtime`.
 
@@ -145,7 +145,7 @@ python3 ~/.claude/sf-skills-install.py --profile delete old
 
 ```
 ~/.claude/
-├── skills/                    # 36 Salesforce skills
+├── skills/                    # 37 Salesforce skills
 │   ├── sf-apex/SKILL.md
 │   ├── sf-flow/SKILL.md
 │   └── ... (33 more)
@@ -462,6 +462,16 @@ This is the working mental model for the ecosystem: foundation and integration s
 "Set up Lightning Message Service for cross-component communication"
 ```
 
+### ⚛️ React / Multi-Framework (UIBundle)
+```
+"Scaffold a new UIBundle React app with Vite and TypeScript"
+"Wire up the Data SDK to query Accounts with GraphQL"
+"Integrate the Agentforce Conversation Client (ACC) in my React component"
+"Deploy my UIBundle to a sandbox org"
+"Should I use React or LWC for this Salesforce UI?"
+"Generate codegen.yml for @salesforce/sdk-data GraphQL types"
+```
+
 ### 🔍 SOQL Queries
 ```
 "Query all Accounts with more than 5 Contacts"
@@ -603,6 +613,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🔗 | `sf-integration` | Named Credentials, External Services, REST/SOAP, Platform Events, CDC | ✅ Live |
 | 📊 | `sf-diagram-mermaid` | Mermaid diagrams for OAuth, ERD, integrations, architecture | ✅ Live |
 | ⚡ | `sf-lwc` | Lightning Web Components, Jest, LMS | ✅ Live |
+| ⚛️ | `sf-multiframework` | React UIBundle apps on Agentforce 360 Platform — Data SDK, GraphQL, ACC, Vite, deploy | ✅ Live (Beta) |
 | 🔍 | `sf-soql` | Natural language to SOQL, optimization | ✅ Live |
 | 🧪 | `sf-testing` | Test execution, coverage, bulk testing | ✅ Live |
 | 🐛 | `sf-debug` | Debug log analysis, governor fixes | ✅ Live |
@@ -665,7 +676,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Current repo state:** 36 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
+**Current repo state:** 37 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
 
 </details>
 

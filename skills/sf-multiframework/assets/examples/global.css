@@ -1,0 +1,62 @@
+/**
+ * Design system entry point.
+ *
+ * - Tailwind 4 + shadcn token wiring
+ * - Salesforce-blue focus ring for native-feel components
+ * - Dark mode via .dark class on <html>
+ *
+ * See references/styling.md for the full pattern.
+ */
+
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply min-h-screen antialiased text-foreground bg-background;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+:root {
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  --color-primary:    oklch(0.205 0 0);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-secondary:  oklch(0.97 0 0);
+  --color-secondary-foreground: oklch(0.205 0 0);
+  --color-muted:      oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.556 0 0);
+  --color-border:     oklch(0.922 0 0);
+  --color-input:      oklch(0.922 0 0);
+  --radius:           0.5rem;
+  --ring:             #0176d3;   /* Salesforce blue */
+}
+
+.dark {
+  --color-background: oklch(0.145 0 0);
+  --color-foreground: oklch(0.985 0 0);
+  --color-primary:    oklch(0.985 0 0);
+  --color-primary-foreground: oklch(0.205 0 0);
+  --color-secondary:  oklch(0.269 0 0);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted:      oklch(0.269 0 0);
+  --color-muted-foreground: oklch(0.708 0 0);
+  --color-border:     oklch(0.269 0 0);
+}
+
+@theme inline {
+  --color-background:           var(--color-background);
+  --color-foreground:           var(--color-foreground);
+  --color-primary:              var(--color-primary);
+  --color-primary-foreground:   var(--color-primary-foreground);
+  --color-secondary:            var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-muted:                var(--color-muted);
+  --color-muted-foreground:     var(--color-muted-foreground);
+  --color-border:               var(--color-border);
+  --color-input:                var(--color-input);
+  --radius:                     var(--radius);
+}

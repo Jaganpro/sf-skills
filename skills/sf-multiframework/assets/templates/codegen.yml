@@ -1,0 +1,27 @@
+schema: ./schema.graphql
+documents:
+  - "src/**/*.graphql"
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+generates:
+  src/api/graphql-operations-types.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      skipTypename: false
+      scalars:
+        Currency: string
+        Date: string
+        DateTime: string
+        Email: string
+        EncryptedString: string
+        Long: number
+        MultiPicklist: string
+        Percent: number
+        Phone: string
+        Picklist: string
+        TextArea: string
+        Time: string
+        Url: string

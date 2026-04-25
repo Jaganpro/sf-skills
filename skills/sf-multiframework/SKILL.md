@@ -1,0 +1,428 @@
+---
+name: sf-multiframework
+description: >
+  Salesforce Multi-Framework (Beta) skill for building React apps that run on
+  the Agentforce 360 Platform.
+  TRIGGER when user creates or edits UI bundles (`uiBundles/`), authors React
+  apps deployed via `UIBundle` metadata, configures `ui-bundle.json` /
+  `.uibundle-meta.xml`, uses `@salesforce/sdk-data` (Data SDK + GraphQL), wires
+  up the Agentforce Conversation Client (ACC) in React, scaffolds with
+  `sf template generate ui-bundle`, or asks about React vs LWC choice on
+  Salesforce.
+  DO NOT TRIGGER when the work is pure LWC (use sf-lwc), generic Apex
+  (use sf-apex), Builder-managed Agentforce metadata only
+  (use sf-ai-agentforce), or `.agent` script files (use sf-ai-agentscript).
+license: MIT
+compatibility: "Beta. Requires API v66.0+, Node.js 22+, sandbox or scratch org with default language en_US, and @salesforce/plugin-ui-bundle-dev."
+metadata:
+  version: "1.0.0"
+  author: "Jag Valaiyapathy"
+  maintainer: "Dylan Andersen"
+  scoring: "100 points across 6 categories"
+  sources: "Salesforce Developer Documentation + trailheadapps/multiframework-recipes"
+  framework: "Jag Valaiyapathy SF Skills (same format / rubric / orchestration as sf-ai-agentforce, sf-ai-agentscript, sf-lwc, sf-apex)"
+---
+
+# sf-multiframework
+
+Salesforce **Multi-Framework (Beta)** lets you build modern frontend apps — currently **React** — that run on the Agentforce 360 Platform via the `UIBundle` metadata type. This skill is the code-first authoring path: scaffolding a project, wiring Data SDK + GraphQL, integrating the Agentforce Conversation Client, styling, and deploying.
+
+> **Sources & framework.** Built from the official [Salesforce developer documentation](references/official-sources.md) (the `reactdev-*` pages under `developer.salesforce.com/docs/platform/einstein-for-devs` and `code-builder`) and code patterns distilled from [`trailheadapps/multiframework-recipes`](https://github.com/trailheadapps/multiframework-recipes). Follows the format and conventions of **Jag Valaiyapathy's SF Skills framework** — same rubric structure, same cross-skill orchestration pattern, same activation-checklist-first approach as `sf-ai-agentforce`, `sf-ai-agentscript`, `sf-lwc`, and `sf-apex`.
+
+> **Usable in any MCP-capable agent or IDE.** Agentforce Vibes is *one* authoring surface; this skill is designed for developers who work directly against the `sf` CLI and the Data SDK without requiring a specific assistant.
+
+> Status: **Beta**. Sandbox + scratch orgs only. English (`en_US`) default language required. Not yet available in Developer Edition orgs or Trailhead Playgrounds.
+
+> Start here: [references/activation-checklist.md](references/activation-checklist.md)
+> New to the feature? Read [references/overview.md](references/overview.md) then [references/setup.md](references/setup.md).
+
+---
+
+## When This Skill Owns the Task
+
+Use `sf-multiframework` when the work involves:
+
+- creating or editing files inside `force-app/main/.../uiBundles/<appName>/`
+- authoring `ui-bundle.json` and `.uibundle-meta.xml`
+- scaffolding via `sf template generate ui-bundle` (`reactinternalapp` / `reactexternalapp`)
+- using `@salesforce/sdk-data` (`createDataSDK`, `gql`, `dataSdk.graphql?.()`, `dataSdk.fetch?.()`)
+- generating GraphQL types via codegen (`schema.graphql`, `graphql-operations-types.ts`)
+- embedding the Agentforce Conversation Client (`@salesforce/agentforce-conversation-client`)
+- choosing styling (SLDS blueprints vs `@salesforce/design-system-react` vs Tailwind/shadcn)
+- deploying React UI bundles via `sf project deploy start --source-dir <bundle>`
+- comparing React (Multi-Framework) vs LWC for a given use case
+
+Delegate elsewhere when:
+
+- task is pure LWC authoring → [sf-lwc](../sf-lwc/SKILL.md)
+- writing/maintaining Apex called from the React app → [sf-apex](../sf-apex/SKILL.md)
+- the Conversation Client target is a Builder-managed Employee Agent and the work is on the agent itself → [sf-ai-agentforce](../sf-ai-agentforce/SKILL.md) or [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md)
+- agent testing → [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md)
+- generic deployment troubleshooting unrelated to UI bundle specifics → [sf-deploy](../sf-deploy/SKILL.md)
+
+---
+
+## Required Context to Gather First
+
+Before authoring or fixing anything, infer or ask:
+
+1. **Org type**: Sandbox or Scratch? (DE / Playgrounds are not supported in Beta.)
+2. **App target**: `AppLauncher` (internal employee app) or `Experience` (external B2B/B2C portal)?
+3. **Template**: `reactinternalapp`, `reactexternalapp`, or no template (manual setup)?
+4. **ACC needed?** If yes, is the agent an Employee Agent? Are cookies + Trusted Domains configured?
+5. **Data access pattern**: GraphQL (preferred), UI API REST, or Apex REST?
+6. **Styling system**: SLDS blueprints, `design-system-react`, or Tailwind/shadcn?
+7. **Default language is `en_US`?** If not, scratch org def must set it.
+
+---
+
+## Activation Checklist
+
+Verify these before authoring or fixing any Multi-Framework app:
+
+1. **Org has Salesforce Multi-Framework (Beta) enabled** in Setup. (Once enabled, **cannot be disabled**.)
+2. **Salesforce CLI is current** and `@salesforce/plugin-ui-bundle-dev` is installed:
+   `sf plugins install @salesforce/plugin-ui-bundle-dev`
+3. **Node.js v22+** and **npm** installed.
+4. **App lives under `uiBundles/<appName>/`** with both `ui-bundle.json` and `<appName>.uibundle-meta.xml`.
+5. **`ui-bundle.json` `outputDir` matches the build output** (`dist/` for Vite).
+6. **SPA fallback** is set: `routing.fallback: "index.html"` for client-side routing.
+7. **`apiVersion` matches the target org** (e.g. `v66.0`).
+8. **`outputDir` build artifacts exist before deploy** — run `npm run build` inside the bundle directory.
+9. **For external apps**: `digitalExperiences/.../sfdc_cms_site/content.json` has `appContainer: true` and `appSpace: "<namespace>__<DeveloperName>"` (or `c__<DeveloperName>` if no namespace).
+10. **For ACC**: My Domain "Require first-party use of Salesforce cookies" is **unchecked**, and the host domain is registered under **Trusted Domains for Inline Frames** (Lightning Out type).
+11. **GraphQL schema is generated from a connected org** (`npm run graphql:schema`) before running codegen.
+12. **Use `@salesforce/sdk-data`** for all Salesforce API calls — never `fetch()` or `axios` directly to Salesforce endpoints.
+13. **Optional chaining** on SDK methods: `sdk.graphql?.()`, `sdk.fetch?.()` — they may not exist in every surface.
+14. **Only one UI bundle deploys per metadata push** — keep changes scoped to one app per deploy when possible.
+15. **UIBundle has a 2,500-file ceiling** — keep `dist/` lean.
+
+Expanded version: [references/activation-checklist.md](references/activation-checklist.md)
+
+---
+
+## Non-Negotiable Rules
+
+### 1) Use the Data SDK — never raw `fetch()` to Salesforce
+
+`@salesforce/sdk-data` handles auth, CSRF, and base-path resolution across surfaces (Lightning Experience, Experience Cloud, local Vite dev). Bypassing it breaks one or more of those surfaces.
+
+```ts
+import { createDataSDK, gql } from "@salesforce/sdk-data";
+const sdk = await createDataSDK();
+const res = await sdk.graphql?.(MY_QUERY, variables);
+```
+
+### 2) Prefer GraphQL UI API — fall back deliberately
+
+Order of preference for data access:
+
+1. `sdk.graphql?.()` for queries and mutations
+2. `sdk.fetch?.()` for whitelisted UI API REST / Apex REST endpoints
+3. Apex REST when GraphQL can't express the operation
+
+Never call `axios` or raw `fetch()` against Salesforce. See [references/data-sdk.md](references/data-sdk.md) for the supported endpoint list.
+
+### 3) UI API GraphQL responses wrap every field in `{ value }`
+
+```ts
+account.Name.value;          // "Acme Corp"
+account.Industry.value;      // "Technology"
+response.uiapi.query.Account.edges?.map(e => e?.node);
+```
+
+This is a Salesforce-specific shape, not standard GraphQL. Comment it in code aimed at React-first developers.
+
+### 4) `ui-bundle.json` is the routing contract
+
+For SPAs, you almost always need:
+
+```json
+{
+  "outputDir": "dist",
+  "apiVersion": "v66.0",
+  "routing": {
+    "fileBasedRouting": true,
+    "trailingSlash": "never",
+    "fallback": "index.html"
+  }
+}
+```
+
+Without `fallback: "index.html"` a hard refresh on `/dashboard` returns 404.
+
+### 5) `.uibundle-meta.xml` `target` is binding
+
+- `AppLauncher` → app appears in App Launcher (default).
+- `Experience` → app is hosted by an Experience Cloud site and is **only** discoverable through that site's metadata. External apps require `digitalExperienceConfigs/`, `digitalExperiences/`, `networks/`, and `sites/` to coexist.
+
+### 6) ACC requires explicit org configuration
+
+For Agentforce Conversation Client to render in a React app:
+
+- An **Employee Agent** with topics + actions must exist and Agentforce must be enabled.
+- **My Domain** → uncheck *Require first-party use of Salesforce cookies*.
+- **Session Settings** → add the host origin (e.g. `http://localhost:5173`) under **Trusted Domains for Inline Frames** with iFrame type **Lightning Out**.
+- ACC is built on **Lightning Out 2.0** as an LWCI; embed via `@salesforce/agentforce-conversation-client`'s `createAccWidget`.
+
+Skipping any of these is the #1 cause of "the chat panel won't load" errors. See [references/acc-integration.md](references/acc-integration.md).
+
+### 7) React app supports modern web APIs and npm only
+
+Inside a React UI bundle these are **not supported**:
+
+- `@salesforce/*` scoped modules **except** `@salesforce/sdk-data` (and the ACC and `@salesforce/ui-bundle` helpers)
+- Lightning base components / `lightning/*` modules
+- `@wire` service
+
+If you need those, build an LWC instead.
+
+### 8) Beta limitations
+
+- Sandbox and scratch orgs only.
+- Default language must be `en_US`.
+- DE orgs and Trailhead Playgrounds are **not supported**.
+- Once Multi-Framework is enabled in an org, it **cannot be disabled**.
+
+---
+
+## Recommended Authoring Workflow
+
+### Phase 1 — Org & environment setup
+- enable **Salesforce Multi-Framework (Beta)** in Setup
+- install Node 22+, latest `sf` CLI, Salesforce Extension Pack, `@salesforce/plugin-ui-bundle-dev`
+- for external apps: enable Digital Experiences, create a placeholder site, confirm Customer/Partner Community licenses
+- for ACC: configure My Domain cookies, Trusted Domains for Inline Frames, and Agentforce preference
+- full sequence: [references/setup.md](references/setup.md)
+
+### Phase 2 — Scaffold the project
+
+```bash
+# Inside an existing DX project
+sf template generate ui-bundle --name myApp --template reactinternalapp
+# or for B2B/B2C portals
+sf template generate ui-bundle --name myApp --template reactexternalapp
+
+# Or scaffold a brand-new DX project + external app
+sf template generate project --template reactexternalapp
+```
+
+Templates: [references/templates.md](references/templates.md). Project layout: [references/project-structure.md](references/project-structure.md).
+
+### Phase 3 — Local development
+
+```bash
+cd force-app/main/default/uiBundles/myApp
+npm install
+npm run graphql:schema     # introspect connected org
+npm run graphql:codegen    # generate src/api/graphql-operations-types.ts
+npm run dev                # Vite dev server with @salesforce/vite-plugin-ui-bundle
+```
+
+Dev server URL must be added to **Trusted Domains for Inline Frames** if you use ACC locally.
+
+### Phase 4 — Build and deploy
+
+```bash
+npm run build                         # tsc -b && vite build → dist/
+cd ../../../../..                     # back to project root
+sf project deploy start \
+  --source-dir force-app/main/default/uiBundles/myApp \
+  --target-org TARGET_ORG
+```
+
+Preference: deploy via the **Salesforce DX MCP** (`mcp_Salesforce_DX_deploy_metadata`) if available; CLI is the fallback.
+
+### Phase 5 — Verify in org
+
+- Open the org: `sf org open` → App Launcher → your app (internal) or Digital Experiences (external).
+- Confirm SPA refresh works on a deep route.
+- For ACC: confirm the FAB appears, the panel opens, and Lightning Types render.
+
+---
+
+## Data Access — The Three Patterns
+
+### Pattern A — Inline `gql` (simple queries)
+
+Best for recipes / single-component reads. The lesson is visible in the file.
+
+```tsx
+import { createDataSDK, gql } from "@salesforce/sdk-data";
+
+const QUERY = gql`
+  query SingleAccount {
+    uiapi {
+      query {
+        Account(first: 1) {
+          edges { node { Id Name { value } Industry { value } } }
+        }
+      }
+    }
+  }
+`;
+
+const sdk = await createDataSDK();
+const res = await sdk.graphql?.(QUERY);
+```
+
+### Pattern B — External `.graphql` + codegen (complex/shared queries)
+
+```
+src/api/utils/query/singleAccountQuery.graphql
+src/api/graphql-operations-types.ts        # generated
+src/api/graphqlClient.ts                    # executeGraphQL wrapper
+```
+
+Use when the query has variables, fragments, or is shared across components. Run `npm run graphql:codegen` after every edit.
+
+### Pattern C — `sdk.fetch?.()` for REST
+
+For UI API REST or Apex REST that GraphQL can't express. Allow-list and patterns: [references/data-sdk.md](references/data-sdk.md).
+
+---
+
+## Error Handling — Three Strategies
+
+GraphQL can return `data` AND `errors` in the same response. Pick the strategy per call site:
+
+| Strategy | When to use |
+|---|---|
+| **Strict** — fail on any error | data integrity matters; partial data is misleading |
+| **Tolerant** — log errors, use partial data | optional fields; UI degrades gracefully |
+| **Permissive** — only fail when no data at all | mutations that succeed but can't read back every field |
+
+For `sdk.fetch?.()` errors: wrap transport errors, then check HTTP status, then handle 401 / 403 with sign-in / permission flows. Full patterns: [references/error-handling.md](references/error-handling.md).
+
+---
+
+## Styling — Three Approaches
+
+| Approach | Use when |
+|---|---|
+| **SLDS blueprints** (CSS classes) | You want native Salesforce look, full markup control, latest SLDS not auto-applied |
+| **`@salesforce/design-system-react`** | You want SLDS components and accept an older pinned SLDS CSS |
+| **Tailwind + shadcn/ui** | You want a custom branded look or are building a fresh design system |
+
+You can mix at the **app shell** vs **recipe/page** boundary, but **don't mix inside one component** — pick one system per component. Tokens, dark mode, and SLDS focus-ring color guidance: [references/styling.md](references/styling.md).
+
+---
+
+## ACC Integration — Quick Path
+
+1. Confirm prerequisites in [references/acc-integration.md](references/acc-integration.md) (Employee Agent, cookies, Trusted Domains, Agentforce preference).
+2. Add the package: `npm install @salesforce/agentforce-conversation-client`.
+3. Mount via `createAccWidget` inside a `useEffect` keyed off a `useRef` container.
+4. Configure dock/floating/inline mode and styling tokens via SDK options.
+5. For pure programmatic open/close from inside a custom LWC (no React), use the ACC API instead of this skill.
+
+---
+
+## Cross-Skill Orchestration
+
+| Task | Delegate to |
+|---|---|
+| Build Apex REST / Apex controllers called by the app | [sf-apex](../sf-apex/SKILL.md) |
+| Author or fix the Employee Agent that ACC connects to | [sf-ai-agentforce](../sf-ai-agentforce/SKILL.md) or [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) |
+| Test the Employee Agent | [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md) |
+| Permission sets / profiles for the bundle | [sf-permissions](../sf-permissions/SKILL.md) |
+| Deploy at scale / CI | [sf-deploy](../sf-deploy/SKILL.md) |
+| SOQL helpers for Apex backing the app | [sf-soql](../sf-soql/SKILL.md) |
+
+---
+
+## High-Signal Failure Patterns
+
+| Symptom | Likely cause | Read next |
+|---|---|---|
+| Hard refresh on a sub-route returns 404 | `routing.fallback` not set to `index.html` | [references/project-structure.md](references/project-structure.md) |
+| Local dev fetches succeed, deployed fetches 401/403 | bypassing Data SDK or hitting non-allowlisted endpoint | [references/data-sdk.md](references/data-sdk.md) |
+| `Cannot read properties of undefined (reading 'value')` on GraphQL data | forgetting the UI API `{ value }` field wrapper | [references/data-sdk.md](references/data-sdk.md), [references/graphql-workflow.md](references/graphql-workflow.md) |
+| Codegen produces no types | `schema.graphql` missing — never ran `npm run graphql:schema` | [references/graphql-workflow.md](references/graphql-workflow.md) |
+| ACC FAB never appears | Trusted Domains not registered, or "Require first-party Salesforce cookies" still on | [references/acc-integration.md](references/acc-integration.md) |
+| ACC loads but disconnects on navigation | cookie policy / iframe origin mismatch | [references/acc-integration.md](references/acc-integration.md) |
+| External app deploys but never appears in Digital Experiences | `appContainer: true` or `appSpace` not set, or namespace prefix wrong | [references/templates.md](references/templates.md) |
+| Mutation succeeds but read-back errors | UI API mutation return shape can't include some fields — switch to Permissive error strategy | [references/error-handling.md](references/error-handling.md) |
+| Build succeeds but deploy fails with file count error | UIBundle 2,500-file limit; prune `dist/` source maps or unused assets | [references/troubleshooting.md](references/troubleshooting.md) |
+| `sf template generate ui-bundle` is not recognized | `@salesforce/plugin-ui-bundle-dev` not installed | [references/cli-guide.md](references/cli-guide.md) |
+| Beta toggle missing in Setup | org is DE / Playground (not supported), or default language ≠ `en_US` | [references/setup.md](references/setup.md) |
+| Navigation works locally, breaks in Lightning Experience | `basename` not derived from `SFDC_ENV.basePath` | [references/react-router.md](references/react-router.md) |
+| Build error: "no exported member BrowserRouter" | importing from `react-router-dom` instead of `react-router` (v7) | [references/react-router.md](references/react-router.md) |
+| Image / font / analytics blocked with CSP console error | missing `CspTrustedSite` metadata | [references/permissions-csp.md](references/permissions-csp.md) |
+| Field value is always `null` in production | FLS / object permissions missing in the user's permission set | [references/permissions-csp.md](references/permissions-csp.md) |
+| `axe` tests throw `getContext is not a function` | `vitest.setup.ts` missing the jsdom `HTMLCanvasElement` stub | [references/testing.md](references/testing.md) |
+| Scratch org deploy fails with feature-not-enabled | scratch def missing `UIBundleSettings.webAppOptIn: true` | [references/ci-deploy.md](references/ci-deploy.md) |
+
+---
+
+## Reference Map
+
+### Start here
+- [references/activation-checklist.md](references/activation-checklist.md)
+- [references/overview.md](references/overview.md)
+- [references/setup.md](references/setup.md)
+
+### Project mechanics
+- [references/project-structure.md](references/project-structure.md)
+- [references/templates.md](references/templates.md)
+- [references/cli-guide.md](references/cli-guide.md)
+
+### Data access
+- [references/data-sdk.md](references/data-sdk.md)
+- [references/graphql-workflow.md](references/graphql-workflow.md)
+- [references/error-handling.md](references/error-handling.md)
+
+### UI / experience
+- [references/styling.md](references/styling.md)
+- [references/acc-integration.md](references/acc-integration.md)
+- [references/recipe-conventions.md](references/recipe-conventions.md)
+- [references/react-router.md](references/react-router.md)
+
+### Security & access
+- [references/permissions-csp.md](references/permissions-csp.md)
+
+### Testing & delivery
+- [references/testing.md](references/testing.md)
+- [references/ci-deploy.md](references/ci-deploy.md)
+
+### Authoring surface
+- [references/authoring-surface.md](references/authoring-surface.md)
+
+### Decisions & troubleshooting
+- [references/lwc-vs-react.md](references/lwc-vs-react.md)
+- [references/troubleshooting.md](references/troubleshooting.md)
+- [references/scoring-rubric.md](references/scoring-rubric.md)
+- [references/official-sources.md](references/official-sources.md)
+
+### Examples / scaffolds
+- [assets/templates/](assets/templates/)
+- [assets/examples/](assets/examples/)
+
+---
+
+## Score Guide
+
+| Score | Meaning |
+|---|---|
+| 90+ | Deploy with confidence |
+| 75–89 | Good, review warnings |
+| 60–74 | Needs focused revision |
+| < 60 | Block deploy |
+
+Full rubric: [references/scoring-rubric.md](references/scoring-rubric.md)
+
+---
+
+## Official Resources
+
+- [Build a React App with Salesforce Multi-Framework (Beta)](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/reactdev-overview.html)
+- [Configure Your Org for React Development (Beta)](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/reactdev-setup.html)
+- [Integrate Your React App with the Agentforce 360 Platform (Beta)](https://developer.salesforce.com/docs/platform/code-builder/guide/reactdev-integrate.html)
+- [Develop a React App Manually (Beta)](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/reactdev-develop.html)
+- [Data SDK and GraphQL (Beta)](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/reactdev-data-sdk.html)
+- [Access Record Data with Data SDK (Beta)](https://developer.salesforce.com/docs/platform/code-builder/guide/reactdev-data-sdk-usage.html)
+- [Error Handling in Data SDK (Beta)](https://developer.salesforce.com/docs/platform/code-builder/guide/reactdev-data-sdk-graphql-error.html)
+- [Style Your React Apps (Beta)](https://developer.salesforce.com/docs/platform/code-builder/guide/reactdev-styling.html)
+- [Integrate Agentforce Conversation Client (Beta)](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/reactdev-acc.html)
+- [React vs LWC (Beta)](https://developer.salesforce.com/docs/platform/code-builder/guide/reactdev-lwc-diff.html)
+- [Multi-Framework Recipes (GitHub)](https://github.com/trailheadapps/multiframework-recipes)
