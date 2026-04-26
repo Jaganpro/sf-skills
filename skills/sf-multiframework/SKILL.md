@@ -87,7 +87,7 @@ Verify these before authoring or fixing any Multi-Framework app:
 4. **App lives under `uiBundles/<appName>/`** with both `ui-bundle.json` and `<appName>.uibundle-meta.xml`.
 5. **`ui-bundle.json` `outputDir` matches the build output** (`dist/` for Vite).
 6. **SPA fallback** is set: `routing.fallback: "index.html"` for client-side routing.
-7. **`apiVersion` matches the target org** (e.g. `v66.0`).
+7. **API version is managed by `sfdx-project.json` and deploy API version**. Current UI bundle validators can reject `apiVersion` inside `ui-bundle.json`.
 8. **`outputDir` build artifacts exist before deploy** — run `npm run build` inside the bundle directory.
 9. **For external apps**: `digitalExperiences/.../sfdc_cms_site/content.json` has `appContainer: true` and `appSpace: "<namespace>__<DeveloperName>"` (or `c__<DeveloperName>` if no namespace).
 10. **For ACC**: My Domain "Require first-party use of Salesforce cookies" is **unchecked**, and the host domain is registered under **Trusted Domains for Inline Frames** (Lightning Out type).
@@ -140,7 +140,6 @@ For SPAs, you almost always need:
 ```json
 {
   "outputDir": "dist",
-  "apiVersion": "v66.0",
   "routing": {
     "fileBasedRouting": true,
     "trailingSlash": "never",
@@ -224,7 +223,7 @@ Dev server URL must be added to **Trusted Domains for Inline Frames** if you use
 ### Phase 4 — Build and deploy
 
 ```bash
-npm run build                         # tsc -b && vite build → dist/
+npm run build                         # tsc --noEmit && vite build → dist/
 cd ../../../../..                     # back to project root
 sf project deploy start \
   --source-dir force-app/main/default/uiBundles/myApp \
@@ -344,6 +343,9 @@ You can mix at the **app shell** vs **recipe/page** boundary, but **don't mix in
 | External app deploys but never appears in Digital Experiences | `appContainer: true` or `appSpace` not set, or namespace prefix wrong | [references/templates.md](references/templates.md) |
 | Mutation succeeds but read-back errors | UI API mutation return shape can't include some fields — switch to Permissive error strategy | [references/error-handling.md](references/error-handling.md) |
 | Build succeeds but deploy fails with file count error | UIBundle 2,500-file limit; prune `dist/` source maps or unused assets | [references/troubleshooting.md](references/troubleshooting.md) |
+| Deploy fails on `apiVersion`, `isEnabled`, or unknown `ui-bundle.json` keys | UIBundle metadata/runtime schema drift; use `isActive` + `version`, omit `apiVersion` from `ui-bundle.json` | [references/project-structure.md](references/project-structure.md), [references/ci-deploy.md](references/ci-deploy.md) |
+| Deploy includes `vite.config.js`, `.d.ts`, or `*.tsbuildinfo` | `tsc -b` emitted TypeScript artifacts into the bundle root | [references/project-structure.md](references/project-structure.md), [references/ci-deploy.md](references/ci-deploy.md) |
+| `npm install` fails with Vite peer conflict | Salesforce Vite plugin lags the latest Vite major | [references/project-structure.md](references/project-structure.md), [references/troubleshooting.md](references/troubleshooting.md) |
 | `sf template generate ui-bundle` is not recognized | `@salesforce/plugin-ui-bundle-dev` not installed | [references/cli-guide.md](references/cli-guide.md) |
 | Beta toggle missing in Setup | org is DE / Playground (not supported), or default language ≠ `en_US` | [references/setup.md](references/setup.md) |
 | Navigation works locally, breaks in Lightning Experience | `basename` not derived from `SFDC_ENV.basePath` | [references/react-router.md](references/react-router.md) |

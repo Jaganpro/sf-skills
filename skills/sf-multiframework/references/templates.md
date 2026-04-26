@@ -115,7 +115,7 @@ Minimum `package.json` scripts:
 {
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   }
 }

@@ -20,7 +20,7 @@ Total: **100 points** across 6 categories. Use this to grade an app or PR.
 | Bundle lives at `uiBundles/<appName>/` | 3 | Correct path, name matches metadata |
 | `<appName>.uibundle-meta.xml` present and valid | 3 | `<isActive>`, `<masterLabel>`, `<target>`, `<version>` all set |
 | `ui-bundle.json` present and valid | 3 | Required `outputDir`, matches build emit dir |
-| `apiVersion` matches target org | 2 | e.g. `v66.0` aligned with `sfdx-project.json` |
+| API version managed at project/deploy layer | 2 | `sfdx-project.json` matches target org; no unsupported `apiVersion` in `ui-bundle.json` |
 | Two distinct `package.json` files (root + bundle) | 2 | No accidental merge or duplicate dep declarations |
 | Path aliases configured in **both** `vite.config.ts` and `tsconfig.json` | 2 | Aliases match between the two |
 | External app: `digitalExperiences/sfdc_cms_site/content.json` correct | 3 | `appContainer: true`, valid `appSpace` |

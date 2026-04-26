@@ -55,7 +55,7 @@ Notes:
 npm run build
 ```
 
-Typically `tsc -b && vite build`. Output lands in the directory referenced by `ui-bundle.json` `outputDir` (Vite default `dist/`).
+Typically `tsc --noEmit && vite build`. Output lands in the directory referenced by `ui-bundle.json` `outputDir` (Vite default `dist/`). Avoid `tsc -b` unless project references are intentionally configured, because it can emit TypeScript build artifacts into the deployable bundle root.
 
 `npm run lint` and `npm run build` should both pass before you deploy.
 

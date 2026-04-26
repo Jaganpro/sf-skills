@@ -9,7 +9,7 @@ Multi-Framework has deploy rules that don't exist for plain LWC. Get these wrong
 | **Build first, then deploy** | `sf project deploy start` ships whatever is in `outputDir` (`dist/`). No build = empty deploy = blank app. |
 | **One UI bundle per metadata push (safe default)** | Multi-bundle deploys can collide; scope to one bundle at a time unless you've validated the combo. |
 | **2,500-file ceiling per `UIBundle`** | `dist/` must stay under this. Source maps and vendored binaries bust the limit fast. |
-| **`tsc -b && vite build` must pass** | The build script is `tsc -b && vite build` — TypeScript errors block the build, they're not warnings. |
+| **`tsc --noEmit && vite build` must pass** | TypeScript errors block the build, and `--noEmit` avoids stray root artifacts being deployed as bundle members. |
 | **`npm run lint` must pass** | ESLint flat config; violations block CI. |
 | **Deploy from project root** | `sf project deploy start` resolves `force-app` from the root, not the bundle dir. |
 
@@ -63,6 +63,9 @@ Deploys from `force-app/` pick up *everything* by default. Add to `.forceignore`
 **/coverage/
 **/playwright-report/
 **/test-results/
+**/*.tsbuildinfo
+**/vite.config.js
+**/vite.config.d.ts
 
 # package.xml is SFDX legacy; the CLI generates its own
 package.xml
@@ -124,7 +127,7 @@ Without `webAppOptIn`, the scratch org won't have Multi-Framework enabled and me
 }
 ```
 
-`sourceApiVersion` must match the `apiVersion` in `ui-bundle.json`. Mismatches cause "metadata type not found" errors.
+`sourceApiVersion` should match the target org API version. Current UI bundle validators can reject `apiVersion` inside `ui-bundle.json`, so keep the API version in `sfdx-project.json` and deployment tooling rather than the runtime config file.
 
 ## CI/CD reference workflow (GitHub Actions)
 
@@ -260,12 +263,16 @@ The reference repo uses Husky + lint-staged:
 | Error | Cause | Fix |
 |---|---|---|
 | `UIBundle: The file count ... exceeds the maximum` | >2,500 files in `dist/` | Prune source maps, sprite copies, fonts |
-| `Component type 'UIBundle' not found` | API version mismatch | Align `sourceApiVersion` (sfdx-project.json) and `apiVersion` (ui-bundle.json) and org version |
+| `Component type 'UIBundle' not found` | API version mismatch or Multi-Framework not enabled | Align `sourceApiVersion` with the org version and confirm Multi-Framework is enabled |
+| `ui-bundle.json contains unknown property: 'apiVersion'` | Runtime config schema only allows `outputDir`, `routing`, `headers` | Remove `apiVersion` from `ui-bundle.json` |
+| `apiVersion invalid at this location in type UIBundle` | `.uibundle-meta.xml` contains unsupported `<apiVersion>` | Remove `<apiVersion>` from the UIBundle XML |
+| `isEnabled invalid at this location in type UIBundle` | Wrong field name in `.uibundle-meta.xml` | Use `<isActive>true</isActive>` and include `<version>` |
 | `Metadata API response: Required field 'masterLabel' missing` | `.uibundle-meta.xml` missing fields | Ensure `<masterLabel>`, `<isActive>`, `<version>` |
 | `Insufficient access rights on cross-reference id` | Running user lacks permset to deploy UIBundle | Grant the deploy user `ModifyAllData` or the right system permission |
 | Deploy succeeds but app never appears | Wrong `target` in `.uibundle-meta.xml`; or Experience site missing `appContainer: true` | Confirm `AppLauncher` vs `Experience` and `digitalExperiences/.../content.json` |
 | `sf template generate ui-bundle` not recognized | Plugin missing | `sf plugins install @salesforce/plugin-ui-bundle-dev` |
 | `UIBundleSettings` feature not enabled on scratch org | `webAppOptIn` not set | Add `"UIBundleSettings": { "webAppOptIn": true }` to scratch def |
+| Second deploy reports conflicts on the bundle just created | Source tracking sees the org-created bundle as remote changes | If the remote state is your previous deploy, rerun the targeted bundle deploy with `--ignore-conflicts` |
 
 ## Multi-bundle repos
 

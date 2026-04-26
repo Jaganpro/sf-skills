@@ -10,7 +10,7 @@ Bucketed by where the failure happens. Each row is a real failure mode seen in M
 | Beta toggle visible but greyed out | User missing **Customize Application** | Assign System Administrator profile or equivalent permission |
 | App loads in English only / blank screens elsewhere | Org default language ≠ `en_US` | Scratch: set `"language": "en_US"`. Sandbox: change org language |
 | `sf template generate ui-bundle` not recognized | `@salesforce/plugin-ui-bundle-dev` not installed | `sf plugins install @salesforce/plugin-ui-bundle-dev` |
-| `npm install` fails with peer warnings on React 19 | Older deps in template | Upgrade to template's pinned versions, then `npm install` again |
+| `npm install` fails with Vite peer conflict | Salesforce Vite plugin and latest `@vitejs/plugin-react` target different Vite majors | Pin compatible majors, e.g. Vite 7 + `@vitejs/plugin-react` 5 |
 
 ## Project & build
 
@@ -19,6 +19,10 @@ Bucketed by where the failure happens. Each row is a real failure mode seen in M
 | Build succeeds, deploy fails | `outputDir` in `ui-bundle.json` doesn't match Vite `build.outDir` | Align both to `dist` |
 | Deploy fails with file-count error | UIBundle exceeded 2,500 files | Disable source maps in production; prune `dist/` |
 | Deploy succeeds but app missing from App Launcher | `<isActive>false</isActive>` or wrong `<target>` | Set `isActive: true`; confirm target is `AppLauncher` |
+| Deploy fails: `ui-bundle.json contains unknown property: 'apiVersion'` | Current validator only allows `outputDir`, `routing`, `headers` | Remove `apiVersion` from `ui-bundle.json`; rely on `sfdx-project.json` / deploy API version |
+| Deploy fails: `apiVersion invalid at this location in type UIBundle` | `.uibundle-meta.xml` includes unsupported `<apiVersion>` | Remove `<apiVersion>` from `.uibundle-meta.xml` |
+| Deploy fails: `isEnabled invalid at this location in type UIBundle` | Metadata uses LWC-style or stale field name | Use `<isActive>true</isActive>` and include `<version>` |
+| Deploy report includes `vite.config.js`, `.d.ts`, or `*.tsbuildinfo` | `tsc -b` emitted TypeScript build artifacts into the bundle root | Use `tsc --noEmit && vite build`, delete artifacts, redeploy |
 | Deploy succeeds but external app site is empty | Forgot to deploy `digitalExperiences/`, `networks/`, or `sites/` | Re-deploy with all four metadata folders |
 | Hard refresh on `/dashboard` returns 404 | `routing.fallback` not set to `index.html` | Add `"fallback": "index.html"` under `routing` |
 | Trailing slash redirects loop | Conflicting `trailingSlash` and `redirects` rules | Set `trailingSlash: "never"`, remove redundant redirects |
@@ -36,6 +40,8 @@ Bucketed by where the failure happens. Each row is a real failure mode seen in M
 | Mutation succeeds but returned record has errors | Field can't be selected on mutation return | Switch call site to **Permissive** error strategy or remove offending fields |
 | `gql` template provides no IntelliSense | GraphQL ESLint plugin / extension not configured | Install `@graphql-eslint/eslint-plugin`; configure `.eslintrc` |
 | Local dev fetches succeed, deployed fetches 401/403 | `basePath` mismatch between dev and deployed surface | Don't hard-code paths; let SDK resolve |
+| React app needs Apex logic from an LWC controller | LWC `@salesforce/apex` imports are unavailable in React UI bundles | Expose Apex as REST and call it through `sdk.fetch?.()` |
+| Apex compile fails: `Invalid type: aiplatform.ModelsAPI...` | Models API / Generative AI settings not enabled for the org | Enable the required org settings; don't replace React Data SDK calls with raw Salesforce fetches |
 
 ## Local dev (Vite)
 
@@ -86,9 +92,10 @@ When something is broken and you're not sure where:
 3. Is `schema.graphql` fresh? Re-run `npm run graphql:schema` and `npm run graphql:codegen`.
 4. Is the org authorized in this shell? `sf org list` then `sf org login web -a alias` if needed.
 5. Is the running user assigned the bundle's permission set?
-6. For ACC: re-walk the [acc-integration.md](acc-integration.md) checklist top to bottom.
-7. For external apps: confirm all four metadata folders deployed.
-8. Compare against the [`multiframework-recipes`](https://github.com/trailheadapps/multiframework-recipes) reference repo for the exact pattern you're trying to use.
+6. Did a second deploy report source-tracking conflicts immediately after a successful create? If yes, and the org changes are your just-created bundle, redeploy the local bundle with `--ignore-conflicts`.
+7. For ACC: re-walk the [acc-integration.md](acc-integration.md) checklist top to bottom.
+8. For external apps: confirm all four metadata folders deployed.
+9. Compare against the [`multiframework-recipes`](https://github.com/trailheadapps/multiframework-recipes) reference repo for the exact pattern you're trying to use.
 
 ## Reporting bugs to Salesforce
 

@@ -19,7 +19,8 @@ Run through this list before authoring or fixing a Multi-Framework app. Each ite
 - [ ] `<appName>.uibundle-meta.xml` exists at the bundle root
 - [ ] `ui-bundle.json` exists at the bundle root
 - [ ] `outputDir` in `ui-bundle.json` matches what the build emits (Vite default: `dist`)
-- [ ] `apiVersion` matches the target org (e.g. `"v66.0"`)
+- [ ] `ui-bundle.json` contains only supported top-level keys: `outputDir`, `routing`, `headers`
+- [ ] API version is set through `sfdx-project.json` / deploy API version, not `ui-bundle.json`
 - [ ] For SPAs: `routing.fallback: "index.html"` is set
 - [ ] `package.json` inside the bundle (separate from the project root `package.json`)
 
@@ -68,6 +69,7 @@ Run through this list before authoring or fixing a Multi-Framework app. Each ite
 - [ ] `npm run lint` passes
 - [ ] `npm run build` passes (this is the artifact that ships)
 - [ ] `dist/` size is sane and < 2,500 files (UIBundle ceiling)
+- [ ] Build script does not emit TypeScript side artifacts at the bundle root (`*.tsbuildinfo`, `vite.config.js`, `vite.config.d.ts`)
 - [ ] Deploy via `sf project deploy start --source-dir force-app/main/default/uiBundles/<appName>` (or MCP equivalent)
 - [ ] Smoke-test: open the app in App Launcher (internal) or Digital Experiences (external)
 - [ ] Smoke-test: hard-refresh on a deep route — should not 404

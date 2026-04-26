@@ -78,7 +78,6 @@ Runtime configuration consumed by the platform when serving the app.
 ```json
 {
   "outputDir": "dist",
-  "apiVersion": "v66.0",
   "routing": {
     "fileBasedRouting": true,
     "trailingSlash": "never",
@@ -98,7 +97,6 @@ Runtime configuration consumed by the platform when serving the app.
 | Property | Type | Required | Notes |
 |---|---|---|---|
 | `outputDir` | string | yes | Path relative to bundle root containing build artifacts. Vite default is `dist`. |
-| `apiVersion` | string | recommended | Format `vXX.X`. Match the deploy target. Defaults to current org version. |
 | `routing.fileBasedRouting` | boolean | no | When `true`, URLs map to folder structure inside `outputDir`. Default `true`. |
 | `routing.trailingSlash` | enum | no | `never` removes (`/page/` → `/page`); `always` adds; `auto` no change. |
 | `routing.fallback` | string | **yes for SPAs** | File served when nothing matches. Set `index.html` for client-side routing. |
@@ -112,7 +110,6 @@ Runtime configuration consumed by the platform when serving the app.
 ```json
 {
   "outputDir": "dist",
-  "apiVersion": "v66.0",
   "routing": {
     "fallback": "index.html",
     "trailingSlash": "never"
@@ -128,7 +125,7 @@ The bundle's `package.json` declares React app dependencies and scripts. Typical
 {
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest",
@@ -140,10 +137,25 @@ The bundle's `package.json` declares React app dependencies and scripts. Typical
 }
 ```
 
+Prefer `tsc --noEmit && vite build` unless you intentionally configure TypeScript project references. `tsc -b` can emit `*.tsbuildinfo`, `vite.config.js`, and `vite.config.d.ts` at the bundle root, and those files are treated as deployable `UIBundle` members unless ignored or removed.
+
 Recommended Vite plugins for any non-template-scaffolded project:
 
 - `@salesforce/vite-plugin-ui-bundle` — wires Vite dev server to the org for live data
 - `@salesforce/ui-bundle` — helper functions (auth, base path) for working with the Data SDK
+
+### Version compatibility note
+
+Salesforce's Vite plugin can lag the latest Vite major. If `npm install` fails with a peer conflict where `@salesforce/vite-plugin-ui-bundle` wants Vite 7 but `@vitejs/plugin-react` wants Vite 8, pin compatible majors, for example:
+
+```json
+{
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.2.0",
+    "vite": "^7.3.2"
+  }
+}
+```
 
 ## File-count budget
 
