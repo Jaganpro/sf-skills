@@ -1471,6 +1471,6 @@ public static List<Contact> getContactsWithErrorHandling(Id accountId) {
 
 ## External References
 
-- [PICKLES Framework (Salesforce Ben)](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/)
+- [PICKLES Framework](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/) — David Picksley, Third Eye Consulting
 - [LWC Recipes (GitHub)](https://github.com/trailheadapps/lwc-recipes)
 - [James Simone - Composable Modal](https://www.jamessimone.net/blog/joys-of-apex/lwc-composable-modal/)
