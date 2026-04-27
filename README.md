@@ -1,3 +1,30 @@
+> ## ⚠️ This Repository Is Archived
+>
+> This repository has been archived and is no longer actively maintained.
+>
+> The Salesforce AI skills previously hosted here have been consolidated into the official Salesforce Foundation library:
+>
+> 👉 **New home:** [`forcedotcom/afv-library`](https://github.com/forcedotcom/afv-library)
+>
+> ### Why the move?
+>
+> As part of an effort to unify the Salesforce AI developer ecosystem, advanced skills from this repo have been migrated to the official, public `afv-library` to provide:
+>
+> - **Unified Governance** — All skills now live under the official Salesforce Foundation (`forcedotcom`) banner.
+> - **Community Accessibility** — High-value skills (Data Cloud, OmniStudio, Agentforce, and more) are now openly available to external developers.
+> - **Enhanced Capabilities** — The official library has been upgraded with advanced features like Data Cloud metadata management, OmniStudio, and custom scoring models.
+> - **Maintainability & Standardization** — Single CI/CD pipeline, automated testing, and consistent coding practices.
+>
+> ### What should I do?
+>
+> - **Users:** Please switch to [`forcedotcom/afv-library`](https://github.com/forcedotcom/afv-library) for the latest versions, bug fixes, and new features.
+> - **Contributors:** Open issues and pull requests against the new repository.
+> - **Existing forks / clones:** Consider rebasing onto the new repo — this archive will remain read-only for historical reference.
+>
+> For questions, please reach out via the new repository's issue tracker.
+>
+> ---
+
 # Salesforce Skills for Agentic Coding Tools
 
 > 💙 **Community-powered agentic coding knowledge, shared by a Salesforce Certified Technical Architect (CTA)**

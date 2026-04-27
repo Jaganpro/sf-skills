@@ -1,3 +1,17 @@
+> ## ⚠️ This Repository Is Archived
+>
+> This repository has been archived and is no longer accepting contributions.
+>
+> The Salesforce AI skills previously hosted here have been consolidated into the official Salesforce Foundation library:
+>
+> 👉 **New home:** [`forcedotcom/afv-library`](https://github.com/forcedotcom/afv-library)
+>
+> **Contributors:** Please open issues and pull requests against the new repository. This archive will remain read-only for historical reference.
+>
+> The guidance below is retained for historical context only.
+>
+> ---
+
 # Contributing to Salesforce Flow & DevOps Skills
 
 Thank you for your interest in contributing! This document provides guidelines and instructions for contributing to this project.
