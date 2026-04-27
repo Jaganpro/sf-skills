@@ -19,7 +19,7 @@ The PICKLES Framework provides a structured approach to LWC architecture. Use it
 🥒 S - Security     → Enforce permissions & data protection
 ```
 
-**Reference**: [PICKLES Framework (Salesforce Ben)](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/)
+**Reference**: [PICKLES Framework](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/) — David Picksley, Third Eye Consulting
 
 ---
 
@@ -1302,7 +1302,7 @@ let recordId = '001xxx';
 
 ## Resources
 
-- [PICKLES Framework (Salesforce Ben)](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/)
+- [PICKLES Framework](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/) — David Picksley, Third Eye Consulting
 - [LWC Recipes (GitHub)](https://github.com/trailheadapps/lwc-recipes)
 - [SLDS 2 Transition Guide](https://www.lightningdesignsystem.com/2e1ef8501/p/8184ad-transition-to-slds-2)
 - [James Simone - Advanced Jest Testing](https://www.jamessimone.net/blog/joys-of-apex/advanced-lwc-jest-testing/)

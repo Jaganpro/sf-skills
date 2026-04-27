@@ -13,7 +13,7 @@ Created by [Jag Valaiyapathy](https://github.com/Jaganpro)
 - [SLDS 2 Transition Guide](https://www.lightningdesignsystem.com/2e1ef8501/p/8184ad-transition-to-slds-2) - Dark mode migration
 
 ### Community Resources
-- [PICKLES Framework](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/) - Ben McCarthy (Salesforce Ben)
+- [PICKLES Framework](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/) - David Picksley (Third Eye Consulting)
   - Prototype, Integrate, Composition, Kinetics, Libraries, Execution, Security methodology
 - [James Simone's Blog](https://www.jamessimone.net/) - Advanced LWC patterns
   - [Composable Modal Pattern](https://www.jamessimone.net/blog/joys-of-apex/lwc-composable-modal/)
@@ -46,7 +46,7 @@ Key contributions:
 
 | Pattern | Source | Description |
 |---------|--------|-------------|
-| PICKLES Framework | Salesforce Ben | 7-step LWC architecture methodology |
+| PICKLES Framework | David Picksley | 7-step LWC architecture methodology |
 | Render Cycle Helper | James Simone | Jest test utility for async rendering |
 | Focus Trap Pattern | James Simone | Modal accessibility with ESC handling |
 | GraphQL Wire Adapter | Salesforce Docs | Cursor-based pagination pattern |
