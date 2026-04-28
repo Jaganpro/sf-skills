@@ -1,0 +1,25 @@
+query ListAccounts($first: Int = 20, $after: String) {
+  uiapi {
+    query {
+      Account(
+        first: $first
+        after: $after
+        orderBy: { Name: { order: ASC } }
+      ) {
+        edges {
+          node {
+            Id
+            Name { value }
+            Industry { value }
+            BillingCity { value }
+            AnnualRevenue { value }
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+      }
+    }
+  }
+}

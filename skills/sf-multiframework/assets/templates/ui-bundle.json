@@ -1,0 +1,8 @@
+{
+  "outputDir": "dist",
+  "routing": {
+    "fileBasedRouting": true,
+    "trailingSlash": "never",
+    "fallback": "index.html"
+  }
+}
